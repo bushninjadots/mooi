@@ -241,6 +241,8 @@ def surface_layers():
         L += [f'    shader {e} = file "shaders/{e}.wgsl"']
     L += ['    shader ground = file "shaders/ground.wgsl"',
           '    shader aura = file "shaders/aura.wgsl"',
+          '    shader bulge = file "shaders/bulge.wgsl"',
+          '    shader skin = file "shaders/skin.wgsl"',
           "    fact rv_on = false", "    fact sf_firm = false   // the opening is open and the pointer has moved: the keyboard is ours",
           "    fact sf_fx = 1         // the opening's look: 1 tear · 2 aperture · 3 membrane · 4 ripple · 5 fold · 6 dissolve · 7 glass · 8 glow",
           "    fact sf_int = 0.85     // the effect's strength",
@@ -338,7 +340,109 @@ def surface_layers():
               f"            {img}",
               "        }"]
     L += ["    }"]
+    L += push_layers()
     return L
+
+
+WARM = "rgb(0.95, 0.62, 0.38)"
+ACCENT = "rgb(0.62, 0.84, 0.74)"
+
+
+def push_layers():
+    """D217, push up from below (the Subsurface spec §9, §9a): `skin` (level bottom: over the wallpaper, under the
+    windows; patches round the widgets below — their glow, a visualiser moving the picture, the clock's sweep at
+    the hour, a bulge with news and its words) and `light` (level overlay: a notice's spark, its line to the app's
+    window and once round its border; one zone, the spark's, so every other click passes through). The logic is
+    lib/surface/light's; both are shut while the opening shows the real things."""
+    img = "image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }"
+    L = ["", "    // ── push up from below (D217): what lives below reaches up through the picture ──"]
+    L += ["    fact sk_on = false     // the rest: anything glowing, moving or sweeping",
+          "    fact sk_g = 1          // the glow: 0 off · 1 subtle · 2 bright",
+          "    fact sk_mx = -9999", "    fact sk_my = -9999", "    fact sk_mp = false   // Now Playing, playing",
+          "    fact sk_nx = -9999", "    fact sk_ny = -9999", "    fact sk_nn = false   // Notices, holding news",
+          "    fact sk_vx = -9999", "    fact sk_vy = -9999", "    fact sk_vw = 1", "    fact sk_vh = 1",
+          "    fact sk_vm = false   // a visualiser that moves the wallpaper, playing",
+          "    fact sk_cx = -9999", "    fact sk_cy = -9999", "    fact sk_cw = 1", "    fact sk_ch = 1",
+          "    fact sk_swt = 0      // the hour's sweep: where its band is going (0 … 1)",
+          "    fact sk_swv = 0      // ... and how seen it is",
+          "    spring sg.slow = 14, 7.5",
+          "    prop sk_swp = 0 ~sg.slow", "    follow sk_swp = sk_swt",
+          "    prop sk_swa = 0 ~sg.op", "    follow sk_swa = sk_swv",
+          "    fact pu_on = false     // the push: a bulge and its words",
+          "    fact pu_x = 0", "    fact pu_y = 0", "    fact pu_w = 1", "    fact pu_h = 1",
+          "    fact pu_bt = 0", "    fact pu_wt = 0", "    fact pu_plate = false   // high contrast: a plate under the words",
+          '    text pu_words = ""',
+          "    spring sg.bulge = 180, 16",
+          "    prop pu_b = 0 ~sg.bulge", "    follow pu_b = pu_bt",
+          "    prop pu_wd = 0 ~sg.op", "    follow pu_wd = pu_wt",
+          "    fact lt_on = false     // the light: a notice's spark, its line, the window's border",
+          "    fact lt_sx = 0", "    fact lt_sy = 0", "    fact lt_tx = 0", "    fact lt_ty = 0",
+          "    fact lt_rx = 0", "    fact lt_ry = 0", "    fact lt_rw = 1", "    fact lt_rh = 1",
+          "    fact lt_win = false   // a window to travel to",
+          "    fact lt_so = 0        // the side the line meets: 0 top · 1 right · 2 bottom · 3 left (the trace starts there)",
+          "    fact lt_n = 1         // a burst: how many",
+          "    fact lt_st = 0", "    fact lt_tt = 0", "    fact lt_bt = 0", "    fact lt_kt = 0",
+          "    event lt_go ->        // the spark pressed",
+          "    spring sg.lt = 70, 16", "    spring sg.ltb = 26, 10",
+          "    prop lt_s = 0 ~sg.op", "    follow lt_s = lt_st",
+          "    prop lt_t = 0 ~sg.lt", "    follow lt_t = lt_tt",
+          "    prop lt_b = 0 ~sg.ltb", "    follow lt_b = lt_bt",
+          "    prop lt_k = 0 ~sg.op", "    follow lt_k = lt_kt"]
+    L += ["", "    surface skin {", "        size: full, full", "        anchor: top", "        level: bottom", "        reserve: -1",
+          "        keyboard: none", "        rate: 30, 20 while calm",
+          "        open: sf_on and not op_vis and (sk_on or pu_on)",
+          "        // the glow through: a soft breath at Now Playing while it plays, at Notices while it holds news",
+          f"        shader aura {{ at: sk_mx - 220, sk_my - 220; size: 440, 440; values: 1, sk_mx - 220, sk_my - 220, sk_mx, sk_my, -9999, -9999, sk_g * (0.75 + 0.5 * lv.level); colors: {ACCENT}, {WARM}; show: sk_mp }}",
+          f"        shader aura {{ at: sk_nx - 220, sk_ny - 220; size: 440, 440; values: 1, sk_nx - 220, sk_ny - 220, -9999, -9999, sk_nx, sk_ny, sk_g; colors: {ACCENT}, {WARM}; show: sk_nn }}",
+          "        // a visualiser moving the wallpaper: rings round its place with the music",
+          "        group {", "            show: sk_vm",
+          "            clip box { from: sk_vx - 80, sk_vy - 80; size: sk_vw + 160, sk_vh + 160; corner: 48 }",
+          "            shader: skin, lv.level, sk_vx - 80, sk_vy - 80, sk_vx, sk_vy, sk_vw, sk_vh, 1",
+          f"            {img}", "        }",
+          "        // the clock's hour: a band of light crosses its place",
+          "        group {", "            show: sk_swa > 0.01",
+          "            clip box { from: sk_cx - 60, sk_cy - 60; size: sk_cw + 120, sk_ch + 120; corner: 36 }",
+          "            shader: skin, sk_swp, sk_cx - 60, sk_cy - 60, sk_cx, sk_cy, sk_cw, sk_ch, 2 + 0.99 * sk_swa",
+          f"            {img}", "        }",
+          "        // news: the picture bulges over the widget's place ...",
+          "        group {", "            show: pu_on and pu_b > 0.005",
+          "            clip box { from: pu_x - 48, pu_y - 48; size: pu_w + 96, pu_h + 96; corner: 48 }",
+          "            shader: bulge, pu_b, pu_x - 48, pu_y - 48, pu_x, pu_y, pu_w, pu_h, 1",
+          f"            {img}", "        }",
+          "        // ... and its words press up through it, then settle back",
+          "        group {", "            show: pu_on and pu_wd > 0.01", "            opacity: pu_wd",
+          "            box { from: pu_x + pu_w / 2 - min(pu_w, 420) / 2, pu_y + pu_h / 2 - 18; size: min(pu_w, 420), 36; corner: 8; color: rgb(0.05, 0.06, 0.06); opacity: 0.86; show: pu_plate }",
+          "            group { glow: 16, 0.7, #000000",
+          "                text pu_words { at: pu_x + pu_w / 2, pu_y + pu_h / 2 + 8 * (1 - pu_wd); anchor: center; align: center; size: 16; weight: 600; family: \"Exo 2\"; color: rgb(0.95, 0.96, 0.95); width: min(pu_w, 420) - 16; lines: 1 } }",
+          "        }", "    }"]
+    # the light: the border, side by side from the side the line meets
+    sides = [("lt_rx", "lt_ry", "lt_rx + lt_rw * {p}", "lt_ry"),
+             ("lt_rx + lt_rw", "lt_ry", "lt_rx + lt_rw", "lt_ry + lt_rh * {p}"),
+             ("lt_rx + lt_rw", "lt_ry + lt_rh", "lt_rx + lt_rw - lt_rw * {p}", "lt_ry + lt_rh"),
+             ("lt_rx", "lt_ry + lt_rh", "lt_rx", "lt_ry + lt_rh - lt_rh * {p}")]
+    L += ["", "    surface light {", "        size: full, full", "        anchor: top", "        level: overlay", "        reserve: -1",
+          "        keyboard: none", "        rate: 60, 20 while calm", "        open: lt_on",
+          "        // the line: a short comet from the spark to where it meets the window",
+          "        let lt_a = max(0, lt_t - 0.3)",
+          f"        group {{ glow: 10, 0.9, {WARM}; opacity: lt_k; show: lt_win and lt_t > 0.01",
+          f"            line {{ from: lt_sx + (lt_tx - lt_sx) * lt_a, lt_sy + (lt_ty - lt_sy) * lt_a; to: lt_sx + (lt_tx - lt_sx) * lt_t, lt_sy + (lt_ty - lt_sy) * lt_t; width: 2; color: {WARM} }} }}",
+          "        // once round the window's border, from the side the line met"]
+    for i in range(4):
+        L += [f"        let lt_p{i} = clamp(lt_b * 4 - mod({i} - lt_so + 4, 4), 0, 1)"]
+    L += [f"        group {{ glow: 12, 0.8, {WARM}; opacity: lt_k; show: lt_win and lt_b > 0.001"]
+    for i, (x0, y0, x1, y1) in enumerate(sides):
+        p = f"lt_p{i}"
+        L += [f"            line {{ from: {x0}, {y0}; to: {x1.format(p=p)}, {y1.format(p=p)}; width: 2; color: {WARM}; show: {p} > 0.001 }}"]
+    L += ["        }",
+          "        // the spark, and how many came at once",
+          f"        group {{ glow: 14, 0.9 * lt_s, {WARM}",
+          f"            ellipse {{ at: lt_sx, lt_sy; radius: 3 + 3 * lt_s; color: {WARM}; opacity: lt_s }} }}",
+          "        text \"{lt_n}\" { at: lt_sx + 12, lt_sy - 10; anchor: left center; size: 10; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.95, 0.62, 0.38); opacity: lt_s; show: lt_n > 1.5 }",
+          "        zone box lt_z { from: lt_sx - 14, lt_sy - 14; size: 28, 28; cursor: pointer; role: button; label: \"Open the notices\"; show: lt_s > 0.2 }",
+          "        on press lt_z { emit lt_go }",
+          "    }"]
+    return L
+
 
 if __name__ == "__main__":
     OUT.write_text(scene())

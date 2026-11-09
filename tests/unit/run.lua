@@ -8230,6 +8230,11 @@ do
         local q = skin.edge_point({ x = 600, y = 0 }, { x = 400, y = 300, w = 400, h = 400 })
         eq(q.x, 600); eq(q.y, 300)
     end)
+    test("side: which side of the window the line met (the border's trace starts there)", function()
+        local r = { x = 400, y = 300, w = 400, h = 400 }
+        eq(skin.side({ x = 600, y = 300 }, r), 0); eq(skin.side({ x = 800, y = 500 }, r), 1)
+        eq(skin.side({ x = 600, y = 700 }, r), 2); eq(skin.side({ x = 400, y = 500 }, r), 3)
+    end)
     test("hour: the sweep comes when the hour turns", function()
         eq(skin.hour("09:59", "10:00"), true); eq(skin.hour("10:00", "10:01"), false)
         eq(skin.hour(nil, "10:00"), false, "the first reading is not a turn"); eq(skin.hour("23:59", "00:00"), true)
@@ -8258,6 +8263,41 @@ do
     test("settings: the push and the light's travel, on by default", function()
         local d = require("lib/config").defaults().surface
         eq(d.push, true); eq(d.trace, true)
+    end)
+end
+
+section("push up from below: the scene (D217)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local function block(plm, name)
+        local a = plm:find("    surface " .. name .. " {", 1, true); assert(a, name)
+        return plm:sub(a, plm:find("\n    }\n", a, true))
+    end
+    test("skin: over the wallpaper, under the windows, only while something reaches up and the opening is shut", function()
+        local plm = read("shell/mooi-surface.plm")
+        local sk = block(plm, "skin")
+        assert(sk:find("level: bottom", 1, true) and sk:find("keyboard: none", 1, true))
+        assert(sk:find("open: sf_on and not op_vis and (sk_on or pu_on)", 1, true), "nothing while the opening shows")
+        assert(not sk:find("zone", 1, true), "it catches nothing")
+        assert(sk:find("shader: bulge, pu_b,", 1, true) and sk:find("text pu_words", 1, true), "the bulge and its words")
+        assert(sk:find("shader: skin, lv.level,", 1, true) and sk:find("shader: skin, sk_swp,", 1, true), "the moving wallpaper and the hour's sweep")
+        assert(sk:find("shader aura { at: sk_mx - 220, sk_my - 220; size: 440, 440;", 1, true), "the glow, a patch round the thing")
+        assert(sk:find("show: pu_plate", 1, true), "high contrast: a plate under the words")
+        assert(plm:find('shader bulge = file "shaders/bulge.wgsl"', 1, true) and plm:find('shader skin = file "shaders/skin.wgsl"', 1, true))
+        assert(io.open("shell/shaders/bulge.wgsl") and io.open("shell/shaders/skin.wgsl"), "the shaders")
+    end)
+    test("light: over the windows, but every click goes through except on the spark", function()
+        local plm = read("shell/mooi-surface.plm")
+        local lt = block(plm, "light")
+        assert(lt:find("level: overlay", 1, true) and lt:find("open: lt_on", 1, true) and lt:find("keyboard: none", 1, true))
+        local n = 0
+        for _ in lt:gmatch("zone ") do n = n + 1 end
+        eq(n, 1, "one zone: the spark's")
+        assert(lt:find("on press lt_z { emit lt_go }", 1, true))
+        assert(plm:find("event lt_go ->", 1, true))
+        for _, f in ipairs({ "lt_sx", "lt_tx", "lt_rx", "lt_rw", "lt_n", "lt_so", "pu_x", "sk_vx", "sk_swt", "sk_swv" }) do
+            assert(plm:find("fact " .. f .. " = ", 1, true), f)
+        end
     end)
 end
 

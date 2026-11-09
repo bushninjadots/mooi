@@ -163,6 +163,14 @@ function M.edge_point(p, r)
     return { x = p.x + t * dx, y = p.y + t * dy }
 end
 
+-- which side of the window a point on its border is on: 0 top · 1 right · 2 bottom · 3 left
+function M.side(p, r)
+    local d = { math.abs(p.y - r.y), math.abs(p.x - (r.x + r.w)), math.abs(p.y - (r.y + r.h)), math.abs(p.x - r.x) }
+    local best = 1
+    for i = 2, 4 do if d[i] < d[best] then best = i end end
+    return best - 1
+end
+
 -- the clock's sweep: when the hour turns ("HH:MM")
 function M.hour(prev, now)
     if type(prev) ~= "string" or type(now) ~= "string" then return false end

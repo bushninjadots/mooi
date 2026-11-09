@@ -118,6 +118,7 @@ return function(ctx)
                     if win then
                         local tp = skin.edge_point(sp, win)
                         fact.lt_tx, fact.lt_ty = tp.x, tp.y
+                        fact.lt_so = skin.side(tp, win)
                         fact.lt_rx, fact.lt_ry, fact.lt_rw, fact.lt_rh = win.x, win.y, win.w, win.h
                     else
                         fact.lt_tx, fact.lt_ty = sp.x, sp.y
