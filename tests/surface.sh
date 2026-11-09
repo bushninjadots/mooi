@@ -55,12 +55,12 @@ set_ '.bar.mode="pill" | .sigil.pill="sigil" | .sigil.rest="clock"' 5
 is "it has a host" "$(sg h0_on)" true
 is "the bar heard it is up" "$(bar surface_up)" true
 is "the classic Pill steps aside" "$(bar pill_on)" false
-px=$(bar pill_x); pw=$(bar pill_w)
+hx=$(sg h0_x); hw=$(sg h0_w)
 for i in 0 31 63; do
     x=$(sg "h0_tx$i")
-    if within "$x" "$px" "$((px + pw))"; then ok "point $i inside the Pill ($x)"; else bad "point $i inside the Pill ($x not in $px…$((px + pw)))"; fi
+    if within "$x" "$hx" "$((hx + hw))"; then ok "point $i inside the Pill ($x)"; else bad "point $i inside the Pill ($x not in $hx…$((hx + hw)))"; fi
 done
-shot pill-clock "$((px - 120)),0 $((pw + 240))x50"
+shot pill-clock "$((hx - 120)),0 $((hw + 240))x50"
 
 echo "each resting source"
 for pair in clock:1 calendar:2 workspaces:7 bmo:13; do
@@ -68,7 +68,8 @@ for pair in clock:1 calendar:2 workspaces:7 bmo:13; do
     set_ ".bar.mode=\"pill\" | .sigil.pill=\"sigil\" | .sigil.rest=\"$id\"" 3
     playerctl -a pause >/dev/null 2>&1; sleep 1
     is "at rest on $id" "$(sg h0_src)" "$want"
-    shot "rest-$id" "$((px - 120)),0 $((pw + 240))x50"
+    hx=$(sg h0_x); hw=$(sg h0_w)
+    shot "rest-$id" "$((hx - 120)),0 $((hw + 240))x50"
 done
 
 echo "the display, on hover"
@@ -76,7 +77,8 @@ set_ '.bar.mode="pill" | .sigil.pill="sigil" | .sigil.rest="clock"' 3
 timeout 3 pleamar --say mooi-surface "emit sg_hover 1" >/dev/null 2>&1; sleep 1.2
 is "hovered: the display" "$(sg h0_form)" 2
 d=$(sg h0_drop); if awk -v v="$d" 'BEGIN { exit !(v > 0.5) }'; then ok "the display's surface is open"; else bad "the display's surface is open ($d)"; fi
-shot display-clock "$((px - 260)),0 $((pw + 520))x290"
+hx=$(sg h0_x); hw=$(sg h0_w)
+shot display-clock "$((hx - 260)),0 $((hw + 520))x290"
 timeout 3 pleamar --say mooi-surface "emit sg_hover 0" >/dev/null 2>&1; sleep 1.5
 is "left: compact again" "$(sg h0_form)" 1
 d=$(sg h0_drop); if awk -v v="$d" 'BEGIN { exit !(v < 0.02) }'; then ok "the display's surface closes"; else bad "the display's surface closes ($d)"; fi
@@ -105,7 +107,8 @@ if playerctl status >/dev/null 2>&1; then
     r=$(sg h0_r); c=$(bar pc1_r)
     if awk -v a="$r" -v b="$c" 'BEGIN { exit !(a - b < 0.04 && b - a < 0.04) }'; then ok "the cover's colour ($r ≈ $c)"; else bad "the cover's colour ($r vs $c)"; fi
     timeout 3 pleamar --say mooi-surface "emit sg_hover 1" >/dev/null 2>&1; sleep 1.2
-    shot display-music "$((px - 260)),0 $((pw + 520))x290"
+    hx=$(sg h0_x); hw=$(sg h0_w)
+    shot display-music "$((hx - 260)),0 $((hw + 520))x290"
     timeout 3 pleamar --say mooi-surface "emit sg_hover 0" >/dev/null 2>&1; sleep 1
     echo "the budget, with music playing"
     timeout 30 pleamar --report mooi-surface --seconds 8 --out "$t/report.txt" >/dev/null 2>&1
@@ -130,7 +133,8 @@ sleep 7
 after=$(grep -c "surface · gave up" "$L" 2>/dev/null); after=${after:-0}
 if [ "$after" -gt "$before" ]; then ok "mooi gave up after five quick ends"; else bad "mooi gave up after five quick ends"; fi
 is "the bar knows it is down" "$(bar surface_up)" false
-shot fallback "$((px - 120)),0 $((pw + 240))x50"
+hx=$(sg h0_x); hw=$(sg h0_w)
+shot fallback "$((hx - 120)),0 $((hw + 240))x50"
 
 echo "Surface (D209): hold Super — the opening"
 set_ '.bar.mode="notch" | .sigil.pill="classic" | .surface.on=true | .surface.effect="tear" | .surface.bmo_below=true' 1
