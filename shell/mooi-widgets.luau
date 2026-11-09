@@ -22,6 +22,9 @@ local DD = require("lib/deskdata")
 local apps_lib = require("lib/apps")
 local citizen = require("lib/surface/citizen")
 local report_bar   -- D214: below, beside the citizen's hello
+local WB = require("lib/wbelow")
+local BF           -- D215: the widgets below, fed (lib/wbelow_feed), once `first` and `commit` exist
+local below_steps  -- D215: the default set placed and the Presences migrated, once each (below)
 local DAYNAMES = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" }
 
 local function read(name, kind)
@@ -109,6 +112,7 @@ local function is_sel(id) for _, s in ipairs(selected) do if s == id then return
 
 local function publish()
     if standing_down then return end
+    if BF then BF.refresh() end
     local rows = {}
     for _, w in ipairs(doc.widgets) do
         local st = W.idle_state(w, playing)
@@ -234,7 +238,8 @@ local function publish()
         fact[f .. "dx"], fact[f .. "dy"] = r.dx, r.dy
     end
     -- the D141 lanes (one each)
-    local LANE = { weather = "wh_", system = "sp_", calendar = "cd_", launch = "ln_" }
+    local LANE = { weather = "wh_", system = "sp_", calendar = "cd_", launch = "ln_",
+                   notices = "nc_", wallpapers = "wp_", settings = "pg_", controls = "ct_" }   -- D215
     local lit = {}
     for i, w in ipairs(doc.widgets) do
         local f = LANE[w.kind]
@@ -324,6 +329,7 @@ local function load()
     doc = d
     publish()
     if show_selection then show_selection() end
+    if below_steps then below_steps() end
 end
 
 -- Saved whole: files.write writes beside the file and then moves it into place.
@@ -572,7 +578,7 @@ on("wg_seek", function(v)
     show_progress(); show_lyric()
 end)
 local volume = nil
-pcall(sys.watch, "audio", function(a) if type(a) == "table" then volume = tonumber(a.volume) end end)
+pcall(sys.watch, "audio", function(a) if type(a) == "table" then volume = tonumber(a.volume) end; if BF then BF.audio(a) end end)
 on("wg_vol", function(v)
     if not volume then return end
     for _, w in ipairs(doc.widgets) do
@@ -1065,6 +1071,7 @@ pcall(sys.watch, "battery", function(b)
     fact.ck_bat = math.floor((tonumber(b.percent) or 0) + 0.5)
     fact.ck_chg = b.charging == true
     fact.ck_bat_on = b.present == true
+    if BF then BF.battery(b) end
 end)
 
 -- ── Notes (D140): mooi's quick notes (notes.json, lib/notes), edited where they are ──
@@ -1247,6 +1254,37 @@ local function first(kind)
     return nil, {}
 end
 local function rnd(v) return math.floor((tonumber(v) or 0) + 0.5) end
+
+-- ── D215: the widgets below (docs/superpowers/specs/2026-11-09-widgets-below-design.md) ──
+BF = require("lib/wbelow_feed")({ doc = function() return doc end, first = first, commit = commit, read = read })
+local function surface_settings() return type(settings.surface) == "table" and settings.surface or {} end
+-- Once the Surface is on: the Presences of D208 become widgets kept above, then the default set is placed under
+-- the wallpaper — each step once (widgets.json remembers), neither undoable (they are not the owner's edits).
+below_steps = function()
+    if not doc or standing_down or surface_settings().on ~= true then return end
+    if doc.migrated_presences and doc.below_seeded then return end
+    local d = doc
+    if not d.migrated_presences then
+        local s = read("surface.json", "json")
+        local problems
+        d, problems = WB.migrate(type(s) == "table" and s.presences or {}, d, room, tonumber(fact.wall_bar) or 34)
+        for _, p in ipairs(problems) do log("widgets · " .. p) end
+    end
+    if not d.below_seeded then
+        local problems, n
+        d, n, problems = WB.seed(d, room, surface_settings().layout or "arc")
+        for _, p in ipairs(problems) do log("widgets · " .. p) end
+        if n > 0 then log("widgets · the default set placed under the wallpaper: " .. n) end
+    end
+    commit(d)
+end
+on("sf_set", function(v) if math.floor(tonumber(v) or 0) % 2 == 1 then below_steps() end end)
+-- Settings → The Subsurface → Re-arrange: every widget below laid out again (one undo puts them back)
+on("wg_arrange", function()
+    if not doc then return end
+    change(WB.arrange_all(doc, room, surface_settings().layout or "arc"), "ARRANGED · UNDO PUTS THEM BACK")
+end)
+below_steps()   -- the first load ran before this existed
 local function bmo_say(words) run("pleamar", { "--say", "bmo", wire.say(words), "emit speak" }) end
 
 -- the shadows fall away from the wallpaper's light
@@ -1452,7 +1490,7 @@ local function show_launch()
 end
 -- (a service hands over its list itself, or a record with it as `list`)
 local function list_of(a) return type(a) == "table" and (type(a.list) == "table" and a.list or (a[1] ~= nil and a) or {}) or {} end
-pcall(sys.watch, "apps", function(a) apps_now = list_of(a); show_launch() end)
+pcall(sys.watch, "apps", function(a) apps_now = list_of(a); show_launch(); if BF then BF.apps(apps_now) end end)
 pcall(sys.watch, "window", function(a) wins_now = list_of(a); show_launch() end)
 -- the notices waiting, from Signal Loom's feed (its newest five, each with app and time): watching a
 -- notification service here would take the name from the shell, and Loom would hear nothing
@@ -1460,6 +1498,7 @@ local function feed_now()
     local f = read("nexus-feed.json", "json")
     unseen_now = type(f) == "table" and type(f.items) == "table" and f.items or {}
     show_launch()
+    if BF then BF.notices(f) end
 end
 pcall(sys.watch, "files:nexus-feed.json", feed_now)
 feed_now()

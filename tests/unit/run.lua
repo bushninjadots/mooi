@@ -8440,6 +8440,16 @@ do
         eq(#again.widgets, #d.widgets, "never twice")
         eq(WB.MIGRATE.resources, "system"); eq(WB.MIGRATE.notifications, "notices"); eq(WB.MIGRATE.battery, "controls")
     end)
+    test("walls: the six newest with a thumbnail; migration knows the bar", function()
+        local idx = { items = { { path = "/a", thumb = "/ta", mtime = 1 }, { path = "/b", thumb = "", mtime = 9 },
+                                { path = "/c", thumb = "/tc", mtime = 5 } } }
+        local r = WB.walls(idx, 6)
+        eq(#r, 2, "only pictures with a thumbnail"); eq(r[1].path, "/c", "the newest first")
+        eq(#WB.walls(nil, 6), 0)
+        local d = WB.migrate({ { source = "clock", fx = 0.5, fy = 0.5 } }, { version = W.VERSION, widgets = {} }, { w = 1920, h = 1046, top = 0 }, 34)
+        local c = d.widgets[1]
+        eq(math.abs((c.y + c.h / 2) - (0.5 * 1080 - 34)) <= 8, true, "a Presence's screen fraction, in the widgets' surface")
+    end)
     test("grid apps and the settings pages", function()
         local list = { { id = "a", name = "Kitty", exec = "kitty" }, { id = "b", name = "Firefox", exec = "firefox" },
                        { id = "d", name = "Files", exec = "nautilus" } }
@@ -8481,6 +8491,35 @@ do
         local panel = read("shell/ui/widgets.plm")
         assert(panel:find('Chip(x + 212, y + 52, 96, "GRID"', 1, true), "the grid can be chosen")
         assert(panel:find('"POWER ASKS TWICE"', 1, true) and panel:find('Chip(x + 156, y + wy, 34, "3"', 1, true), "the new kinds' switches")
+    end)
+end
+
+section("widgets below: the logic (D215)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("logic: seeding and migration only with the Surface on, once each; Re-arrange undoable", function()
+        local l = read("shell/mooi-widgets.luau")
+        assert(l:find("if not doc or standing_down or surface_settings().on ~= true then return end", 1, true), "Surface off: nothing placed")
+        assert(l:find("if doc.migrated_presences and doc.below_seeded then return end", 1, true), "once each")
+        assert(l:find("WB.migrate(type(s) == \"table\" and s.presences or {}, d, room, tonumber(fact.wall_bar) or 34)", 1, true), "the Presences, with the bar")
+        assert(l:find("WB.seed(d, room, surface_settings().layout or \"arc\")", 1, true), "the chosen arrangement")
+        assert(l:find('on("sf_set"', 1, true) and l:find('on("wg_arrange"', 1, true))
+        assert(l:find('change(WB.arrange_all(doc, room', 1, true), "through change: one undo puts them back")
+        for _, h in ipairs({ "BF.audio(a)", "BF.battery(b)", "BF.apps(apps_now)", "BF.notices(f)", "BF.refresh()" }) do assert(l:find(h, 1, true), h) end
+        assert(l:find('notices = "nc_", wallpapers = "wp_", settings = "pg_", controls = "ct_"', 1, true), "the lanes are lit")
+    end)
+    test("feed: one watcher per service, the presses do what the spec says", function()
+        local f = read("shell/lib/wbelow_feed.luau")
+        for _, s in ipairs({ '"audio"', '"battery"', '"apps"', '"files:nexus-feed.json"' }) do
+            assert(not f:find("sys.watch, " .. s, 1, true), "mooi-widgets already watches " .. s)
+        end
+        for _, s in ipairs({ '"network"', '"bluetooth"', '"brightness"', '"files:walls-index.json"' }) do assert(f:find("sys.watch, " .. s, 1, true), s) end
+        assert(f:find('say_mooi("emit note_act " .. tostring(row * 10 + what))', 1, true) and f:find('say_mooi("emit note_clear")', 1, true), "notices")
+        assert(f:find('run("mooi", { "wall", "apply", w.path }', 1, true), "wallpapers")
+        assert(f:find('say_mooi("emit open_settings_at " .. tostring(p[2]))', 1, true), "settings")
+        assert(f:find('opts("controls").power_confirm ~= false and fact.ct_pw_arm ~= n', 1, true), "power asks again, each for itself")
+        assert(f:find("d.launch_counts[a.id] = (d.launch_counts[a.id] or 0) + 1", 1, true), "the grid learns what is launched")
+        assert(f:find("if v == 27 then q = \"\"", 1, true), "Esc clears what is typed")
     end)
 end
 

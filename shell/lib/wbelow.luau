@@ -81,7 +81,9 @@ function M.arrange_all(doc, screen, layout)
 end
 
 -- (doc, problems). Each Presence becomes a widget kept above, centred where it was; one widget per kind.
-function M.migrate(presences, doc, screen)
+-- A Presence's fx, fy are fractions of the whole screen; the widgets' surface starts `bar_h` below its top
+-- (screen.top when not given).
+function M.migrate(presences, doc, screen, bar_h)
     if doc.migrated_presences then return doc, {} end
     local d, problems, made = copy(doc), {}, {}
     for _, p in ipairs(type(presences) == "table" and presences or {}) do
@@ -96,7 +98,9 @@ function M.migrate(presences, doc, screen)
                 local _, w = W.find(d, id)
                 w.above = true
                 local cx = (tonumber(p.fx) or 0.5) * screen.w
-                local cy = (tonumber(p.fy) or 0.5) * screen.h - (screen.top or 0)
+                local bar = bar_h or (screen.top or 0)
+                local full = bar_h and (screen.h + bar_h) or screen.h
+                local cy = (tonumber(p.fy) or 0.5) * full - bar
                 local r = W.clamp_rect({ kind = w.kind, layout = w.layout, mode = w.mode, x = cx - w.w / 2, y = cy - w.h / 2, w = w.w, h = w.h }, screen)
                 w.x, w.y = r.x, r.y
             else
@@ -127,6 +131,21 @@ function M.grid_apps(list, counts, q, n)
     end)
     local out = {}
     for i = 1, math.min(n, #rows) do out[i] = rows[i].a end
+    return out
+end
+
+-- The Wallpapers widget: the n newest pictures in the picker's index (walls-index.json) that have a thumbnail.
+function M.walls(index, n)
+    local rows = {}
+    local items = type(index) == "table" and type(index.items) == "table" and index.items or {}
+    for i, it in ipairs(items) do
+        if type(it) == "table" and type(it.path) == "string" and type(it.thumb) == "string" and it.thumb ~= "" then
+            rows[#rows + 1] = { path = it.path, thumb = it.thumb, t = tonumber(it.mtime) or 0, i = i }
+        end
+    end
+    table.sort(rows, function(p, r) if p.t ~= r.t then return p.t > r.t end return p.i < r.i end)
+    local out = {}
+    for i = 1, math.min(n, #rows) do out[i] = { path = rows[i].path, thumb = rows[i].thumb } end
     return out
 end
 
