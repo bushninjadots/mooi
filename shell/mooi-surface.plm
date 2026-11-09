@@ -4752,8 +4752,8 @@ scene Sigil {
             box { from: op_x + op_w * 0.75, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }
             box { from: op_x + sf_ovm, op_y + op_h * 0.33; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }
             box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }
-            text "THE SUBSURFACE" { at: op_x + sf_ovm + 24, op_y + sf_ovm + 48; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }
-            text "the widgets are in edit mode: drag, resize, undo  /  type to find an app  /  Esc to close" { at: op_x + sf_ovm + 24, op_y + sf_ovm + 66; anchor: left center; size: 10; family: "Share Tech Mono"; color: rgb(0.55, 0.6, 0.58); show: op_mode == 4 and sf_labels > 0.5 }
+            text "THE SUBSURFACE" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 44; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }
+            text "the widgets are in edit mode: drag, resize, undo  /  type to find an app  /  Esc to close" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 26; anchor: left center; size: 10; family: "Share Tech Mono"; color: rgb(0.55, 0.6, 0.58); show: op_mode == 4 and sf_labels > 0.5 }
             // the Overview's close, over the canvas at its top right (undo is the widgets' own, in edit mode)
             box { from: op_x + op_w - sf_ovm - 92, op_y + sf_ovm + 108; size: 80, 26; corner: 6; color: rgb(0.08, 0.1, 0.11); opacity: 0.72; show: op_vis and op_mode == 4 }
             text "CLOSE" { at: op_x + op_w - sf_ovm - 52, op_y + sf_ovm + 108 + 13; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }

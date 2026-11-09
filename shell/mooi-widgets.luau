@@ -1387,7 +1387,8 @@ local function show_timer()
     text.tm_txt = DD.mmss(left)
 end
 show_timer_tick = function() if has("timer") then show_timer() end end
-on("tm_go", function(v)
+-- (lent to the widgets below: Return on a snapped focus timer starts or pauses it, D216)
+BF.press_with.timer = function(v)
     v = math.floor(tonumber(v) or 0)
     local now = os.time()
     if not timer then timer = DD.timer(timer_len()) end
@@ -1398,7 +1399,8 @@ on("tm_go", function(v)
     elseif v == 5 then DD.timer_add(timer, 60, now)
     elseif v == 6 then DD.timer_add(timer, -60, now) end
     show_timer()
-end)
+end
+on("tm_go", BF.press_with.timer)
 
 -- Claude: the last thing said in the notch, and whether Claude Code is at work (its processes' CPU)
 local function show_claude()
@@ -1502,13 +1504,15 @@ local function feed_now()
 end
 pcall(sys.watch, "files:nexus-feed.json", feed_now)
 feed_now()
-on("ln_go", function(v)
+-- (lent to the widgets below: Return on a snapped launcher opens its first app, D216)
+BF.press_with.shelf = function(v)
     local r = launch_rows[math.floor(tonumber(v) or -1) + 1]
     if not r then return end
     opened_at[string.lower(r.name)] = os.time()
     pcall(sys.call, "apps.launch", r.exec)
     show_launch()
-end)
+end
+on("ln_go", BF.press_with.shelf)
 
 -- desk mode: every widget gathered in the middle over the blurred desktop, then back
 on("wg_deskm", function(v)

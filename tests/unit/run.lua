@@ -8090,6 +8090,60 @@ do
     end)
 end
 
+section("widgets below: the carry-overs (D216)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local below = require("lib/surface/below")
+    local ws = { { id = "np-1", kind = "nowplaying", layout = "sleeve" }, { id = "ln-1", kind = "launch", layout = "shelf" },
+                 { id = "ln-2", kind = "launch", layout = "grid", above = true }, { id = "ln-3", kind = "launch", layout = "grid" } }
+    test("slot: a snapped widget's place in widgets.json, 0-based; anything else is none", function()
+        eq(below.slot(ws, "w:np-1"), 0, "the first")
+        eq(below.slot(ws, "w:ln-3"), 3, "the fourth")
+        eq(below.slot(ws, "w:gone"), -1, "a widget no longer there")
+        eq(below.slot(ws, "bmo"), -1, "BMO is not a widget")
+        eq(below.slot(ws, nil), -1, "nothing snapped")
+        eq(below.slot(nil, "w:np-1"), -1, "no widgets")
+    end)
+    test("grid_slot: the Launch grid below the wallpaper that typing finds apps in", function()
+        eq(below.grid_slot(ws), 3, "a grid kept above is not below")
+        eq(below.grid_slot({ ws[1], ws[2] }), -1, "no grid")
+    end)
+    test("coming up: the snapped widget rises on a spring, the rest wait at 96 %, in the loop and every lane", function()
+        local plm = read("shell/mooi-widgets.plm")
+        assert(plm:find("event wg_rise ->", 1, true) and plm:find("on wg_rise(v) { wg_rise = v }", 1, true), "told what is snapped")
+        assert(plm:find("spring wg.rise = 320, 26", 1, true), "a spring, never a long tween")
+        for k = 0, 15 do
+            assert(plm:find("prop ru" .. k .. " = 0 ~wg.rise", 1, true) and
+                   plm:find("follow ru" .. k .. " = if(op_vis and (op_mode == 3 or wg_rise == " .. k .. "), 1, 0)", 1, true), "slot " .. k)
+        end
+        assert(plm:find("let rs = if(sf_on and not w.above and not editing and not wg_desk, pick(k, ru0, ru1, ru2", 1, true), "the loop's widgets")
+        assert(plm:find("scale: 0.96 + 0.04 * rs", 1, true), "the loop's widgets rise")
+        for _, p in ipairs({ "nl", "g1", "wh", "ln", "nc", "wp", "pg", "ct" }) do
+            assert(plm:find("scale: 0.96 + 0.04 * " .. p .. "_rs", 1, true), p .. " rises")
+        end
+        for _, L in ipairs({ "lA", "lB", "lC" }) do assert(plm:find("scale: 0.96 + 0.04 * " .. L .. "_rs", 1, true), L .. " rises") end
+        assert(plm:find("glow: 26, 0.55 * rs, #000000", 1, true), "a depth shadow under what rises")
+    end)
+    test("Return presses the snapped widget; typed in the Overview, it launches the first match", function()
+        local s = read("shell/mooi-surface.luau")
+        assert(s:find('widgets_say("emit wg_rise " .. tostring(rise))', 1, true), "what is snapped is told")
+        assert(s:find('widgets_say("emit wg_press " .. tostring(k))', 1, true), "Return presses it")
+        assert(s:find("below.grid_slot(S.widget_list)", 1, true), "typed: the grid's first match")
+        assert(read("shell/mooi-widgets.plm"):find("event wg_press ->", 1, true))
+        local f = read("shell/lib/wbelow_feed.luau")
+        assert(f:find('on("wg_press"', 1, true), "the widgets answer")
+        for _, k in ipairs({ "nowplaying", "launch", "notices", "wallpapers", "settings", "timer" }) do
+            assert(f:find("PRESS." .. k .. " = ", 1, true) or f:find("PRESS%." .. k), k .. " has a press")
+        end
+        assert(f:find('say_mooi("emit open_wallpaper")', 1, true), "Return on the wallpapers opens the picker")
+    end)
+    test("the Overview's title sits at the canvas' foot, clear of the widgets' edit bar", function()
+        local plm = read("shell/mooi-surface.plm")
+        assert(plm:find('text "THE SUBSURFACE" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 44;', 1, true), "the title")
+        assert(not plm:find("op_y + sf_ovm + 48", 1, true), "not under the edit bar")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

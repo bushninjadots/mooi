@@ -6260,3 +6260,32 @@ went with the hubs and are not yet the widgets' (docs/TODO).
 gate ok. The four new kinds and Launch's grid rendered through a throwaway scene that imports the real
 drawings (Adaptive and Phosphor; power open with Restart asking again; the column layout). The live suite
 (`tests/surface.sh`) now checks the default set and the Overview's edit mode; it needs this build on the desk.
+
+## D216 · 2026-11-09 · The widgets below, finished: coming up, Return, the Overview's title
+
+D215's three carry-overs (docs/TODO), the owner's "do next stages".
+
+**Coming up (the Subsurface spec §6), for the widgets.** mooi-surface tells mooi-widgets which slot the opening
+snaps to (`wg_rise`, the widget's place in `widgets.json`: `lib/surface/below.slot`). Below the wallpaper every
+widget waits at 96 % and faded (72 %); the one snapped — and every one in a section — rises to its full size on a
+spring (`wg.rise`, sixteen `ru` props from `tools/gen-wlanes.py`'s `<gen:rise>`), with a depth shadow (a black
+glow) under it. In the loop, in every lane and in the three visualiser lanes. Kept above, in edit mode or in desk
+mode a widget is whole, as before. (Pleamar: a group's own settings — opacity, scale — cannot read the group's
+lets, so each rise is a `let` beside the group, like its rest.)
+
+**Return presses what is snapped.** Each kind's main press (`lib/wbelow_feed`'s `PRESS`): Now Playing plays or
+pauses; Launch opens its first app (the grid's first, or the shelf's); Notices opens the newest notice; Wallpapers
+opens the picker; Settings opens the window (its first page); the focus timer starts or pauses. The rest have no
+single press and Return leaves them be. BMO snapped: Return wakes him. Typed into in the Overview, Return
+launches the grid's first match (`below.grid_slot`), as D214's Apps did. The shelf's and the timer's presses live in
+mooi-widgets' own chunk and are lent to the module (`BF.press_with`).
+
+**The Overview's title and hint** sat under the widgets' edit bar (both at the screen's top); they are at the
+canvas' foot now.
+
+**Rulings:** Wallpapers' Return opens the picker rather than wearing the newest (which is most often the one worn);
+Controls, Clock, Calendar, Weather and the rest have no Return.
+
+**Verified.** Unit 754 / 0; 15 scenes compile; `bin/mooi check` green. Not seen yet: the rise on the desk (it needs
+this build live; `tests/surface.sh` with the owner).
+

@@ -76,4 +76,23 @@ function M.boxes(places, widgets, bar_h, bmo)
     return out
 end
 
+-- D216: a snapped widget's place in widgets.json (the "w:<id>" of `boxes`), 0-based as mooi-widgets' slots; -1 for
+-- anything else (BMO, nothing, a widget gone)
+function M.slot(widgets, id)
+    if type(widgets) ~= "table" or type(id) ~= "string" or string.sub(id, 1, 2) ~= "w:" then return -1 end
+    local want = string.sub(id, 3)
+    for i, w in ipairs(widgets) do
+        if type(w) == "table" and tostring(w.id) == want then return i - 1 end
+    end
+    return -1
+end
+
+-- D216: the Launch grid below the wallpaper, where what is typed in the Overview finds apps; -1 when there is none
+function M.grid_slot(widgets)
+    for i, w in ipairs(type(widgets) == "table" and widgets or {}) do
+        if type(w) == "table" and w.kind == "launch" and w.layout == "grid" and w.above ~= true then return i - 1 end
+    end
+    return -1
+end
+
 return M

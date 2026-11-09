@@ -35,7 +35,7 @@ return function(ctx)
         show_notices()
     end
     -- row * 10 + 0 its default (or the Nexus) · 1 its action · 9 dismiss; 90 every one
-    on("nc_go", function(v)
+    local function notice_go(v)
         v = math.floor(tonumber(v) or -1)
         if v == 90 then say_mooi("emit note_clear"); return end
         local row, what = v // 10, v % 10
@@ -43,7 +43,8 @@ return function(ctx)
         if not n then return end
         if what == 0 and not n.default then run("mooi", { "nexus" }, function() end); return end
         say_mooi("emit note_act " .. tostring(row * 10 + what))
-    end)
+    end
+    on("nc_go", notice_go)
 
     -- ── the wallpapers: the six newest of the picker's index ──
     local function show_walls()
@@ -60,10 +61,11 @@ return function(ctx)
     end)
 
     -- ── the settings' pages ──
-    on("pg_go", function(v)
+    local function page_go(v)
         local p = WB.SETTINGS[math.floor(tonumber(v) or -1) + 1]
         if p then say_mooi("emit open_settings_at " .. tostring(p[2])) end
-    end)
+    end
+    on("pg_go", page_go)
 
     -- ── the controls ──
     local function pct(v) return tostring(math.floor((tonumber(v) or 0) * 100 + 0.5)) end
@@ -158,7 +160,7 @@ return function(ctx)
         text.ln_q = q ~= "" and ("· " .. q .. "_") or ""
     end
     function F.apps(list) apps = type(list) == "table" and list or {}; show_grid() end
-    on("lg_go", function(v)
+    local function grid_go(v)
         local a = grid[math.floor(tonumber(v) or -1) + 1]
         if not a then return end
         pcall(sys.call, "apps.launch", a.exec)
@@ -169,7 +171,8 @@ return function(ctx)
             ctx.commit(d)
         end
         show_grid()
-    end)
+    end
+    on("lg_go", grid_go)
     -- 8 rubs one out, 27 clears, a printable letter is added
     on("ln_type", function(v)
         v = math.floor(tonumber(v) or 0)
@@ -177,6 +180,25 @@ return function(ctx)
         elseif v == 8 then q = string.sub(q, 1, -2)
         elseif v >= 32 and v < 127 and #q < 24 then q = q .. string.char(v) end
         show_grid()
+    end)
+
+    -- ── Return on a snapped widget (D216): its main press, where it has one ──
+    -- (mooi-widgets lends what lives in its own chunk: F.press_with.shelf and F.press_with.timer)
+    F.press_with = {}
+    local PRESS = {}
+    PRESS.nowplaying = function() pcall(sys.call, "media.toggle") end
+    PRESS.launch = function(w)
+        if w.layout == "grid" then grid_go(0) elseif F.press_with.shelf then F.press_with.shelf(0) end
+    end
+    PRESS.notices = function() notice_go(0) end
+    PRESS.wallpapers = function() say_mooi("emit open_wallpaper") end
+    PRESS.settings = function() page_go(0) end
+    PRESS.timer = function() if F.press_with.timer then F.press_with.timer(0) end end
+    on("wg_press", function(v)
+        local d = ctx.doc()
+        local w = d and type(d.widgets) == "table" and d.widgets[math.floor(tonumber(v) or -1) + 1]
+        local press = type(w) == "table" and PRESS[w.kind]
+        if press then press(w) end
     end)
 
     -- whatever the widgets were told (their options changed, the file reloaded)

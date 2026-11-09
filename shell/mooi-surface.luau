@@ -373,7 +373,7 @@ end)
 -- One table for all of it (the reveal's state, the opening, the screen and the pointer).
 SF = { rv = reveal.state(), op = opening.state(), sent = nil, opened = false, dragging = nil,
        scr = { w = 1920, h = 1080 }, clock = 0, ptr = { x = 960, y = 540 }, ticking = nil,
-       ping = 0, wbar = nil, monitor = nil, snap_code = 0, editing = false, typed = false, broken = false }
+       ping = 0, wbar = nil, monitor = nil, snap_code = 0, rise = -1, editing = false, typed = false, broken = false }
 local SFILE = "surface.json"
 local CITIZENS = { "mooi-widgets", "mooi-viz", "bmo" }
 -- the bar's strip: what mooi-widgets reports its surface starts below (op_wbar), else the bar's own settings
@@ -453,6 +453,12 @@ local function broadcast()
         fact.sf_snap = code
         -- opening onto BMO wakes him (the spec §5)
         if code == 20 then run("pleamar", { "--say", "bmo", "emit op_wake" }) end
+    end
+    -- coming up (D216): the widget the opening snaps to rises (its slot in widgets.json, or -1)
+    local rise = (shown == opening.MODES.snapped and SF.op.snap) and below.slot(S.widget_list, SF.op.snap.id) or -1
+    if rise ~= SF.rise then
+        SF.rise = rise
+        widgets_say("emit wg_rise " .. tostring(rise))
     end
     local full = shown == opening.MODES.full and surface_on()
     if full ~= SF.editing then
@@ -617,14 +623,26 @@ on("op_want", function()
     ship(a, b, c)
     ship_set()
     if SF.editing then widgets_say("emit wg_edit 1") end
+    if SF.rise and SF.rise >= 0 then widgets_say("emit wg_rise " .. tostring(SF.rise)) end
 end)
 
--- the keyboard's walk: what lives below in reading order, snapped one by one (Return is the widgets' own:
--- each is pressed where it is)
+-- the keyboard's walk: what lives below in reading order, snapped one by one; Return presses what is snapped
+-- (D216: the widget's own main press, BMO woken), or, typed into in the Overview, the grid's first match
+local function press_snapped()
+    local k = -1
+    if SF.op.mode == opening.MODES.full and SF.typed then
+        k = below.grid_slot(S.widget_list)
+    elseif SF.op.snap and SF.op.snap.id == "bmo" then
+        run("pleamar", { "--say", "bmo", "emit op_wake" })
+    elseif SF.op.snap then
+        k = below.slot(S.widget_list, SF.op.snap.id)
+    end
+    if k >= 0 then widgets_say("emit wg_press " .. tostring(k)) end
+end
 on("op_key", function(v)
     v = math.floor(tonumber(v) or 0)
     opening.firm(SF.op)
-    if v == 2 then return end
+    if v == 2 then press_snapped(); return end
     local list = boxes()
     if #list == 0 then return end
     table.sort(list, function(p, q)
