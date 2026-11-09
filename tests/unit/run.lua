@@ -8268,7 +8268,7 @@ do
         assert(l:find("if skin.fullscreen(clients, ws) or not may() then", 1, true), "no light over a fullscreen window")
         assert(not l:find("sys.watch", 1, true), "one watcher per service: it watches nothing itself")
         assert(l:find("fact.lt_tt, fact.lt_bt = 0, target and 1 or 0", 1, true), "reduced motion: the border lit at once, no travel")
-        assert(l:find('on("lt_go", function() run("mooi", { "nexus" }', 1, true), "the spark opens the notices")
+        assert(l:find('on("lt_go", function()', 1, true) and l:find('if not addr then run("mooi", { "nexus" }', 1, true), "the spark goes to the app (D223), the notices without one")
     end)
     test("mooi-surface hands its watchers' news to it", function()
         local s = read("shell/mooi-surface.luau")
@@ -8512,6 +8512,30 @@ do
         local l = read("shell/mooi-widgets.luau")
         assert(l:find('elseif what == 9 and (val == 46 or val == 47) then d = W.set_above(doc, w.id, val == 47)', 1, true))
         assert(l:find("fact.wg_oab = w.above == true", 1, true))
+    end)
+end
+
+section("the spark takes you to the app (D223)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local skin = require("lib/surface/skin")
+    local clients = {
+        { mapped = true, hidden = false, workspace = { id = 3 }, at = { 100, 100 }, size = { 800, 600 }, class = "org.signal.Signal", title = "Signal", address = "0xs", focusHistoryID = 4 },
+        { mapped = true, hidden = false, workspace = { id = 1 }, at = { 0, 0 }, size = { 1920, 1080 }, class = "kitty", title = "~", address = "0xk", focusHistoryID = 0 },
+        { mapped = true, hidden = false, workspace = { id = 5 }, at = { 0, 0 }, size = { 900, 900 }, class = "org.signal.Signal", title = "Signal (2)", address = "0xs2", focusHistoryID = 1 },
+    }
+    test("find_app: the sender's window on any workspace, the most recently used of several; none when it has none", function()
+        eq(skin.find_app("Signal", clients), "0xs2", "the one used last")
+        eq(skin.find_app("kitty", clients), "0xk")
+        eq(skin.find_app("Discord", clients), nil)
+        eq(skin.find_app("", clients), nil); eq(skin.find_app("Signal", nil), nil)
+    end)
+    test("a press on the spark focuses that window and lights its border; the Nexus only when there is none", function()
+        local l = read("shell/lib/surface/light.luau")
+        assert(l:find("local addr = skin.find_app(last_app, clients)", 1, true))
+        assert(l:find('run("hyprctl", { "dispatch", hypr.dispatch("focus", addr) }', 1, true), "focused (its workspace with it)")
+        assert(l:find("highlight(addr)", 1, true), "its border lit")
+        assert(l:find('if not addr then run("mooi", { "nexus" }', 1, true), "no window: the notices")
     end)
 end
 

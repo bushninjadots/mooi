@@ -132,6 +132,24 @@ function M.window_for(app, clients, ws, mon, focused)
     return nil
 end
 
+-- D223: the window of the app a notice came from, on any workspace — the one used most recently of several
+-- (Hyprland's focusHistoryID, 0 the latest); its address, or nil when the app has none
+function M.find_app(app, clients)
+    local want = string.lower(type(app) == "string" and app or "")
+    if want == "" or type(clients) ~= "table" then return nil end
+    local best, bh
+    for _, c in ipairs(clients) do
+        if type(c) == "table" and c.mapped ~= false and type(c.address) == "string" then
+            local cl, ti = string.lower(tostring(c.class or "")), string.lower(tostring(c.title or ""))
+            if (cl ~= "" and (cl:find(want, 1, true) or want:find(cl, 1, true))) or ti:find(want, 1, true) then
+                local h = tonumber(c.focusHistoryID) or 999
+                if not best or h < bh then best, bh = c.address, h end
+            end
+        end
+    end
+    return best
+end
+
 -- where a line from `p` toward the window's middle meets its border (p inside: the nearest side)
 function M.edge_point(p, r)
     local cx, cy = r.x + r.w / 2, r.y + r.h / 2

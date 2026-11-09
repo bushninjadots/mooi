@@ -8,6 +8,7 @@
 -- shows, scr() → { w, h }.
 
 local skin = require("lib/surface/skin")
+local hypr = require("lib/hypr")
 
 -- the light's beats (ms): the spark, then the line, then the border, the line and border fade, the spark fades
 local LT_TRAVEL, LT_BORDER, LT_FADE, LT_SPARK, LT_END = 300, 1000, 2600, 6000, 6600
@@ -21,6 +22,7 @@ return function(ctx)
     local push_q, light_q = skin.queue(), skin.queue()
     local last_title, playing, news, full, sweeping, was_open = nil, false, 0, false, false, nil
     local covered, trying, try_token, recheck = 0, false, 0, false
+    local last_app = nil      -- D223: the app of the newest notice, for a press on its spark
     local last_time, full_at = nil, -1e9
 
     local function su() local s = ctx.settings(); return type(s.surface) == "table" and s.surface or {} end
@@ -168,8 +170,44 @@ return function(ctx)
             end)
         end)
     end
-    -- the spark pressed: the notices, in the Nexus
-    on("lt_go", function() run("mooi", { "nexus" }, function() end) end)
+    -- D223: a window's border lit once round, after a press on the spark took you to it
+    local function highlight(addr)
+        after(300, function()
+            run("hyprctl", { "-j", "monitors" }, function(mo)
+                local okm, mons = pcall(json.decode, mo or "")
+                local mon = { x = 0, y = 0 }
+                for _, m in ipairs(okm and type(mons) == "table" and mons or {}) do
+                    if m.focused then mon = { x = tonumber(m.x) or 0, y = tonumber(m.y) or 0 } end
+                end
+                run("hyprctl", { "-j", "clients" }, function(co)
+                    local okc, clients = pcall(json.decode, co or "")
+                    for _, c in ipairs(okc and type(clients) == "table" and clients or {}) do
+                        if c.address == addr and type(c.at) == "table" and type(c.size) == "table" then
+                            fact.lt_rx, fact.lt_ry = (tonumber(c.at[1]) or 0) - mon.x, (tonumber(c.at[2]) or 0) - mon.y
+                            fact.lt_rw, fact.lt_rh = tonumber(c.size[1]) or 1, tonumber(c.size[2]) or 1
+                            fact.lt_so, fact.lt_win, fact.lt_tt, fact.lt_st = 0, true, 0, 0
+                            fact.lt_on, fact.lt_kt, fact.lt_bt = true, 1, 0
+                            after(60, function() fact.lt_bt = 1 end)
+                            after(1800, function() fact.lt_kt = 0 end)
+                            after(2400, function() if not light_q.busy then light_off() end end)
+                        end
+                    end
+                end)
+            end)
+        end)
+    end
+    -- the spark pressed: to the app the notice came from — its window focused (its workspace with it) and its
+    -- border lit; the notices in the Nexus only when the app has no window
+    on("lt_go", function()
+        fact.lt_st = 0
+        run("hyprctl", { "-j", "clients" }, function(out)
+            local ok, clients = pcall(json.decode, out or "")
+            clients = ok and type(clients) == "table" and clients or {}
+            local addr = skin.find_app(last_app, clients)
+            if not addr then run("mooi", { "nexus" }, function() end); return end
+            run("hyprctl", { "dispatch", hypr.dispatch("focus", addr) }, function() highlight(addr) end)
+        end)
+    end)
 
     -- ── what mooi-surface's watchers bring ──
     function F.song(m)
@@ -185,6 +223,7 @@ return function(ctx)
         push("notices", item)
         local s = su()
         if s.ping == false or not may() then return end
+        last_app = item.app
         local it = { app = item.app, n = 1 }
         if skin.push(light_q, it) then start_light(it) end
     end
