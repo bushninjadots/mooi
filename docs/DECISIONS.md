@@ -6400,3 +6400,25 @@ use its controls"; and in the Overview "I can't move the widgets, like the edito
 
 **Verified.** Unit 783 / 0; 15 scenes compile; `bin/mooi check` green.
 
+## D221 · 2026-11-09 · The opening looks like one; Try it works
+
+The owner: "it's bad"; asked what was worst: the looks and effects. With the owner's leave, the Subsurface was
+driven on an empty workspace (the pointer moved by Hyprland, Super through mooi's own `--say`) and photographed.
+
+**Seen:** the hole was the wallpaper slightly dimmed — a smudge, not an opening; the effect's rim (Dissolve) a faint
+grain; a visualiser below with no music drew nothing, so hugging it showed an empty dark box; Try it did nothing.
+
+**Done:**
+- *Depth* (`shaders/ground.wgsl`): the picture under the hole is seen deeper (pulled 10 % toward the hole's middle),
+  quieter (less colour, less light) and darker, with an inner shadow under the rim; the grid a little clearer.
+- *A lit lip* round the hole for every effect (2 px, the accent, a soft glow) on the `edge` surface.
+- *A resting visualiser*: below, in the opening, with nothing playing, it shows a line of low bars and "WAITING FOR
+  MUSIC".
+- *Try it*: its event (`lw_try`) was never declared in mooi-surface's scene, so the message was dropped. And with
+  "the whole picture" chosen, a workspace change inside the one-second wait for Hyprland's windows was dropped too,
+  so the picture kept resting under the windows of the workspace just left; such a change is now looked at after
+  the wait.
+
+**Verified.** Unit 788 / 0; 15 scenes compile; `bin/mooi check` green; the depth and the resting visualiser photographed
+on the desk. Not yet re-photographed: the stronger lip and Try it after the recheck fix.
+

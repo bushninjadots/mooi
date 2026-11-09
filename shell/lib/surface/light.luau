@@ -20,7 +20,7 @@ return function(ctx)
     local F = {}
     local push_q, light_q = skin.queue(), skin.queue()
     local last_title, playing, news, full, sweeping, was_open = nil, false, 0, false, false, nil
-    local covered, trying, try_token = 0, false, 0
+    local covered, trying, try_token, recheck = 0, false, 0, false
     local last_time, full_at = nil, -1e9
 
     local function su() local s = ctx.settings(); return type(s.surface) == "table" and s.surface or {} end
@@ -220,7 +220,12 @@ return function(ctx)
     function F.window(_)
         if su().on ~= true and not skin.live(ctx.settings()).on then return end
         local now = os.time()
-        if now - full_at < 1 then return end
+        -- (D221: one inside the wait is looked at after it — a workspace change dropped here left the whole
+        -- picture resting under the windows of the workspace just left)
+        if now - full_at < 1 then
+            if not recheck then recheck = true; after(1100, function() recheck = false; F.window() end) end
+            return
+        end
         full_at = now
         run("hyprctl", { "-j", "monitors" }, function(mo)
             local okm, mons = pcall(json.decode, mo or "")

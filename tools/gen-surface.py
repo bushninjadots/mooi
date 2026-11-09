@@ -334,8 +334,8 @@ def surface_layers():
           "        // (the intensity, edge and colour arrive packed in sf_param: see the shaders)"]
     # D221: the lip — every effect gets a clear lit edge, so the hole reads as a hole and not a smudge
     L += ["        // the lip: a thin lit line round the hole, with a soft glow (every effect has it)",
-          f"        group {{ glow: 14, 0.55 * op_k, {ACCENT}; show: op_vis and op_mode < 4",
-          f"            box {{ from: op_x, op_y; size: op_w, op_h; corner: op_r; stroke: 1.5; color: {ACCENT}; opacity: 0.6 * op_k }} }}"]
+          f"        group {{ glow: 18, 0.9 * op_k, {ACCENT}; show: op_vis and op_mode < 4",
+          f"            box {{ from: op_x, op_y; size: op_w, op_h; corner: op_r; stroke: 2; color: {ACCENT}; opacity: 0.9 * op_k }} }}"]
     for i, e in enumerate(effects, start=1):
         L += ["        group {",
               f"            show: sf_fx > {i - 0.5} and sf_fx < {i + 0.5}",

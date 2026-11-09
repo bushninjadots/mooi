@@ -4844,8 +4844,8 @@ scene Sigil {
         // origin from op_x/op_y in its own file, so all eight values are free for shape and strength
         // (the intensity, edge and colour arrive packed in sf_param: see the shaders)
         // the lip: a thin lit line round the hole, with a soft glow (every effect has it)
-        group { glow: 14, 0.55 * op_k, rgb(0.62, 0.84, 0.74); show: op_vis and op_mode < 4
-            box { from: op_x, op_y; size: op_w, op_h; corner: op_r; stroke: 1.5; color: rgb(0.62, 0.84, 0.74); opacity: 0.6 * op_k } }
+        group { glow: 18, 0.9 * op_k, rgb(0.62, 0.84, 0.74); show: op_vis and op_mode < 4
+            box { from: op_x, op_y; size: op_w, op_h; corner: op_r; stroke: 2; color: rgb(0.62, 0.84, 0.74); opacity: 0.9 * op_k } }
         group {
             show: sf_fx > 0.5 and sf_fx < 1.5
             clip box { from: op_x - 40, op_y - 40; size: op_w + 80, op_h + 80; corner: op_r + 40 }
