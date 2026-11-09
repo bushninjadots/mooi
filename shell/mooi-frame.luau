@@ -9,7 +9,6 @@ local style = require("lib/style")
 local vizfeed = require("lib/vizfeed")
 local chassis = require("lib/chassis")
 local modlook = require("lib/modlook")
-local pillmorph = require("lib/pillmorph")
 
 local FILE, GEO = "settings.json", "bar-geo.json"
 
@@ -78,19 +77,17 @@ end
 -- the level follows it at 18 a second rising and 3.2 falling; the wave's phase runs at
 -- (0.6 + 2.4 · level) a second. The bar's feed is already levelled (lib/vizfeed's gain).
 local still = false
-local morph_blob = false    -- D204: the morph Pill is a blob (music playing): its edge rides the same level
 local function music_wanted()
-    return (settings.frame.music == true or morph_blob) and not saving and not still
+    return settings.frame.music == true and not saving and not still
 end
 local SENSITIVITY = 1.4
 local seq, at = nil, 0
 local bass, level, phase = 0, 0, 0
-local wrote = { lev = 0, ph = 0 }   -- what step() last wrote (the band's and the morph's alike)
+local wrote = { lev = 0, ph = 0 }   -- what step() last wrote
 local function rest()
     bass, level, phase = 0, 0, 0
     wrote.lev, wrote.ph = 0, 0
     fact.flev, fact.fph = 0, 0
-    fact.mlev, fact.mph = 0, 0
 end
 local function read_feed()
     local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
@@ -112,15 +109,13 @@ local function step()
     if level < 0.002 and bass <= 0 then level = 0 end
     phase = (phase + dt * (0.6 + 2.4 * level)) % 6283.185
     -- only what moved is written: a fact that changes is the scene drawn again. The band's wave (flev)
-    -- only with frame.music; the morph's edge (mlev, D204) only while it is a blob
+    -- only with frame.music
     local band = settings.frame.music == true
     local moved = math.abs(level - wrote.lev) > 0.004 or (level > 0 and math.abs(phase - wrote.ph) > 0.01)
     if moved or (level == 0 and wrote.lev ~= 0) then
         wrote.lev, wrote.ph = level, phase
         if band then fact.flev, fact.fph = level, phase end
-        if morph_blob then fact.mlev, fact.mph = level, phase * 57.29578 end
     end
-    if not morph_blob and (fact.mlev or 0) ~= 0 then fact.mlev = 0 end
     if not band and (fact.flev or 0) ~= 0 then fact.flev = 0 end
 end
 local timer, asker = nil, nil
@@ -157,15 +152,6 @@ local function place()
         end
     end
     local pieces = chassis.pieces(geo_doc, look, looks)
-    -- D204: the morph Pill's outline — twelve targets the scene springs to (mt*), its ripple and blend
-    local mo = chassis.morph(geo_doc, look)
-    local gp0 = type(geo_doc) == "table" and type(geo_doc.pill) == "table" and geo_doc.pill or nil
-    local out = mo and pillmorph.points(mo.form, mo.x, mo.y, mo.w, mo.h, mo.r)
-        or pillmorph.points("none", gp0 and gp0.x, look.top, gp0 and gp0.w, gp0 and look.mod_h or 0, look.mod_h / 2)
-    for i, p in ipairs(out.pts) do fact["mtx" .. (i - 1)], fact["mty" .. (i - 1)] = p[1], p[2] end
-    fact.mrip = (not still) and out.ripple or 0
-    fact.mk = mo and mo.k or 0
-    fact.m_on = mo ~= nil and mo.form ~= "none"
     for i = 0, chassis.SLOTS - 1 do
         local p = pieces[i + 1]
         if p then
@@ -182,12 +168,6 @@ local function place()
             fact["pr" .. i] = 0
             fact["pk" .. i] = 0
         end
-    end
-    -- D188: the Pill's capsule, where its board starts growing from (and goes back into)
-    local gp = type(geo_doc) == "table" and type(geo_doc.pill) == "table" and geo_doc.pill or nil
-    if gp and tonumber(gp.x) and tonumber(gp.w) then
-        fact.pp_x, fact.pp_w = tonumber(gp.x), tonumber(gp.w)
-        fact.pp_y, fact.pp_h = look.top or 0, tonumber(gp.h) or look.mod_h or 24
     end
     fact.covL = chassis.covers(pieces, look, "left")
     fact.covR = chassis.covers(pieces, look, "right")
@@ -209,11 +189,9 @@ local function geo()
     if type(g) ~= "table" then return end
     geo_doc = g
     place()
-    local was, blob_was = saving, morph_blob
+    local was = saving
     saving = g.saving == true
-    -- only while the blob ripples (lib/pillmorph.RIPPLE > 0): a still blob needs no level at all
-    morph_blob = pillmorph.RIPPLE > 0 and type(g.pill) == "table" and g.pill.shape == "morph" and g.pill.form == "blob"
-    if was ~= saving or blob_was ~= morph_blob then listen() end
+    if was ~= saving then listen() end
 end
 
 paint(); apply(); geo(); listen()

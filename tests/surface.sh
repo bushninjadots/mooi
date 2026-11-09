@@ -1,14 +1,12 @@
 #!/bin/sh
-# The Sigil live (D207): on the running mooi, sigil.pill = sigil, then it is asked what it shows
-# (`pleamar --say mooi-surface get …`): nothing running in classic mode, the Pill host drawn and the bar's
-# classic Pill off, each resting source, the display on hover and gone after, an island host beside the Pill
-# showing something else, music and the cover's colour, a crash loop and the bar's stand-in clock, and the
-# frame budget with music playing (SHOTS=dir keeps screenshots). Restores settings.json byte for byte, the
-# volume and mute, and the players as they were. Never moves the pointer.
+# The Subsurface live (D209 onwards): on the running mooi, hold Super through mooi's own commands and ask
+# mooi-surface and its citizens what they show (`pleamar --say … get …`; SHOTS=dir keeps screenshots).
+# (D227: the Sigil's own checks went with it.) Restores settings.json, surface.json and widgets.json byte for
+# byte, the volume and mute, and the players as they were. Never moves the pointer.
 set -u
 root=$(cd "$(dirname "$0")/.." && pwd)
-for c in jq wpctl playerctl grim; do command -v "$c" >/dev/null 2>&1 || { echo "sigil: $c is required"; exit 2; }; done
-"$root/bin/mooi" status 2>/dev/null | grep -q "the desktop" || { echo "sigil: mooi is not running as the desktop"; exit 2; }
+for c in jq wpctl playerctl grim; do command -v "$c" >/dev/null 2>&1 || { echo "surface: $c is required"; exit 2; }; done
+"$root/bin/mooi" status 2>/dev/null | grep -q "the desktop" || { echo "surface: mooi is not running as the desktop"; exit 2; }
 D="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/mooi"
 F="$D/settings.json"
 L="${XDG_STATE_HOME:-$HOME/.local/state}/mooi/mooi.log"
@@ -46,106 +44,9 @@ wpid() { for p in $(pgrep -x pleamar); do tr '\0' ' ' < "/proc/$p/cmdline" 2>/de
 shot() { [ -n "${SHOTS:-}" ] && grim -g "$2" "$SHOTS/$1.png"; }
 within() { awk -v v="$1" -v a="$2" -v b="$3" 'BEGIN { exit !(v >= a - 0.5 && v <= b + 0.5) }'; }
 
-echo "classic mode, no Sigil module, Surface off: nothing runs"
-set_ '.bar.mode="pill" | .sigil.pill="classic" | .surface.on=false' 4
-is "mooi-surface is not running" "$(pid)" ""
-
-echo "the Sigil in the Pill"
-set_ '.bar.mode="pill" | .sigil.pill="sigil" | .sigil.rest="clock"' 5
-is "it has a host" "$(sg h0_on)" true
-is "the bar heard it is up" "$(bar surface_up)" true
-is "the classic Pill steps aside" "$(bar pill_on)" false
-hx=$(sg h0_x); hw=$(sg h0_w)
-for i in 0 31 63; do
-    x=$(sg "h0_tx$i")
-    if within "$x" "$hx" "$((hx + hw))"; then ok "point $i inside the Pill ($x)"; else bad "point $i inside the Pill ($x not in $hx…$((hx + hw)))"; fi
-done
-shot pill-clock "$((hx - 120)),0 $((hw + 240))x50"
-
-echo "each resting source"
-for pair in clock:1 calendar:2 workspaces:7 bmo:13; do
-    id=${pair%%:*}; want=${pair##*:}
-    set_ ".bar.mode=\"pill\" | .sigil.pill=\"sigil\" | .sigil.rest=\"$id\"" 3
-    playerctl -a pause >/dev/null 2>&1; sleep 1
-    is "at rest on $id" "$(sg h0_src)" "$want"
-    hx=$(sg h0_x); hw=$(sg h0_w)
-    shot "rest-$id" "$((hx - 120)),0 $((hw + 240))x50"
-done
-
-echo "the display, on hover"
-set_ '.bar.mode="pill" | .sigil.pill="sigil" | .sigil.rest="clock"' 3
-timeout 3 pleamar --say mooi-surface "emit sg_hover 1" >/dev/null 2>&1; sleep 1.2
-is "hovered: the display" "$(sg h0_form)" 2
-d=$(sg h0_drop); if awk -v v="$d" 'BEGIN { exit !(v > 0.5) }'; then ok "the display's surface is open"; else bad "the display's surface is open ($d)"; fi
-hx=$(sg h0_x); hw=$(sg h0_w)
-shot display-clock "$((hx - 260)),0 $((hw + 520))x290"
-timeout 3 pleamar --say mooi-surface "emit sg_hover 0" >/dev/null 2>&1; sleep 1.5
-is "left: compact again" "$(sg h0_form)" 1
-d=$(sg h0_drop); if awk -v v="$d" 'BEGIN { exit !(v < 0.02) }'; then ok "the display's surface closes"; else bad "the display's surface closes ($d)"; fi
-
-echo "an island host beside the Pill"
-right='["sigil"]'     # alone on the right: a full bar would drop it (the owner's layout is not the test's)
-# all three lists set: a module placed twice (the owner's own lists may hold `sigil`) makes mooi use the default layout
-set_ ".bar.mode=\"pill\" | .pill.sides=\"show\" | .sigil.pill=\"sigil\" | .sigil.rest=\"clock\" | .bar.left=[\"workspaces\"] | .bar.center=[] | .bar.right=$right" 5
-# the island is a host the bar builds from its own layout; a desk whose Sigil has no host beside the Pill
-# has nothing to test here (the owner's desk is one), and that is not a failure of the opening
-if [ "$(sg h1_on)" = true ]; then
-    ok "the island has a host"
-    a=$(sg h0_src); b=$(sg h1_src)
-    if [ -n "$a" ] && [ "$a" != "$b" ]; then ok "it shows something else ($a / $b)"; else bad "it shows something else ($a / $b)"; fi
-else
-    echo "  skip  an island host beside the Pill (this desk's Sigil has no host)"
-fi
-
-echo "music, and the cover's colour"
-set_ '.bar.mode="pill" | .sigil.pill="sigil" | .sigil.rest="clock"' 3
-if playerctl status >/dev/null 2>&1; then
-    playerctl play >/dev/null 2>&1; sleep 4
-    # a real notice arriving now rightly outranks music for 6 s (the director): wait it out, once
-    [ "$(sg h0_src)" = 6 ] && sleep 6.5
-    is "playing: music" "$(sg h0_src)" 4
-    r=$(sg h0_r); c=$(bar pc1_r)
-    if awk -v a="$r" -v b="$c" 'BEGIN { exit !(a - b < 0.04 && b - a < 0.04) }'; then ok "the cover's colour ($r ≈ $c)"; else bad "the cover's colour ($r vs $c)"; fi
-    timeout 3 pleamar --say mooi-surface "emit sg_hover 1" >/dev/null 2>&1; sleep 1.2
-    hx=$(sg h0_x); hw=$(sg h0_w)
-    shot display-music "$((hx - 260)),0 $((hw + 520))x290"
-    timeout 3 pleamar --say mooi-surface "emit sg_hover 0" >/dev/null 2>&1; sleep 1
-    echo "the budget, with music playing"
-    # Two eight-second reports; take the cheaper steady state. The desk is a shared machine (the suite
-    # itself, music, other builds) and a single window can catch a scheduler spike rather than the scene.
-    cp=99
-    for r in 1 2; do
-        timeout 30 pleamar --report mooi-surface --seconds 8 --out "$t/report-$r.txt" >/dev/null 2>&1
-        c=$(awk -F'|' '/^\| compose/ { c = $3 } /^\| paint/ { p = $3 } END { printf "%.3f", c + p }' "$t/report-$r.txt")
-        awk -v a="$c" -v b="$cp" 'BEGIN { exit !(a > 0 && a < b) }' && cp=$c
-        [ "$r" = 1 ] && cp "$t/report-$r.txt" "$t/report.txt"
-    done
-    if awk -v v="$cp" 'BEGIN { exit !(v > 0 && v < 1.0) }'; then ok "compose + paint under 1 ms ($cp ms)"; else bad "compose + paint under 1 ms ($cp ms)"; fi
-    [ -n "${SHOTS:-}" ] && cp "$t/report.txt" "$SHOTS/report.txt"
-    playerctl pause >/dev/null 2>&1
-else
-    echo "  (no player: music, the cover's colour and the budget not checked)"
-fi
-
-echo "a crash loop: the bar's clock stands in"
-before=$(grep -c "surface · gave up" "$L" 2>/dev/null); before=${before:-0}
-k=0
-while [ $k -lt 6 ]; do
-    p=$(pid); [ -n "$p" ] && kill -9 "$p" 2>/dev/null
-    k=$((k + 1)); w=0
-    # mooi waits 1 s more after each quick end (up to 5 s) before starting it again
-    while [ -z "$(pid)" ] && [ $w -lt 16 ]; do sleep 0.5; w=$((w + 1)); done
-done
-sleep 7
-after=$(grep -c "surface · gave up" "$L" 2>/dev/null); after=${after:-0}
-if [ "$after" -gt "$before" ]; then ok "mooi gave up after five quick ends"; else bad "mooi gave up after five quick ends"; fi
-is "the bar knows it is down" "$(bar surface_up)" false
-hx=$(sg h0_x); hw=$(sg h0_w)
-shot fallback "$((hx - 120)),0 $((hw + 240))x50"
-
 echo "Surface (D209): hold Super — the opening"
-set_ '.bar.mode="notch" | .sigil.pill="classic" | .surface.on=true | .surface.effect="tear" | .surface.bmo_below=true | .surface.radius=18' 1
-"$root/bin/mooi" refresh >/dev/null 2>&1; sleep 6     # the crash loop above left it given up
+set_ '.bar.mode="notch" | .surface.on=true | .surface.effect="tear" | .surface.bmo_below=true | .surface.radius=18' 1
+"$root/bin/mooi" refresh >/dev/null 2>&1; sleep 6
 sf() { timeout 3 pleamar --say mooi-surface "$@" 2>/dev/null; }
 wd() { timeout 3 pleamar --say mooi-widgets "$@" 2>/dev/null; }
 kopen() { awk -v v="$1" 'BEGIN { exit !(v > 0.2) }'; }

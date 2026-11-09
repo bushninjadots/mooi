@@ -1886,7 +1886,7 @@ end
 -- frame kept a body with nothing in it). Geometry comes with each opening; `pl_sync` sends the frame
 -- either that island (once per opening) or nothing.
 local CHASSIS = { window = true, system = true, stats = true, calendar = true, music = true, weather = true,
-                  sound = true, display = true, power = true, board = true, bmo = true, herdr = true }      -- board: the Pill unfolded (D170)
+                  sound = true, display = true, power = true, bmo = true, herdr = true }      -- (D227: the Pill board, D170, is gone)
 -- `open` as the scene and the logic report it (opens.pl): reading fact.open back gives the logic's own
 -- last write, so a board the logic opened and the scene closed (a press outside, Escape) read as still
 -- open and the frame kept its plate up, empty (D170)
@@ -2655,20 +2655,6 @@ bar = require("bar")({
     saving = function() return saving() end,
     player_up = function() return player_win ~= nil end,
 })
-
--- ── The Pill board: the Pill unfolded (shell/pillboard.luau, D170) ──
-bar.set_board(require("pillboard")({
-    settings = function() return settings end,
-    save = save_settings,
-    relayout = function() bar.relayout() end,
-    refresh = function() bar.relayout() end,
-    pill = bar.pill,
-    loom = loom,
-    networks = function() return opens.islands and opens.islands.networks() or nil end,     -- D193
-    opened = opens.by_logic,
-    roomed = opens.by_room,
-    listen_open = opens.listen,
-}))
 
 -- ── The Mechanical Shutter: a window's controls, unfolding from its edge (shell/shutter.luau) ──
 require("shutter")({

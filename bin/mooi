@@ -1492,12 +1492,12 @@ case "$cmd" in
         PLEAMAR_SWAPCHAIN=1 MOOI_SHELL="$root/shell" exec "$pleamar" --scene "$src" --no-hud --stall 0 $(reduced_flag) "$@" ;;
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
-    pill) "$pleamar" --say mooi-node "emit nd_cmd 1" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call" ;;
+    pill) "$pleamar" --say mooi-node "emit nd_cmd 1" >/dev/null 2>&1 || : ;;   # D226: the node; none, nothing (D227)
     node) # D226: the node (the Dynamic Pill) — wake | launch (Super+Space) | universe (Super+Tab); without it,
           # mooi's own search and the Overview answer
         case "${1:-wake}" in wake) n=1 ;; launch) n=2 ;; universe) n=3 ;; *) echo "usage: mooi node [wake|launch|universe]" >&2; exit 2 ;; esac
         "$pleamar" --say mooi-node "emit nd_cmd $n" >/dev/null 2>&1 && exit 0
-        case "$n" in 2) exec "$self" toggle ;; 3) exec "$pleamar" --say "$name" "emit open_overview" ;; *) exec "$pleamar" --say "$name" "emit pill_call" ;; esac ;;
+        case "$n" in 2) exec "$self" toggle ;; 3) exec "$pleamar" --say "$name" "emit open_overview" ;; *) : ;; esac ;;
     bury) # D224: Super+Alt+B — the focused window buried under the wallpaper, a tile left where the pointer is
         "$pleamar" --say mooi-surface "emit bury" >/dev/null 2>&1 || : ;;
     reveal) # D208: Super went down / came up (Hyprland's binds) — Surface's Reveal; without it a release is

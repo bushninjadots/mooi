@@ -6546,3 +6546,25 @@ mode): the seed at rest, the workspace rail on a change, the system cluster with
 the apps and their icons, Super+Tab's universe with both workspaces; found and fixed: the processor and memory are
 fractions in the bar's feed (shown as 0 %).
 
+## D227 · 2026-11-10 · The classic Pill removed
+
+The brief's stage 1 ("delete before adding"): with the node standing in the Pill's place (D226), the classic Pill
+(D168–D206) goes, keeping what other parts of mooi share.
+
+**Removed:** the bar's Pill section (its state, faces, views, moons, extra pills, surges, handlers, the morph's
+form), the board (`pillboard.luau`, `ui/pillboard.plm`: its rooms, pads, desk, search, editor) and its wiring in
+`mooi.luau` and `islands.luau`, the capsule's drawing (`ui/pill.plm`), the settings preview (`ui/pillpreview.plm`)
+and its row kinds, `lib/pill`, `pillmorph`, `pillpads`, `pillrows`, `pillfind`, `deskgrid`, `deskprev`, the frame's
+morph outline (D204) and the chassis's capsule, moons and extra pills, 39 `pill.*` and 7 `sigil.*` settings (with
+their setter slots; settings.json's old values are dropped quietly on reading), ≈ 180 dead declarations in the bar's
+scene, the board's Settings button, `tests/pill.sh` and the Sigil's part of `tests/surface.sh`, and ≈ 150 unit tests
+of what is gone.
+
+**Kept:** BMO's face (now `ui/bmoface.plm`, the bar's BMO module draws it; `lib/pillface` drives it), the cover's
+colours, Super + wheel's workspace step (`pill_superwheel`), `pill.sides` (the side groups beside the node, a row on
+Settings → Bar & Frame → The Pill), and `mooi pill` (the node's wake; with no node, nothing).
+
+**Added:** `tests/node.sh`, the node's live test (seed, wake, launcher, universe, the settings it obeys).
+
+**Verified.** Unit 596 / 0; 15 scenes compile; `bin/mooi check` green.
+

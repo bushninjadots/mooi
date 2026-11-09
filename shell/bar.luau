@@ -30,14 +30,17 @@ return function(ctx)
     local readers = nil       -- starts and stops the readers; defined below, once they exist
     local geo_sent = nil      -- bar-geo.json as last written (the frame's program reads it)
     local dnd_hook = nil      -- do not disturb, looked at again when a focus block starts or ends
-    -- The Pill (D168): what happens, noted for lib/pill; its own clock (a quarter-second tick, only
-    -- doing anything in Pill mode), what it last showed, and where it sits
-    local pillmod = require("lib/pill")
-    local pillmorph = require("lib/pillmorph")   -- D204: the morph shape's form
+    -- (D227: the classic Pill is gone — the node is the Pill, D226. What stays is BMO's face for the bar's BMO
+    -- module, and the song as the media service last said it, which his face sings to.)
     local hypr = require("lib/hypr")      -- Hyprland's Lua dispatch
-    local pillface = require("lib/pillface")     -- D169: BMO's face, when the Pill shows it
-    local pst, pill_ms, pill_now = pillmod.state(), 0, nil
-    local face_st, face_said = pillface.new("happy"), ""
+    local pillface = require("lib/pillface")     -- D169: BMO's face (the bar's BMO module, D209)
+    local pst = { media = {} }
+    local face_said = ""
+    local function hex_rgb(hex)
+        local r, g, b = tostring(hex or ""):match("^#(%x%x)(%x%x)(%x%x)$")
+        if not r then return nil end
+        return tonumber(r, 16) / 255, tonumber(g, 16) / 255, tonumber(b, 16) / 255
+    end
     -- D196: BMO as the Pill — a hop each time his face changes, a fresh typewriter for each new line,
     -- and a small reaction: one table (the counters the scene's springs follow)
     local bmo_fx = { bump = 0, say = 0, face = nil }
@@ -244,29 +247,10 @@ return function(ctx)
     end)
     local function bmo_react(face, ms)
         if bm_react_face then bm_react_face(face, ms) end
-        if fact.pill_on and fact.pill_face == 1 then
-            pillface.react(face_st, face, pill_ms, ms)
-            if bmo_fx.show then bmo_fx.show() end      -- face_show, set once it exists (below)
-        end
     end
-    local pill_room = nil          -- the width the Pill may take (relayout works it out)
-    local pill_hovering = false    -- the pointer is on it (review M4)
     local cur_vol, cur_bri = nil, nil
-    local pill_update        -- defined after relayout, which it calls when the Pill's size changes
-    local pill_board = nil   -- D170: shell/pillboard.luau, once it is up (set_board)
-    -- D207: the Sigil's side of the bar — what was last written, and whether the classic Pill steps aside
-    local sig = { feed_sent = nil, classic_off = false, node = false }
-    local pill_view, pill_view_at = nil, 0   -- D171: a view the wheel turned to (nil: pill.face), and when
-    -- D205: the second and third pills — each its view turned by the wheel (nil: its face), where it sits
-    local extras = { [2] = { key = "two" }, [3] = { key = "three" } }
-    local pill_idle_was = true               -- D175: the rest only runs while the Pill is idle
-    local pill_called = -10000               -- D171: when Super last called it (twice quickly: the board)
-    local pill_face_was = nil                -- D171: a new face chosen drops the view the wheel turned to
-    local pill_sig = nil                     -- D181: what it showed last, for the surge on a change
-    local pill_gst = nil                     -- D184: its shape without the words: a whole surge or a ripple
-    local pill_swap_seq = 0                  -- D181: the newer surge settles the older one
-    local pill_ws_step                       -- the wheel's next workspace (defined with the handlers)
-    local pill_api               -- D170: what the board needs from the Pill (defined at the end)
+    -- the node's feed (sigil-feed.json, D226): what was last written, and whether the node runs
+    local sig = { feed_sent = nil, node = false }
     local tint_for, art_now = nil, ""   -- D172: the record's colours, from the song's cover (the media watch)
 
     -- ── Layout ─────────────────────────────────────────────────
@@ -297,18 +281,6 @@ return function(ctx)
         local lists = pillmode and { left = sides and b.left or {}, center = {}, right = sides and b.right or {} } or b
         local out = barlayout.layout({ left = lists.left, center = lists.center, right = lists.right, show = show,
                                        frame = frame, mode = pillmode and "islands" or b.mode }, lctx)
-        -- the room the Pill has (review I3): centred, so twice the distance from the middle to the nearest
-        -- side group, less the moons' room on each side
-        if pillmode then
-            local mid, near = env.screen / 2, env.screen / 2
-            for _, f in ipairs(out.frames or {}) do
-                if f.w and f.w > 0 then
-                    if f.x + f.w <= mid then near = math.min(near, mid - (f.x + f.w))
-                    elseif f.x >= mid then near = math.min(near, f.x - mid) end
-                end
-            end
-            pill_room = math.max(120, math.floor(2 * (near - 16) - 2 * 2 * (pillmod.MOON + pillmod.TRACE)))
-        end
         local grouped = {}
         for _, side in ipairs({ "left", "center", "right" }) do
             for _, entry in ipairs(b[side] or {}) do
@@ -357,62 +329,9 @@ return function(ctx)
                       saving = ctx.saving() == true,
                       screen = env.screen }   -- the frame's corners need the screen's width (lib/chassis)
         fact.pill_still = s.motion.reduced == true or s.motion.saver == "always"   -- D172: the record holds still
-        -- D207: with sigil.pill = sigil the classic Pill is not drawn; its place stays (the frame's plate is the
-        -- line's socket), 180 wide, no moons, and mooi-surface draws in it
-        sig.classic_off = pillmode and (node_on or (type(s.sigil) == "table" and s.sigil.pill == "sigil"))
-        fact.pill_on = pillmode and not sig.classic_off
-        if pillmode then
-            -- the Pill and its moons, for the frame's chassis and the scene's content
-            local w = node_on and 0 or (sig.classic_off and 180 or (pill_now and pill_now.width or 160))
-            local n = (not sig.classic_off and pill_now) and #pill_now.moons or 0
-            local pm = type(s.pill) == "table" and s.pill.multi or "satellites"
-            local pl = pillmod.place(env.screen, w, n, pm)
-            -- D187/D202: one capsule, one height — no face makes it taller
-            geo.pill = { x = pl.x, w = w, slim = pill_now ~= nil and pill_now.hidden == true,
-                         shape = type(s.pill) == "table" and s.pill.shape or "attached",
-                         form = pill_now and pill_now.form or "capsule" }   -- D204: what the morph's outline is
-            fact.pill_h = tonumber(b.height) or 24
-            geo.nodes = pm == "nodes"      -- D169: square pads on traces
-            fact.pill_nodes = geo.nodes
-            geo.moons = {}
-            for k, mx in ipairs(pl.moons) do geo.moons[k] = { x = mx, w = pillmod.MOON } end
-            fact.pill_x, fact.pill_w = pl.x, w
-            for k = 0, 3 do fact["moon_x" .. k] = pl.moons[k + 1] or pl.x end
-            fact.moon_n = n
-            -- D205: the second and third pills, placed round what is already there (lib/pill.place_extra)
-            local taken = {}
-            for _, f in ipairs(out.frames or {}) do taken[#taken + 1] = { x = f.x, w = f.w } end
-            local lo, hi = pl.x, pl.x + w
-            for _, mx in ipairs(pl.moons) do lo = math.min(lo, mx); hi = math.max(hi, mx + pillmod.MOON) end
-            taken[#taken + 1] = { x = lo, w = hi - lo }
-            geo.pills = {}
-            local p = type(s.pill) == "table" and s.pill or {}
-            for k = 2, 3 do
-                local e = extras[k]
-                local face = p[e.key]
-                local on = not node_on and type(face) == "string" and face ~= "off"
-                if not on then e.view = nil end
-                local shown = e.view or face
-                local ex, ew = 0, 0
-                if on then
-                    ex, ew = pillmod.place_extra(env.screen, pillmod.face_width(shown, p.detail), p[e.key .. "_at"],
-                                                 k == 2 and "left" or "right", taken)
-                end
-                if ew > 0 then
-                    taken[#taken + 1] = { x = ex, w = ew }
-                    geo.pills[#geo.pills + 1] = { x = ex, w = ew }
-                end
-                e.x, e.w, e.shown = ex, ew, shown
-                fact["pill" .. k .. "_on"] = ew > 0
-                fact["pill" .. k .. "_x"], fact["pill" .. k .. "_w"] = ex, ew
-                local fi = 0
-                for i, f in ipairs(pillmod.FACES) do if f == shown then fi = i - 1 end end
-                fact["pill" .. k .. "_face"] = fi
-            end
-        end
+        -- (D227: no capsule, moons or extra pills for the frame — in Pill mode the node stands at the top centre)
         local enc = json.encode(geo)
         if enc ~= geo_sent then geo_sent = enc; pcall(sys.call, "files.write", "bar-geo.json", geo) end
-        -- D207: the Sigil's hosts, written when they change
         fact.px = out.panel and out.panel.x or 0
         fact.pw = out.panel and out.panel.w or 0
         -- the spacers and gaps, which edit mode shows (and can take out): `n` = 100 · side + entry
@@ -426,135 +345,11 @@ return function(ctx)
         if readers and not quiet then readers() end
     end
 
-    -- ── The Pill (D168) ─────────────────────────────────────────
-    local KIND = { idle = 0, music = 1, osd = 2, notify = 3, record = 4, battery = 5 }
-    local GLYPH = { idle = 0, music = 1, vol = 2, bri = 3, notify = 4, record = 5, low = 6, charging = 7 }
-    local function pill_cfg(s)
-        local p = type(s.pill) == "table" and s.pill or {}
-        local off = {}
-        for _, id in ipairs(type(p.off) == "table" and p.off or {}) do off[id] = true end
-        -- D185: do not disturb quiets the Pill too — a notice does not take it (it waits in the panel)
-        if fact.dnd_now then off.notify = true end
-        -- D170: never tucked away (or gone) while its own board is open — compute reads cfg.board (D202)
-        return { order = p.order, off = off, moons = p.moons, multi = p.multi, face = pill_view or p.face,
-                 shape = p.shape, detail = p.detail, hide = p.hide,
-                 autohide = p.autohide == true, max_w = pill_room,
-                 board = pill_board ~= nil and pill_board.open() == "board",
-                 -- D191: ArchEclipse's rest face is as wide as its dots, the clock and its live chip
-                 glance_w = bmo_fx.rest_w }        -- D199: the rest row's width (pill_rows below)
-    end
-    -- D199: the Pill's three rows laid out for what they say now (lib/pillrows), for the scene: the rest
-    -- row is the glance face, the other two the reveal's. Published only when they change.
-    local pillrows = require("lib/pillrows")
-    local function pill_rows(s)
-        local p = type(s.pill) == "table" and s.pill or {}
-        local rows = pillrows.rows(p)
-        local title = tostring(pst.media.title or "")
-        local d = { spaces = ctx.space_count(), title = title, artist = title ~= "" and tostring(pst.media.artist or "") or "",
-                    percent = pst.battery.percent, battery = env.battery, brightness = env.brightness }
-        local out, sig = {}, {}
-        for _, r in ipairs(pillrows.ROWS) do
-            local lay, w = pillrows.layout(rows[r], d)
-            local m = {}
-            local sx = -1
-            for i, it in ipairs(lay) do
-                m[i] = { k = it.k, x = it.x, w = it.w, room = it.room }; sig[#sig + 1] = it.k .. ":" .. it.x .. ":" .. it.w
-                if it.id == "spaces" then sx = it.x end
-            end
-            out[r] = { m = m, w = w, sx = sx }
-            sig[#sig + 1] = "|"
-        end
-        bmo_fx.rest_w = out.rest.w
-        local key = table.concat(sig, ",")
-        if key == bmo_fx.rows_sig then return end
-        bmo_fx.rows_sig = key
-        model.pr_rest, model.pr_core, model.pr_detail = out.rest.m, out.core.m, out.detail.m
-        fact.pr_rest_w, fact.pr_core_w, fact.pr_detail_w = out.rest.w, out.core.w, out.detail.w
-        fact.pr_peek_w = math.max(out.core.w, out.detail.w)
-        -- D202: the peek card is up and its rows just changed width — the card springs to the new one
-        if pill_board and pill_board.rows then pill_board.rows() end
-        fact.pr_rest_sx, fact.pr_core_sx, fact.pr_detail_sx = out.rest.sx, out.core.sx, out.detail.sx
-    end
-    function pill_update()
-        local s = ctx.settings()
-        if s.bar.mode ~= "pill" then fact.pill_on = false; fact.pill_swap = 0; pill_sig, pill_gst = nil, nil; return end
-        pill_rows(s)
-        local r = pillmod.compute(pst, pill_cfg(s), pill_ms)
-        local v = r.view[r.main]
-        fact.pill_kind = KIND[r.main] or 0
-        fact.pill_glyph = GLYPH[v.glyph] or 0
-        text.pill_t1, text.pill_t2 = v.t1 or "", v.t2 or ""
-        fact.pill_val = v.value or 0
-        fact.pill_split = r.split ~= nil
-        if r.split then
-            local sv = r.view[r.split]
-            fact.pill_kind2, fact.pill_glyph2 = KIND[r.split] or 0, GLYPH[sv.glyph] or 0
-            text.pill_s1, fact.pill_val2 = sv.t1 or "", sv.value or 0
-            fact.pill_w1 = r.w1
-        end
-        for k = 0, 3 do
-            local id = r.moons[k + 1]
-            fact["moon_k" .. k] = id and (GLYPH[r.view[id].glyph] or 0) or -1
-        end
-        -- D169: the face and whether it is hidden (the chassis is told: slim = r.hidden)
-        local p = type(s.pill) == "table" and s.pill or {}
-        -- D174: the pointer warmth (0: blind) and whether it pings at all, handed to the scene
-        fact.pill_warm = (tonumber(p.warmth) or 55) / 100
-        fact.pill_ping = p.ping ~= false
-        fact.pill_gl_n = math.max(1, math.min(10, math.floor(tonumber(ctx.space_count()) or 5)))     -- D191
-        local fi = 0
-        if p.face ~= pill_face_was then pill_face_was = p.face; pill_view = nil end
-        local shown = pill_view or p.face        -- D171: the view turned to, or the default
-        for i, f in ipairs(pillmod.FACES) do if f == shown then fi = i - 1 end end
-        fact.pill_detail = ({ icon = 0, brief = 1, full = 2 })[p.detail] or 1
-        -- D186: the board's look — the wash over the bar's plate, and the edge it wears
-        fact.pk_tint = ({ theme = 0, phosphor = 1, accent = 2 })[p.board_tint] or 0
-        fact.pk_edge = ({ theme = 0, hairline = 1, none = 2 })[p.board_edge] or 0
-        fact.pill_shape = ({ attached = 0, floating = 1, dot = 2, morph = 3 })[p.shape] or 0
-        fact.pill_face = fi     -- D170: 0 time · 1 bmo · 2 nexus · 3… a module's face (pill.FACES)
-        -- D188: the saved face, which the editor marks (pill_face is the one showing: a turned view)
-        local si = 0
-        for i, f in ipairs(pillmod.FACES) do if f == p.face then si = i - 1 end end
-        fact.pill_face_saved = si
-        fact.pill_hidden = r.hidden == true
-        fact.pill_vanish = r.vanish == true      -- D172: gone, 0 px wide; the scene keeps a seam
-        -- D196: the mark over BMO's head: 1 low battery (a drop), 2 charging (a bolt), 3 a notice (!)
-        local b = pst.battery or {}
-        fact.pb_mark = (r.main == "notify" and 3) or ((b.charging and b.percent and b.percent < 100) and 2)
-                       or ((b.percent and b.percent < pillmod.LOW and not b.charging) and 1) or 0
-        -- D181: when what it shows changes, the scene surges once — a ring out of the capsule and a
-        -- flash along its top — then settles. A first read does not: the Pill is where it already was.
-        local sig = pillmod.signature(r, fi)
-        local gst = pillmod.gesture(r, fi)     -- D184: the same reading, without its words
-        if pill_sig and (sig ~= pill_sig or gst ~= pill_gst) then
-            -- D184: the Pill itself changing surges whole; new words on the same face only ripple
-            if gst ~= pill_gst then
-                fact.pill_swap = 1
-                if fact.dnd_now then fact.pill_swap = 0.4 end   -- D185: quiet holds
-            else
-                fact.pill_swap = 0.55
-                if fact.dnd_now then fact.pill_swap = 0.3 end
-            end
-            pill_swap_seq = pill_swap_seq + 1
-            local seq = pill_swap_seq
-            after(240, function() if seq == pill_swap_seq then fact.pill_swap = 0 end end)
-        end
-        pill_sig, pill_gst = sig, gst
-        -- D204: the morph's form (capsule · blob · drop · bead · none), held still under reduced motion
-        r.form = pillmorph.form(r, { still = s.motion.reduced == true or s.motion.saver == "always",
-                                     board = pill_board ~= nil and pill_board.open() == "board" })
-        local changed = not pill_now or pill_now.width ~= r.width or #pill_now.moons ~= #r.moons
-            or (pill_now.hidden == true) ~= (r.hidden == true)
-            or (p.shape == "morph" and pill_now.form ~= r.form)
-        pill_now = r
-        if changed then relayout(true) end
-    end
-    -- looked at again while something timed is up or has just run out (a volume change showed on after
-    -- its 2 s when the tick only ran while one was still pending), and every tick while recording
-    local pill_timed = false
-    -- D169: BMO's face — his expression's numbers for the scene, and his line, which widens the Pill
+    -- ── BMO's face (D169, D196, D209) ─────────────────────────────
+    -- His expression's numbers for the scene (the bar's BMO module draws ui/bmoface.plm), and his line.
+    -- (D227: the classic Pill that first wore this face is gone; the node is the Pill, D226.)
     local function face_show()
-        local music = pst.media.playing == true and pst.media.title ~= ""
+        local music = pst.media.playing == true and (pst.media.title or "") ~= ""
         local v = bmostate.view(bm.st, bm_now(), music)
         local f = pillface.numbers(v.face)
         if v.face ~= bmo_fx.face then
@@ -571,201 +366,37 @@ return function(ctx)
             face_said = v.say
             if v.say ~= "" then bmo_fx.say = bmo_fx.say + 1; fact.pb_say_n = bmo_fx.say end
             fact.pb_talk = v.say ~= ""
-            pillmod.note(pst, "say", { text = v.say }, pill_ms)
-            pill_update()
         end
     end
     bm_show = face_show
     bmo_fx.show = face_show
-    -- D173: the Pill's half disc turns once when the workspace changes (fact.active_row, set by
-    -- mooi.luau) or the wheel turns its view; held a moment, then it settles (a newer turn wins).
-    local pill_turn_seq, ws_row_seen = 0, nil
-    local function pill_flare()
-        pill_turn_seq = pill_turn_seq + 1
-        local seq = pill_turn_seq
-        fact.pill_turn = 1
-        after(650, function() if seq == pill_turn_seq then fact.pill_turn = 0 end end)
-        bmo_react("curious", 500)      -- D196: he glances at the change
+    -- what the bar hears that moves BMO: he concentrates on a volume or brightness turn
+    local function note(kind)
+        if kind == "osd" then bmo_react("focused", 700) end
     end
-    local face_beat = 0
-    every(250, function()
-        pill_ms = pill_ms + 250
-        local row = tonumber(fact.active_row)
-        if row and row ~= ws_row_seen then
-            if ws_row_seen then pill_flare() end     -- the first read is where we already are
-            ws_row_seen = row
-        end
-        -- a pointer resting on it keeps it peeked (review M4)
-        if pill_hovering then pillmod.note(pst, "peek", {}, pill_ms); pill_timed = true end
-        -- D171: a turned view rests back to the default after pill.rest seconds (0: it stays)
-        local rest = tonumber(type(ctx.settings().pill) == "table" and ctx.settings().pill.rest or 10) or 10
-        local open_board = pill_board and pill_board.open() == "board"
-        -- the rest counts from when the pointer leaves and the board closes (review, re-graded)
-        if pill_view and (pill_hovering or open_board) then pill_view_at = pill_ms end
-        -- D175: the rest runs only while the Pill is idle — music, a notice or a recording takes the face
-        -- for as long as it lasts, and when it is over you find the view you left, the rest starting again
-        local pill_idle = not pill_now or pill_now.main == "idle"
-        if pill_view and pill_idle and not pill_idle_was then pill_view_at = pill_ms end
-        pill_idle_was = pill_idle
-        if pill_view and pill_idle and not pill_hovering and not open_board
-           and pillmod.view_hold(pill_view, pill_view_at, rest, pill_ms) == nil then
-            pill_view = nil; pill_timed = true
-        end
-        if fact.pill_on and (pill_timed or pst.recording) then
-            pill_update()
-            pill_timed = pillmod.next_change(pst, pill_ms) ~= nil
-        end
-        face_beat = face_beat + 1
-        if fact.pill_on and fact.pill_face == 1 and face_beat % 4 == 0 then
-            local c = ctx.settings().companion
-            pillface.tick(face_st, pill_ms, { hour = tonumber(os.date("%H")) or 12,
-                                             talk = type(c) == "table" and c.talk or "rare" }, math.random(), math.random())
-            face_show()
-        end
-    end)
-    local function note(kind, payload)
-        pillmod.note(pst, kind, payload, pill_ms); pill_timed = true; pill_update()
-        if kind == "osd" then bmo_react("focused", 700) end      -- D196: he concentrates on the turn
-    end
-    -- what it hears: the volume and the brightness changing, notifications arriving (by their id)
     local last_vol, last_bri = nil, nil
     pcall(sys.watch, "audio", function(a)
         if type(a) ~= "table" then return end
         local v = tonumber(a.volume)
         if v then cur_vol = v > 1 and v / 100 or v end
-        if v and last_vol and math.abs(v - last_vol) > 0.001 then note("osd", { kind = "vol", value = v > 1 and v / 100 or v }) end
+        if v and last_vol and math.abs(v - last_vol) > 0.001 then note("osd") end
         last_vol = v
     end)
-    -- notifications as Signal Loom takes them in (review I2: the history is empty while mooi keeps them,
-    -- and another program's is not mooi's to read); a whisper (muted, quiet time, low) never shows
-    if ctx.on_signal then
-        ctx.on_signal(function(n)
-            note("notify", { app = (n.app or "") ~= "" and n.app or "notice", summary = n.title or n.summary or "" })
-            -- D171: the Alerts face's newest, at full detail
-            text.pill_alert = ((n.app or "") ~= "" and (n.app .. " · ") or "") .. tostring(n.title or n.summary or "")
-            fact.pill_alert_on = true
-            if not fact.dnd_now then pill_flare() end      -- D188: the edge flash says a notice came
-            -- D170: BMO is surprised, then pleased: a letter
-            if fact.pill_on and fact.pill_face == 1 and pill_api then
-                pill_api.react("surprised", 700)
-                after(650, function() pill_api.react("excited", 1000); pill_api.say("a letter!") end)
-            end
-        end)
+    -- D171: Super + wheel (`mooi wheel`): the next workspace along the ones the bar shows, from the one Hyprland
+    -- is on (the classic Pill's views it turned are gone with it, D227)
+    local function ws_step(active, d, count)
+        count = math.max(1, math.floor(tonumber(count) or 1))
+        active = math.floor(tonumber(active) or 1)
+        if active > count or active < 1 then active = d > 0 and 0 or count + 1 end
+        return (active - 1 + d) % count + 1
     end
-    -- what a press does: the thing it shows, opened; a scroll: volume or workspaces; a moon: brought in
-    on("pill_press", function()
-        local main = pill_now and pill_now.main or "idle"
-        -- D170 fix: a hidden Pill pressed comes back AND does what it shows, in one press (pointing at
-        -- it already brought it back; a press that only revealed it read as "nothing happens")
-        if fact.pill_hidden then note("peek", {}) end
-        fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
-        -- D170: the board decides (lib/pill.press): it unfolds, or the Nexus face opens the Nexus
-        if pill_board then pill_board.press("left", main) end
-    end)
-    -- D170: the right press keeps the old jumps (the calendar, the player, the activity's island)
-    on("pill_rpress", function()
-        local main = pill_now and pill_now.main or "idle"
-        if fact.pill_hidden then note("peek", {}) end
-        fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
-        if pill_board then pill_board.press("right", main) end
-    end)
-    -- D205: the second and third pills — a press opens what its face shows (the board on its room, from
-    -- under it), the wheel turns its own view through the owner's views
-    on("pill_xpress", function(v)
-        local e = extras[math.floor(tonumber(v) or 0)]
-        if not e or not e.shown or (e.w or 0) <= 0 or not pill_board then return end
-        fact.isl_cx = (e.x or 0) + (e.w or 0) / 2
-        pill_board.face_press(e.shown)
-    end)
-    on("pill_xscroll", function(v)
-        v = math.floor(tonumber(v) or 0)
-        local e = extras[v // 2]
-        if not e or not e.shown then return end
-        local p = type(ctx.settings().pill) == "table" and ctx.settings().pill or {}
-        e.view = pillmod.next_view(p.views, e.shown, v % 2 == 1 and -1 or 1)
-        if e.view == p[e.key] then e.view = nil end
-        relayout(true)
-    end)
-    -- D170: a moon's right press opens the board on its activity
-    on("pill_rmoon", function(v)
-        local id = pill_now and pill_now.moons[(math.floor(tonumber(v) or -1)) + 1]
-        if id and pill_board then pill_board.press("left", id) end
-    end)
-    -- the next workspace along the ones the bar shows (lib/pill.ws_step), from the one Hyprland is on
-    pill_ws_step = function(d)
+    on("pill_superwheel", function(v)
+        local d = (tonumber(v) or 1) < 0 and -1 or 1
         run("hyprctl", { "-j", "activeworkspace" }, function(out)
             local ok, w = pcall(json.decode, out or "")
             local id = ok and type(w) == "table" and tonumber(w.id) or 1
-            local n = pillmod.ws_step(id, d, ctx.space_count and ctx.space_count() or 4)
-            run("hyprctl", { "dispatch", hypr.go_workspace(n) })
+            run("hyprctl", { "dispatch", hypr.go_workspace(ws_step(id, d, ctx.space_count and ctx.space_count() or 4)) })
         end)
-    end
-    -- D171: Super + wheel (`mooi wheel`): over a pill, its next view; elsewhere, the workspace
-    on("pill_superwheel", function(v)
-        local d = (tonumber(v) or 1) < 0 and -1 or 1
-        if pill_hovering and fact.pill_on then
-            local p = type(ctx.settings().pill) == "table" and ctx.settings().pill or {}
-            pill_view = pillmod.next_view(p.views, pill_view or p.face or "time", d)
-            pill_view_at = pill_ms
-            note("peek", {})
-            pill_flare()
-        else
-            pill_ws_step(d)
-        end
-    end)
-    -- D171: Super (`mooi pill`): the Pill comes back (the dot opens); called again within a moment, the board
-    on("pill_call", function()
-        if not fact.pill_on then return end
-        if pill_ms - pill_called < 1500 and pill_board then
-            pill_called = -10000
-            fact.isl_cx = (fact.pill_x or 0) + (fact.pill_w or 0) / 2
-            pill_board.call(pill_now and pill_now.main or "idle")
-        else
-            pill_called = pill_ms
-            note("peek", {})
-        end
-    end)
-    -- D169: pointed at, a hidden Pill comes back for a while
-    on("pill_hover", function(v)
-        pill_hovering = tonumber(v) == 1
-        -- D198: the peek follows where the mouse really is (pill_over, from cursor.x/y), not this zone's
-        -- hover — the card opening over the capsule took the hover away, folded the card, and opened it
-        -- again under a resting pointer, over and over
-        -- D170: BMO notices the pointer (and wakes up)
-        if pill_hovering and fact.pill_on and fact.pill_face == 1 then pill_api.touch(); pill_api.react("curious", 900) end
-        -- on, or on leaving: 4 s more from now
-        note("peek", {})
-    end)
-    -- D198: the mouse over the capsule, or over the peek's card while it shows (the scene measures it from
-    -- the global cursor, so a card opening under a resting pointer does not count as leaving)
-    on("pill_over", function(v)
-        if pill_board and pill_board.hover then pill_board.hover(tonumber(v) == 1) end
-    end)
-    on("pill_scroll", function(v)
-        local d = tonumber(v) or 0
-        local main = pill_now and pill_now.main or "idle"
-        if main == "idle" then
-            -- D171: the wheel turns the idle Pill through the owner's views (pill.views)
-            local p = type(ctx.settings().pill) == "table" and ctx.settings().pill or {}
-            pill_view = pillmod.next_view(p.views, pill_view or p.face or "time", d > 0 and -1 or 1)
-            pill_view_at = pill_ms
-            note("peek", {})
-            pill_flare()
-        else
-            -- review C1: audio.volume and brightness.level are absolute (0–1), so step from the current
-            -- level; a brightness change steps brightness, music and volume step the volume, the rest
-            -- nothing
-            local step = (d > 0) and 0.05 or -0.05
-            if main == "osd" and pst.osd and pst.osd.kind == "bri" then
-                if cur_bri then pcall(sys.call, "brightness.level", math.max(0.01, math.min(1, cur_bri + step))) end
-            elseif main == "music" or main == "osd" then
-                if cur_vol then pcall(sys.call, "audio.volume", math.max(0, math.min(1, cur_vol + step))) end
-            end
-        end
-    end)
-    on("pill_moon", function(v)
-        local id = pill_now and pill_now.moons[(math.floor(tonumber(v) or -1)) + 1]
-        if id then note("pin", { id = id }) end
     end)
 
     -- The screen the bar is on, in logical pixels (the layout is arithmetic on it).
@@ -1059,7 +690,6 @@ return function(ctx)
         art_url = url
         if type(url) ~= "string" or url == "" then art_now = ""; text.med_art = ""; fact.med_has_art = false; tint_for(""); return end
         local path = coverart.path(url)
-        if path and path ~= art_now then bmo_fx.cov = (bmo_fx.cov or 0) + 1; fact.pk_cov_n = bmo_fx.cov end   -- D201: the dissolve
         if path then art_now = path; text.med_art = path; fact.med_has_art = true; tint_for(path); return end
         if coverart.remote(url) then
             -- two names in turn, so the image is a new file each time and not a cached one
@@ -1067,7 +697,6 @@ return function(ctx)
             local dest = folder .. "/cover-" .. tostring(covers % 2) .. ".img"
             run("curl", { "-fsSL", "--max-time", "8", "-o", dest, url }, function(_, code)
                 if code == 0 and art_url == url then
-                    if dest ~= art_now then bmo_fx.cov = (bmo_fx.cov or 0) + 1; fact.pk_cov_n = bmo_fx.cov end
                     art_now = dest; text.med_art = dest; fact.med_has_art = true; tint_for(dest)
                 end
             end)
@@ -1077,9 +706,9 @@ return function(ctx)
     -- as the player reads it), once per cover; until then the palette's phosphor, ember and trace.
     local tints, tint_busy = {}, false
     local function paint_tint(cols)
-        local r1, g1, b1 = pillmod.hex_rgb(cols and cols[1])
-        local r2, g2, b2 = pillmod.hex_rgb(cols and cols[2])
-        local r3, g3, b3 = pillmod.hex_rgb(cols and cols[3])
+        local r1, g1, b1 = hex_rgb(cols and cols[1])
+        local r2, g2, b2 = hex_rgb(cols and cols[2])
+        local r3, g3, b3 = hex_rgb(cols and cols[3])
         fact.pc1_r, fact.pc1_g, fact.pc1_b = r1 or 0.65, g1 or 0.95, b1 or 0.82
         fact.pc2_r, fact.pc2_g, fact.pc2_b = r2 or 1.00, g2 or 0.57, b2 or 0.37
         fact.pc3_r, fact.pc3_g, fact.pc3_b = r3 or 0.10, g3 or 0.14, b3 or 0.15
@@ -1181,14 +810,12 @@ return function(ctx)
         else pcall(sys.call, ({ [1] = "media.previous", [2] = "media.toggle", [3] = "media.next" })[v]) end
     end)
     sys.watch("media", function(m)
-        if type(m) == "table" then note("media", { playing = m.playing, title = m.title, artist = m.artist }) end
+        if type(m) == "table" then pst.media = { playing = m.playing == true, title = m.title, artist = m.artist } end
         local now = type(m) == "table" and m.playing == true
         if type(m) == "table" then
             cover(m.art)
             local title = type(m.title) == "string" and m.title or ""
             text.mu_title, text.mu_artist = title, tostring(m.artist or "")
-            fact.pill_gl_art = tostring(m.artist or "") ~= ""      -- D191
-            fact.pill_gl_tw = math.min(150, 7 * #title)            -- D191: the title's room, as lib/pillrows measures it
             text.med_album = string.upper(tostring(m.album or ""))
             text.med_player = string.upper((tostring(m.player or ""):gsub("^org%.mpris%.MediaPlayer2%.", ""):gsub("%..*$", "")))
             fact.mu_has, fact.mu_playing = title ~= "", now
@@ -1205,10 +832,8 @@ return function(ctx)
     -- Start what the placed modules need, stop the rest.
     readers = function()
         local s = ctx.settings()
-        -- D170 (review I2): in Pill mode the pads, the face and Now read too, modules on the bar or not
-        local pill_on_bar = s.bar.mode == "pill"
-        local need = pill_on_bar and pillmod.needs(s.pill) or {}
-        -- D207: the Sigil may show them whenever it has a host (review I2: unfetched, they read 0)
+        -- (D227: the classic Pill's pads asked for more; the node reads the machine through the bar's feed)
+        local need = {}
         if placed.resources or need.resources or sig.node then every_while("res", 2000, read_resources) else stop("res") end
         if placed.bandwidth or need.bandwidth then every_while("bw", 2000, read_bandwidth) else stop("bw") end
         if placed.keyboard or need.keyboard then every_while("kb", 3000, read_keyboard) else stop("kb") end
@@ -1781,36 +1406,12 @@ return function(ctx)
                                          music = pst.media.playing == true }, math.random(), math.random())
         bm_save()
         bm_publish()
-        if placed.bmo or (fact.pill_on and fact.pill_face == 1) then
+        if placed.bmo then
             if bm_show then bm_show() end
         end
     end)
 
     measure()
     relayout()
-    -- a settings change arrives as relayout(): the Pill reads its face, hiding and order again first
-    -- D170: what the board needs from the Pill: what it shows, the change showing, and BMO
-    local function talk()
-        local c = ctx.settings().companion
-        return type(c) == "table" and c.talk or "rare"
-    end
-    pill_api = {
-        now = function() return pill_now end,
-        -- D171: the face showing (the view the wheel turned to, or pill.face)
-        face = function()
-            local p = type(ctx.settings().pill) == "table" and ctx.settings().pill or {}
-            return pill_view or p.face or "time"
-        end,
-        osd = function() return pst.osd and pst.osd.kind or "vol" end,
-        bmo = function() return fact.pill_on == true and fact.pill_face == 1 end,
-        react = function(face, ms) bm_apply("react", { face = face, ms = ms }); face_show() end,
-        say = function(line) bm_apply("say", { text = line }); face_show() end,
-        poke = function() bm_apply("poke", { r = math.random() }); face_show() end,
-        touch = function()
-            if bm.st.asleep then bm_apply("wake", {}) else bm_apply("pet", {}) end
-            face_show()
-        end,
-    }
-    return { relayout = function() pill_update(); relayout() end, measure = measure,
-             pill = pill_api, set_board = function(b) pill_board = b end }
+    return { relayout = relayout, measure = measure }
 end

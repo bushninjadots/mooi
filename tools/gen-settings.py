@@ -116,35 +116,19 @@ SETTERS = [
     # D166: how much each module shows, and whether islands attach to the frame. Appended, so no code moved.
     "bar.density", "frame.islands",
     # D168: the Pill — with the side groups, two at once, moons at most. Appended, so no code moved.
-    "pill.sides", "pill.multi", "pill.moons",
-    # D169: the Pill's face and hiding when idle. Appended, so no code moved.
-    "pill.face", "pill.autohide",
+    "pill.sides",    # D169: the Pill's face and hiding when idle. Appended, so no code moved.
     # D170: the board's pads. Appended, so no code moved. (D202: its music visualiser went with Cue.)
-    "pill.pads",
     # D171: the Pill's shape, views, detail and rest. Appended, so no code moved.
-    "pill.shape", "pill.views", "pill.detail", "pill.rest",
     # D172: what it does when it is idle. Appended, so no code moved.
-    "pill.hide",
     # D174: the Pill's pointer warmth and its ping on a change (its own visual page). Appended.
-    "pill.warmth", "pill.ping",
     # D175: the desk on the board's first card — its tiles, its surface, its edge. Appended.
-    "pill.desk_clock", "pill.desk_playing", "pill.desk_diagnostics", "pill.desk_calendar",
-    "pill.desk_surface", "pill.desk_border",
     # D176: the desk as the workspace viewer (live miniatures). Appended.
-    "pill.desk_workspaces",
     # D177: the desk's sizes and its look (form, tint, glow). Appended.
-    "pill.desk_clock_size", "pill.desk_playing_size", "pill.desk_diagnostics_size", "pill.desk_calendar_size",
-    "pill.desk_form", "pill.desk_tint", "pill.desk_glow",
     # D179: what the right button does. Appended.
-    "pill.right",
     # D186: the board's look — a wash over the bar's own plate, and the edge it wears. Appended.
-    "pill.board_tint", "pill.board_edge",
     # D188: the peek. Appended, so no code moved.
-    "pill.peek",
     # D205: a second and a third pill — each a face, and where it sits. Appended.
-    "pill.two", "pill.two_at", "pill.three", "pill.three_at",
     # D207: the Sigil. Appended.
-    "sigil.pill", "sigil.temperament", "sigil.colour", "sigil.fixed", "sigil.field", "sigil.pointer", "sigil.rest",
     # D208: Surface. Appended.
     "surface.on", "surface.delay",
     "surface.effect", "surface.bmo_below",
@@ -367,6 +351,7 @@ SECTIONS = [
         ("choice", "Motion", "How lively its changes are", "node.motion", "sv_node_motion", ["Calm", "Normal", "Lively"]),
         ("choice", "Your pointer", "How readily it unfolds when the pointer rests on it", "node.pointer", "sv_node_pointer", ["Off", "Low", "Normal", "High"]),
         ("choice", "Where", "Where it sits at the top of the screen", "node.anchor", "sv_node_anchor", ["Left", "Centre", "Right"]),
+        ("choice", "Side groups", "The left and right groups as islands beside it, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
         ("card", "What it may grow"),
         ("toggle", "Music", "A strip with the cover, the song and its controls when music starts", "node.media", "sv_node_media"),
         ("toggle", "Notices", "A branch with each new notice and its action", "node.notices", "sv_node_notices"),
@@ -1404,8 +1389,6 @@ def main():
         f"    fact sp{v}_r = 0.5\n    fact sp{v}_g = 0.8\n    fact sp{v}_b = 0.7\n    fact se{v}_r = 0.9\n    fact se{v}_g = 0.5\n    fact se{v}_b = 0.2\n" for v in range(10)) + "".join(
         f"    fact sc{v}_r = 0.3\n    fact sc{v}_g = 0.3\n    fact sc{v}_b = 0.3\n" for v in range(5)) + """
     fact bar_edit = false     // the bar's edit mode (the logic asks the bar)
-    prop sp_ang = 0           // D174, D188: the stage's flash — the edge breathing while pill.ping is on
-    spin sp_ang by if(sv_pill_ping > 0.5, 70, 0)
     fact set_tab = 0          // the section shown
     fact set_scroll = 0       // how far its rows are scrolled
     fact set_navs = 0         // how far the rail's pages are scrolled
@@ -1482,7 +1465,6 @@ def main():
     fact sw_one = 0           // the one-of kinds there already, a bit each: weather 1 · system 2 · calendar 4 · timer 8 · claude 16 · photo 32 · launcher 64
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
-    event pill_board_edit ->  // to the logic (D170): the Pill's board, open in edit (this window goes)
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
     text pw_text = ""
     text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture

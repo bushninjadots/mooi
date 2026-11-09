@@ -5,8 +5,7 @@ import "theme/ferrolume.plm"
 import "ui/ferrolume.plm"
 import "ui/loom.plm"
 import "ui/viz.plm" as viz
-import "ui/pill.plm"
-import "ui/pillboard.plm"
+import "ui/bmoface.plm"
 import "ui/stash.plm"
 import "ui/edgetab.plm" as edge
 
@@ -1142,256 +1141,48 @@ scene Mooi {
     event open_player ->       // to the logic: start the music player, or close it — 0 the mini card (a press on the media module), 1 the panel (`mooi player`, its key)
     event feed_want ->         // from the notch or the Nexus: a music panel is open and wants the feed (D118)
     // D168: the Pill (shell/bar.luau feeds it from lib/pill; shell/ui/pill.plm draws it)
-    fact pill_on = false
     fact pill_x = 860
     fact pill_w = 160
-    fact pill_kind = 0           // 0 idle · 1 music · 2 osd · 3 notify · 4 record · 5 battery
-    fact pill_glyph = 0          // 0 idle · 1 music · 2 vol · 3 bri · 4 notify · 5 record · 6 low · 7 charging
-    fact pill_val = 0
-    text pill_t1 = ""
-    text pill_t2 = ""
-    fact pill_split = false
-    fact pill_kind2 = 0
-    fact pill_glyph2 = 0
-    fact pill_val2 = 0
-    fact pill_w1 = 0
-    text pill_s1 = ""
-    fact moon_n = 0
-    fact moon_x0 = 0
-    fact moon_x1 = 0
-    fact moon_x2 = 0
-    fact moon_x3 = 0
-    fact moon_k0 = -1
-    fact moon_k1 = -1
-    fact moon_k2 = -1
-    fact moon_k3 = -1
     // D185: a moon arrives and leaves eased — its mark slides out of the capsule and back in, never pops
-    prop moon_f0 = 0 ~m.isl_out
-    prop moon_f1 = 0 ~m.isl_out
-    prop moon_f2 = 0 ~m.isl_out
-    prop moon_f3 = 0 ~m.isl_out
-    follow moon_f0 = if(moon_k0 > -0.5, 1, 0)
-    follow moon_f1 = if(moon_k1 > -0.5, 1, 0)
-    follow moon_f2 = if(moon_k2 > -0.5, 1, 0)
-    follow moon_f3 = if(moon_k3 > -0.5, 1, 0)
-    event pill_press ->        // to the logic (D168): the Pill pressed
-    event pill_scroll ->
-    event pill_moon ->
     // D169: the Pill's face (0 time · 1 BMO · 2 Nexus), hidden when idle, nodes; pointed at
-    fact pill_face = 0
-    fact pill_face_saved = 0      // D188: the face in the settings (pill_face: the one showing)
-    fact pill_hidden = false
-    fact pill_vanish = false   // D172: idle and vanished (pill.hide): 0 px wide, a seam in its place
     // D170: the Pill board (shell/pillboard.luau, ui/pillboard.plm)
     fact pk_room = 0             // 0 now · 1 calendar · 2 sound · 3 display · 4 connections · 5 power · 6 resources · 7 weather · 8 signals
-    fact pk_n = 8                // how many pads
-    fact pk_k0 = -1              // each pad's part: its place in the bar's module order (lib/pillpads)
-    fact pk_k1 = -1
-    fact pk_k2 = -1
-    fact pk_k3 = -1
-    fact pk_k4 = -1
-    fact pk_k5 = -1
-    fact pk_k6 = -1
-    fact pk_k7 = -1
-    fact pk_on = -1              // the pad whose room is showing
-    fact pk_kb = -1              // the pad the keyboard is on
-    fact pk_edit = false
     // D188: the board's size (shell/pillboard.luau decides it: a room, the peek, edit), the box its
     // newest shape grows from (pk_sw 0: the capsule) and a count of shapes — each runs pk_mv's spring
     // from the start box to the size, overshooting a little (m.morph)
-    fact pk_bw = 640
-    fact pk_bh = 312
-    fact pk_ch = 160              // the core's height: the room's own
     fact pk_sw = 0
-    fact pk_sh = 0
     fact pk_mn = 0
     // D203: the rooms on a rail — how many there are, and the turn's light (the logic says which way it
     // went and how long it lives; the scene sweeps the lip from that side while it is on)
-    fact pk_rn = 17
-    fact pk_turn_dir = 1
-    fact pk_turn_on = false
-    prop pk_turn_f = 0 ~m.isl_out
-    follow pk_turn_f = if(pk_turn_on, 1, 0)
-    fact pk_peek = false
     prop pk_mv = 0 ~m.morph
     follow pk_mv = pk_mn
-    fact pk_sel = -1             // editing: the pad chosen
-    fact pk_etab = 0             // D188: the editor's tab — 0 pads · 1 face
     fact pk_music = false        // Now is Now Playing
     // D175: the desk — the board's first card's tiles and their places (lib/deskgrid), its surface and edge
-    fact pk_dk_n = 0
-    fact pk_dk_t0 = -1
-    fact pk_dk_t1 = -1
-    fact pk_dk_t2 = -1
-    fact pk_dk_t3 = -1
-    fact pk_dk_x0 = 0
-    fact pk_dk_x1 = 0
-    fact pk_dk_x2 = 0
-    fact pk_dk_x3 = 0
-    fact pk_dk_y0 = 0
-    fact pk_dk_y1 = 0
-    fact pk_dk_y2 = 0
-    fact pk_dk_y3 = 0
-    fact pk_dk_surface = 0
-    fact pk_dk_border = 0
-    fact pk_dk_w0 = 0
-    fact pk_dk_w1 = 0
-    fact pk_dk_w2 = 0
-    fact pk_dk_w3 = 0
-    fact pk_dk_h0 = 0
-    fact pk_dk_h1 = 0
-    fact pk_dk_h2 = 0
-    fact pk_dk_h3 = 0
     // D177: its look — cards, or the owner's opened vial; the tint and the glow
-    fact pk_dk_form = 0
-    fact pk_dk_tint = 0
-    fact pk_dk_glow = 1
-    event pk_dk_press ->       // to the logic: a press inside one of the desk's tiles (its number)
     // D186: the board's look — 0 none · 1 phosphor · 2 accent for the wash, 0 the frame's edge ·
     // 1 a lit hairline · 2 none; the plate itself is the bar's material (Bar & Frame)
-    fact pk_tint = 0
-    fact pk_edge = 0
     // D178: the Pill's search (the forms it can open, lib/pillfind) and its stash (the left edge's box,
     // drawn in the board too)
-    text pk_q = ""
     // D201: a new cover resolves out of pixels in the Pill's music view (bar.luau counts the covers)
-    fact pk_cov_n = 0
-    prop pk_dis = 0 ~m.isl_out
-    follow pk_dis = pk_cov_n
-    text pk_qn = ""             // D201: the Notes room's field (shell/notes.luau hears it)
-    fact pk_find_n = 0
-    model pk_finds max 5 { n: number; name: text; sub: text; tag: text; k: number }
     // the networks the radio can see, for the internet panel (shell/pillboard.luau reads the service)
-    fact pk_nets_n = 0
-    model pk_nets max 8 { n: number; ssid: text; strength: number; secure: bool; known: bool; active: bool }
-    event pk_find ->           // to the logic: open the found form at its place in the list
     // D176: the desk as the workspace viewer — the cards, and the windows drawn live in each
-    fact pk_wv = false
-    fact pk_wv_n = 0
-    fact pk_wv_at = 0
-    fact pk_wv_focus = -1
-    model pk_prev max 3 { id: number; slot: number; n: number; on: bool }
-    model pk_wbox max 24 { k: number; nx: number; ny: number; nw: number; nh: number; pic: image 120, 68; pictured: bool; focused: bool }
-    event pk_wv_scroll ->      // to the logic: the wheel over the viewer (one card along)
-    event pk_wv_hover ->       // to the logic: the card under the pointer
-    event pk_wv_go ->          // to the logic: go to the card's workspace
-    fact pk_sig_n = 0
-    text pk_date = ""
-    text pk_wk = ""
-    model pk_week max 7 { n: number; label: text; day: number; today: bool }
-    model pk_sigs max 3 { n: number; app: text; title: text; ago: text }
-    event pk_pad ->            // to the logic (D170): pad n pressed
-    event pk_hover ->          // to the logic: pad n pointed at (BMO names it)
-    event pk_back ->           // to the logic: back to Now
-    event pk_go ->             // to the logic: room n
-    event pk_scroll ->         // to the logic: the wheel over the board: the next room
     event pk_turn ->           // D203: to the logic: the next room (1) or the one before (-1); ↑ ↓
-    event pk_ws ->             // to the logic (D171): go to workspace n
-    event pk_term ->           // to the logic: the drop terminal, out or away
-    event pk_wp_scroll ->      // to the logic: the wallpaper strip moves
-    event pk_wp ->             // to the logic: wear the wallpaper shown n-th
-    event pk_view_toggle ->    // to the logic: face n in the wheel's views, or out
-    fact pk_vw0 = false
-    fact pk_vw1 = false
-    fact pk_vw2 = false
-    fact pk_vw3 = false
-    fact pk_vw4 = false
-    fact pk_vw5 = false
-    fact pk_vw6 = false
-    fact pk_vw7 = false
-    fact pk_vw8 = false
-    fact pk_vw9 = false
-    fact pk_vw10 = false
-    fact pk_vw11 = false          // D191: the glance face
-    text pk_dg_kernel = ""
-    text pk_dg_host = ""
-    text pk_dg_up = ""
-    text pk_wp0 = ""
-    text pk_wp1 = ""
-    text pk_wp2 = ""
-    text pk_wp3 = ""
-    text pk_wp4 = ""
-    text pk_wp5 = ""
-    fact pk_wph0 = false
-    fact pk_wph1 = false
-    fact pk_wph2 = false
-    fact pk_wph3 = false
-    fact pk_wph4 = false
-    fact pk_wph5 = false
-    fact pk_wp_n = 0
-    fact pk_wp_at = 0
-    event pk_chip ->           // to the logic: a docked moon pressed
     event pk_key ->            // to the logic: 0 left · 1 right · 2 enter · 3 escape
-    event pk_edit_cmd ->       // to the logic: 0 edit on/off · 10+i take pad i off · 20+i move it left · 30+i right
-    event pk_part ->           // to the logic: part n (the bar's module order) onto the board
-    event pk_face ->           // to the logic: face n (lib/pill.FACES)
-    event pk_slot ->           // D188: to the logic: editing, pad slot n chosen (an empty one too)
-    event pk_rev ->            // D191: to the logic: a reveal item pressed — the board on room n
-    event pk_peek_open ->      // D188: to the logic: the peek pressed — the whole board
-    event pk_etab ->           // D188: to the logic: the editor's tab — 0 pads · 1 face
-    event pk_sig_clear ->      // to the logic: clear the signals
-    event pill_rpress ->       // to the logic: the Pill's right press (the old jumps)
     event surface_ready ->       // from mooi-surface (D207): it has drawn its hosts; the bar's stand-in clock goes
-    event pill_xpress ->       // to the logic (D205): the second (2) or third (3) pill pressed
-    event pill_xscroll ->      // to the logic (D205): its wheel, k · 2 (+ 1 when turning back)
-    event pill_rmoon ->        // to the logic: a moon's right press (the board on its room)
-    event pill_edit_open ->    // to the logic: from Settings, the board open in edit (D170)
     event pill_superwheel ->   // to the logic (D171): Super + wheel: a pill's view if pointed at, else the workspace
-    event pill_call ->         // to the logic (D171): Super (`mooi pill`): the Pill comes back; twice, the board
-    fact pill_detail = 1       // D171: 0 icon · 1 brief · 2 full (pill.detail)
     // D205: the second and third pills — shown, where, and the face each shows (pill.FACES' place)
-    fact pill2_on = false
-    fact pill2_x = 0
-    fact pill2_w = 0
-    fact pill2_face = 0
-    fact pill3_on = false
-    fact pill3_x = 0
-    fact pill3_w = 0
-    fact pill3_face = 0
     // D207: the Sigil draws the Pill (sigil.pill = sigil), and whether its program is up; down, a plain clock
     fact sigil_mode = false
     fact surface_up = false
-    fact pill_shape = 0        // D171: 0 attached · 1 floating · 2 dot · 3 morph (D204) (pill.shape)
-    text pill_alert = ""       // D171: the newest signal, for the Alerts face at full detail
-    fact pill_alert_on = false // D171: there is one
     fact pill_still = false    // D172: reduced motion (motion.reduced, the saver): the record holds still
     // D173: the Pill feels the pointer — a warmth behind the capsule, the dot leaning toward it — and a
     // half disc turns once when the workspace changes (or the wheel turns its view)
-    fact pill_turn = 0
     // D174: how much it feels the pointer (pill.warmth), and whether it pings at all (pill.ping)
-    fact pill_warm = 0.55
     // D199: the Pill's three rows, laid out by bar.luau (lib/pillrows): k the item, x from the row's start,
     // w its width, room what a press opens; and each row's width
-    model pr_rest max 6 { k: number; x: number; w: number; room: number }
-    model pr_core max 6 { k: number; x: number; w: number; room: number }
-    model pr_detail max 6 { k: number; x: number; w: number; room: number }
-    fact pr_rest_w = 200
-    fact pr_core_w = 560
-    fact pr_detail_w = 560
-    fact pr_peek_w = 600
-    fact pr_rest_sx = -1       // where each row's workspace dots go (its spaces item's x), -1 none
-    fact pr_core_sx = -1
-    fact pr_detail_sx = -1
     // the editor's ROWS tab (shell/pillboard.luau): the three rows and the shelf as chips; the one held
-    model pe_r0 max 6 { k: number; x: number; w: number }
-    model pe_r1 max 6 { k: number; x: number; w: number }
-    model pe_r2 max 6 { k: number; x: number; w: number }
-    model pe_r3 max 13 { k: number; x: number; w: number }
-    fact pe_held = -1
-    event pe_grab ->           // to the logic: a chip picked up (row · 100 + its place)
-    event pe_drop ->           // to the logic: let go (target row · 10000 + x along it; row 3 the shelf)
-    event pe_reset ->          // to the logic: ArchEclipse's rows again
-    fact pill_gl_art = false       // D191: the song has an artist (the glance chip shows it)
-    fact pill_gl_tw = 150          // D191: the room the song's title takes in the glance chip
-    fact pill_gl_n = 5             // D191: the glance face's dots (the bar's workspace count, ten at most)
-    fact pill_ping = true
-    prop pill_turn_f = 0 ~m.isl_out
-    follow pill_turn_f = pill_turn
     // D181: it is alive — a surge when what it shows changes (shell/bar.luau raises it, the scene draws
     // the ring and lets it settle), and an aura in the capsule that follows the sound
-    fact pill_swap = 0
-    prop pill_swap_f = 0 ~m.isl_out
-    follow pill_swap_f = pill_swap
     // D172: the record's colours, from the song's cover (shell/bar.luau reads it with Matugen); the
     // palette's phosphor, ember and trace until then
     fact pc1_r = 0.65
@@ -1403,13 +1194,6 @@ scene Mooi {
     fact pc3_r = 0.1
     fact pc3_g = 0.14
     fact pc3_b = 0.15
-    prop pill_pulse = 0
-    spin pill_pulse by if(pill_hidden and pill_shape > 1.5 and pill_shape < 2.5 and not pill_still, 140, 0)   // D202: still holds still
-    prop pk_flow = 0
-    spin pk_flow by if(open == board, 400, 0)
-    fact pill_nodes = false
-    event pill_over ->         // to the logic (D198): the mouse over the capsule or the peek's card (1), or off both (0)
-    event pill_hover ->        // to the logic: the hidden Pill pointed at
     // BMO's face in the Pill: one row of bmo/brain's FACES, set by the logic; the scene glides to it
     fact pb_ew = 8
     fact pb_eh = 14
@@ -3510,13 +3294,6 @@ scene Mooi {
     }
 
 
-    // ── The Pill (D168) ───────────────────────────────────────
-    // Its content over the body the frame draws, in Pill mode only. It lives on the bar's own
-    // surface with every other module: on popup_surface (above) its zone was painted but real
-    // presses never reached it (D170's fix; `pleamar --say press` reached it, a hand did not).
-    PillBody()
-    ExtraPill(2, pill2_on, pill2_x, pill2_w, pill2_face)    // D205
-    ExtraPill(3, pill3_on, pill3_x, pill3_w, pill3_face)
 
     // ── The hot corner (OVERVIEW-PORT stage 3) ─────────────────
     // Four little surfaces, each mapped only while Settings → Overview chooses it. While on, a
@@ -4595,8 +4372,6 @@ scene Mooi {
                 }
             }
         }
-        // ── The Pill board (D170): the Pill unfolded ──
-        PillBoard()
         // ── calendar_island (D97): the month under the clock ──
         group {
             move: 0, if(isl_shelf, clamp(isl_sy - 26, st_res + 6, popup_surface.height - (292) - 20), st_res + 6)
