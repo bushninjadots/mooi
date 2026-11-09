@@ -113,9 +113,12 @@ end
 
 local function show_system(b)
     local f = type(N.feed.resources) == "table" and N.feed.resources or {}
+    -- the bar's feed gives the processor and the memory as fractions (0 … 1), the temperature in degrees
+    local function pct(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v * 100 or v end
+    local cpu, mem = pct(f.cpu), pct(f.mem)
     local items = {
-        { "CPU", f.cpu and (math.floor(f.cpu) .. "%") or "—", (tonumber(f.cpu) or 0) > 85 },
-        { "RAM", f.mem and (math.floor(f.mem) .. "%") or "—", (tonumber(f.mem) or 0) > 90 },
+        { "CPU", cpu and (math.floor(cpu + 0.5) .. "%") or "—", (cpu or 0) > 85 },
+        { "RAM", mem and (math.floor(mem + 0.5) .. "%") or "—", (mem or 0) > 90 },
         { "TEMP", f.temp and (math.floor(f.temp) .. "°") or "—", (tonumber(f.temp) or 0) > 85 },
         { "NET", N.online and "ON" or "OFF", not N.online },
     }

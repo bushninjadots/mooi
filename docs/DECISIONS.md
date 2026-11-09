@@ -6508,3 +6508,41 @@ data; nothing reads them now). The Loom / Fold design spec stays in `docs/superp
 
 **Verified.** Unit 788 / 0; 15 scenes compile (14 programs now, plus BMO); `bin/mooi check` green.
 
+## D226 · 2026-11-10 · The Dynamic Pill is a living node; the Sigil removed
+
+The owner's brief (a "living spatial interface node", not a Dynamic Island clone) with their answers: one new engine
+replacing both the classic Pill and the Sigil; all stages without stops. Spec:
+`docs/superpowers/specs/2026-11-09-dynamic-pill-node-design.md` (the brief's QML/Quickshell, in Pleamar's terms).
+
+**The node** — its own program, `mooi-node` (`tools/gen-node.py` → `shell/mooi-node.plm`, `shell/mooi-node.luau`),
+started and kept by mooi in Pill mode (`NODE`, `node_sync`, like the Subsurface). A pure engine in `shell/lib/node/`:
+`state` (what it is: held states over the strongest live event over the music while the pointer is near over the
+seed; a fresh event is first a reaction), `geometry` (each state's shape at the anchor: the seed, a lateral media
+capsule, a stem with notice cards, a gauge, a workspace rail, a system cluster on spokes, a search line with results,
+the universe), `motion` (four personalities, one spring each, the body follows the chosen one; the intensity's
+overshoot), `interaction` (the pointer: near, a rest to unfold, a moment before retracting, a cooldown), `satellites`
+(music, recording, notices, low battery, offline, mic, timer; music and recording merged; an arc under the seed) and
+`universe` (Super+Tab: the workspaces round the node, the active in front). It reads the services once each, Signal
+Loom's feed for notices and the bar's feed (`sigil-feed.json`, now written while the node runs, with recording) for
+the machine's numbers.
+
+**Keys:** Super (tap) wakes it (or closes what it shows); **Super+Space** search; **Super+Tab** the workspaces round it
+(`mooi node wake|launch|universe`; without a node, mooi's search and the Overview answer). Settings → Keys; Atlas's
+Super+Tab steps aside while the node's key is Super+Tab. **On the wallpaper:** a notice ripples it under the node
+(mooi-surface `nd_fx`, Live wallpaper's ripple). **Settings → Bar & Frame → The Pill:** on, personality, motion,
+pointer, where; what it may grow (music, notices, workspaces, volume, system, satellites, the wallpaper) — the
+classic Pill's and the Sigil's ~45 rows and the Pill's live preview are gone.
+
+**The Sigil removed:** its drawing (mooi-surface's `bar` and `drop` surfaces, the 64-point bodies), its director,
+shapes, sources, palette, bodies, layout and hosts, the bar's host writing; mooi-surface keeps the opening, the push
+up, Live wallpaper, the light and the peek. ≈ 5 800 lines.
+
+**The classic Pill** stands down whenever the node runs (its capsule, plate, moons and extra pills are not drawn); its
+code is still there (the bar's section, the board, `lib/pill*`, its settings keys) and is the next cleanup — BMO's
+bar face and the music colours share parts of it.
+
+**Verified.** Unit 742 / 0; 15 scenes compile; `bin/mooi check` green. Live, with the owner's leave (their bar in Pill
+mode): the seed at rest, the workspace rail on a change, the system cluster with the machine's numbers, search with
+the apps and their icons, Super+Tab's universe with both workspaces; found and fixed: the processor and memory are
+fractions in the bar's feed (shown as 0 %).
+

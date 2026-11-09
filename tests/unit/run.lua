@@ -8055,6 +8055,15 @@ do
     end)
 end
 
+section("the node's system cluster reads the bar's numbers right (D226)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("the bar's feed gives processor and memory as fractions: shown as per cent", function()
+        local n = read("shell/mooi-node.luau")
+        assert(n:find("local function pct(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v * 100 or v end", 1, true))
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
