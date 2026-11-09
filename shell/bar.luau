@@ -292,6 +292,8 @@ return function(ctx)
         -- Pill mode (D168): laid out as islands round an empty centre (the Pill sits there), the side
         -- groups left out when the Pill is alone; the saved lists are never changed
         local pillmode = b.mode == "pill"
+        -- D226: in Pill mode the node (mooi-node) is the Pill; the classic Pill and the Sigil stand down
+        local node_on = pillmode and not (type(s.node) == "table" and s.node.on == false)
         local sides = not (pillmode and type(s.pill) == "table" and s.pill.sides == "hide")
         local lists = pillmode and { left = sides and b.left or {}, center = {}, right = sides and b.right or {} } or b
         local out = barlayout.layout({ left = lists.left, center = lists.center, right = lists.right, show = show,
@@ -358,12 +360,12 @@ return function(ctx)
         fact.pill_still = s.motion.reduced == true or s.motion.saver == "always"   -- D172: the record holds still
         -- D207: with sigil.pill = sigil the classic Pill is not drawn; its place stays (the frame's plate is the
         -- line's socket), 180 wide, no moons, and mooi-surface draws in it
-        sig.classic_off = pillmode and type(s.sigil) == "table" and s.sigil.pill == "sigil"
+        sig.classic_off = pillmode and (node_on or (type(s.sigil) == "table" and s.sigil.pill == "sigil"))
         fact.pill_on = pillmode and not sig.classic_off
         sig.pill = nil
         if pillmode then
             -- the Pill and its moons, for the frame's chassis and the scene's content
-            local w = sig.classic_off and 180 or (pill_now and pill_now.width or 160)
+            local w = node_on and 0 or (sig.classic_off and 180 or (pill_now and pill_now.width or 160))
             local n = (not sig.classic_off and pill_now) and #pill_now.moons or 0
             local pm = type(s.pill) == "table" and s.pill.multi or "satellites"
             local pl = pillmod.place(env.screen, w, n, pm)
@@ -390,7 +392,7 @@ return function(ctx)
             for k = 2, 3 do
                 local e = extras[k]
                 local face = p[e.key]
-                local on = type(face) == "string" and face ~= "off"
+                local on = not node_on and type(face) == "string" and face ~= "off"
                 if not on then e.view = nil end
                 local shown = e.view or face
                 local ex, ew = 0, 0
@@ -413,7 +415,7 @@ return function(ctx)
         local enc = json.encode(geo)
         if enc ~= geo_sent then geo_sent = enc; pcall(sys.call, "files.write", "bar-geo.json", geo) end
         -- D207: the Sigil's hosts, written when they change
-        if geo.pill then sig.pill = { x = geo.pill.x, w = geo.pill.w } end
+        if geo.pill and not node_on then sig.pill = { x = geo.pill.x, w = geo.pill.w } end
         local hosts = sigilhosts.build(s, out, sig.pill, chassis_look(s), env.screen)
         sig.n = #hosts
         local henc = json.encode({ screen = env.screen, hosts = hosts })

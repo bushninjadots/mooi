@@ -976,7 +976,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-surface; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-surface mooi-node; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         if [ -e "$link" ]; then
@@ -1038,6 +1038,7 @@ mooi-walls.plm:the wallpaper picker
 mooi-viz.plm:the visualisers
 mooi-lock.plm:the lock screen
 mooi-surface.plm:Surface
+mooi-node.plm:the Pill (the node)
 bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
@@ -1491,14 +1492,19 @@ case "$cmd" in
         PLEAMAR_SWAPCHAIN=1 MOOI_SHELL="$root/shell" exec "$pleamar" --scene "$src" --no-hud --stall 0 $(reduced_flag) "$@" ;;
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
-    pill) exec "$pleamar" --say "$name" "emit pill_call" ;;
+    pill) "$pleamar" --say mooi-node "emit nd_cmd 1" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call" ;;
+    node) # D226: the node (the Dynamic Pill) — wake | launch (Super+Space) | universe (Super+Tab); without it,
+          # mooi's own search and the Overview answer
+        case "${1:-wake}" in wake) n=1 ;; launch) n=2 ;; universe) n=3 ;; *) echo "usage: mooi node [wake|launch|universe]" >&2; exit 2 ;; esac
+        "$pleamar" --say mooi-node "emit nd_cmd $n" >/dev/null 2>&1 && exit 0
+        case "$n" in 2) exec "$self" toggle ;; 3) exec "$pleamar" --say "$name" "emit open_overview" ;; *) exec "$pleamar" --say "$name" "emit pill_call" ;; esac ;;
     bury) # D224: Super+Alt+B — the focused window buried under the wallpaper, a tile left where the pointer is
         "$pleamar" --say mooi-surface "emit bury" >/dev/null 2>&1 || : ;;
     reveal) # D208: Super went down / came up (Hyprland's binds) — Surface's Reveal; without it a release is
         # today's Super tap
         case "${1:-}" in
             down) "$pleamar" --say mooi-surface "emit rv_down" >/dev/null 2>&1 || : ;;
-            up) "$pleamar" --say mooi-surface "emit rv_up" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call" ;;
+            up) "$pleamar" --say mooi-surface "emit rv_up" >/dev/null 2>&1 || exec "$self" pill ;;
             heal) # the keeper's path when mooi-surface ends: heal it if it still answers, and always put the
                   # window drag bind back (Task 1: it is put down while the opening is open)
                   "$pleamar" --say mooi-surface "emit rv_esc" >/dev/null 2>&1 || :

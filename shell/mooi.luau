@@ -356,6 +356,7 @@ sys.watch("files:" .. FILE, function()
     if notch_sync then notch_sync() end
     if frame_sync then frame_sync() end
     if surface_sync then surface_sync() end
+    if node_sync then node_sync() end           -- D226
     if notch_cut then notch_cut() end
 end)
 sys.watch("files:" .. PALETTE, function()
@@ -2299,6 +2300,37 @@ function surface_sync()
 end
 on("surface_ready", function() if SURFACE.win then fact.surface_up = true end end)
 pcall(sys.watch, "files:sigil-hosts.json", function() surface_sync() end)
+
+-- D226: the node — the Dynamic Pill — in Pill mode (shell/mooi-node.plm); started and kept as the subsurface is
+-- (five quick ends and it stays down), with Pleamar's reduced motion when asked
+NODE = { win = nil, tries = 0, gave_up = false }
+function NODE.wanted()
+    local b = settings.bar or {}
+    return b.mode == "pill" and not (type(settings.node) == "table" and settings.node.on == false)
+end
+function node_sync()
+    if not NODE.wanted() then
+        NODE.tries, NODE.gave_up = 0, false
+        if NODE.win then NODE.win = nil; run("pleamar", { "--say", "mooi-node", "quit" }) end
+        return
+    end
+    if NODE.win or NODE.gave_up then return end
+    local mine
+    local started = os.time()
+    local said = {}
+    mine = spawn("pleamar", SURFACE.args(shell_dir() .. "/mooi-node.plm"), function(line)
+        if #said < 6 and string.find(line, "error") then said[#said + 1] = line end
+    end, function(_, code)
+        if NODE.win ~= mine then return end
+        NODE.win = nil
+        if os.time() - started < 5 then NODE.tries = NODE.tries + 1 else NODE.tries = 0 end
+        if code ~= 0 then log("node · ended (" .. tostring(code) .. "): " .. table.concat(said, " / ")) end
+        if NODE.tries < 5 then after(1000 * (NODE.tries + 1), node_sync)
+        else NODE.gave_up = true; log("node · gave up after five quick ends") end
+    end, { errors = true })
+    NODE.win = mine
+end
+node_sync()
 -- D209 live: the opening's ground is at level background, so its layer must map AFTER mooi-desk's
 -- wallpaper (map order is the level's order; the probe had the opposite). The desk starts at 1.5 s.
 after(2500, surface_sync)

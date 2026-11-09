@@ -427,7 +427,7 @@ end
 
 -- ── the opening (D209): what mooi-surface owns and every program under the wallpaper mirrors ──
 local function surface_on() return type(S.settings.surface) == "table" and S.settings.surface.on == true end
-local function tap() run("pleamar", { "--say", "mooi", "emit pill_call" }) end      -- today's Super tap
+local function tap() run("mooi", { "pill" }) end      -- today's Super tap (D226: the node's wake, when it runs)
 
 local function bmo_below() return not (type(S.settings.surface) == "table" and S.settings.surface.bmo_below == false) end
 local function boxes()

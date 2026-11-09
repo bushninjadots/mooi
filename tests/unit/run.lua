@@ -5613,11 +5613,12 @@ do
         local plm = read("shell/mooi.plm")
         assert(plm:find("event pill_call ->", 1, true))
         local sh = read("bin/mooi")
-        assert(sh:find('pill) exec "$pleamar" --say "$name" "emit pill_call"', 1, true), "`mooi pill`")
+        -- (D226: the node first, when it runs)
+        assert(sh:find('pill) "$pleamar" --say mooi-node "emit nd_cmd 1" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call"', 1, true), "`mooi pill`")
         local hl = read("setup/home/.config/hypr/config/custom/mooi.lua")
         -- D208: Super's release goes through Surface (`mooi reveal up`), which keeps a quick tap as `pill_call`
         assert(hl:find('hl.bind, "SUPER + SUPER_L", hl.dsp.exec_cmd(mooi .. " reveal up"), { release = true }', 1, true), "Super alone, on release")
-        assert(sh:find('up) "$pleamar" --say mooi-surface "emit rv_up" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call"', 1, true), "without Surface, still the Pill")
+        assert(sh:find('up) "$pleamar" --say mooi-surface "emit rv_up" >/dev/null 2>&1 || exec "$self" pill', 1, true), "without Surface, still the Pill (D226: `mooi pill`)")
     end)
 end
 
@@ -7397,7 +7398,7 @@ test("logic: the opening live — follow, snap, widen, heal, the keyboard path",
     -- found live: the window service also fires when a title changes (a terminal's, constantly); only a change of
     -- app is a change of focus
     assert(l:find("if was_class ~= nil and was_class ~= w.class and SF_guard then SF_guard(\"focus\") end", 1, true), "a title change keeps the reveal")
-    assert(l:find('"emit pill_call"', 1, true), "a tap is still today's Super tap")
+    assert(l:find('local function tap() run("mooi", { "pill" }) end', 1, true), "a tap is still today's Super tap (D226: through `mooi pill`)")
     -- found live (Task 1, F1 = no): Super + click never reached a layer zone, so the drag bind is put down while
     -- the opening is open and put back on heal, on load, and when the keeper restarts the surface
     assert(l:find('hl.unbind("SUPER + mouse:272")', 1, true), "the drag bind is put down")
@@ -8456,6 +8457,28 @@ do
         assert(act.s > other.s and act.y > other.y, "in front, largest")
         eq(UNI.step(ws, 3, 1), 4); eq(UNI.step(ws, 5, 1), 1); eq(UNI.step(ws, 1, -1), 5)
         eq(#UNI.layout({}, 1, scr), 0)
+    end)
+end
+
+section("the node takes the Pill's place (D226)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("in Pill mode the node runs; the classic Pill, its plate, its moons and extra pills and the Sigil's host stand down", function()
+        local b = read("shell/bar.luau")
+        assert(b:find('local node_on = pillmode and not (type(s.node) == "table" and s.node.on == false)', 1, true))
+        assert(b:find("sig.classic_off = pillmode and (node_on or (type(s.sigil) == \"table\" and s.sigil.pill == \"sigil\"))", 1, true))
+        assert(b:find("local w = node_on and 0 or", 1, true), "no plate where the node stands")
+        assert(b:find("local on = not node_on and type(face) == \"string\" and face ~= \"off\"", 1, true), "no extra pills")
+        assert(b:find("if geo.pill and not node_on then", 1, true), "no Sigil host in the node's place")
+        local m = read("shell/mooi.luau")
+        assert(m:find("function NODE.wanted()", 1, true) and m:find("function node_sync()", 1, true))
+        assert(m:find('spawn("pleamar", SURFACE.args(shell_dir() .. "/mooi-node.plm")', 1, true), "started like the subsurface, reduced motion honoured")
+    end)
+    test("mooi node: the keys reach it; without it, mooi's own search and the Overview answer", function()
+        local m = read("bin/mooi")
+        assert(m:find('    node) # D226', 1, true))
+        assert(m:find('"$pleamar" --say mooi-node "emit nd_cmd $n" >/dev/null 2>&1 && exit 0', 1, true))
+        assert(m:find('pill) "$pleamar" --say mooi-node "emit nd_cmd 1" >/dev/null 2>&1 || exec "$pleamar" --say "$name" "emit pill_call" ;;', 1, true), "Super wakes the node first")
     end)
 end
 
