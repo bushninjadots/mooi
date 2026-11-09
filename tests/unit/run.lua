@@ -7958,6 +7958,47 @@ do
     end)
 end
 
+section("surface: shapes (D212)")
+do
+    local BL = require("lib/surface/below")
+    local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
+    test("below: a hub keeps its saved size, clamped to a readable minimum and the screen", function()
+        local scr = { w = 1920, h = 1080 }
+        local p = BL.merge({ apps = { x = 50, y = 279, w = 500, h = 300 } }, scr).apps
+        eq(p.w, 500, "the width is kept")
+        eq(p.h, 300, "the height is kept")
+        p = BL.merge({ apps = { x = 50, y = 279, w = 10, h = 10 } }, scr).apps
+        eq(p.w, BL.MIN.apps[1], "the width stops at the minimum")
+        eq(p.h, BL.MIN.apps[2], "the height stops at the minimum")
+        p = BL.merge({ apps = { x = 1900, y = 1000, w = 500, h = 300 } }, scr).apps
+        eq(p.x + p.w, 1920, "the place stays on the screen")
+        eq(p.y + p.h, 1080, "the place stays on the screen")
+        eq(BL.merge({ wifi = { w = 200, h = 200 } }, scr).wifi.w, BL.COMPONENT, "a component stays small")
+        local saved = BL.save({ apps = { x = 4, y = 5, w = 500, h = 300 } }).apps
+        eq(saved.w, 500, "the file keeps the width")
+        eq(saved.h, 300, "the file keeps the height")
+    end)
+    test("shapes: every hub has a resize handle in the Overview", function()
+        local plm = read("shell/mooi-surface.plm")
+        for k = 1, 5 do
+            assert(plm:find("zone box hbr" .. k, 1, true), "handle " .. k)
+            assert(plm:find("emit sb_rsz(" .. k * 100 .. ")", 1, true), "drag " .. k)
+            assert(plm:find("emit sb_rsz_drop(" .. k * 100 .. ")", 1, true), "drop " .. k)
+        end
+        assert(plm:find("text hb1_sz", 1, true), "the size inspector")
+        assert(plm:find("event sb_rsz ->", 1, true) and plm:find("event sb_rsz_drop ->", 1, true), "its events")
+        assert(plm:find("show: op_vis and op_mode == 4", 1, true), "the handles live in the Overview")
+    end)
+    test("shapes: dragging a handle resizes the place, snaps, saves and undoes", function()
+        local l = read("shell/mooi-surface.luau")
+        for _, s in ipairs({ "on(\"sb_rsz\"", "on(\"sb_rsz_drop\"", "SF.resizing", "below.MIN",
+                             "fact.sf_rsz", "p.w = math.max", "p.h = math.max" }) do
+            assert(l:find(s, 1, true), s)
+        end
+        assert(l:find("last.w", 1, true) and l:find("last.h", 1, true), "undo restores the size")
+    end)
+end
+
 section("surface: citizens (D209)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

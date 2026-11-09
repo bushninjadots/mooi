@@ -8,6 +8,8 @@ local M = { COMPONENT = 56, GAP = 12, RIGHT = 32, BOTTOM = 96 }
 M.HUBS = { "apps", "music", "walls", "settings", "notes" }
 M.COMPONENTS = { "wifi", "bt", "volume", "bright", "battery", "power" }
 M.SIZES = { apps = { 360, 220 }, music = { 320, 140 }, walls = { 360, 120 }, settings = { 300, 140 }, notes = { 320, 220 } }
+-- how small a hub may be shaped before its contents stop fitting; components are fixed
+M.MIN = { apps = { 240, 160 }, music = { 240, 120 }, walls = { 240, 100 }, settings = { 220, 120 }, notes = { 240, 160 } }
 M.BMO = { 160, 196 }
 M.LAYOUTS = { "arc", "row", "grid", "calm" }
 M.SIDES = { "right", "centre", "left" }
@@ -95,25 +97,33 @@ function M.defaults(scr, opts)
     return out
 end
 
--- A saved arrangement: each place kept where it was left, wholly on this screen; a place it lacks (or one
--- that is not a number) from the defaults; an id that is not ours dropped. Sizes are ours, never the file's.
+-- A saved arrangement: each place kept where it was left and at the size it was shaped to, wholly on this
+-- screen; a place it lacks (or one that is not a number) from the defaults; an id that is not ours dropped.
+-- A component keeps its fixed size; a hub stops at M.MIN so its words still fit.
 function M.merge(saved, scr, opts)
     local out = M.defaults(scr, opts)
     if type(saved) ~= "table" then return out end
     for id, d in pairs(out) do
         local s = saved[id]
-        if type(s) == "table" and num(s.x) and num(s.y) then
-            d.x = round(clamp(s.x, 0, math.max(0, scr.w - d.w)))
-            d.y = round(clamp(s.y, 0, math.max(0, scr.h - d.h)))
+        if type(s) == "table" then
+            local mn = M.MIN[id]
+            if mn and num(s.w) and num(s.h) then
+                d.w = round(clamp(s.w, mn[1], scr.w))
+                d.h = round(clamp(s.h, mn[2], scr.h))
+            end
+            local x = num(s.x) and s.x or d.x
+            local y = num(s.y) and s.y or d.y
+            d.x = round(clamp(x, 0, math.max(0, scr.w - d.w)))
+            d.y = round(clamp(y, 0, math.max(0, scr.h - d.h)))
         end
     end
     return out
 end
 
--- what surface.json keeps of them: where each one is
+-- what surface.json keeps of them: where each one is and, for a shaped hub, how big
 function M.save(places)
     local out = {}
-    for id, p in pairs(places or {}) do out[id] = { x = p.x, y = p.y } end
+    for id, p in pairs(places or {}) do out[id] = { x = p.x, y = p.y, w = p.w, h = p.h } end
     return out
 end
 

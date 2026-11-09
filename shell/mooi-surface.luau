@@ -487,6 +487,7 @@ SF = { rv = reveal.state(), op = opening.state(), sent = nil, opened = false, dr
        list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 }, clock = 0,
        ptr = { x = 960, y = 540 }, edit = nil, ticking = nil, wall = "",
        edit_places = false, drag_place = nil, drag_from = nil, place_undo = {},
+       resizing = nil, resize_from = nil,
        layout_sig = nil, ready = false, ping = 0 }
 local SFILE = "surface.json"
 local CITIZENS = { "mooi-widgets", "mooi-viz", "bmo" }
@@ -591,6 +592,7 @@ draw_below = function()
         if p then
             fact["hb" .. k .. "_x"], fact["hb" .. k .. "_y"] = p.x, p.y
             fact["hb" .. k .. "_w"], fact["hb" .. k .. "_h"] = p.w, p.h
+            text["hb" .. k .. "_sz"] = tostring(p.w) .. " x " .. tostring(p.h)
         end
     end
     for k, id in ipairs(below.COMPONENTS) do
@@ -735,6 +737,8 @@ local function heal_opening()
     if SF.op.mode == opening.MODES.closed then return end
     opening.heal(SF.op)
     SF.opened, SF.sent, SF.dragging = false, nil, nil
+    SF.resizing, SF.resize_from = nil, nil
+    fact.sf_rsz = 0
     drag_restore()
     broadcast()
 end
@@ -788,6 +792,18 @@ end)
 on("rv_move", function(v)
     v = math.floor(tonumber(v) or 0)
     SF.ptr = { x = v // 10000, y = v % 10000 }
+    -- Shape: in the Overview a hub's bottom-right corner follows the pointer, snapped to the same grid,
+    -- stopped at its readable minimum and kept on the screen.
+    if SF.resizing then
+        local p = S.places[SF.resizing]
+        local mn = below.MIN[SF.resizing]
+        if p and mn then
+            local w, h = below.snap(SF.ptr.x - p.x, SF.ptr.y - p.y, 8)
+            p.w = math.max(mn[1], math.min(SF.scr.w - p.x, w))
+            p.h = math.max(mn[2], math.min(SF.scr.h - p.y, h))
+            draw_below()
+        end
+    end
     -- Arrange: in the Overview (or while the settings page edits places) the dragged place follows the
     -- pointer, centred, snapped to the canvas's eight-pixel grid and kept on the screen.
     local arranging = SF.edit_places or SF.op.mode == opening.MODES.full
@@ -888,6 +904,8 @@ on("sf_reset", function()
     S.places = below.defaults(SF.scr, below_opts())
     SF.layout_sig = layout_sig()
     SF.dragging, SF.drag_place, SF.drag_from = nil, nil, nil
+    SF.resizing, SF.resize_from = nil, nil
+    fact.sf_rsz = 0
     SF.place_undo = {}
     draw_below()
     save_presences(false)
@@ -898,8 +916,29 @@ on("sf_undo", function()
     local p = S.places[last.id]
     if not p then return end
     p.x, p.y = last.x, last.y
+    if last.w then p.w, p.h = last.w, last.h end
     draw_below()
     save_presences(false)
+end)
+on("sb_rsz", function(v)
+    local code = math.floor(tonumber(v) or 0)
+    local id = place_for(code)
+    local p = id and S.places[id]
+    if not p or not below.MIN[id] then return end
+    SF.resizing, SF.resize_from = id, { id = id, x = p.x, y = p.y, w = p.w, h = p.h }
+    fact.sf_rsz = code // 100
+end)
+on("sb_rsz_drop", function()
+    local from = SF.resize_from
+    local p = SF.resizing and S.places[SF.resizing]
+    if from and p and (p.w ~= from.w or p.h ~= from.h) then
+        SF.place_undo[#SF.place_undo + 1] = from
+        if #SF.place_undo > 32 then table.remove(SF.place_undo, 1) end
+        save_presences(false)
+        draw_below()
+    end
+    SF.resizing, SF.resize_from = nil, nil
+    fact.sf_rsz = 0
 end)
 on("sb_drag", function(v)
     SF.dragging = math.floor(tonumber(v) or 0)

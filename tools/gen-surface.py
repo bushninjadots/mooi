@@ -59,10 +59,13 @@ def below_decls():
          "    event sb_press ->     // a hub mark or a component (hub * 100 + item, 900 + component)",
          "    event sb_drag ->      // a place being dragged out (its code)",
          "    event sb_drop ->      // and let go",
-         "    event sb_wheel ->     // a component's wheel (component * 10 + up)"]
+         "    event sb_wheel ->     // a component's wheel (component * 10 + up)",
+         "    event sb_rsz ->       // a hub's shape handle being dragged (its code)",
+         "    event sb_rsz_drop ->  // and let go"]
     for k, (id, _, bw, bh) in enumerate(HUBS, start=1):
         x, y, _, _ = P[id]
-        L += [f"    fact hb{k}_x = {x}", f"    fact hb{k}_y = {y}", f"    fact hb{k}_w = {bw}", f"    fact hb{k}_h = {bh}"]
+        L += [f"    fact hb{k}_x = {x}", f"    fact hb{k}_y = {y}", f"    fact hb{k}_w = {bw}", f"    fact hb{k}_h = {bh}",
+              f'    text hb{k}_sz = ""']
     for k, (id, _) in enumerate(COMPONENTS, start=1):
         x, y, _, _ = P[id]
         L += [f"    fact cp{k}_x = {x}", f"    fact cp{k}_y = {y}", f"    fact cp{k}_on = true",
@@ -164,6 +167,17 @@ def below_group(base="            "):
           f"{c}box {{ from: hb5_x + 248, hb5_y + 190; size: 56, 22; corner: 11; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.4 + 0.5 * hbz5_clear.hover }}",
           f'{c}text "CLEAR" {{ at: hb5_x + 276, hb5_y + 201; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: muted }}',
           f"{c}on press hbz5_clear {{ emit sb_press(590) }}"]
+
+    # D212: the shape handles — a hub's size is shaped by its bottom-right corner, only in the Overview,
+    # with its size read out while the corner is held
+    for k, (_, label, _, _) in enumerate(HUBS, start=1):
+        hx, hy = f"hb{k}_x + hb{k}_w - 16", f"hb{k}_y + hb{k}_h - 16"
+        L += [f"{c}// hub {k}'s shape handle",
+              f"{c}box {{ from: {hx}, {hy}; size: 10, 10; corner: 2; stroke: 1; color: rgb(h0_r, h0_g, h0_b); opacity: 0.6; show: op_vis and op_mode == 4 }}",
+              f'{c}text hb{k}_sz {{ at: hb{k}_x + hb{k}_w - 24, hb{k}_y + hb{k}_h - 30; anchor: right center; size: 9; family: "Share Tech Mono"; color: muted; show: op_vis and op_mode == 4 and sf_rsz > {k - 0.5} and sf_rsz < {k + 0.5} }}',
+              f'{c}zone box hbr{k} {{ from: hb{k}_x + hb{k}_w - 18, hb{k}_y + hb{k}_h - 18; size: 18, 18; corner: 4; cursor: pointer; role: button; label: "Resize {label}"; show: op_vis and op_mode == 4 }}',
+              f"{c}on drag hbr{k} {{ emit sb_rsz({k * 100}) }}",
+              f"{c}on release hbr{k} {{ emit sb_rsz_drop({k * 100}) }}"]
 
     # the components: one row, each a small plate with its word and value
     for k, (id, label) in enumerate(COMPONENTS, start=1):
@@ -401,7 +415,7 @@ def surface_layers():
           "    fact sf_param = 85500  // intensity, edge and colour in one value for the shaders",
           "    fact sf_wall = true", "    fact sf_dim = 0.35", "    fact sf_tint = 0.18", "    fact sf_fit = 0",
           "    fact sf_grid = 0.45", "    fact sf_labels = true", "    fact sf_glow = 1", "    fact sf_ping = 0",
-          "    fact sf_ovm = 16", "    fact sf_power_confirm = true", "    fact sf_edit = false",
+          "    fact sf_ovm = 16", "    fact sf_power_confirm = true", "    fact sf_edit = false", "    fact sf_rsz = 0",
           "    text rv_wall = \"\"", "    image rv_img = from rv_wall, 0, 0",
           "    image sf_cover = from rv_wall, 0, 0", "    image sf_contain = from rv_wall, 0, 0",
          "    event rv_down ->       // from `mooi reveal down`: Super went down",
@@ -442,24 +456,24 @@ def surface_layers():
           "            // the Overview: the wallpaper pulls back to a thin lit margin and the canvas takes the screen",
           "            box { from: op_x + sf_ovm, op_y + sf_ovm; size: max(0, op_w - 2 * sf_ovm), max(0, op_h - 2 * sf_ovm); corner: max(0, op_r - 6); color: rgb(0.035, 0.05, 0.055); opacity: 0.99; show: op_vis and op_mode == 4 }",
           "            // its grid: three uprights and two crossbars, faint enough to arrange against without seeing lines",
-          "            box { from: op_x + op_w * 0.25, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.05; show: op_vis and op_mode == 4 }",
-          "            box { from: op_x + op_w * 0.5, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.05; show: op_vis and op_mode == 4 }",
-          "            box { from: op_x + op_w * 0.75, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.05; show: op_vis and op_mode == 4 }",
-          "            box { from: op_x + sf_ovm, op_y + op_h * 0.33; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.05; show: op_vis and op_mode == 4 }",
-          "            box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.05; show: op_vis and op_mode == 4 }",
-          "            text \"THE SUBSURFACE\" { at: op_x + sf_ovm + 24, op_y + sf_ovm + 22; anchor: left center; size: 11; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
-          "            text \"drag to arrange  /  Esc to close\" { at: op_x + sf_ovm + 24, op_y + sf_ovm + 40; anchor: left center; size: 10; family: \"Share Tech Mono\"; color: rgb(0.55, 0.6, 0.58); show: op_mode == 4 and sf_labels > 0.5 }"]
+          "            box { from: op_x + op_w * 0.25, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
+          "            box { from: op_x + op_w * 0.5, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
+          "            box { from: op_x + op_w * 0.75, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
+          "            box { from: op_x + sf_ovm, op_y + op_h * 0.33; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
+          "            box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
+          "            text \"THE SUBSURFACE\" { at: op_x + sf_ovm + 24, op_y + sf_ovm + 48; anchor: left center; size: 11; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
+          "            text \"drag to arrange  /  Esc to close\" { at: op_x + sf_ovm + 24, op_y + sf_ovm + 66; anchor: left center; size: 10; family: \"Share Tech Mono\"; color: rgb(0.55, 0.6, 0.58); show: op_mode == 4 and sf_labels > 0.5 }"]
     L += below_group()
     L += ["            // the Overview's three controls, over the canvas at its top right",
-          "            box { from: op_x + op_w - sf_ovm - 230, op_y + sf_ovm + 12; size: 218, 26; corner: 6; color: rgb(0.08, 0.1, 0.11); opacity: 0.72; show: op_vis and op_mode == 4 }",
-          "            text \"UNDO\" { at: op_x + op_w - sf_ovm - 230 + 34, op_y + sf_ovm + 12 + 13; anchor: center; align: center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
-          "            text \"RESET\" { at: op_x + op_w - sf_ovm - 230 + 109, op_y + sf_ovm + 12 + 13; anchor: center; align: center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
-          "            text \"CLOSE\" { at: op_x + op_w - sf_ovm - 230 + 184, op_y + sf_ovm + 12 + 13; anchor: center; align: center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
-          "            zone box ov_undo { from: op_x + op_w - sf_ovm - 230, op_y + sf_ovm + 12; size: 68, 26; cursor: pointer; role: button; label: \"Undo the last place\"; show: op_vis and op_mode == 4 }",
+          "            box { from: op_x + op_w - sf_ovm - 230, op_y + sf_ovm + 40; size: 218, 26; corner: 6; color: rgb(0.08, 0.1, 0.11); opacity: 0.72; show: op_vis and op_mode == 4 }",
+          "            text \"UNDO\" { at: op_x + op_w - sf_ovm - 230 + 34, op_y + sf_ovm + 40 + 13; anchor: center; align: center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
+          "            text \"RESET\" { at: op_x + op_w - sf_ovm - 230 + 109, op_y + sf_ovm + 40 + 13; anchor: center; align: center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
+          "            text \"CLOSE\" { at: op_x + op_w - sf_ovm - 230 + 184, op_y + sf_ovm + 40 + 13; anchor: center; align: center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
+          "            zone box ov_undo { from: op_x + op_w - sf_ovm - 230, op_y + sf_ovm + 40; size: 68, 26; cursor: pointer; role: button; label: \"Undo the last place\"; show: op_vis and op_mode == 4 }",
           "            on press ov_undo { emit sf_undo }",
-          "            zone box ov_reset { from: op_x + op_w - sf_ovm - 230 + 75, op_y + sf_ovm + 12; size: 68, 26; cursor: pointer; role: button; label: \"Put every place back\"; show: op_vis and op_mode == 4 }",
+          "            zone box ov_reset { from: op_x + op_w - sf_ovm - 230 + 75, op_y + sf_ovm + 40; size: 68, 26; cursor: pointer; role: button; label: \"Put every place back\"; show: op_vis and op_mode == 4 }",
           "            on press ov_reset { emit sf_reset }",
-          "            zone box ov_close { from: op_x + op_w - sf_ovm - 230 + 150, op_y + sf_ovm + 12; size: 68, 26; cursor: pointer; role: button; label: \"Close the Overview\"; show: op_vis and op_mode == 4 }",
+          "            zone box ov_close { from: op_x + op_w - sf_ovm - 230 + 150, op_y + sf_ovm + 40; size: 68, 26; cursor: pointer; role: button; label: \"Close the Overview\"; show: op_vis and op_mode == 4 }",
           "            on press ov_close { emit rv_esc }",
           "            // a press on the thin wallpaper margin closes it too",
           "            zone box ov_edge_t { from: op_x, op_y; size: op_w, max(1, sf_ovm); cursor: pointer; role: button; label: \"Close the Overview\"; show: op_vis and op_mode == 4 and sf_ovm > 0.5 }",

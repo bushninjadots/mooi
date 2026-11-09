@@ -6061,3 +6061,30 @@ resize would crop them. The `surface.overview` setting is the margin; the grid i
 live suite is 42 checks, 0 failed. Live: opening full, dragging Apps moved it from `50,279` to `520,392`
 on the grid, the drop saved it, and Undo returned it; a Super tap in full healed to `op_tc = 90`. Screenshot
 `.show-your-work/d211-overview-7.png`. Ships behind `surface.on`; nothing pushed.
+
+## D212 — the Overview's shapes (phase 2b-i)
+
+**The decision.** A hub in the Overview is a place with a size, not only a position. Its bottom-right
+corner is now a shape handle (a small lit square, drawn only in full mode); dragging it resizes the hub,
+snapped to the same eight-pixel canvas grid, stopped at a readable minimum (`below.MIN`: Apps 240×160,
+Music 240×120, Wallpapers 240×100, Settings 220×120, Notices 240×160) and kept wholly on the screen. The
+size is read out beside the handle while it is held (“752 x 320”), which is the inspector for now. Letting
+go saves it with the place; **UNDO** restores the old size as well as the old position, and **RESET**
+puts the layout's designed sizes back.
+
+**What the file keeps.** `surface.json` places now carry `w` and `h`; `below.merge` keeps a saved hub size
+within `MIN … screen`, keeps a saved position inside the screen after the size is known, and ignores sizes
+for components and BMO, which are fixed at 56×56 and 160×196. `below.save` writes `{x, y, w, h}`; places
+saved before D212 have no size and read exactly as the design sizes did.
+
+**The contents stay designed.** A hub's interior (the four-by-three app marks, the wallpaper strip, the
+notice rows) is still laid out top-left for its designed size: growing adds canvas, shrinking stops at the
+minimum rather than cropping a row. Making the interiors reflow is phase 2b-ii, with the Nexus deck and
+cards moving in as citizens. This keeps the shape language honest — the plate is the place, the contents
+are what lives there — and avoids a resize that silently hides an app or a notice.
+
+**Verified.** New unit tests: saved sizes kept and clamped, handle zones and events in the scene, the
+resize path and size undo in the logic; 749 tests, 0 failed. The live suite is 42 checks, 0 failed. Live:
+Apps `360×220` shaped to `752×320` from its corner, saved, then Undo returned `360×220`; the canvas title,
+hint and UNDO/RESET/CLOSE now sit below the bar rather than under it. Screenshots
+`.show-your-work/d212-overview.png` and `d212-resize.png`. Ships behind `surface.on`; nothing pushed.
