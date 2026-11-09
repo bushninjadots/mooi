@@ -224,6 +224,10 @@ function M.live(settings)
         if type(e.on) == "boolean" then on = e.on end
         out.fx[k] = { on = on, strength = pct(e.strength, d.strength), size = pct(e.size, d.size), blend = pct(e.blend, d.blend) }
     end
+    -- D223: Music in the picture — its own card; the places it grows from are surface.json's (lib/surface/music)
+    local m = type(l.music) == "table" and l.music or {}
+    out.music = { on = m.on ~= false, strength = pct(m.strength, 70), size = pct(m.size, 50), blend = pct(m.blend, 40),
+                  height = math.max(5, math.min(80, math.floor((tonumber(m.height) or 25) + 0.5))) }
     return out
 end
 

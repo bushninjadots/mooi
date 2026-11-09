@@ -178,6 +178,8 @@ SETTERS = [
     "live.breathe.on", "live.breathe.strength", "live.breathe.size", "live.breathe.blend",
     "live.flow.on", "live.flow.strength", "live.flow.size", "live.flow.blend",
     "live.sweep.on", "live.sweep.strength", "live.sweep.size", "live.sweep.blend",
+    # D223: Music in the picture. Appended.
+    "live.music.on", "live.music.strength", "live.music.size", "live.music.blend", "live.music.height",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -852,6 +854,12 @@ SECTIONS = [
         ("slider", "Strength", "How far it bends or lights the picture", "live.sweep.strength", 0, 100, "{sv_live_sweep_strength, 0} %", "sv_live_on > 0.5 and sv_live_sweep_on > 0.5"),
         ("slider", "Size", "How far it reaches and how wide its pattern is", "live.sweep.size", 0, 100, "{sv_live_sweep_size, 0} %", "sv_live_on > 0.5 and sv_live_sweep_on > 0.5"),
         ("slider", "Blend", "How softly it melts into the still picture", "live.sweep.blend", 0, 100, "{sv_live_sweep_blend, 0} %", "sv_live_on > 0.5 and sv_live_sweep_on > 0.5"),
+        ("card", "Music in the picture"),
+        ("toggle", "Music in the picture", "Strips of the wallpaper are pulled up out of it by the music, in its own colours. Where it grows from: the Overview's MUSIC button (an edge line, areas you draw, colours you pick, the subject)", "live.music.on", "sv_live_music_on", "sv_live_on > 0.5"),
+        ("slider", "Strength", "How high the music pulls the picture", "live.music.strength", 0, 100, "{sv_live_music_strength, 0} %", "sv_live_on > 0.5 and sv_live_music_on > 0.5"),
+        ("slider", "Size", "How wide each strip is", "live.music.size", 0, 100, "{sv_live_music_size, 0} %", "sv_live_on > 0.5 and sv_live_music_on > 0.5"),
+        ("slider", "Blend", "How softly the strips melt back into the picture", "live.music.blend", 0, 100, "{sv_live_music_blend, 0} %", "sv_live_on > 0.5 and sv_live_music_on > 0.5"),
+        ("slider", "Height", "How tall the strips may grow from the edge line, of the screen", "live.music.height", 5, 80, "{sv_live_music_height + 5, 0} %", "sv_live_on > 0.5 and sv_live_music_on > 0.5"),
         ("note", "true", "IT RESTS WHILE A WINDOW IS FULLSCREEN, WHILE THE OPENING SHOWS, AND — THE WHOLE PICTURE — WHILE WINDOWS COVER IT"),
     ]),
 ]

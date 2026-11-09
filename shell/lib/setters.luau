@@ -347,6 +347,8 @@ M.SETTERS = {
     "live.breathe.on", "live.breathe.strength", "live.breathe.size", "live.breathe.blend",
     "live.flow.on", "live.flow.strength", "live.flow.size", "live.flow.blend",
     "live.sweep.on", "live.sweep.strength", "live.sweep.size", "live.sweep.blend",
+    -- D223: Music in the picture. Appended.
+    "live.music.on", "live.music.strength", "live.music.size", "live.music.blend", "live.music.height",
 }
 
 local function row_of(path)

@@ -8587,6 +8587,23 @@ do
     end)
 end
 
+section("music in the picture: its settings (D223)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("a card of its own on Live wallpaper's page: on, strength, size, blend, height; its slots appended", function()
+        local L = require("lib/surface/skin").live({})
+        eq(L.music.on, true); eq(L.music.strength, 70); eq(L.music.size, 50); eq(L.music.blend, 40); eq(L.music.height, 25)
+        eq(require("lib/surface/skin").live({ live = { music = { height = 500, on = false } } }).music.height, 80)
+        local d = require("lib/config").defaults().live.music
+        eq(d.on, true); eq(d.height, 25)
+        local g = read("tools/gen-settings.py")
+        assert(g:find('("card", "Music in the picture")', 1, true))
+        for _, f in ipairs({ "on", "strength", "size", "blend", "height" }) do assert(g:find('"live.music.' .. f .. '"', 1, true), f) end
+        local S = require("lib/setters").SETTERS
+        eq(S[#S], "live.music.height", "appended last")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
@@ -8764,7 +8781,7 @@ test("the new settings are appended, in one block", function()
     -- (D217's two follow it: the push and the light's travel)
     -- (D217's two follow it, then D219's nineteen: Live wallpaper)
     assert(at["surface.push"] == at["herdr.focus_on_open"] + 1 and at["surface.trace"] == at["herdr.focus_on_open"] + 2, "D217 after herdr")
-    assert(at["live.on"] == at["surface.trace"] + 1 and at["live.sweep.blend"] == #S, "D219 ends the list")
+    assert(at["live.on"] == at["surface.trace"] + 1 and at["live.music.on"] == at["live.sweep.blend"] + 1, "D219, then D223")
     assert(at["companion.eyes"] and at["companion.eyes"] + 4 == at["companion.react.browser"], "companion block")
     assert(at["herdr.path"] and at["herdr.path"] + 6 == at["herdr.focus_on_open"], "herdr block")
 end)

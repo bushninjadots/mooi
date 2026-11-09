@@ -578,6 +578,12 @@ M.SCHEMA = {
     { path = "live.sweep.strength", kind = "integer", default = 60, min = 0, max = 100 },
     { path = "live.sweep.size", kind = "integer", default = 50, min = 0, max = 100 },
     { path = "live.sweep.blend", kind = "integer", default = 50, min = 0, max = 100 },
+    -- D223: Music in the picture — strips of the wallpaper pulled up out of it by the music
+    { path = "live.music.on", kind = "boolean", default = true },
+    { path = "live.music.strength", kind = "integer", default = 70, min = 0, max = 100 },
+    { path = "live.music.size", kind = "integer", default = 50, min = 0, max = 100 },
+    { path = "live.music.blend", kind = "integer", default = 40, min = 0, max = 100 },
+    { path = "live.music.height", kind = "integer", default = 25, min = 5, max = 80 },
     { path = "look.corners", kind = "enum", values = { "chamfer", "bevel", "round", "square" }, default = "chamfer" },
     { path = "look.corner_size", kind = "integer", default = 12, min = 0, max = 24 },
     { path = "theme.light_at", kind = "integer", default = 7, min = 0, max = 23 },

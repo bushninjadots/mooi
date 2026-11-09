@@ -325,6 +325,11 @@ local rows = {
     { title = "Strength", desc = "How far it bends or lights the picture", tab = 23, page = "Live wallpaper", y = 1440 },
     { title = "Size", desc = "How far it reaches and how wide its pattern is", tab = 23, page = "Live wallpaper", y = 1500 },
     { title = "Blend", desc = "How softly it melts into the still picture", tab = 23, page = "Live wallpaper", y = 1560 },
+    { title = "Music in the picture", desc = "Strips of the wallpaper are pulled up out of it by the music, in its own colours. Where it grows from: the Overview's MUSIC button (an edge line, areas you draw, colours you pick, the subject)", tab = 23, page = "Live wallpaper", y = 1686 },
+    { title = "Strength", desc = "How high the music pulls the picture", tab = 23, page = "Live wallpaper", y = 1746 },
+    { title = "Size", desc = "How wide each strip is", tab = 23, page = "Live wallpaper", y = 1806 },
+    { title = "Blend", desc = "How softly the strips melt back into the picture", tab = 23, page = "Live wallpaper", y = 1866 },
+    { title = "Height", desc = "How tall the strips may grow from the edge line, of the screen", tab = 23, page = "Live wallpaper", y = 1926 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "island.morph", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -350,7 +355,7 @@ rows.resets = {
     [20] = { "loom.mode", "loom.fold", "loom.accordions", "loom.cubes", "loom.edge", "loom.loom", "loom.threads" },
     [21] = { "surface.on", "surface.delay", "surface.effect", "surface.intensity", "surface.edge", "surface.colour", "surface.speed", "surface.radius", "surface.wall", "surface.dim", "surface.tint", "surface.fit", "surface.grid", "surface.labels", "surface.glow", "surface.ping", "surface.trace", "surface.push", "surface.layout", "surface.overview", "surface.widget_style", "surface.bmo_below" },
     [22] = { "herdr.show_idle", "herdr.show_done", "herdr.brief", "herdr.brief_lines", "herdr.poll" },
-    [23] = { "live.on", "live.where", "live.speed", "live.ripple.on", "live.ripple.strength", "live.ripple.size", "live.ripple.blend", "live.breathe.on", "live.breathe.strength", "live.breathe.size", "live.breathe.blend", "live.flow.on", "live.flow.strength", "live.flow.size", "live.flow.blend", "live.sweep.on", "live.sweep.strength", "live.sweep.size", "live.sweep.blend" },
+    [23] = { "live.on", "live.where", "live.speed", "live.ripple.on", "live.ripple.strength", "live.ripple.size", "live.ripple.blend", "live.breathe.on", "live.breathe.strength", "live.breathe.size", "live.breathe.blend", "live.flow.on", "live.flow.strength", "live.flow.size", "live.flow.blend", "live.sweep.on", "live.sweep.strength", "live.sweep.size", "live.sweep.blend", "live.music.on", "live.music.strength", "live.music.size", "live.music.blend", "live.music.height" },
 }
 rows.layout_tab = 3
 rows.modules_fold = "fd_3_4"
