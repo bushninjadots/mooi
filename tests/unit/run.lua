@@ -8461,6 +8461,31 @@ do
     end)
 end
 
+section("the opening looks like an opening (D221)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("Try it reaches mooi-surface's logic: its event is declared", function()
+        assert(read("shell/mooi-surface.plm"):find("event lw_try ->", 1, true))
+    end)
+    test("the ground has depth: a shadow inside the rim, and the picture under it seen deeper (parallax, quieter)", function()
+        local g = read("shell/shaders/ground.wgsl")
+        assert(g:find("inner shadow", 1, true) and g:find("parallax", 1, true))
+        assert(read("shell/mooi-surface.plm"):find("shader: ground, op_k, op_x, op_y, sf_dim, sf_grid, sf_tint, op_w, op_h", 1, true), "it knows the hole's size")
+    end)
+    test("every effect has a lit lip round the hole", function()
+        local plm = read("shell/mooi-surface.plm")
+        local a = plm:find("    surface edge {", 1, true)
+        local e = plm:sub(a, plm:find("\n    }\n", a, true))
+        assert(e:find("the lip: a thin lit line round the hole", 1, true) and e:find("stroke: 1.5", 1, true))
+    end)
+    test("a visualiser below with no music rests as a line, so it is seen in the opening", function()
+        local plm = read("shell/mooi-widgets.plm")
+        for _, L in ipairs({ "lA", "lB", "lC" }) do
+            assert(plm:find("show: " .. L .. "_opn and not np_playing", 1, true), L)
+        end
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

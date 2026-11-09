@@ -1661,6 +1661,13 @@ scene Widgets {
                 box { from: if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y); size: if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h); corner: 6 * if(wg_rk == lA_k, wg_ru, lA_u); color: #000000; opacity: 0.2 * lA_rs } }
             box { from: if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y); size: if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h); corner: 6 * lA_u; color: fl.hull; opacity: 0.7; show: lA_plate }
             vw.LaneA(if(wg_rk == lA_k, wg_sx, lA_x), if(wg_rk == lA_k, wg_sy, lA_y), if(wg_rk == lA_k, wg_sw, lA_w), if(wg_rk == lA_k, wg_sh, lA_h), if(wg_rk == lA_k, wg_ru, lA_u), lA_mode, lA_n, lA_gap, lA_glow * mood_glow, lA_peaks, lA_refl, if(lA_ad, rgb(lA_ar, lA_ag, lA_ab), fl.phos), if(lA_ad, mix(rgb(lA_ar, lA_ag, lA_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still, lA_lean)
+            // D221: below, in the opening, with no music it rests as a line of low bars, so it is seen
+            group { show: lA_opn and not np_playing
+                repeat rb in 0..32 {
+                    box { from: if(wg_rk == lA_k, wg_sx, lA_x) + if(wg_rk == lA_k, wg_sw, lA_w) * (rb + 0.2) / 32, if(wg_rk == lA_k, wg_sy, lA_y) + if(wg_rk == lA_k, wg_sh, lA_h) - 6 - 4 * (0.5 + 0.5 * sin(rb * 37)); size: if(wg_rk == lA_k, wg_sw, lA_w) / 32 * 0.6, 6 + 4 * (0.5 + 0.5 * sin(rb * 37)); corner: 1; color: if(lA_ad, rgb(lA_ar, lA_ag, lA_ab), fl.phos); opacity: 0.55 }
+                }
+                text "WAITING FOR MUSIC" { at: if(wg_rk == lA_k, wg_sx, lA_x) + if(wg_rk == lA_k, wg_sw, lA_w) / 2, if(wg_rk == lA_k, wg_sy, lA_y) + if(wg_rk == lA_k, wg_sh, lA_h) / 2; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+            }
         }
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it
         let lB_rs = if(sf_on and not lB_above and not editing and not wg_desk, pick(lB_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1680,6 +1687,13 @@ scene Widgets {
                 box { from: if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y); size: if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h); corner: 6 * if(wg_rk == lB_k, wg_ru, lB_u); color: #000000; opacity: 0.2 * lB_rs } }
             box { from: if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y); size: if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h); corner: 6 * lB_u; color: fl.hull; opacity: 0.7; show: lB_plate }
             vw.LaneB(if(wg_rk == lB_k, wg_sx, lB_x), if(wg_rk == lB_k, wg_sy, lB_y), if(wg_rk == lB_k, wg_sw, lB_w), if(wg_rk == lB_k, wg_sh, lB_h), if(wg_rk == lB_k, wg_ru, lB_u), lB_mode, lB_n, lB_gap, lB_glow * mood_glow, lB_peaks, lB_refl, if(lB_ad, rgb(lB_ar, lB_ag, lB_ab), fl.phos), if(lB_ad, mix(rgb(lB_ar, lB_ag, lB_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still, lB_lean)
+            // D221: below, in the opening, with no music it rests as a line of low bars, so it is seen
+            group { show: lB_opn and not np_playing
+                repeat rb in 0..32 {
+                    box { from: if(wg_rk == lB_k, wg_sx, lB_x) + if(wg_rk == lB_k, wg_sw, lB_w) * (rb + 0.2) / 32, if(wg_rk == lB_k, wg_sy, lB_y) + if(wg_rk == lB_k, wg_sh, lB_h) - 6 - 4 * (0.5 + 0.5 * sin(rb * 37)); size: if(wg_rk == lB_k, wg_sw, lB_w) / 32 * 0.6, 6 + 4 * (0.5 + 0.5 * sin(rb * 37)); corner: 1; color: if(lB_ad, rgb(lB_ar, lB_ag, lB_ab), fl.phos); opacity: 0.55 }
+                }
+                text "WAITING FOR MUSIC" { at: if(wg_rk == lB_k, wg_sx, lB_x) + if(wg_rk == lB_k, wg_sw, lB_w) / 2, if(wg_rk == lB_k, wg_sy, lB_y) + if(wg_rk == lB_k, wg_sh, lB_h) / 2; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+            }
         }
         // coming up (D216): below, it waits at 96 % and faded until the opening snaps to it
         let lC_rs = if(sf_on and not lC_above and not editing and not wg_desk, pick(lC_k, ru0, ru1, ru2, ru3, ru4, ru5, ru6, ru7, ru8, ru9, ru10, ru11, ru12, ru13, ru14, ru15), 1)
@@ -1699,6 +1713,13 @@ scene Widgets {
                 box { from: if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y); size: if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h); corner: 6 * if(wg_rk == lC_k, wg_ru, lC_u); color: #000000; opacity: 0.2 * lC_rs } }
             box { from: if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y); size: if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h); corner: 6 * lC_u; color: fl.hull; opacity: 0.7; show: lC_plate }
             vw.LaneC(if(wg_rk == lC_k, wg_sx, lC_x), if(wg_rk == lC_k, wg_sy, lC_y), if(wg_rk == lC_k, wg_sw, lC_w), if(wg_rk == lC_k, wg_sh, lC_h), if(wg_rk == lC_k, wg_ru, lC_u), lC_mode, lC_n, lC_gap, lC_glow * mood_glow, lC_peaks, lC_refl, if(lC_ad, rgb(lC_ar, lC_ag, lC_ab), fl.phos), if(lC_ad, mix(rgb(lC_ar, lC_ag, lC_ab), #ffffff, 0.35), fl.ember), fl.trace_dim, viz_still, lC_lean)
+            // D221: below, in the opening, with no music it rests as a line of low bars, so it is seen
+            group { show: lC_opn and not np_playing
+                repeat rb in 0..32 {
+                    box { from: if(wg_rk == lC_k, wg_sx, lC_x) + if(wg_rk == lC_k, wg_sw, lC_w) * (rb + 0.2) / 32, if(wg_rk == lC_k, wg_sy, lC_y) + if(wg_rk == lC_k, wg_sh, lC_h) - 6 - 4 * (0.5 + 0.5 * sin(rb * 37)); size: if(wg_rk == lC_k, wg_sw, lC_w) / 32 * 0.6, 6 + 4 * (0.5 + 0.5 * sin(rb * 37)); corner: 1; color: if(lC_ad, rgb(lC_ar, lC_ag, lC_ab), fl.phos); opacity: 0.55 }
+                }
+                text "WAITING FOR MUSIC" { at: if(wg_rk == lC_k, wg_sx, lC_x) + if(wg_rk == lC_k, wg_sw, lC_w) / 2, if(wg_rk == lC_k, wg_sy, lC_y) + if(wg_rk == lC_k, wg_sh, lC_h) / 2; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+            }
         }
 
         for w in wg {

@@ -35,6 +35,7 @@ def below_decls():
     of them — what it snaps to, BMO's and the widgets' reports, and where the light through the skin glows."""
     return ["", "    // ── the subsurface (D209, D215): the opening's own facts; the things below are mooi-widgets' ──",
             "    event op_type ->      // a letter typed in the Overview (its code; 8 rubs one out): sent on to Launch's grid",
+            "    event lw_try ->       // D221: Live wallpaper's Try it (from mooi-settings): every effect that is on, now",
             "    event op_bx ->        // from BMO: where he stands, x * 4096 + y",
             "    event op_bs ->        // ... and how big he is, w * 4096 + h",
             "    event op_wbar ->      // from mooi-widgets: how far below the screen's top its surface starts",
@@ -270,7 +271,7 @@ def surface_layers():
           "                image sf_cover { at: 0, 0; size: ground.width, ground.height; fit: cover; show: sf_wall and sf_fit < 0.5 }",
           "                image sf_contain { at: 0, 0; size: ground.width, ground.height; fit: contain; show: sf_wall and sf_fit > 0.5 }",
           "                box { from: op_x, op_y; size: op_w, op_h; color: rgb(0.62, 0.84, 0.74); opacity: sf_tint * 0.16; show: sf_wall }",
-          "                shader: ground, op_k, op_x, op_y, sf_dim, sf_grid, sf_tint",
+          "                shader: ground, op_k, op_x, op_y, sf_dim, sf_grid, sf_tint, op_w, op_h",
           "            }",
           "            // light through the skin: a soft glow at Music and the Notices while the opening is open",
           "            shader aura { at: op_x, op_y; size: op_w, op_h; values: op_k, op_x, op_y, au_mx, au_my, au_nx, au_ny, sf_glow + sf_ping * 1.5; colors: rgb(0.62, 0.84, 0.74), rgb(0.95, 0.62, 0.38); show: op_vis and sf_glow > 0.5 }",
@@ -331,6 +332,10 @@ def surface_layers():
           "        // a group's shader sees its own box: the clip's, from its top left corner — each derives the screen",
           "        // origin from op_x/op_y in its own file, so all eight values are free for shape and strength",
           "        // (the intensity, edge and colour arrive packed in sf_param: see the shaders)"]
+    # D221: the lip — every effect gets a clear lit edge, so the hole reads as a hole and not a smudge
+    L += ["        // the lip: a thin lit line round the hole, with a soft glow (every effect has it)",
+          f"        group {{ glow: 14, 0.55 * op_k, {ACCENT}; show: op_vis and op_mode < 4",
+          f"            box {{ from: op_x, op_y; size: op_w, op_h; corner: op_r; stroke: 1.5; color: {ACCENT}; opacity: 0.6 * op_k }} }}"]
     for i, e in enumerate(effects, start=1):
         L += ["        group {",
               f"            show: sf_fx > {i - 0.5} and sf_fx < {i + 0.5}",
