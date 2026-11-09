@@ -241,7 +241,7 @@ local function publish()
         if f and not lit[f] then lit[f] = true; lane_facts(f, i, rows[i]) end
     end
     for _, f in pairs(LANE) do if not lit[f] then fact[f .. "on"] = false end end
-    for i = 5, 11 do fact["wg_has" .. i] = W.count_kind(doc, W.ADD_ORDER[i + 1]) > 0 end
+    for i = 5, 15 do fact["wg_has" .. i] = W.count_kind(doc, W.ADD_ORDER[i + 1]) > 0 end
     fact.wg_style = W.STYLE_INDEX[doc.style or "adaptive"] or 0
     fact.wg_shad, fact.wg_ambon = doc.shadows == true, doc.ambient ~= false
     local nn, ng = 0, 0
@@ -608,6 +608,11 @@ local function panel()
     fact.wg_oh24, fact.wg_osec = o.h24 ~= false, o.seconds ~= false
     text.wg_repo = o.repo or ""
     fact.wg_oviz, fact.wg_omin, fact.wg_opop, fact.wg_oevery = o.viz == true, tonumber(o.minutes) or 25, o.pop ~= false, tonumber(o.every) or 10
+    -- D215: the notices' rows; the controls shown and whether power asks again
+    fact.wg_onr = tonumber(o.nrows) or 4
+    fact.wg_oc1, fact.wg_oc2, fact.wg_oc3 = o.wifi ~= false, o.bt ~= false, o.volume ~= false
+    fact.wg_oc4, fact.wg_oc5, fact.wg_oc6 = o.bright ~= false, o.battery ~= false, o.power ~= false
+    fact.wg_ocf = o.power_confirm ~= false
     text.wg_folder, text.wg_apps = o.folder or "", o.apps or ""
     text.wg_readout = string.format("%d × %d · %d, %d", w.w, w.h, w.x, w.y)
     local L = W.LAYOUTS[W.layout_of(w)]
@@ -903,6 +908,12 @@ on("wg_opt", function(v)
         local nxt = ({ [5] = 10, [10] = 30, [30] = 5 })[tonumber((w.options or {}).every) or 10] or 10
         d = W.set_option(doc, w.id, "every", nxt)
     elseif what == 9 and (val == 21 or val == 22) then d = W.set_option(doc, w.id, "viz", val == 21)
+    -- D215: the notices' rows (24 … 27 → 3 … 6), a control shown or not (30 + 2·i on, 31 + 2·i off), power asks again
+    elseif what == 9 and val >= 24 and val <= 27 then d = W.set_option(doc, w.id, "nrows", val - 21)
+    elseif what == 9 and val >= 30 and val <= 41 then
+        local key = ({ "wifi", "bt", "volume", "bright", "battery", "power" })[(val - 30) // 2 + 1]
+        d = W.set_option(doc, w.id, key, (val - 30) % 2 == 0)
+    elseif what == 9 and (val == 42 or val == 43) then d = W.set_option(doc, w.id, "power_confirm", val == 42)
     elseif what == 9 and val == 23 then d = W.set_option(W.set_option(doc, w.id, "lean", 0), w.id, "angle", 0)
     elseif what == 9 and (val == 9 or val == 10) then d = W.set_option(doc, w.id, "h24", val == 9)
     elseif what == 9 and (val == 11 or val == 12) then d = W.set_option(doc, w.id, "seconds", val == 11)

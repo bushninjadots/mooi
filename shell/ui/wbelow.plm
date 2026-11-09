@@ -1,0 +1,197 @@
+language 0.9
+
+// The widgets below (D215, docs/superpowers/specs/2026-11-09-widgets-below-design.md): the four kinds that do
+// what the Subsurface's hubs and components did — the notices, the wallpapers, the settings' pages and the
+// controls. Each stands on wg.Ground and reads the scene's own facts and models (mooi-widgets.plm, fed by
+// lib/wbelow_feed), so the five looks, the shadows and the wallpaper's tone reach them as they reach the rest.
+
+import "widgets.plm" as wg
+
+library WBelow {
+
+    // ── Notices ─────────────────────────────────────────────
+    // stack: the newest notices, newest first (nc_rows of them): the app and how long ago, the title, the
+    // first action as a chip, a cross that dismisses; CLEAR for all; a quiet line when there are none.
+    component Notices(x: number, y: number, w: number, h: number, u: number, plate: bool,
+                      ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let pad = 14 * u
+        let top = y + 34 * u
+        let rh = (h - 34 * u - 34 * u) / max(1, nc_rows)
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        text "NOTICES" { at: x + pad, y + 18 * u; anchor: left center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: acc }
+        text "{nc_n}" { at: x + pad + 70 * u, y + 18 * u; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); show: nc_n > 0 }
+        text "NOTHING NEW" { at: x + pad, top + 14 * u; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); show: nc_n == 0 }
+        for n in nc {
+            let ry = top + n.index * rh
+            let tw = w - 2 * pad - if(n.act, 100 * u, 30 * u)
+            group {
+                show: n.index < nc_rows
+                zone box ncz { from: x + pad - 4 * u, ry; size: tw + 8 * u, max(24 * u, rh - 4 * u); corner: 6 * u; cursor: pointer; role: button; label: "{n.title}"; show: not editing }
+                box { from: x + pad - 4 * u, ry; size: w - 2 * pad + 8 * u, max(24 * u, rh - 4 * u); corner: 6 * u; color: ink; opacity: 0.06 * ncz.hover }
+                text n.title { at: x + pad, ry + 11 * u; anchor: left center; size: 11 * u; weight: 600; family: "Exo 2"; color: ink; width: tw; lines: 1 }
+                text "{n.app} · {n.ago}" { at: x + pad, ry + 26 * u; anchor: left center; size: 8.5 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: tw; lines: 1 }
+                on press ncz { emit nc_go(n.index * 10) }
+                // its first action, a chip
+                group {
+                    show: n.act
+                    let ax = x + w - pad - 92 * u
+                    zone box nca { from: ax, ry + 5 * u; size: 62 * u, 20 * u; corner: 10 * u; cursor: pointer; role: button; label: "{n.a1}"; show: not editing }
+                    box { from: ax, ry + 5 * u; size: 62 * u, 20 * u; corner: 10 * u; stroke: 1; color: acc; opacity: 0.5 + 0.5 * nca.hover }
+                    text n.a1 { at: ax + 31 * u, ry + 15 * u; anchor: center; align: center; size: 8 * u; weight: 700; family: "Share Tech Mono"; color: ink; width: 56 * u; lines: 1 }
+                    on press nca { emit nc_go(n.index * 10 + 1) }
+                }
+                // the cross
+                zone box ncx { from: x + w - pad - 22 * u, ry + 5 * u; size: 20 * u, 20 * u; corner: 10 * u; cursor: pointer; role: button; label: "Dismiss {n.title}"; show: not editing }
+                text "×" { at: x + w - pad - 12 * u, ry + 15 * u; anchor: center; align: center; size: 14 * u; family: "Exo 2"; color: if(ncx.hover > 0.5, ink, mix(ink, acc, 0.45)) }
+                on press ncx { emit nc_go(n.index * 10 + 9) }
+            }
+        }
+        zone box ncc { from: x + w - pad - 60 * u, y + h - 28 * u; size: 60 * u, 20 * u; corner: 10 * u; cursor: pointer; role: button; label: "Clear the notices"; show: nc_n > 0 and not editing }
+        box { from: x + w - pad - 60 * u, y + h - 28 * u; size: 60 * u, 20 * u; corner: 10 * u; stroke: 1; color: acc; opacity: 0.45 + 0.5 * ncc.hover; show: nc_n > 0 }
+        text "CLEAR" { at: x + w - pad - 30 * u, y + h - 18 * u; anchor: center; align: center; size: 8 * u; weight: 700; family: "Share Tech Mono"; color: mix(ink, acc, 0.3); show: nc_n > 0 }
+        on press ncc { emit nc_go(90) }
+    }
+
+    // ── Wallpapers ──────────────────────────────────────────
+    // strip: the six newest pictures of the picker's index, as small frames; a press wears one.
+    component Walls(x: number, y: number, w: number, h: number, u: number, plate: bool,
+                    ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let pad = 14 * u
+        let cw = (w - 2 * pad) / 6
+        let fh = h - 34 * u - pad
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        text "WALLPAPERS" { at: x + pad, y + 18 * u; anchor: left center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: acc }
+        text "NONE INDEXED YET · OPEN THE PICKER ONCE" { at: x + pad, y + 34 * u + fh / 2; anchor: left center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); show: wp_n == 0 }
+        for p in wp {
+            let fx = x + pad + p.index * cw
+            zone box wpz { from: fx, y + 34 * u; size: cw - 6 * u, fh; corner: 4 * u; cursor: pointer; role: button; label: "Wear wallpaper {p.index}"; show: not editing }
+            group {
+                move: 0, 0 - 3 * u * wpz.hover
+                box { from: fx, y + 34 * u; size: cw - 6 * u, fh; corner: 4 * u; color: #000000; opacity: 0.35 }
+                image p.pic { at: fx, y + 34 * u; size: cw - 6 * u, fh; fit: cover }
+                box { from: fx, y + 34 * u; size: cw - 6 * u, fh; corner: 4 * u; stroke: 1; color: if(wpz.hover > 0.5, acc, ink); opacity: 0.25 + 0.6 * wpz.hover }
+            }
+            on press wpz { emit wp_go(p.index) }
+        }
+    }
+
+    // ── Settings ────────────────────────────────────────────
+    // pages: eight marks in two columns, each opening the settings window at its page.
+    component Pages(x: number, y: number, w: number, h: number, u: number, plate: bool,
+                    ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let pad = 12 * u
+        let cw = (w - 2 * pad - 8 * u) / 2
+        let rh = (h - 32 * u - pad) / 4
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        text "SETTINGS" { at: x + pad, y + 17 * u; anchor: left center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: acc }
+        repeat i in 0..8 {
+            let cx = x + pad + mod(i, 2) * (cw + 8 * u)
+            let cy = y + 30 * u + floor(i / 2) * rh
+            zone box pgz { from: cx, cy; size: cw, max(18 * u, rh - 4 * u); corner: 4 * u; cursor: pointer; role: button
+                           label: pick(i, "Theme & colour", "Bar & Frame", "Wallpapers", "Widgets", "Sound", "Power", "BMO", "The Subsurface"); show: not editing }
+            box { from: cx, cy; size: cw, max(18 * u, rh - 4 * u); corner: 4 * u; color: ink; opacity: 0.06 + 0.12 * pgz.hover }
+            box { from: cx, cy + 3 * u; size: 2 * u, max(12 * u, rh - 10 * u); corner: u; color: acc; opacity: 0.4 + 0.6 * pgz.hover }
+            text pick(i, "Theme & colour", "Bar & Frame", "Wallpapers", "Widgets", "Sound", "Power", "BMO", "The Subsurface") {
+                at: cx + 9 * u, cy + max(18 * u, rh - 4 * u) / 2; anchor: left center; size: 10 * u; family: "Exo 2"; color: ink; width: cw - 14 * u; lines: 1 }
+            on press pgz { emit pg_go(i) }
+        }
+    }
+
+    // ── Controls ────────────────────────────────────────────
+    // row (lay 0) or column (lay 1): Wi-Fi, Bluetooth, volume, brightness, battery and power, those the options
+    // show; a glyph, a value, a bar for the levels. Power opens its five ways out in place of the row; the last
+    // three ask again (ct_pw_arm says which).
+    component Controls(x: number, y: number, w: number, h: number, u: number, lay: number, plate: bool,
+                       ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let vert = lay > 0.5
+        let n = max(1, if(ct_s1, 1, 0) + if(ct_s2, 1, 0) + if(ct_s3, 1, 0) + if(ct_s4, 1, 0) + if(ct_s5, 1, 0) + if(ct_s6, 1, 0))
+        let pad = 8 * u
+        let cell = if(vert, (h - 2 * pad) / n, (w - 2 * pad) / n)
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        group {
+            show: not ct_pw_open
+            repeat i in 0..6 {
+                let shown = pick(i, ct_s1, ct_s2, ct_s3, ct_s4, ct_s5, ct_s6)
+                let at = pick(i, 0, if(ct_s1, 1, 0), if(ct_s1, 1, 0) + if(ct_s2, 1, 0), if(ct_s1, 1, 0) + if(ct_s2, 1, 0) + if(ct_s3, 1, 0),
+                              if(ct_s1, 1, 0) + if(ct_s2, 1, 0) + if(ct_s3, 1, 0) + if(ct_s4, 1, 0),
+                              if(ct_s1, 1, 0) + if(ct_s2, 1, 0) + if(ct_s3, 1, 0) + if(ct_s4, 1, 0) + if(ct_s5, 1, 0))
+                let cx = if(vert, x + w / 2, x + pad + at * cell + cell / 2)
+                let cy = if(vert, y + pad + at * cell + cell / 2, y + h / 2)
+                let lit = pick(i, ct_wifi, ct_bt, ct_vol > 0, ct_bri > 0, ct_bat_on, true)
+                let frac = pick(i, 0, 0, ct_vol, ct_bri, ct_bat, 0)
+                group {
+                    show: shown
+                    zone box ctz { from: cx - cell / 2 + 2 * u, cy - if(vert, cell, h) / 2 + 2 * u; size: cell - 4 * u, if(vert, cell, h) - 4 * u; corner: 6 * u; cursor: pointer; role: button
+                                   label: pick(i, "Wi-Fi", "Bluetooth", "Volume", "Brightness", "Battery", "Power"); show: not editing }
+                    box { from: cx - cell / 2 + 2 * u, cy - if(vert, cell, h) / 2 + 2 * u; size: cell - 4 * u, if(vert, cell, h) - 4 * u; corner: 6 * u; color: ink; opacity: 0.05 + 0.1 * ctz.hover }
+                    text pick(i, "≋", "ᛒ", "♪", "☀", "▭", "⏻") { at: cx, cy - 9 * u; anchor: center; align: center; size: 16 * u; family: "Exo 2"; color: if(lit, acc, mix(ink, acc, 0.45)) }
+                    text pick(i, ct_wifi_t, ct_bt_t, ct_vol_t, ct_bri_t, ct_bat_t, "") { at: cx, cy + 10 * u; anchor: center; align: center; size: 8 * u; family: "Share Tech Mono"; color: ink; width: cell - 6 * u; lines: 1 }
+                    group {
+                        show: i > 1.5 and i < 4.5
+                        box { from: cx - 16 * u, cy + 19 * u; size: 32 * u, 2 * u; corner: u; color: ink; opacity: 0.18 }
+                        box { from: cx - 16 * u, cy + 19 * u; size: max(1, 32 * u * clamp(frac, 0, 1)), 2 * u; corner: u; color: acc }
+                    }
+                    on press ctz { emit ct_go(i + 1) }
+                    on scroll ctz { emit ct_wheel((i + 1) * 10 + if(wheel > 0, 1, 0)) }
+                }
+            }
+        }
+        // power: five ways out where the controls were; the last three ask again
+        group {
+            show: ct_pw_open
+            let pc = if(vert, (h - 2 * pad - 24 * u) / 5, (w - 2 * pad - 24 * u) / 5)
+            repeat j in 0..5 {
+                let px = if(vert, x + pad, x + pad + j * pc)
+                let py = if(vert, y + pad + j * pc, y + pad)
+                let pw = if(vert, w - 2 * pad, pc - 4 * u)
+                let ph = if(vert, pc - 4 * u, h - 2 * pad)
+                let armed = ct_pw_arm == j + 1
+                zone box pwz { from: px, py; size: pw, ph; corner: 6 * u; cursor: pointer; role: button
+                               label: pick(j, "Lock", "Sleep", "Log out", "Restart", "Shut down"); show: not editing }
+                box { from: px, py; size: pw, ph; corner: 6 * u; color: if(armed, #ff9b8a, ink); opacity: if(armed, 0.25, 0.06 + 0.12 * pwz.hover) }
+                text pick(j, "LOCK", "SLEEP", "LOG OUT", "RESTART", "SHUT DOWN") { at: px + pw / 2, py + ph / 2; anchor: center; align: center; size: 8 * u; weight: 700; family: "Share Tech Mono"
+                    color: ink; width: pw - 4 * u; lines: 1; show: not armed }
+                text "AGAIN" { at: px + pw / 2, py + ph / 2; anchor: center; align: center; size: 8 * u; weight: 700; family: "Share Tech Mono"; color: #ff9b8a; show: armed }
+                on press pwz { emit ct_pw(j + 1) }
+            }
+            zone box pwb { from: if(vert, x + pad, x + w - pad - 22 * u), if(vert, y + h - pad - 22 * u, y + pad); size: 22 * u, 22 * u; corner: 11 * u; cursor: pointer; role: button; label: "Back to the controls"; show: not editing }
+            text "‹" { at: if(vert, x + pad + 11 * u, x + w - pad - 11 * u), if(vert, y + h - pad - 11 * u, y + pad + 11 * u); anchor: center; align: center; size: 14 * u; family: "Exo 2"; color: ink }
+            on press pwb { emit ct_go(6) }
+        }
+    }
+
+    // ── Launch's grid (D215) ────────────────────────────────
+    // the twelve most launched apps as a four-by-three grid, filtered by what is typed in the Overview
+    component LaunchGrid(x: number, y: number, w: number, h: number, u: number, plate: bool,
+                         ink: color, acc: color, hzv: number, tnv: number) {
+        size: w, h
+        let pad = 12 * u
+        let cw = (w - 2 * pad) / 4
+        let ch = (h - 32 * u - pad) / 3
+        let is = min(min(cw, ch) * 0.52, 40 * u)
+        wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        text "APPS" { at: x + pad, y + 17 * u; anchor: left center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: acc }
+        text ln_q { at: x + pad + 44 * u, y + 17 * u; anchor: left center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: ink; width: w - 60 * u; lines: 1 }
+        text "NO APP MATCHES" { at: x + w / 2, y + h / 2; anchor: center; align: center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); show: lg.count == 0 }
+        for a in lg {
+            let cx = x + pad + mod(a.index, 4) * cw + cw / 2
+            let cy = y + 30 * u + floor(a.index / 4) * ch + ch * 0.42
+            zone box lgz { from: cx - cw / 2, cy - ch * 0.42; size: cw, ch; corner: 6 * u; cursor: pointer; role: button; label: "Open {a.name}"; show: not editing }
+            group {
+                move: 0, 0 - 3 * u * lgz.hover
+                image a.icon { at: cx - is / 2, cy - is / 2; size: is, is; show: a.iconed }
+                group {
+                    show: not a.iconed
+                    box { from: cx - is / 2, cy - is / 2; size: is, is; corner: is * 0.22; color: mix(fl.hull, acc, 0.25) }
+                    text a.letter { at: cx, cy; anchor: center; align: center; size: is * 0.5; weight: 700; family: "Exo 2"; color: ink }
+                }
+            }
+            text a.name { at: cx, cy + is / 2 + 9 * u; anchor: center; align: center; size: 8.5 * u; family: "Exo 2"; color: ink; opacity: 0.75 + 0.25 * lgz.hover; width: cw - 4 * u; lines: 1 }
+            on press lgz { emit lg_go(a.index) }
+        }
+    }
+}

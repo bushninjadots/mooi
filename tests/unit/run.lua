@@ -8450,6 +8450,40 @@ do
     end)
 end
 
+section("widgets below: the drawings and lanes (D215)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("drawings: four components and Launch's grid, on the widgets' ground", function()
+        local ui = read("shell/ui/wbelow.plm")
+        for _, c in ipairs({ "component Notices(", "component Walls(", "component Pages(", "component Controls(", "component LaunchGrid(" }) do
+            assert(ui:find(c, 1, true), c)
+        end
+        local n = 0
+        for _ in ui:gmatch("wg%.Ground%(") do n = n + 1 end
+        eq(n, 5, "every one stands on wg.Ground")
+        for _, e in ipairs({ "emit nc_go(", "emit wp_go(", "emit pg_go(", "emit ct_go(", "emit ct_wheel(", "emit ct_pw(", "emit lg_go(" }) do
+            assert(ui:find(e, 1, true), e)
+        end
+        assert(ui:find('"Theme & colour", "Bar & Frame", "Wallpapers", "Widgets", "Sound", "Power", "BMO", "The Subsurface"', 1, true), "the real pages")
+    end)
+    test("lanes: the four kinds and the grid are drawn, clipped to the hole like the rest", function()
+        local plm = read("shell/mooi-widgets.plm")
+        for _, c in ipairs({ "wb.Notices(", "wb.Walls(", "wb.Pages(", "wb.Controls(", "wb.LaunchGrid(" }) do assert(plm:find(c, 1, true), c) end
+        for _, p in ipairs({ "nc", "wp", "pg", "ct" }) do
+            assert(plm:find("let " .. p .. "_clip = sf_on and not " .. p .. "_above", 1, true), p .. " clips to the hole")
+            assert(plm:find("fact " .. p .. "_on = false", 1, true), p .. " lane facts")
+        end
+        for _, e in ipairs({ "nc_go", "wp_go", "pg_go", "ct_go", "ct_wheel", "ct_pw", "lg_go", "ln_type", "wg_arrange" }) do
+            assert(plm:find("event " .. e .. " ->", 1, true), e .. " declared")
+        end
+        assert(plm:find("repeat ai in 0..16 {", 1, true) and plm:find('"+ CONTROLS"', 1, true), "sixteen kinds can be added")
+        assert(plm:find('"nmcli", "bluetoothctl", "systemctl", "hyprctl"', 1, true) and plm:find('"brightness", "brightness.*"', 1, true), "what the controls need")
+        local panel = read("shell/ui/widgets.plm")
+        assert(panel:find('Chip(x + 212, y + 52, 96, "GRID"', 1, true), "the grid can be chosen")
+        assert(panel:find('"POWER ASKS TWICE"', 1, true) and panel:find('Chip(x + 156, y + wy, 34, "3"', 1, true), "the new kinds' switches")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

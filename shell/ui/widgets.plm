@@ -349,7 +349,7 @@ library Widgets {
         let ns = if(vis, 8, if(np, 3, 2))
         let ry = sy + ns * 30 + 8                 // at rest
         let wy = ry + 44                          // the switches
-        let ay = wy + if(vis, 70, if(np, 100, if(wg_sk == 4 or wg_sk == 11, 70, if(wg_sk == 10, 100, 40))))   // where, and the actions
+        let ay = wy + if(vis, 70, if(np, 100, if(wg_sk == 4 or wg_sk == 11, 70, if(wg_sk == 10 or wg_sk == 15, 100, 40))))   // where, and the actions
         let ph = if(wg_pcol, 30, ay + 102)
         box { from: x, y; size: 320, ph; corner: 6; color: fl.hull; opacity: 0.95 }
         box { from: x, y; size: 320, ph; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.8 }
@@ -357,7 +357,7 @@ library Widgets {
         zone box phd { from: x, y; size: 284, 30; cursor: grab; role: button; label: "Move the options" }
         on press phd { wg_hold = 2; wg_pbx = x; wg_pby = y }
         on drag phd while wg_hold == 2 { emit wg_pmove(round(clamp(wg_pbx + drag.dx, 0, 4095)) * 4096 + round(clamp(wg_pby + drag.dy, 0, 4095))) }
-        text pick(wg_sk, "NOW PLAYING", "VISUALISER", "CLOCK", "NOTES", "GITHUB", "WEATHER", "SYSTEM", "CALENDAR", "FOCUS TIMER", "CLAUDE", "PHOTO", "LAUNCHER") { at: x + 12, y + 16; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+        text pick(wg_sk, "NOW PLAYING", "VISUALISER", "CLOCK", "NOTES", "GITHUB", "WEATHER", "SYSTEM", "CALENDAR", "FOCUS TIMER", "CLAUDE", "PHOTO", "LAUNCHER", "NOTICES", "WALLPAPERS", "SETTINGS", "CONTROLS") { at: x + 12, y + 16; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
         text "{wg_nsel} CHOSEN · THESE ARE THE LAST ONE'S" { at: x + 120, y + 16; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: wg_nsel > 1 }
         zone box pfo { from: x + 288, y + 4; size: 26, 22; cursor: pointer; role: button; label: "Fold the options" }
         text pick(wg_pcol, "⌄", "›") { at: x + 301, y + 15; anchor: center; align: center; size: 14; family: "Exo 2"; color: fl.engrave }
@@ -509,11 +509,25 @@ library Widgets {
             }
             // the D141 kinds with two layouts
             group {
-                show: wg_sk > 4.5 and wg_sk != 7
+                show: wg_sk > 4.5 and wg_sk != 7 and wg_sk != 11 and wg_sk < 11.5
                 let n = wg_sk - 5
                 text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
                 Chip(x + 12, y + 52, 146, pick(n, "HORIZON", "SCOPE", "", "RING", "TICKER", "FRAME", "SHELF"), wg_sl < 0.5, base + 100)
                 Chip(x + 162, y + 52, 146, pick(n, "DAYS", "GAUGES", "", "SLAB", "QUOTE", "POLAROID", "COLUMN"), wg_sl > 0.5, base + 101)
+            }
+            // D215: the launcher's three layouts; the controls' two
+            group {
+                show: wg_sk == 11
+                text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                Chip(x + 12, y + 52, 96, "SHELF", wg_sl < 0.5, base + 100)
+                Chip(x + 112, y + 52, 96, "COLUMN", wg_sl > 0.5 and wg_sl < 1.5, base + 101)
+                Chip(x + 212, y + 52, 96, "GRID", wg_sl > 1.5, base + 102)
+            }
+            group {
+                show: wg_sk == 15
+                text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                Chip(x + 12, y + 52, 146, "ROW", wg_sl < 0.5, base + 100)
+                Chip(x + 162, y + 52, 146, "COLUMN", wg_sl > 0.5, base + 101)
             }
             // 2 · sliders
             WSlider(x + 12, y + sy, 296, "OPACITY", "{round(wg_oop * 100)}%", (wg_oop - 0.3) / 0.7, k, 1)
@@ -575,6 +589,25 @@ library Widgets {
             group {
                 show: wg_sk > 4.5
                 Chip(x + 12, y + wy, 96, "PLATE", wg_o5, base + 500 + if(wg_o5, 0, 1))
+            }
+            // D215: the notices' rows; which controls show, and whether power asks again
+            group {
+                show: wg_sk == 12
+                text "ROWS" { at: x + 116, y + wy + 12; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                Chip(x + 156, y + wy, 34, "3", wg_onr == 3, base + 924)
+                Chip(x + 194, y + wy, 34, "4", wg_onr == 4, base + 925)
+                Chip(x + 232, y + wy, 34, "5", wg_onr == 5, base + 926)
+                Chip(x + 270, y + wy, 38, "6", wg_onr == 6, base + 927)
+            }
+            group {
+                show: wg_sk == 15
+                Chip(x + 112, y + wy, 96, "WI-FI", wg_oc1, base + if(wg_oc1, 931, 930))
+                Chip(x + 212, y + wy, 96, "BLUETOOTH", wg_oc2, base + if(wg_oc2, 933, 932))
+                Chip(x + 12, y + wy + 30, 96, "VOLUME", wg_oc3, base + if(wg_oc3, 935, 934))
+                Chip(x + 112, y + wy + 30, 96, "BRIGHTNESS", wg_oc4, base + if(wg_oc4, 937, 936))
+                Chip(x + 212, y + wy + 30, 96, "BATTERY", wg_oc5, base + if(wg_oc5, 939, 938))
+                Chip(x + 12, y + wy + 60, 96, "POWER", wg_oc6, base + if(wg_oc6, 941, 940))
+                Chip(x + 112, y + wy + 60, 196, "POWER ASKS TWICE", wg_ocf, base + if(wg_ocf, 943, 942))
             }
             group {
                 show: wg_sk == 8
