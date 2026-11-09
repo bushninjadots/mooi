@@ -8358,6 +8358,98 @@ do
     end)
 end
 
+section("widgets below: seeding, arranging, migrating (D215)")
+do
+    local W = require("lib/widgets")
+    local WB = require("lib/wbelow")
+    local BL = require("lib/surface/below")
+    local scr = { w = 1920, h = 1080, top = 34 }
+    local function empty() return { version = W.VERSION, widgets = {} } end
+    local function apart(list)
+        for i = 1, #list do for j = i + 1, #list do
+            local a, b = list[i], list[j]
+            if a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h then return false, a.id .. "/" .. b.id end
+        end end
+        return true
+    end
+    local function on(w, s) return w.x >= 0 and w.y >= 0 and w.x + w.w <= s.w and w.y + w.h <= s.h - (s.top or 0) end
+    test("arrange: any list of boxes, every layout, on screen and apart", function()
+        local items = {}
+        for i, wh in ipairs({ { 432, 152 }, { 640, 160 }, { 360, 240 }, { 400, 150 }, { 340, 320 }, { 560, 170 },
+                              { 360, 260 }, { 420, 140 }, { 320, 170 }, { 452, 80 } }) do
+            items[i] = { id = "i" .. i, w = wh[1], h = wh[2] }
+        end
+        for _, lay in ipairs(BL.LAYOUTS) do
+            local P = BL.arrange(items, { w = 1920, h = 1046 }, lay)
+            local list = {}
+            for _, it in ipairs(items) do
+                local p = assert(P[it.id], lay .. " " .. it.id)
+                eq(p.w, it.w); eq(p.h, it.h)
+                eq(p.x >= 0 and p.y >= 0 and p.x + p.w <= 1920 and p.y + p.h <= 1046, true, lay .. " " .. it.id .. " on screen")
+                list[#list + 1] = { id = it.id, x = p.x, y = p.y, w = p.w, h = p.h }
+            end
+            local ok, why = apart(list)
+            eq(ok, true, lay .. " apart " .. tostring(why))
+        end
+        local small = BL.arrange(items, { w = 1366, h = 734 }, "arc")
+        for _, it in ipairs(items) do local p = small[it.id]; eq(p.x + p.w <= 1366 and p.y + p.h <= 734 and p.x >= 0 and p.y >= 0, true, "small " .. it.id) end
+    end)
+    test("seed: the default set, only missing kinds, below, once", function()
+        eq(#WB.DEFAULT_SET, 10)
+        local d, n = WB.seed(empty(), scr, "arc")
+        eq(n, 10, "ten placed"); eq(d.below_seeded, true)
+        local kinds = {}
+        for _, w in ipairs(d.widgets) do kinds[w.kind] = w.layout or w.mode; eq(w.above, false, w.kind .. " below"); eq(on(w, scr), true, w.kind .. " on screen") end
+        eq(kinds.launch, "grid"); eq(kinds.controls, "row"); eq(kinds.nowplaying, "sleeve"); eq(kinds.clock, "digital")
+        eq((apart(d.widgets)), true, "apart")
+        local again, n2 = WB.seed(d, scr, "arc")
+        eq(n2, 0, "never twice"); eq(#again.widgets, 10)
+        local mine = W.add(empty(), "clock", scr)
+        local m, n3 = WB.seed(mine, scr, "row")
+        eq(n3, 9, "the owner's clock kept, nine more"); eq(W.count_kind(m, "clock"), 1)
+        local small = WB.seed(empty(), { w = 1366, h = 768, top = 34 }, "calm")
+        for _, w in ipairs(small.widgets) do eq(on(w, { w = 1366, h = 768, top = 34 }), true, "small " .. w.kind) end
+    end)
+    test("seed: a full file adds nothing and loses nothing", function()
+        local d = empty()
+        for i = 1, W.MAX do d.widgets[i] = { id = "viz-" .. i, kind = "visualiser", mode = "spectrum", x = 0, y = 0, w = 160, h = 64, options = {} } end
+        local s, n, problems = WB.seed(d, scr, "arc")
+        eq(n, 0); eq(#s.widgets, W.MAX); eq(#problems > 0, true, "said so"); eq(s.below_seeded, true)
+    end)
+    test("arrange_all: every widget below, by the arrangement; kept-above ones stay", function()
+        local d = WB.seed(empty(), scr, "arc")
+        d.widgets[1].above, d.widgets[1].x, d.widgets[1].y = true, 7, 9
+        local r = WB.arrange_all(d, scr, "row")
+        eq(r.widgets[1].x, 7, "kept above: not moved"); eq(r.widgets[1].y, 9)
+        eq((apart(r.widgets)), true)
+    end)
+    test("migrate: Presences become widgets kept above, once, one per kind", function()
+        local P = { { source = "music", fx = 0.24, fy = 0.78 }, { source = "clock", fx = 0.69, fy = 0.18 },
+                    { source = "music", fx = 0.22, fy = 0.18 }, { source = "volume", fx = 0.5, fy = 0.5 },
+                    { source = "network", fx = 0.6, fy = 0.6 }, { source = "workspaces", fx = 0.1, fy = 0.1 } }
+        local d, problems = WB.migrate(P, empty(), scr)
+        eq(d.migrated_presences, true)
+        local by = {}
+        for _, w in ipairs(d.widgets) do by[w.kind] = (by[w.kind] or 0) + 1; eq(w.above, true, w.kind .. " kept above") end
+        eq(by.nowplaying, 1, "two music Presences: one Now Playing"); eq(by.clock, 1); eq(by.controls, 1, "volume and network: one Controls")
+        eq(#problems, 1, "workspaces has no widget")
+        local np
+        for _, w in ipairs(d.widgets) do if w.kind == "nowplaying" then np = w end end
+        eq(math.abs((np.x + np.w / 2) - 0.24 * 1920) <= 8, true, "centred where it was")
+        local again = WB.migrate(P, d, scr)
+        eq(#again.widgets, #d.widgets, "never twice")
+        eq(WB.MIGRATE.resources, "system"); eq(WB.MIGRATE.notifications, "notices"); eq(WB.MIGRATE.battery, "controls")
+    end)
+    test("grid apps and the settings pages", function()
+        local list = { { id = "a", name = "Kitty", exec = "kitty" }, { id = "b", name = "Firefox", exec = "firefox" },
+                       { id = "d", name = "Files", exec = "nautilus" } }
+        local r = WB.grid_apps(list, { d = 5 }, "", 12)
+        eq(r[1].id, "d", "the most launched first")
+        eq(#WB.grid_apps(list, {}, "fi", 12), 2)
+        eq(WB.SETTINGS[8][1], "The Subsurface"); eq(WB.SETTINGS[8][2], 21)
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

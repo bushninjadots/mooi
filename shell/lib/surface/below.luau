@@ -102,6 +102,52 @@ function M.defaults(scr, opts)
     return out
 end
 
+-- D215: any list of boxes laid out by an arrangement (the widgets below are what is arranged now). Items keep
+-- their order and size; they flow into rows that fit the width (gaps of 24 px, a 48 px margin), and the
+-- arrangement says where the rows go: `arc` from the top band, each row dipping at its ends; `row` the rows
+-- centred as one block; `grid` rows from the left; `calm` packed from the bottom up. Every box ends wholly on
+-- the screen (a screen too small for them all overlaps rather than spills).
+function M.arrange(items, scr, layout)
+    local W, H = scr.w, scr.h
+    local GAPX, GAPY, SIDE = 24, 24, 48
+    local DIP = layout == "arc" and math.floor(0.03 * H + 0.5) or 0
+    local rows, cur, cw = {}, {}, 0
+    for _, it in ipairs(items or {}) do
+        local w = math.min(it.w, W)
+        if #cur > 0 and cw + GAPX + w > W - 2 * SIDE then rows[#rows + 1] = cur; cur, cw = {}, 0 end
+        cw = cw + (#cur > 0 and GAPX or 0) + w
+        cur[#cur + 1] = it
+    end
+    if #cur > 0 then rows[#rows + 1] = cur end
+    local heights, total = {}, 0
+    for i, r in ipairs(rows) do
+        local h = 0
+        for _, it in ipairs(r) do h = math.max(h, it.h) end
+        heights[i] = h + DIP
+        total = total + heights[i] + (i > 1 and GAPY or 0)
+    end
+    local y
+    if layout == "row" then y = (H - total) / 2
+    elseif layout == "calm" then y = H - M.BOTTOM - total
+    else y = 0.12 * H end
+    local out = {}
+    for i, r in ipairs(rows) do
+        local rw = 0
+        for j, it in ipairs(r) do rw = rw + it.w + (j > 1 and GAPX or 0) end
+        local x = layout == "grid" and SIDE or (W - rw) / 2
+        for j, it in ipairs(r) do
+            local t = #r > 1 and ((j - 1) / (#r - 1) * 2 - 1) or 0
+            local w, h = math.min(it.w, W), math.min(it.h, H)
+            local px = round(clamp(x, 0, math.max(0, W - w)))
+            local py = round(clamp(y + DIP * t * t, 0, math.max(0, H - h)))
+            out[it.id] = { x = px, y = py, w = w, h = h }
+            x = x + it.w + GAPX
+        end
+        y = y + heights[i] + GAPY
+    end
+    return out
+end
+
 -- A saved arrangement: each place kept where it was left and at the size it was shaped to, wholly on this
 -- screen; a place it lacks (or one that is not a number) from the defaults; an id that is not ours dropped.
 -- A component keeps its fixed size; a hub stops at M.MIN so its words still fit.
