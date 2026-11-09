@@ -7,7 +7,7 @@ language 0.9
 scene Sigil {
     permissions {
         run: "pleamar", "mooi", "hyprctl", "readlink", "nmcli", "bluetoothctl", "systemctl", "playerctl"
-        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock"
+        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock", "capture"
     }
     service audio.level as lv { level: number }
     spring sg.pt = 260, 20
@@ -4697,6 +4697,7 @@ scene Sigil {
     shader aura = file "shaders/aura.wgsl"
     shader bulge = file "shaders/bulge.wgsl"
     shader skin = file "shaders/skin.wgsl"
+    shader music = file "shaders/music.wgsl"
     fact rv_on = false
     fact sf_firm = false   // the opening is open and the pointer has moved: the keyboard is ours
     fact sf_fx = 1         // the opening's look: 1 tear · 2 aperture · 3 membrane · 4 ripple · 5 fold · 6 dissolve · 7 glass · 8 glow
@@ -4747,15 +4748,78 @@ scene Sigil {
             // light through the skin: a soft glow at Music and the Notices while the opening is open
             shader aura { at: op_x, op_y; size: op_w, op_h; values: op_k, op_x, op_y, au_mx, au_my, au_nx, au_ny, sf_glow + sf_ping * 1.5; colors: rgb(0.62, 0.84, 0.74), rgb(0.95, 0.62, 0.38); show: op_vis and sf_glow > 0.5 }
             // the Overview: the wallpaper pulls back to a thin lit margin and the canvas takes the screen
-            box { from: op_x + sf_ovm, op_y + sf_ovm; size: max(0, op_w - 2 * sf_ovm), max(0, op_h - 2 * sf_ovm); corner: max(0, op_r - 6); color: rgb(0.035, 0.05, 0.055); opacity: 0.99; show: op_vis and op_mode == 4 }
+            box { from: op_x + sf_ovm, op_y + sf_ovm; size: max(0, op_w - 2 * sf_ovm), max(0, op_h - 2 * sf_ovm); corner: max(0, op_r - 6); color: rgb(0.035, 0.05, 0.055); opacity: 0.99; show: op_vis and op_mode == 4 and not sf_mu }
             // its grid: three uprights and two crossbars, faint enough to arrange against without seeing lines
-            box { from: op_x + op_w * 0.25, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }
-            box { from: op_x + op_w * 0.5, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }
-            box { from: op_x + op_w * 0.75, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }
-            box { from: op_x + sf_ovm, op_y + op_h * 0.33; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }
-            box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }
+            box { from: op_x + op_w * 0.25, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }
+            box { from: op_x + op_w * 0.5, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }
+            box { from: op_x + op_w * 0.75, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }
+            box { from: op_x + sf_ovm, op_y + op_h * 0.33; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }
+            box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }
             text "THE SUBSURFACE" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 44; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }
             text "the widgets are in edit mode: drag, resize, undo  /  type to find an app  /  Esc to close" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 26; anchor: left center; size: 10; family: "Share Tech Mono"; color: rgb(0.55, 0.6, 0.58); show: op_mode == 4 and sf_labels > 0.5 }
+            // D223: the Overview's Music mode — the whole picture at full light, and where the music grows from
+            box { from: op_x + op_w - sf_ovm - 184, op_y + sf_ovm + 108; size: 80, 26; corner: 6; color: rgb(0.08, 0.1, 0.11); opacity: 0.72; show: op_vis and op_mode == 4 and not sf_mu }
+            text "MUSIC" { at: op_x + op_w - sf_ovm - 144, op_y + sf_ovm + 121; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 and not sf_mu }
+            zone box ov_music { from: op_x + op_w - sf_ovm - 184, op_y + sf_ovm + 108; size: 80, 26; cursor: pointer; role: button; label: "Music in the picture: where it grows from"; show: op_live and op_mode == 4 and not sf_mu }
+            on press ov_music { emit mu_mode(1) }
+            group {
+                show: op_vis and op_mode == 4 and sf_mu
+                clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }
+                image sf_cover { at: 0, 0; size: ground.width, ground.height; fit: cover }
+                // where it grows from: the edge line, the areas, the rubber band
+                line { from: op_x, mu_ey + mu_eh; to: op_x + op_w, mu_ey + mu_eh; width: 2; color: rgb(0.62, 0.84, 0.74); opacity: if(mu_e, 0.9, 0.3) }
+                text "EDGE" { at: op_x + 24, mu_ey + mu_eh - 12; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); opacity: if(mu_e, 1, 0.4) }
+                box { from: mu_a1x, mu_a1y; size: mu_a1w, mu_a1h; corner: 4; stroke: 1.5; color: rgb(0.62, 0.84, 0.74); opacity: 0.85; show: mu_a1 }
+                box { from: mu_a2x, mu_a2y; size: mu_a2w, mu_a2h; corner: 4; stroke: 1.5; color: rgb(0.62, 0.84, 0.74); opacity: 0.85; show: mu_a2 }
+                box { from: mu_a3x, mu_a3y; size: mu_a3w, mu_a3h; corner: 4; stroke: 1.5; color: rgb(0.62, 0.84, 0.74); opacity: 0.85; show: mu_a3 }
+                box { from: mu_a4x, mu_a4y; size: mu_a4w, mu_a4h; corner: 4; stroke: 1.5; color: rgb(0.62, 0.84, 0.74); opacity: 0.85; show: mu_a4 }
+                box { from: min(mu_px, mu_qx), min(mu_py, mu_qy); size: abs(mu_qx - mu_px), abs(mu_qy - mu_py); corner: 4; stroke: 1.5; color: rgb(0.95, 0.62, 0.38); show: mu_dr }
+                // the toolbar
+                box { from: op_x + op_w / 2 - 430, op_y + sf_ovm + 64 - 6; size: 860, 40; corner: 8; color: rgb(0.05, 0.06, 0.07); opacity: 0.88 }
+                box { from: op_x + op_w / 2 - 422 + 0, op_y + sf_ovm + 64; size: 106, 28; corner: 5; color: if(mu_e, rgb(0.62, 0.84, 0.74), rgb(0.12, 0.14, 0.15)); opacity: 0.92 }
+                text "EDGE" { at: op_x + op_w / 2 - 422 + 0 + 53, op_y + sf_ovm + 64 + 14; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(mu_e, rgb(0.05, 0.06, 0.07), rgb(0.86, 0.9, 0.88)) }
+                zone box mu_t_edge { from: op_x + op_w / 2 - 422 + 0, op_y + sf_ovm + 64; size: 106, 28; cursor: pointer; role: button; label: "Edge"; show: op_live }
+                on press mu_t_edge { emit mu_tog(1) }
+                box { from: op_x + op_w / 2 - 422 + 112, op_y + sf_ovm + 64; size: 106, 28; corner: 5; color: if(mu_s, rgb(0.62, 0.84, 0.74), rgb(0.12, 0.14, 0.15)); opacity: 0.92 }
+                text "SUBJECT" { at: op_x + op_w / 2 - 422 + 112 + 53, op_y + sf_ovm + 64 + 14; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(mu_s, rgb(0.05, 0.06, 0.07), rgb(0.86, 0.9, 0.88)) }
+                zone box mu_t_subject { from: op_x + op_w / 2 - 422 + 112, op_y + sf_ovm + 64; size: 106, 28; cursor: pointer; role: button; label: "Subject"; show: op_live }
+                on press mu_t_subject { emit mu_tog(2) }
+                box { from: op_x + op_w / 2 - 422 + 224, op_y + sf_ovm + 64; size: 106, 28; corner: 5; color: if(mu_tool == 1, rgb(0.62, 0.84, 0.74), rgb(0.12, 0.14, 0.15)); opacity: 0.92 }
+                text "DRAW AREA" { at: op_x + op_w / 2 - 422 + 224 + 53, op_y + sf_ovm + 64 + 14; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(mu_tool == 1, rgb(0.05, 0.06, 0.07), rgb(0.86, 0.9, 0.88)) }
+                zone box mu_t_area { from: op_x + op_w / 2 - 422 + 224, op_y + sf_ovm + 64; size: 106, 28; cursor: pointer; role: button; label: "Draw Area"; show: op_live }
+                on press mu_t_area { mu_tool = 1 }
+                box { from: op_x + op_w / 2 - 422 + 336, op_y + sf_ovm + 64; size: 106, 28; corner: 5; color: if(mu_tool == 2, rgb(0.62, 0.84, 0.74), rgb(0.12, 0.14, 0.15)); opacity: 0.92 }
+                text "PICK COLOUR" { at: op_x + op_w / 2 - 422 + 336 + 53, op_y + sf_ovm + 64 + 14; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(mu_tool == 2, rgb(0.05, 0.06, 0.07), rgb(0.86, 0.9, 0.88)) }
+                zone box mu_t_colour { from: op_x + op_w / 2 - 422 + 336, op_y + sf_ovm + 64; size: 106, 28; cursor: pointer; role: button; label: "Pick Colour"; show: op_live }
+                on press mu_t_colour { mu_tool = 2 }
+                box { from: op_x + op_w / 2 - 422 + 448, op_y + sf_ovm + 64; size: 106, 28; corner: 5; color: if(mu_tool == 3, rgb(0.62, 0.84, 0.74), rgb(0.12, 0.14, 0.15)); opacity: 0.92 }
+                text "MOVE EDGE" { at: op_x + op_w / 2 - 422 + 448 + 53, op_y + sf_ovm + 64 + 14; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(mu_tool == 3, rgb(0.05, 0.06, 0.07), rgb(0.86, 0.9, 0.88)) }
+                zone box mu_t_line { from: op_x + op_w / 2 - 422 + 448, op_y + sf_ovm + 64; size: 106, 28; cursor: pointer; role: button; label: "Move Edge"; show: op_live }
+                on press mu_t_line { mu_tool = 3 }
+                box { from: op_x + op_w / 2 - 422 + 560, op_y + sf_ovm + 64; size: 106, 28; corner: 5; color: if(false, rgb(0.62, 0.84, 0.74), rgb(0.12, 0.14, 0.15)); opacity: 0.92 }
+                text "CLEAR" { at: op_x + op_w / 2 - 422 + 560 + 53, op_y + sf_ovm + 64 + 14; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(false, rgb(0.05, 0.06, 0.07), rgb(0.86, 0.9, 0.88)) }
+                zone box mu_t_clear { from: op_x + op_w / 2 - 422 + 560, op_y + sf_ovm + 64; size: 106, 28; cursor: pointer; role: button; label: "Clear"; show: op_live }
+                on press mu_t_clear { emit mu_clear }
+                box { from: op_x + op_w / 2 - 422 + 672, op_y + sf_ovm + 64; size: 106, 28; corner: 5; color: if(false, rgb(0.62, 0.84, 0.74), rgb(0.12, 0.14, 0.15)); opacity: 0.92 }
+                text "DONE" { at: op_x + op_w / 2 - 422 + 672 + 53, op_y + sf_ovm + 64 + 14; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(false, rgb(0.05, 0.06, 0.07), rgb(0.86, 0.9, 0.88)) }
+                zone box mu_t_done { from: op_x + op_w / 2 - 422 + 672, op_y + sf_ovm + 64; size: 106, 28; cursor: pointer; role: button; label: "Done"; show: op_live }
+                on press mu_t_done { mu_tool = 0; emit mu_mode(0) }
+                box { from: op_x + op_w / 2 + 364, op_y + sf_ovm + 64 + 6; size: 16, 16; corner: 3; color: rgb(mu_c1r, mu_c1g, mu_c1b); show: mu_c1 }
+                box { from: op_x + op_w / 2 + 384, op_y + sf_ovm + 64 + 6; size: 16, 16; corner: 3; color: rgb(mu_c2r, mu_c2g, mu_c2b); show: mu_c2 }
+                text "DRAG A BOX · CLICK A COLOUR IN THE PICTURE · DRAG THE EDGE LINE" { at: op_x + op_w / 2, op_y + sf_ovm + 64 + 48; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: rgb(0.86, 0.9, 0.88) }
+                // the picture itself: draw, pick, drag
+                zone box mu_z { from: op_x, op_y + sf_ovm + 64 + 60; size: op_w, op_h - (sf_ovm + 124); cursor: crosshair; role: button; label: "The picture"; show: op_live and mu_tool > 0 }
+                on press mu_z while mu_tool == 1 { mu_px = pointer.x; mu_py = pointer.y; mu_qx = pointer.x; mu_qy = pointer.y; mu_dr = true }
+                on drag mu_z while mu_tool == 1 { mu_qx = pointer.x; mu_qy = pointer.y }
+                on release mu_z while mu_tool == 1 {
+                    mu_dr = false
+                    emit mu_at(round(min(mu_px, mu_qx)) * 4096 + round(min(mu_py, mu_qy)))
+                    emit mu_wh(round(abs(mu_qx - mu_px)) * 4096 + round(abs(mu_qy - mu_py)))
+                }
+                on press mu_z while mu_tool == 2 { emit mu_pick(round(pointer.x) * 4096 + round(pointer.y)) }
+                on press mu_z while mu_tool == 3 { emit mu_edge(round(pointer.y)) }
+                on drag mu_z while mu_tool == 3 { emit mu_edge(round(pointer.y)) }
+            }
             // the Overview's close, over the canvas at its top right (undo is the widgets' own, in edit mode)
             box { from: op_x + op_w - sf_ovm - 92, op_y + sf_ovm + 108; size: 80, 26; corner: 6; color: rgb(0.08, 0.1, 0.11); opacity: 0.72; show: op_vis and op_mode == 4 }
             text "CLOSE" { at: op_x + op_w - sf_ovm - 52, op_y + sf_ovm + 108 + 13; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }
@@ -4910,6 +4974,116 @@ scene Sigil {
     fact lw_whole = false
     fact lw_speed = 100
     fact lw_boost = 0
+    // ── Music in the picture (D223): the bands, the places it grows from, the Overview's Music mode ──
+    fact lw_music = false
+    fact lw_music_p = 0
+    spring sg.mb = 520, 34
+    fact mb_t0 = 0
+    prop mb0 = 0 ~sg.mb
+    follow mb0 = mb_t0
+    fact mb_t1 = 0
+    prop mb1 = 0 ~sg.mb
+    follow mb1 = mb_t1
+    fact mb_t2 = 0
+    prop mb2 = 0 ~sg.mb
+    follow mb2 = mb_t2
+    fact mb_t3 = 0
+    prop mb3 = 0 ~sg.mb
+    follow mb3 = mb_t3
+    fact mb_t4 = 0
+    prop mb4 = 0 ~sg.mb
+    follow mb4 = mb_t4
+    fact mb_t5 = 0
+    prop mb5 = 0 ~sg.mb
+    follow mb5 = mb_t5
+    fact mb_t6 = 0
+    prop mb6 = 0 ~sg.mb
+    follow mb6 = mb_t6
+    fact mb_t7 = 0
+    prop mb7 = 0 ~sg.mb
+    follow mb7 = mb_t7
+    fact mb_t8 = 0
+    prop mb8 = 0 ~sg.mb
+    follow mb8 = mb_t8
+    fact mb_t9 = 0
+    prop mb9 = 0 ~sg.mb
+    follow mb9 = mb_t9
+    fact mb_t10 = 0
+    prop mb10 = 0 ~sg.mb
+    follow mb10 = mb_t10
+    fact mb_t11 = 0
+    prop mb11 = 0 ~sg.mb
+    follow mb11 = mb_t11
+    fact mb_t12 = 0
+    prop mb12 = 0 ~sg.mb
+    follow mb12 = mb_t12
+    fact mb_t13 = 0
+    prop mb13 = 0 ~sg.mb
+    follow mb13 = mb_t13
+    fact mb_t14 = 0
+    prop mb14 = 0 ~sg.mb
+    follow mb14 = mb_t14
+    fact mb_t15 = 0
+    prop mb15 = 0 ~sg.mb
+    follow mb15 = mb_t15
+    let mb_v0 = round(mb0 * 255) * 65536 + round(mb1 * 255) * 256 + round(mb2 * 255)
+    let mb_v1 = round(mb3 * 255) * 65536 + round(mb4 * 255) * 256 + round(mb5 * 255)
+    let mb_v2 = round(mb6 * 255) * 65536 + round(mb7 * 255) * 256 + round(mb8 * 255)
+    let mb_v3 = round(mb9 * 255) * 65536 + round(mb10 * 255) * 256 + round(mb11 * 255)
+    let mb_v4 = round(mb12 * 255) * 65536 + round(mb13 * 255) * 256 + round(mb14 * 255)
+    let mb_v5 = round(mb15 * 255) * 65536 + 0 + 0
+    fact mu_e = false
+    fact mu_ex = 0
+    fact mu_ey = 0
+    fact mu_ew = 1
+    fact mu_eh = 1
+    fact mu_a1 = false
+    fact mu_a1x = 0
+    fact mu_a1y = 0
+    fact mu_a1w = 1
+    fact mu_a1h = 1
+    fact mu_a2 = false
+    fact mu_a2x = 0
+    fact mu_a2y = 0
+    fact mu_a2w = 1
+    fact mu_a2h = 1
+    fact mu_a3 = false
+    fact mu_a3x = 0
+    fact mu_a3y = 0
+    fact mu_a3w = 1
+    fact mu_a3h = 1
+    fact mu_a4 = false
+    fact mu_a4x = 0
+    fact mu_a4y = 0
+    fact mu_a4w = 1
+    fact mu_a4h = 1
+    fact mu_c1 = false
+    fact mu_c1v = 0
+    fact mu_c1r = 0
+    fact mu_c1g = 0
+    fact mu_c1b = 0
+    fact mu_c2 = false
+    fact mu_c2v = 0
+    fact mu_c2r = 0
+    fact mu_c2g = 0
+    fact mu_c2b = 0
+    fact mu_s = false
+    text mu_cutp = ""
+    image mu_cut = from mu_cutp, 0, 0
+    fact sf_mu = false     // the Overview's Music mode
+    fact mu_tool = 0       // 1 draw an area · 2 pick a colour · 3 drag the edge line
+    fact mu_px = 0
+    fact mu_py = 0
+    fact mu_qx = 0
+    fact mu_qy = 0
+    fact mu_dr = false
+    event mu_mode ->      // the Overview's Music mode: 1 in · 0 out
+    event mu_at ->        // an area drawn: its corner, x * 4096 + y
+    event mu_wh ->        // ... and its size, w * 4096 + h
+    event mu_pick ->      // a colour picked at x * 4096 + y
+    event mu_edge ->      // the edge line moved to this y
+    event mu_tog ->       // 1 the edge on/off · 2 the subject on/off
+    event mu_clear ->     // every area and colour let go
     fact lw_ripple = false
     fact lw_ripple_x = -9999
     fact lw_ripple_y = -9999
@@ -5039,6 +5213,55 @@ scene Sigil {
             clip box { from: lw_sweep_x, lw_sweep_y; size: lw_sweep_w, lw_sweep_h; corner: if(lw_whole, 0, 48) }
             shader: skin, lw_speed + min(0.999, sk_swp), lw_sweep_x, lw_sweep_y, lw_sweep_bx, lw_sweep_by, lw_sweep_bw, lw_sweep_bh, lw_sweep_p - lw_sweep_s * 10000 + round(lw_sweep_s * sk_swa) * 10000
             image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        // Music in the picture (D223): strips of the picture pulled up out of it by the music
+        group {
+            show: lw_music and mu_e
+            clip box { from: mu_ex, mu_ey; size: mu_ew, mu_eh }
+            shader: music, mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5, lw_music_p, 0
+            image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        group {
+            show: lw_music and mu_a1
+            clip box { from: mu_a1x, mu_a1y; size: mu_a1w, mu_a1h }
+            shader: music, mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5, lw_music_p, 0
+            image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        group {
+            show: lw_music and mu_a2
+            clip box { from: mu_a2x, mu_a2y; size: mu_a2w, mu_a2h }
+            shader: music, mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5, lw_music_p, 0
+            image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        group {
+            show: lw_music and mu_a3
+            clip box { from: mu_a3x, mu_a3y; size: mu_a3w, mu_a3h }
+            shader: music, mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5, lw_music_p, 0
+            image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        group {
+            show: lw_music and mu_a4
+            clip box { from: mu_a4x, mu_a4y; size: mu_a4w, mu_a4h }
+            shader: music, mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5, lw_music_p, 0
+            image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        group {
+            show: lw_music and mu_c1
+            clip box { from: 0, 0; size: skin.width, skin.height }
+            shader: music, mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5, lw_music_p + 1000000, mu_c1v
+            image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        group {
+            show: lw_music and mu_c2
+            clip box { from: 0, 0; size: skin.width, skin.height }
+            shader: music, mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5, lw_music_p + 1000000, mu_c2v
+            image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        group {
+            show: lw_music and mu_s
+            clip box { from: 0, 0; size: skin.width, skin.height }
+            shader: music, mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5, lw_music_p + 2000000, 0
+            image mu_cut { at: 0, 0; size: skin.width, skin.height; fit: cover }
         }
         // news: the picture bulges over the widget's place ...
         group {

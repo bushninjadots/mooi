@@ -8604,6 +8604,37 @@ do
     end)
 end
 
+section("music in the picture: the scene (D223)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local function block(plm, name)
+        local a = plm:find("    surface " .. name .. " {", 1, true); assert(a, name)
+        return plm:sub(a, plm:find("\n    }\n", a, true))
+    end
+    test("the passes: the edge band, four areas, two colours, the subject — each pulled by the bands", function()
+        local plm = read("shell/mooi-surface.plm")
+        local sk = block(plm, "skin")
+        local B = "mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5"
+        assert(sk:find("show: lw_music and mu_e\n", 1, true) and sk:find("shader: music, " .. B .. ", lw_music_p, 0", 1, true), "the edge")
+        for i = 1, 4 do assert(sk:find("show: lw_music and mu_a" .. i .. "\n", 1, true), "area " .. i) end
+        for i = 1, 2 do assert(sk:find("shader: music, " .. B .. ", lw_music_p + 1000000, mu_c" .. i .. "v", 1, true), "colour " .. i) end
+        assert(sk:find("shader: music, " .. B .. ", lw_music_p + 2000000, 0", 1, true) and sk:find("image mu_cut {", 1, true), "the subject")
+        assert(plm:find('shader music = file "shaders/music.wgsl"', 1, true) and io.open("shell/shaders/music.wgsl"))
+        assert(plm:find("let mb_v0 = round(mb0 * 255) * 65536 + round(mb1 * 255) * 256 + round(mb2 * 255)", 1, true), "packed as lib/surface/music does")
+    end)
+    test("the Overview's MUSIC mode: the whole picture, a toolbar, boxes drawn, colours picked, the edge dragged", function()
+        local plm = read("shell/mooi-surface.plm")
+        local g = block(plm, "ground")
+        assert(g:find("on press ov_music { emit mu_mode(1) }", 1, true), "the button")
+        for _, z in ipairs({ "mu_t_edge", "mu_t_subject", "mu_t_area", "mu_t_colour", "mu_t_clear", "mu_t_done" }) do assert(g:find("zone box " .. z, 1, true), z) end
+        assert(g:find("on release mu_z while mu_tool == 1 {", 1, true) and g:find("emit mu_wh(", 1, true), "a box drawn")
+        assert(g:find("on press mu_z while mu_tool == 2 { emit mu_pick(round(pointer.x) * 4096 + round(pointer.y)) }", 1, true), "a colour picked")
+        assert(g:find("on drag mu_z while mu_tool == 3 { emit mu_edge(round(pointer.y)) }", 1, true), "the edge dragged")
+        for _, e in ipairs({ "mu_mode", "mu_at", "mu_wh", "mu_pick", "mu_edge", "mu_tog", "mu_clear" }) do assert(plm:find("event " .. e .. " ->", 1, true), e) end
+        assert(plm:find('"capture"', 1, true), "the colour read from the screen")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

@@ -171,7 +171,7 @@ def scene():
          "scene Sigil {",
          "    permissions {",
          '        run: "pleamar", "mooi", "hyprctl", "readlink", "nmcli", "bluetoothctl", "systemctl", "playerctl"',
-         '        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock"',
+         '        services: "files", "files.write", "env", "audio.level", "media", "audio", "audio.*", "media.*", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*", "apps", "apps.launch", "workspaces", "window", "clock", "capture"',
          "    }",
          "    service audio.level as lv { level: number }",
          "    spring sg.pt = 260, 20",
@@ -243,6 +243,7 @@ def surface_layers():
           '    shader aura = file "shaders/aura.wgsl"',
           '    shader bulge = file "shaders/bulge.wgsl"',
           '    shader skin = file "shaders/skin.wgsl"',
+          '    shader music = file "shaders/music.wgsl"',
           "    fact rv_on = false", "    fact sf_firm = false   // the opening is open and the pointer has moved: the keyboard is ours",
           "    fact sf_fx = 1         // the opening's look: 1 tear · 2 aperture · 3 membrane · 4 ripple · 5 fold · 6 dissolve · 7 glass · 8 glow",
           "    fact sf_int = 0.85     // the effect's strength",
@@ -276,15 +277,16 @@ def surface_layers():
           "            // light through the skin: a soft glow at Music and the Notices while the opening is open",
           "            shader aura { at: op_x, op_y; size: op_w, op_h; values: op_k, op_x, op_y, au_mx, au_my, au_nx, au_ny, sf_glow + sf_ping * 1.5; colors: rgb(0.62, 0.84, 0.74), rgb(0.95, 0.62, 0.38); show: op_vis and sf_glow > 0.5 }",
           "            // the Overview: the wallpaper pulls back to a thin lit margin and the canvas takes the screen",
-          "            box { from: op_x + sf_ovm, op_y + sf_ovm; size: max(0, op_w - 2 * sf_ovm), max(0, op_h - 2 * sf_ovm); corner: max(0, op_r - 6); color: rgb(0.035, 0.05, 0.055); opacity: 0.99; show: op_vis and op_mode == 4 }",
+          "            box { from: op_x + sf_ovm, op_y + sf_ovm; size: max(0, op_w - 2 * sf_ovm), max(0, op_h - 2 * sf_ovm); corner: max(0, op_r - 6); color: rgb(0.035, 0.05, 0.055); opacity: 0.99; show: op_vis and op_mode == 4 and not sf_mu }",
           "            // its grid: three uprights and two crossbars, faint enough to arrange against without seeing lines",
-          "            box { from: op_x + op_w * 0.25, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
-          "            box { from: op_x + op_w * 0.5, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
-          "            box { from: op_x + op_w * 0.75, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
-          "            box { from: op_x + sf_ovm, op_y + op_h * 0.33; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
-          "            box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 }",
+          "            box { from: op_x + op_w * 0.25, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }",
+          "            box { from: op_x + op_w * 0.5, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }",
+          "            box { from: op_x + op_w * 0.75, op_y + sf_ovm; size: 1, max(0, op_h - 2 * sf_ovm); color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }",
+          "            box { from: op_x + sf_ovm, op_y + op_h * 0.33; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }",
+          "            box { from: op_x + sf_ovm, op_y + op_h * 0.66; size: max(0, op_w - 2 * sf_ovm), 1; color: rgb(0.62, 0.84, 0.74); opacity: 0.03; show: op_vis and op_mode == 4 and not sf_mu }",
           "            text \"THE SUBSURFACE\" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 44; anchor: left center; size: 11; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
           "            text \"the widgets are in edit mode: drag, resize, undo  /  type to find an app  /  Esc to close\" { at: op_x + sf_ovm + 24, op_y + op_h - sf_ovm - 26; anchor: left center; size: 10; family: \"Share Tech Mono\"; color: rgb(0.55, 0.6, 0.58); show: op_mode == 4 and sf_labels > 0.5 }"]
+    L += music_overview()
     L += ["            // the Overview's close, over the canvas at its top right (undo is the widgets' own, in edit mode)",
           "            box { from: op_x + op_w - sf_ovm - 92, op_y + sf_ovm + 108; size: 80, 26; corner: 6; color: rgb(0.08, 0.1, 0.11); opacity: 0.72; show: op_vis and op_mode == 4 }",
           "            text \"CLOSE\" { at: op_x + op_w - sf_ovm - 52, op_y + sf_ovm + 108 + 13; anchor: center; align: center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.62, 0.84, 0.74); show: op_vis and op_mode == 4 }",
@@ -368,6 +370,108 @@ def live_groups(img):
     return L
 
 
+B6 = "mb_v0, mb_v1, mb_v2, mb_v3, mb_v4, mb_v5"
+
+
+def music_decls():
+    """D223: Music in the picture — its bands (springs over the logic's targets, packed three to a number as
+    lib/surface/music `pack`), its places, and the Overview's Music mode."""
+    L = ["    // ── Music in the picture (D223): the bands, the places it grows from, the Overview's Music mode ──",
+         "    fact lw_music = false", "    fact lw_music_p = 0", "    spring sg.mb = 520, 34"]
+    for i in range(16):
+        L += [f"    fact mb_t{i} = 0", f"    prop mb{i} = 0 ~sg.mb", f"    follow mb{i} = mb_t{i}"]
+    for g in range(6):
+        parts = [f"round(mb{g * 3 + j} * 255) * {m}" if g * 3 + j < 16 else "0" for j, m in ((0, "65536"), (1, "256"), (2, "1"))]
+        expr = " + ".join(p.replace(" * 1", "") if p.endswith(" * 1") else p for p in parts)
+        L += [f"    let mb_v{g} = {expr}"]
+    L += ["    fact mu_e = false", "    fact mu_ex = 0", "    fact mu_ey = 0", "    fact mu_ew = 1", "    fact mu_eh = 1"]
+    for i in range(1, 5):
+        L += [f"    fact mu_a{i} = false", f"    fact mu_a{i}x = 0", f"    fact mu_a{i}y = 0", f"    fact mu_a{i}w = 1", f"    fact mu_a{i}h = 1"]
+    for i in range(1, 3):
+        L += [f"    fact mu_c{i} = false", f"    fact mu_c{i}v = 0", f"    fact mu_c{i}r = 0", f"    fact mu_c{i}g = 0", f"    fact mu_c{i}b = 0"]
+    L += ["    fact mu_s = false", '    text mu_cutp = ""', "    image mu_cut = from mu_cutp, 0, 0",
+          "    fact sf_mu = false     // the Overview's Music mode",
+          "    fact mu_tool = 0       // 1 draw an area · 2 pick a colour · 3 drag the edge line",
+          "    fact mu_px = 0", "    fact mu_py = 0", "    fact mu_qx = 0", "    fact mu_qy = 0", "    fact mu_dr = false",
+          "    event mu_mode ->      // the Overview's Music mode: 1 in · 0 out",
+          "    event mu_at ->        // an area drawn: its corner, x * 4096 + y",
+          "    event mu_wh ->        // ... and its size, w * 4096 + h",
+          "    event mu_pick ->      // a colour picked at x * 4096 + y",
+          "    event mu_edge ->      // the edge line moved to this y",
+          "    event mu_tog ->       // 1 the edge on/off · 2 the subject on/off",
+          "    event mu_clear ->     // every area and colour let go"]
+    return L
+
+
+def music_groups(img):
+    L = ["        // Music in the picture (D223): strips of the picture pulled up out of it by the music"]
+    def bars(show, x, y, w, h):
+        return ["        group {", f"            show: lw_music and {show}",
+                f"            clip box {{ from: {x}, {y}; size: {w}, {h} }}",
+                f"            shader: music, {B6}, lw_music_p, 0", f"            {img}", "        }"]
+    L += bars("mu_e", "mu_ex", "mu_ey", "mu_ew", "mu_eh")
+    for i in range(1, 5):
+        L += bars(f"mu_a{i}", f"mu_a{i}x", f"mu_a{i}y", f"mu_a{i}w", f"mu_a{i}h")
+    for i in range(1, 3):
+        L += ["        group {", f"            show: lw_music and mu_c{i}",
+              "            clip box { from: 0, 0; size: skin.width, skin.height }",
+              f"            shader: music, {B6}, lw_music_p + 1000000, mu_c{i}v", f"            {img}", "        }"]
+    L += ["        group {", "            show: lw_music and mu_s",
+          "            clip box { from: 0, 0; size: skin.width, skin.height }",
+          f"            shader: music, {B6}, lw_music_p + 2000000, 0",
+          "            image mu_cut { at: 0, 0; size: skin.width, skin.height; fit: cover }", "        }"]
+    return L
+
+
+def music_overview():
+    """D223: the Overview's Music mode — the whole picture, a toolbar, boxes drawn, colours picked, the edge dragged."""
+    A = ACCENT
+    tb = "op_y + sf_ovm + 64"
+    tools = [("mu_t_edge", "EDGE", "mu_e", "emit mu_tog(1)"), ("mu_t_subject", "SUBJECT", "mu_s", "emit mu_tog(2)"),
+             ("mu_t_area", "DRAW AREA", "mu_tool == 1", "mu_tool = 1"), ("mu_t_colour", "PICK COLOUR", "mu_tool == 2", "mu_tool = 2"),
+             ("mu_t_line", "MOVE EDGE", "mu_tool == 3", "mu_tool = 3"), ("mu_t_clear", "CLEAR", "false", "emit mu_clear"),
+             ("mu_t_done", "DONE", "false", "mu_tool = 0; emit mu_mode(0)")]
+    L = ["            // D223: the Overview's Music mode — the whole picture at full light, and where the music grows from",
+         f"            box {{ from: op_x + op_w - sf_ovm - 184, op_y + sf_ovm + 108; size: 80, 26; corner: 6; color: rgb(0.08, 0.1, 0.11); opacity: 0.72; show: op_vis and op_mode == 4 and not sf_mu }}",
+         f"            text \"MUSIC\" {{ at: op_x + op_w - sf_ovm - 144, op_y + sf_ovm + 121; anchor: center; align: center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: {A}; show: op_vis and op_mode == 4 and not sf_mu }}",
+         "            zone box ov_music { from: op_x + op_w - sf_ovm - 184, op_y + sf_ovm + 108; size: 80, 26; cursor: pointer; role: button; label: \"Music in the picture: where it grows from\"; show: op_live and op_mode == 4 and not sf_mu }",
+         "            on press ov_music { emit mu_mode(1) }",
+         "            group {", "                show: op_vis and op_mode == 4 and sf_mu",
+         "                clip box { from: op_x, op_y; size: op_w, op_h; corner: op_r }",
+         "                image sf_cover { at: 0, 0; size: ground.width, ground.height; fit: cover }",
+         "                // where it grows from: the edge line, the areas, the rubber band",
+         f"                line {{ from: op_x, mu_ey + mu_eh; to: op_x + op_w, mu_ey + mu_eh; width: 2; color: {A}; opacity: if(mu_e, 0.9, 0.3) }}",
+         f"                text \"EDGE\" {{ at: op_x + 24, mu_ey + mu_eh - 12; anchor: left center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: {A}; opacity: if(mu_e, 1, 0.4) }}"]
+    for i in range(1, 5):
+        L += [f"                box {{ from: mu_a{i}x, mu_a{i}y; size: mu_a{i}w, mu_a{i}h; corner: 4; stroke: 1.5; color: {A}; opacity: 0.85; show: mu_a{i} }}"]
+    L += [f"                box {{ from: min(mu_px, mu_qx), min(mu_py, mu_qy); size: abs(mu_qx - mu_px), abs(mu_qy - mu_py); corner: 4; stroke: 1.5; color: {WARM}; show: mu_dr }}",
+          "                // the toolbar",
+          f"                box {{ from: op_x + op_w / 2 - 430, {tb} - 6; size: 860, 40; corner: 8; color: rgb(0.05, 0.06, 0.07); opacity: 0.88 }}"]
+    for n, (z, label, lit, act) in enumerate(tools):
+        x = f"op_x + op_w / 2 - 422 + {n * 112}"
+        L += [f"                box {{ from: {x}, {tb}; size: 106, 28; corner: 5; color: if({lit}, rgb(0.62, 0.84, 0.74), rgb(0.12, 0.14, 0.15)); opacity: 0.92 }}",
+              f"                text \"{label}\" {{ at: {x} + 53, {tb} + 14; anchor: center; align: center; size: 9; weight: 700; family: \"Share Tech Mono\"; color: if({lit}, rgb(0.05, 0.06, 0.07), rgb(0.86, 0.9, 0.88)) }}",
+              f"                zone box {z} {{ from: {x}, {tb}; size: 106, 28; cursor: pointer; role: button; label: \"{label.title()}\"; show: op_live }}",
+              f"                on press {z} {{ {act} }}"]
+    L += [f"                box {{ from: op_x + op_w / 2 + 364, {tb} + 6; size: 16, 16; corner: 3; color: rgb(mu_c1r, mu_c1g, mu_c1b); show: mu_c1 }}",
+          f"                box {{ from: op_x + op_w / 2 + 384, {tb} + 6; size: 16, 16; corner: 3; color: rgb(mu_c2r, mu_c2g, mu_c2b); show: mu_c2 }}",
+          f"                text \"DRAG A BOX · CLICK A COLOUR IN THE PICTURE · DRAG THE EDGE LINE\" {{ at: op_x + op_w / 2, {tb} + 48; anchor: center; align: center; size: 9; family: \"Share Tech Mono\"; color: rgb(0.86, 0.9, 0.88) }}",
+          "                // the picture itself: draw, pick, drag",
+          f"                zone box mu_z {{ from: op_x, {tb} + 60; size: op_w, op_h - (sf_ovm + 124); cursor: crosshair; role: button; label: \"The picture\"; show: op_live and mu_tool > 0 }}",
+          "                on press mu_z while mu_tool == 1 { mu_px = pointer.x; mu_py = pointer.y; mu_qx = pointer.x; mu_qy = pointer.y; mu_dr = true }",
+          "                on drag mu_z while mu_tool == 1 { mu_qx = pointer.x; mu_qy = pointer.y }",
+          "                on release mu_z while mu_tool == 1 {",
+          "                    mu_dr = false",
+          "                    emit mu_at(round(min(mu_px, mu_qx)) * 4096 + round(min(mu_py, mu_qy)))",
+          "                    emit mu_wh(round(abs(mu_qx - mu_px)) * 4096 + round(abs(mu_qy - mu_py)))",
+          "                }",
+          "                on press mu_z while mu_tool == 2 { emit mu_pick(round(pointer.x) * 4096 + round(pointer.y)) }",
+          "                on press mu_z while mu_tool == 3 { emit mu_edge(round(pointer.y)) }",
+          "                on drag mu_z while mu_tool == 3 { emit mu_edge(round(pointer.y)) }",
+          "            }"]
+    return L
+
+
 def push_layers():
     """D217, push up from below (the Subsurface spec §9, §9a): `skin` (level bottom: over the wallpaper, under the
     windows; patches round the widgets below — their glow, a visualiser moving the picture, the clock's sweep at
@@ -382,6 +486,7 @@ def push_layers():
           "    fact sk_nx = -9999", "    fact sk_ny = -9999", "    fact sk_nn = false   // Notices, holding news",
           "    // Live wallpaper (D219): each effect's patch (or the screen), its widget's box, its packed numbers",
           "    fact lw_on = false", "    fact lw_whole = false", "    fact lw_speed = 100", "    fact lw_boost = 0",
+          ] + music_decls() + [
           ] + [f"    fact lw_{k}{f} = {v}" for k in LIVE_FX for f, v in (("", "false"), ("_x", "-9999"), ("_y", "-9999"), ("_w", "1"), ("_h", "1"),
                                                                     ("_bx", "-9999"), ("_by", "-9999"), ("_bw", "1"), ("_bh", "1"), ("_p", "0"), ("_s", "0"))] + [
           "    fact sk_swt = 0      // the hour's sweep: where its band is going (0 … 1)",
@@ -416,7 +521,7 @@ def push_layers():
           f"        shader aura {{ at: sk_mx - 220, sk_my - 220; size: 440, 440; values: 1, sk_mx - 220, sk_my - 220, sk_mx, sk_my, -9999, -9999, sk_g * (0.75 + 0.5 * lv.level); colors: {ACCENT}, {WARM}; show: sk_mp }}",
           f"        shader aura {{ at: sk_nx - 220, sk_ny - 220; size: 440, 440; values: 1, sk_nx - 220, sk_ny - 220, -9999, -9999, sk_nx, sk_ny, sk_g; colors: {ACCENT}, {WARM}; show: sk_nn }}",
           "        // Live wallpaper (D219): one pass per effect over its patch (or the screen) — ripple, breathe, flow, sweep;",
-          "        // the first number carries the speed (whole) and the music's level (or the sweep's place)"] + live_groups(img) + [
+          "        // the first number carries the speed (whole) and the music's level (or the sweep's place)"] + live_groups(img) + music_groups(img) + [
           "        // news: the picture bulges over the widget's place ...",
           "        group {", "            show: pu_on and pu_b > 0.005",
           "            clip box { from: pu_x - 48, pu_y - 48; size: pu_w + 96, pu_h + 96; corner: 48 }",
