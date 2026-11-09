@@ -8236,6 +8236,31 @@ do
     end)
 end
 
+section("push up from below: the logic (D217)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("light: guarded — Surface on, the opening shut, no window fullscreen; the push and the trace each a setting", function()
+        local l = read("shell/lib/surface/light.luau")
+        assert(l:find("local function may() return su().on == true and not ctx.open() and not full end", 1, true))
+        assert(l:find("su().push == false", 1, true) and l:find("su().trace ~= false", 1, true) and l:find("s.ping == false", 1, true))
+        assert(l:find("if skin.fullscreen(clients, ws) or not may() then", 1, true), "no light over a fullscreen window")
+        assert(not l:find("sys.watch", 1, true), "one watcher per service: it watches nothing itself")
+        assert(l:find("fact.lt_tt, fact.lt_bt = 0, win and 1 or 0", 1, true), "reduced motion: the border lit at once, no travel")
+        assert(l:find('on("lt_go", function() run("mooi", { "nexus" }', 1, true), "the spark opens the notices")
+    end)
+    test("mooi-surface hands its watchers' news to it", function()
+        local s = read("shell/mooi-surface.luau")
+        assert(s:find('SK = require("lib/surface/light")(', 1, true))
+        for _, h in ipairs({ "SK.song(S.r.music)", "SK.notice(first)", "SK.news(S.r.notifications.count)", "SK.clock(c.time)", "SK.window(w)", "SK.refresh()", "SK.opening(" }) do
+            assert(s:find(h, 1, true), h)
+        end
+    end)
+    test("settings: the push and the light's travel, on by default", function()
+        local d = require("lib/config").defaults().surface
+        eq(d.push, true); eq(d.trace, true)
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end

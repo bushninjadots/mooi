@@ -50,6 +50,7 @@ local S = {
 
 local ship_set
 local SF
+local SK                   -- D217: push up from below (lib/surface/light), once the opening exists
 
 -- ── the readings, from the services and the feeds ──
 local function feed()
@@ -71,8 +72,10 @@ local function notices()
     S.r.notifications = { count = tonumber(n.count) or 0, title = first and first.title or "", app = first and first.app or "" }
     local fresh
     S.notice_seen, fresh = director.notice_step(S.notice_seen, first and first.time, S.now)
+    if SK then SK.news(S.r.notifications.count) end
     if fresh then
         S.notice = fresh
+        if SK then SK.notice(first) end
         -- D210: the notification's ping — a light at the Notices widget while the opening is open
         fact.sf_ping = 1
         SF.ping = 1
@@ -236,6 +239,7 @@ pcall(sys.watch, "media", function(m)
     if type(m) ~= "table" then return end
     S.r.music = { title = m.title or "", artist = m.artist or "", playing = m.playing == true }
     update()
+    if SK then SK.song(S.r.music) end
 end)
 pcall(sys.watch, "audio", function(a)
     if type(a) ~= "table" then return end
@@ -273,12 +277,14 @@ pcall(sys.watch, "window", function(w)
     if type(w) ~= "table" then return end
     local was_class = S.r.windows and S.r.windows.class
     S.r.windows = { title = w.title, class = w.class }
+    if SK then SK.window(w) end
     -- D208: and so does one that moved the focus to another app (the service also fires on every title change)
     if was_class ~= nil and was_class ~= w.class and SF_guard then SF_guard("focus") end
 end)
 pcall(sys.watch, "clock", function(c)
     if type(c) ~= "table" then return end
     S.r.clock = { time = c.time, date = c.date }
+    if SK then SK.clock(c.time) end
     S.r.calendar = { date = c.date, weekday = c.weekday }
     update()
 end)
@@ -300,6 +306,7 @@ pcall(sys.watch, "files:settings.json", function()
     S.drawn = {}
     update()
     if ship_set then ship_set() end
+    if SK then SK.refresh() end
 end)
 -- the boxes the opening snaps to include the widgets living under the wallpaper (Task 8 keeps them in step)
 local surface_file          -- below: surface.json, kept (D215: without the Presences once they are widgets)
@@ -308,6 +315,7 @@ local function widgets_file()
     S.widget_list = type(w) == "table" and type(w.widgets) == "table" and w.widgets or {}
     S.widgets_migrated = type(w) == "table" and w.migrated_presences == true
     if surface_file then surface_file() end
+    if SK then SK.refresh() end
 end
 pcall(sys.watch, "files:widgets.json", widgets_file)
 widgets_file()
@@ -460,6 +468,7 @@ local function broadcast()
         SF.rise = rise
         widgets_say("emit wg_rise " .. tostring(rise))
     end
+    if SK then SK.opening(shown ~= opening.MODES.closed) end
     local full = shown == opening.MODES.full and surface_on()
     if full ~= SF.editing then
         SF.editing = full
@@ -734,6 +743,16 @@ run("hyprctl", { "-j", "monitors" }, function(out)
 end)
 wallpaper()
 SF_wall = wallpaper       -- the palette watcher above calls it: one watcher per file (review M7)
+
+-- D217: push up from below — the glow, the moving wallpaper, the bulge and words, the notice's light
+SK = require("lib/surface/light")({
+    settings = function() return S.settings end,
+    widgets = function() return S.widget_list end,
+    bar_h = bar_h,
+    open = function() return opening.shown(SF.op) ~= opening.MODES.closed end,
+    scr = function() return SF.scr end,
+})
+if S.r.music then SK.song(S.r.music) end
 
 feed(); notices(); hosts()
 widgets_file()

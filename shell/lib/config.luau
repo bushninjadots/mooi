@@ -78,6 +78,10 @@ M.SCHEMA = {
     { path = "surface.labels", kind = "boolean", default = true },
     { path = "surface.glow", kind = "enum", values = { "off", "subtle", "bright" }, default = "subtle" },
     { path = "surface.ping", kind = "boolean", default = true },
+    -- D217: push up from below — news bulges the wallpaper and presses its words up; the ping's light travels to
+    -- the app's window and round its border
+    { path = "surface.push", kind = "boolean", default = true },
+    { path = "surface.trace", kind = "boolean", default = true },
     { path = "surface.layout", kind = "enum", values = { "arc", "row", "grid", "calm" }, default = "arc" },
     -- retired (D215): the widgets below replaced the components; kept so a saved value stays valid and no setter code moves
     { path = "surface.components", kind = "enum", values = { "right", "centre", "left" }, default = "right" },
