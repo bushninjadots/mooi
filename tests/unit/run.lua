@@ -8294,10 +8294,14 @@ do
         local plm = read("shell/mooi-surface.plm")
         local sk = block(plm, "skin")
         assert(sk:find("level: bottom", 1, true) and sk:find("keyboard: none", 1, true))
-        assert(sk:find("open: sf_on and not op_vis and (sk_on or pu_on)", 1, true), "nothing while the opening shows")
+        assert(sk:find("open: not op_vis and (lw_on or (sf_on and (sk_on or pu_on)))", 1, true), "nothing while the opening shows")
         assert(not sk:find("zone", 1, true), "it catches nothing")
         assert(sk:find("shader: bulge, pu_b,", 1, true) and sk:find("text pu_words", 1, true), "the bulge and its words")
-        assert(sk:find("shader: skin, lv.level,", 1, true) and sk:find("shader: skin, sk_swp,", 1, true), "the moving wallpaper and the hour's sweep")
+        -- (D219: the moving wallpaper and the hour's sweep are Live wallpaper's, one pass per effect)
+        for _, k in ipairs({ "ripple", "breathe", "flow", "sweep" }) do
+            assert(sk:find("show: lw_" .. k .. "\n", 1, true) and sk:find("shader: skin, lw_speed + min(0.999, ", 1, true), k)
+        end
+        assert(sk:find("min(0.999, sk_swp)", 1, true) and sk:find("min(0.999, max(lv.level, lw_boost))", 1, true), "the sweep's place; the music (or Try it)")
         assert(sk:find("shader aura { at: sk_mx - 220, sk_my - 220; size: 440, 440;", 1, true), "the glow, a patch round the thing")
         assert(sk:find("show: pu_plate", 1, true), "high contrast: a plate under the words")
         assert(plm:find('shader bulge = file "shaders/bulge.wgsl"', 1, true) and plm:find('shader skin = file "shaders/skin.wgsl"', 1, true))
@@ -8312,7 +8316,7 @@ do
         eq(n, 1, "one zone: the spark's")
         assert(lt:find("on press lt_z { emit lt_go }", 1, true))
         assert(plm:find("event lt_go ->", 1, true))
-        for _, f in ipairs({ "lt_sx", "lt_tx", "lt_rx", "lt_rw", "lt_n", "lt_so", "pu_x", "sk_vx", "sk_swt", "sk_swv" }) do
+        for _, f in ipairs({ "lt_sx", "lt_tx", "lt_rx", "lt_rw", "lt_n", "lt_so", "pu_x", "lw_ripple_x", "lw_sweep_p", "sk_swt", "sk_swv" }) do
             assert(plm:find("fact " .. f .. " = ", 1, true), f)
         end
     end)
@@ -8417,6 +8421,21 @@ do
         assert(g:find('"Try it", "live_try", 0', 1, true))
         assert(read("shell/mooi-settings.luau"):find('"emit lw_try"', 1, true), "Try it reaches mooi-surface")
         assert(read("shell/mooi.luau"):find("settings.live.on ~= false then return true end", 1, true), "it runs with the Subsurface off")
+    end)
+end
+
+section("live wallpaper: the logic (D219)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("it rests while off, the opening shows, a window is fullscreen, reduced motion, or windows cover the whole picture", function()
+        local l = read("shell/lib/surface/light.luau")
+        assert(l:find("local resting = not L.on or ctx.open() or full or reduced() or (whole and covered >= 0.9)", 1, true))
+        assert(l:find('if k == "ripple" or k == "breathe" then wants = wants and (playing or trying)', 1, true), "the music drives them")
+        assert(l:find('elseif k == "sweep" then wants = wants and (sweeping or trying) end', 1, true), "the hour, or Try it")
+        assert(l:find('on("lw_try"', 1, true), "Try it")
+        assert(l:find("skin.covered_share(skin.rects(clients, ws, mon), ctx.scr())", 1, true), "how much the windows hide")
+        assert(l:find("if su().on ~= true and not skin.live(ctx.settings()).on then return end", 1, true), "asked only while something needs it")
+        assert(read("shell/mooi-surface.luau"):find("    if SK then SK.window(w) end", 1, true))
     end)
 end
 

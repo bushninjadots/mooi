@@ -271,6 +271,8 @@ pcall(sys.watch, "workspaces", function(w)
     -- D208: a Super shortcut that changed workspace closes a reveal (review I3: only a change of workspace —
     -- the service also fires when windows come and go)
     if was_active ~= nil and was_active ~= S.r.workspaces.active and SF_guard then SF_guard("workspace") end
+    -- D219: the windows changed (Live wallpaper's whole picture rests under them)
+    if SK then SK.window(w) end
     update()
 end)
 pcall(sys.watch, "window", function(w)

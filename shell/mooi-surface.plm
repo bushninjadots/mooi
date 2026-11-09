@@ -4901,15 +4901,55 @@ scene Sigil {
     fact sk_nx = -9999
     fact sk_ny = -9999
     fact sk_nn = false   // Notices, holding news
-    fact sk_vx = -9999
-    fact sk_vy = -9999
-    fact sk_vw = 1
-    fact sk_vh = 1
-    fact sk_vm = false   // a visualiser that moves the wallpaper, playing
-    fact sk_cx = -9999
-    fact sk_cy = -9999
-    fact sk_cw = 1
-    fact sk_ch = 1
+    // Live wallpaper (D219): each effect's patch (or the screen), its widget's box, its packed numbers
+    fact lw_on = false
+    fact lw_whole = false
+    fact lw_speed = 100
+    fact lw_boost = 0
+    fact lw_ripple = false
+    fact lw_ripple_x = -9999
+    fact lw_ripple_y = -9999
+    fact lw_ripple_w = 1
+    fact lw_ripple_h = 1
+    fact lw_ripple_bx = -9999
+    fact lw_ripple_by = -9999
+    fact lw_ripple_bw = 1
+    fact lw_ripple_bh = 1
+    fact lw_ripple_p = 0
+    fact lw_ripple_s = 0
+    fact lw_breathe = false
+    fact lw_breathe_x = -9999
+    fact lw_breathe_y = -9999
+    fact lw_breathe_w = 1
+    fact lw_breathe_h = 1
+    fact lw_breathe_bx = -9999
+    fact lw_breathe_by = -9999
+    fact lw_breathe_bw = 1
+    fact lw_breathe_bh = 1
+    fact lw_breathe_p = 0
+    fact lw_breathe_s = 0
+    fact lw_flow = false
+    fact lw_flow_x = -9999
+    fact lw_flow_y = -9999
+    fact lw_flow_w = 1
+    fact lw_flow_h = 1
+    fact lw_flow_bx = -9999
+    fact lw_flow_by = -9999
+    fact lw_flow_bw = 1
+    fact lw_flow_bh = 1
+    fact lw_flow_p = 0
+    fact lw_flow_s = 0
+    fact lw_sweep = false
+    fact lw_sweep_x = -9999
+    fact lw_sweep_y = -9999
+    fact lw_sweep_w = 1
+    fact lw_sweep_h = 1
+    fact lw_sweep_bx = -9999
+    fact lw_sweep_by = -9999
+    fact lw_sweep_bw = 1
+    fact lw_sweep_bh = 1
+    fact lw_sweep_p = 0
+    fact lw_sweep_s = 0
     fact sk_swt = 0      // the hour's sweep: where its band is going (0 … 1)
     fact sk_swv = 0      // ... and how seen it is
     spring sg.slow = 14, 7.5
@@ -4966,22 +5006,34 @@ scene Sigil {
         reserve: -1
         keyboard: none
         rate: 30, 20 while calm
-        open: sf_on and not op_vis and (sk_on or pu_on)
+        open: not op_vis and (lw_on or (sf_on and (sk_on or pu_on)))
         // the glow through: a soft breath at Now Playing while it plays, at Notices while it holds news
         shader aura { at: sk_mx - 220, sk_my - 220; size: 440, 440; values: 1, sk_mx - 220, sk_my - 220, sk_mx, sk_my, -9999, -9999, sk_g * (0.75 + 0.5 * lv.level); colors: rgb(0.62, 0.84, 0.74), rgb(0.95, 0.62, 0.38); show: sk_mp }
         shader aura { at: sk_nx - 220, sk_ny - 220; size: 440, 440; values: 1, sk_nx - 220, sk_ny - 220, -9999, -9999, sk_nx, sk_ny, sk_g; colors: rgb(0.62, 0.84, 0.74), rgb(0.95, 0.62, 0.38); show: sk_nn }
-        // a visualiser moving the wallpaper: rings round its place with the music
+        // Live wallpaper (D219): one pass per effect over its patch (or the screen) — ripple, breathe, flow, sweep;
+        // the first number carries the speed (whole) and the music's level (or the sweep's place)
         group {
-            show: sk_vm
-            clip box { from: sk_vx - 80, sk_vy - 80; size: sk_vw + 160, sk_vh + 160; corner: 48 }
-            shader: skin, lv.level, sk_vx - 80, sk_vy - 80, sk_vx, sk_vy, sk_vw, sk_vh, 1
+            show: lw_ripple
+            clip box { from: lw_ripple_x, lw_ripple_y; size: lw_ripple_w, lw_ripple_h; corner: if(lw_whole, 0, 48) }
+            shader: skin, lw_speed + min(0.999, max(lv.level, lw_boost)), lw_ripple_x, lw_ripple_y, lw_ripple_bx, lw_ripple_by, lw_ripple_bw, lw_ripple_bh, lw_ripple_p
             image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
         }
-        // the clock's hour: a band of light crosses its place
         group {
-            show: sk_swa > 0.01
-            clip box { from: sk_cx - 60, sk_cy - 60; size: sk_cw + 120, sk_ch + 120; corner: 36 }
-            shader: skin, sk_swp, sk_cx - 60, sk_cy - 60, sk_cx, sk_cy, sk_cw, sk_ch, 2 + 0.99 * sk_swa
+            show: lw_breathe
+            clip box { from: lw_breathe_x, lw_breathe_y; size: lw_breathe_w, lw_breathe_h; corner: if(lw_whole, 0, 48) }
+            shader: skin, lw_speed + min(0.999, max(lv.level, lw_boost)), lw_breathe_x, lw_breathe_y, lw_breathe_bx, lw_breathe_by, lw_breathe_bw, lw_breathe_bh, lw_breathe_p
+            image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        group {
+            show: lw_flow
+            clip box { from: lw_flow_x, lw_flow_y; size: lw_flow_w, lw_flow_h; corner: if(lw_whole, 0, 48) }
+            shader: skin, lw_speed + min(0.999, max(lv.level, lw_boost)), lw_flow_x, lw_flow_y, lw_flow_bx, lw_flow_by, lw_flow_bw, lw_flow_bh, lw_flow_p
+            image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
+        }
+        group {
+            show: lw_sweep
+            clip box { from: lw_sweep_x, lw_sweep_y; size: lw_sweep_w, lw_sweep_h; corner: if(lw_whole, 0, 48) }
+            shader: skin, lw_speed + min(0.999, sk_swp), lw_sweep_x, lw_sweep_y, lw_sweep_bx, lw_sweep_by, lw_sweep_bw, lw_sweep_bh, lw_sweep_p - lw_sweep_s * 10000 + round(lw_sweep_s * sk_swa) * 10000
             image rv_img { at: 0, 0; size: skin.width, skin.height; fit: cover }
         }
         // news: the picture bulges over the widget's place ...

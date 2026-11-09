@@ -6357,3 +6357,28 @@ playing, and the `skin` surface lies under the windows by design. Only the notic
 
 **Verified.** Unit 775 / 0; 15 scenes compile; `bin/mooi check` green. The follow itself needs the owner's Super key.
 
+## D219 · 2026-11-09 · Live wallpaper: its own feature
+
+The owner: the moving wallpaper "should also be its own feature for the shell, so its own settings … could be a
+cool feature expanded"; then chose both places (round the widgets below, or the whole picture) and all four effects,
+each with its strength, size and blend (spec `docs/superpowers/specs/2026-11-09-live-wallpaper-design.md`).
+
+**Settings → Live wallpaper** (a page of its own, appended last): on (default on); where — round the widgets below
+that move the wallpaper (the Visualiser and the Clock whose `meet` is `moves`, D217) or the whole picture; speed
+50–200 %; **Try it** (every effect that is on, for a few seconds, music or not); and Ripple, Breathe, Flow and Light
+sweep, each on/off with strength, size and blend (nineteen keys, `live.*`, setter slots appended).
+
+**Drawn** by mooi-surface's `skin` surface (over the wallpaper, under the windows), one shader pass per effect
+(`shaders/skin.wgsl`, rewritten: the eight numbers carry the patch, the widget's box, the speed with the music's level
+— or the sweep's place — and one packed number for the kind, strength, size and blend: `lib/surface/skin.pack`).
+Ripple and Breathe follow the music; Flow drifts on its own; the sweep comes when the hour turns. It works with
+the Subsurface off (mooi-surface now also runs for Live wallpaper).
+
+**It rests** while off, while the opening shows, with a window fullscreen, under reduced motion, and — the whole
+picture — while windows cover ≥ 90 % of the screen (`skin.covered_share` over Hyprland's clients, read on window and
+workspace changes at most once a second). D217's two fixed "moves" patches are replaced by it.
+
+**Verified.** Unit 781 / 0; 15 scenes compile; `bin/mooi check` green. Each effect rendered through a throwaway scene
+over the real wallpaper and measured against the still picture (Ripple ≈ 30 600 pixels changed, Breathe ≈ 9 800,
+Flow ≈ 24 200, the sweep ≈ 82 600). Not yet seen live.
+

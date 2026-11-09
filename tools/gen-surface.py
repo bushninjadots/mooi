@@ -347,6 +347,22 @@ WARM = "rgb(0.95, 0.62, 0.38)"
 ACCENT = "rgb(0.62, 0.84, 0.74)"
 
 
+LIVE_FX = ["ripple", "breathe", "flow", "sweep"]
+
+
+def live_groups(img):
+    L = []
+    for k in LIVE_FX:
+        amt = "sk_swp" if k == "sweep" else "max(lv.level, lw_boost)"
+        # the sweep fades by its strength: the packed number rebuilt with the strength times how seen it is
+        packed = f"lw_{k}_p - lw_{k}_s * 10000 + round(lw_{k}_s * sk_swa) * 10000" if k == "sweep" else f"lw_{k}_p"
+        L += ["        group {", f"            show: lw_{k}",
+              f"            clip box {{ from: lw_{k}_x, lw_{k}_y; size: lw_{k}_w, lw_{k}_h; corner: if(lw_whole, 0, 48) }}",
+              f"            shader: skin, lw_speed + min(0.999, {amt}), lw_{k}_x, lw_{k}_y, lw_{k}_bx, lw_{k}_by, lw_{k}_bw, lw_{k}_bh, {packed}",
+              f"            {img}", "        }"]
+    return L
+
+
 def push_layers():
     """D217, push up from below (the Subsurface spec §9, §9a): `skin` (level bottom: over the wallpaper, under the
     windows; patches round the widgets below — their glow, a visualiser moving the picture, the clock's sweep at
@@ -359,9 +375,10 @@ def push_layers():
           "    fact sk_g = 1          // the glow: 0 off · 1 subtle · 2 bright",
           "    fact sk_mx = -9999", "    fact sk_my = -9999", "    fact sk_mp = false   // Now Playing, playing",
           "    fact sk_nx = -9999", "    fact sk_ny = -9999", "    fact sk_nn = false   // Notices, holding news",
-          "    fact sk_vx = -9999", "    fact sk_vy = -9999", "    fact sk_vw = 1", "    fact sk_vh = 1",
-          "    fact sk_vm = false   // a visualiser that moves the wallpaper, playing",
-          "    fact sk_cx = -9999", "    fact sk_cy = -9999", "    fact sk_cw = 1", "    fact sk_ch = 1",
+          "    // Live wallpaper (D219): each effect's patch (or the screen), its widget's box, its packed numbers",
+          "    fact lw_on = false", "    fact lw_whole = false", "    fact lw_speed = 100", "    fact lw_boost = 0",
+          ] + [f"    fact lw_{k}{f} = {v}" for k in LIVE_FX for f, v in (("", "false"), ("_x", "-9999"), ("_y", "-9999"), ("_w", "1"), ("_h", "1"),
+                                                                    ("_bx", "-9999"), ("_by", "-9999"), ("_bw", "1"), ("_bh", "1"), ("_p", "0"), ("_s", "0"))] + [
           "    fact sk_swt = 0      // the hour's sweep: where its band is going (0 … 1)",
           "    fact sk_swv = 0      // ... and how seen it is",
           "    spring sg.slow = 14, 7.5",
@@ -389,20 +406,12 @@ def push_layers():
           "    prop lt_k = 0 ~sg.op", "    follow lt_k = lt_kt"]
     L += ["", "    surface skin {", "        size: full, full", "        anchor: top", "        level: bottom", "        reserve: -1",
           "        keyboard: none", "        rate: 30, 20 while calm",
-          "        open: sf_on and not op_vis and (sk_on or pu_on)",
+          "        open: not op_vis and (lw_on or (sf_on and (sk_on or pu_on)))",
           "        // the glow through: a soft breath at Now Playing while it plays, at Notices while it holds news",
           f"        shader aura {{ at: sk_mx - 220, sk_my - 220; size: 440, 440; values: 1, sk_mx - 220, sk_my - 220, sk_mx, sk_my, -9999, -9999, sk_g * (0.75 + 0.5 * lv.level); colors: {ACCENT}, {WARM}; show: sk_mp }}",
           f"        shader aura {{ at: sk_nx - 220, sk_ny - 220; size: 440, 440; values: 1, sk_nx - 220, sk_ny - 220, -9999, -9999, sk_nx, sk_ny, sk_g; colors: {ACCENT}, {WARM}; show: sk_nn }}",
-          "        // a visualiser moving the wallpaper: rings round its place with the music",
-          "        group {", "            show: sk_vm",
-          "            clip box { from: sk_vx - 80, sk_vy - 80; size: sk_vw + 160, sk_vh + 160; corner: 48 }",
-          "            shader: skin, lv.level, sk_vx - 80, sk_vy - 80, sk_vx, sk_vy, sk_vw, sk_vh, 1",
-          f"            {img}", "        }",
-          "        // the clock's hour: a band of light crosses its place",
-          "        group {", "            show: sk_swa > 0.01",
-          "            clip box { from: sk_cx - 60, sk_cy - 60; size: sk_cw + 120, sk_ch + 120; corner: 36 }",
-          "            shader: skin, sk_swp, sk_cx - 60, sk_cy - 60, sk_cx, sk_cy, sk_cw, sk_ch, 2 + 0.99 * sk_swa",
-          f"            {img}", "        }",
+          "        // Live wallpaper (D219): one pass per effect over its patch (or the screen) — ripple, breathe, flow, sweep;",
+          "        // the first number carries the speed (whole) and the music's level (or the sweep's place)"] + live_groups(img) + [
           "        // news: the picture bulges over the widget's place ...",
           "        group {", "            show: pu_on and pu_b > 0.005",
           "            clip box { from: pu_x - 48, pu_y - 48; size: pu_w + 96, pu_h + 96; corner: 48 }",

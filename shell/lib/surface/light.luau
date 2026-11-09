@@ -20,6 +20,7 @@ return function(ctx)
     local F = {}
     local push_q, light_q = skin.queue(), skin.queue()
     local last_title, playing, news, full, sweeping, was_open = nil, false, 0, false, false, nil
+    local covered, trying, try_token = 0, false, 0
     local last_time, full_at = nil, -1e9
 
     local function su() local s = ctx.settings(); return type(s.surface) == "table" and s.surface or {} end
@@ -29,25 +30,52 @@ return function(ctx)
     local function may() return su().on == true and not ctx.open() and not full end
     local function centre(b) if b then return b.x + b.w / 2, b.y + b.h / 2 end; return -9999, -9999 end
 
-    -- ── the rest: the glow, the moving wallpaper, the hour's sweep ──
+    -- ── Live wallpaper (D219): the picture moves, round the widgets that move it or all of it ──
+    local SCR0 = { x = -9999, y = -9999, w = 1, h = 1 }
+    local function live_now()
+        local L, ws, bar = skin.live(ctx.settings()), ctx.widgets(), ctx.bar_h()
+        local scr = ctx.scr()
+        local whole = L.where == "whole"
+        local screen = { x = 0, y = 0, w = scr.w, h = scr.h }
+        local vz = whole and screen or skin.target(ws, "visualiser", "moves", bar)
+        local ck = whole and screen or skin.target(ws, "clock", "moves", bar)
+        local resting = not L.on or ctx.open() or full or reduced() or (whole and covered >= 0.9)
+        local any = false
+        fact.lw_whole = whole
+        fact.lw_speed = L.speed
+        fact.lw_boost = trying and 0.6 or 0
+        for _, k in ipairs(skin.LIVE_FX) do
+            local e = L.fx[k]
+            local box = (k == "sweep") and ck or vz
+            local wants = e.on and box ~= nil and not resting
+            if k == "ripple" or k == "breathe" then wants = wants and (playing or trying)
+            elseif k == "sweep" then wants = wants and (sweeping or trying) end
+            any = any or wants
+            local b = box or SCR0
+            local r = whole and 0 or skin.reach(e.size)
+            fact["lw_" .. k] = wants
+            fact["lw_" .. k .. "_x"], fact["lw_" .. k .. "_y"] = b.x - r, b.y - r
+            fact["lw_" .. k .. "_w"], fact["lw_" .. k .. "_h"] = b.w + 2 * r, b.h + 2 * r
+            fact["lw_" .. k .. "_bx"], fact["lw_" .. k .. "_by"], fact["lw_" .. k .. "_bw"], fact["lw_" .. k .. "_bh"] = b.x, b.y, b.w, b.h
+            fact["lw_" .. k .. "_p"] = skin.pack(skin.LIVE_MODE[k], e.strength, e.size, e.blend)
+            fact["lw_" .. k .. "_s"] = math.min(99, e.strength)
+        end
+        fact.lw_on = any
+    end
+
+    -- ── the rest: the glow through (the Subsurface's) ──
     local function rest()
         local s, ws, bar = su(), ctx.widgets(), ctx.bar_h()
         local glow = s.glow == "off" and 0 or (s.glow == "bright" and 2 or 1)
         local np = skin.target(ws, "nowplaying", "woven", bar)
         local nc = skin.target(ws, "notices", "woven", bar)
-        local vz = skin.target(ws, "visualiser", "moves", bar)
-        local ck = skin.target(ws, "clock", "moves", bar)
         fact.sk_g = glow
         fact.sk_mx, fact.sk_my = centre(np)
         fact.sk_mp = np ~= nil and playing and glow > 0
         fact.sk_nx, fact.sk_ny = centre(nc)
         fact.sk_nn = nc ~= nil and news > 0 and glow > 0
-        local v = vz or { x = -9999, y = -9999, w = 1, h = 1 }
-        fact.sk_vx, fact.sk_vy, fact.sk_vw, fact.sk_vh = v.x, v.y, v.w, v.h
-        fact.sk_vm = vz ~= nil and playing
-        local c = ck or { x = -9999, y = -9999, w = 1, h = 1 }
-        fact.sk_cx, fact.sk_cy, fact.sk_cw, fact.sk_ch = c.x, c.y, c.w, c.h
-        fact.sk_on = may() and (fact.sk_mp or fact.sk_nn or fact.sk_vm or (sweeping and ck ~= nil))
+        fact.sk_on = may() and (fact.sk_mp or fact.sk_nn)
+        live_now()
     end
     F.refresh = rest
 
@@ -162,11 +190,9 @@ return function(ctx)
         news = tonumber(count) or 0
         rest()
     end
-    function F.clock(time)
-        local turned = skin.hour(last_time, time)
-        last_time = time
-        if not turned or sweeping or not may() then return end
-        if not skin.target(ctx.widgets(), "clock", "moves", ctx.bar_h()) then return end
+    -- the light sweep: when the hour turns (Live wallpaper's, D219), and for Try it
+    local function sweep()
+        if sweeping then return end
         sweeping = true
         fact.sk_swt, fact.sk_swv = 1, 1
         rest()
@@ -174,16 +200,44 @@ return function(ctx)
         after(SW_BACK, function() fact.sk_swt = 0 end)
         after(SW_END, function() sweeping = false; rest() end)
     end
-    -- a window made fullscreen (or not): asked of Hyprland at most once a second, only while the Surface is on
+    function F.clock(time)
+        local turned = skin.hour(last_time, time)
+        last_time = time
+        if turned then sweep() end
+    end
+    -- Try it (the Live wallpaper page): every effect that is on, for a few seconds, music or not
+    on("lw_try", function()
+        try_token = try_token + 1
+        local mine = try_token
+        trying = true
+        sweep()
+        rest()
+        after(SW_END + 1500, function() if try_token == mine then trying = false; rest() end end)
+    end)
+    -- the windows changed (a window or workspace event): whether one is fullscreen, and how much of the screen they
+    -- cover (the whole picture rests under them) — asked of Hyprland at most once a second, and only while the
+    -- Subsurface or Live wallpaper is on
     function F.window(_)
-        if su().on ~= true then return end
+        if su().on ~= true and not skin.live(ctx.settings()).on then return end
         local now = os.time()
         if now - full_at < 1 then return end
         full_at = now
-        run("hyprctl", { "-j", "activewindow" }, function(out)
-            local ok, aw = pcall(json.decode, out or "")
-            local f = ok and type(aw) == "table" and (tonumber(aw.fullscreen) or 0) > 0 or false
-            if f ~= full then full = f; rest() end
+        run("hyprctl", { "-j", "monitors" }, function(mo)
+            local okm, mons = pcall(json.decode, mo or "")
+            local mon, ws = { x = 0, y = 0 }, nil
+            for _, m in ipairs(okm and type(mons) == "table" and mons or {}) do
+                if m.focused then
+                    mon = { x = tonumber(m.x) or 0, y = tonumber(m.y) or 0 }
+                    ws = type(m.activeWorkspace) == "table" and m.activeWorkspace.id or nil
+                end
+            end
+            run("hyprctl", { "-j", "clients" }, function(co)
+                local okc, clients = pcall(json.decode, co or "")
+                clients = okc and type(clients) == "table" and clients or {}
+                local f = skin.fullscreen(clients, ws)
+                local c = skin.covered_share(skin.rects(clients, ws, mon), ctx.scr())
+                if f ~= full or math.abs(c - covered) > 0.02 then full, covered = f, c; rest() end
+            end)
         end)
     end
     -- the opening opened or healed: the skin steps aside while it shows the real things
