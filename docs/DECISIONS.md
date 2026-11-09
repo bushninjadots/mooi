@@ -6437,3 +6437,30 @@ notification comes it just shows an orange light in the corner — only once has
 **Verified.** Unit 791 / 0; 15 scenes compile; `bin/mooi check` green; the light's facts read live after a test
 notification (the cause: workspace 2 held no window).
 
+## D223 · 2026-11-09 · Music in the picture; the spark takes you to the app
+
+**The spark.** The owner: "if I click it it goes to the Nexus — I think it should take me to the app, with its border
+highlighted". A press on a notice's spark now finds the window of the app the notice came from on any workspace (the
+one used most recently of several: `skin.find_app`), focuses it (Hyprland takes you to its workspace) and lights its
+border once round. The Nexus only when the app has no window.
+
+**Music in the picture** (spec `docs/superpowers/specs/2026-11-09-music-in-the-picture-design.md`). The owner wanted
+the visualiser to "become part of the wallpaper … literally growing out from the image", chose picture bars, as a
+Live wallpaper effect, grown from any of four kinds of place. While music plays, strips of the wallpaper are pulled
+up out of it by the bar's analysis (32 bands → 16, packed three to a shader number: `lib/surface/music`), lit at their
+tips, falling back into it; every colour is the picture's own.
+- *Where it grows from* (kept in surface.json's `music`): an **edge line** (on by default; the bottom, or wherever it
+  is dragged; bars up to the chosen height), up to four **drawn areas** (bars from each floor), up to two **picked
+  colours** (those parts of the picture stretch up by the band of their column; read from the screen,
+  `capture.pixel`), and the **subject** (mooi's cut-out of the picture — made once per wallpaper when first asked).
+- *Chosen in the Overview's Music mode*: a MUSIC button; the widgets below step aside (`wg_quiet`), edit mode pauses,
+  the whole picture shows at full light; EDGE, SUBJECT, DRAW AREA, PICK COLOUR, MOVE EDGE, CLEAR, DONE.
+- *Settings → Live wallpaper → Music in the picture*: on, strength, size (strip width), blend, height (slots appended).
+- *Calm*: it draws only while music plays (or Try it, which makes up a song), rests as every Live wallpaper effect,
+  and also while windows cover ≥ 90 % of the screen; the bands are read every 50 ms only while it draws.
+- `shaders/music.wgsl`: bars (5), a colour (6), the subject (7).
+
+**Verified.** Unit 803 / 0; 15 scenes compile; `bin/mooi check` green. The shader rendered through a throwaway scene over
+the real wallpaper: the colour pass moves ≈ 15 900 pixels and nothing outside its places changes; the bars over a black
+part of the picture showed only their tips, so their bodies are now faintly lit. Not yet seen live with music.
+

@@ -77,7 +77,7 @@ def lanes():
             let acc = {ACC.format(p=p)}
             z: if({p}_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or {p}_above or editing or wg_desk or op_vis{edit}) and {p}_on and (editing or wg_dkp > 0.01 or {p}_opn or {p}_st < 1.5)
+            show: (not sf_on or {p}_above or editing or wg_desk or (op_vis and not wg_quiet){edit}) and {p}_on and (editing or wg_dkp > 0.01 or {p}_opn or {p}_st < 1.5)
             let {p}_clip = sf_on and not {p}_above and not editing and not wg_desk{clip_edit}
             opacity: ({p}_base + (1 - {p}_base) * wg_dkp) * (0.72 + 0.28 * {p}_rs)
             pivot: {args["X"]} + {args["W"]} / 2, {args["Y"]} + {args["H"]} / 2

@@ -7704,7 +7704,7 @@ do
     test("citizens: widgets hide below and clip to the hole", function()
         local plm = read("shell/mooi-widgets.plm")
         assert(plm:find("// <gen:opening>", 1, true) and plm:find("let op_vis = sf_on and op_k > 0.01", 1, true), "the block")
-        local gate = "show: not sf_on or w.above or editing or wg_desk or op_vis"
+        local gate = "show: not sf_on or w.above or editing or wg_desk or (op_vis and not wg_quiet)"   -- (D223: the Music mode quiets them)
         assert(plm:find(gate, 1, true), "the widgets' gate")
         -- a clip cannot be shown or hidden (found live: `show: false` still clipped everything away), so when
         -- the widget is not below, its clip region is the whole surface
@@ -7714,8 +7714,8 @@ do
         -- the lanes drawn outside the loop (notes, GitHub, weather, system, calendar, launcher) and the held
         -- visualisers are gated too
         assert(plm:find("fact nl_above = false", 1, true), "a lane's above")
-        assert(plm:find("show: (not sf_on or nl_above or editing or wg_desk or op_vis or nt_ed > -1.5) and nl_on", 1, true), "the lanes' gate; the notes editor stays whole")
-        assert(plm:find("show: (not sf_on or lA_above or editing or wg_desk or op_vis) and lA_on", 1, true), "a held visualiser's gate")
+        assert(plm:find("show: (not sf_on or nl_above or editing or wg_desk or (op_vis and not wg_quiet) or nt_ed > -1.5) and nl_on", 1, true), "the lanes' gate; the notes editor stays whole")
+        assert(plm:find("show: (not sf_on or lA_above or editing or wg_desk or (op_vis and not wg_quiet)) and lA_on", 1, true), "a held visualiser's gate")
         assert(plm:find("let nl_clip = sf_on and not nl_above and not editing and not wg_desk and nt_ed < -1.5", 1, true), "an edited notes lane is unclipped")
         for _, e in ipairs({ "wg_keep", "wg_keep_y", "wg_bury" }) do assert(plm:find("event " .. e .. " ->", 1, true), e) end
         assert(plm:find("emit wg_keep(", 1, true) and plm:find("emit wg_keep_y(", 1, true) and plm:find("emit wg_bury(", 1, true), "the drop tells the logic")
@@ -8632,6 +8632,28 @@ do
         assert(g:find("on drag mu_z while mu_tool == 3 { emit mu_edge(round(pointer.y)) }", 1, true), "the edge dragged")
         for _, e in ipairs({ "mu_mode", "mu_at", "mu_wh", "mu_pick", "mu_edge", "mu_tog", "mu_clear" }) do assert(plm:find("event " .. e .. " ->", 1, true), e) end
         assert(plm:find('"capture"', 1, true), "the colour read from the screen")
+    end)
+end
+
+section("music in the picture: the logic (D223)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("the bands are read only while it draws; Try it makes its own; it rests as the other effects do", function()
+        local l = read("shell/lib/surface/light.luau")
+        assert(l:find("if not fact.lw_music then", 1, true), "nothing read while it does not draw")
+        assert(l:find("mu.bands16(t.bands)", 1, true), "the bar's 32, to sixteen")
+        assert(l:find("local m_wants = L.music.on and not resting and (playing or trying)", 1, true))
+        assert(l:find("fact.lw_music_p = skin.pack(5, L.music.strength, L.music.size, L.music.blend)", 1, true))
+    end)
+    test("mooi-surface keeps the places in surface.json and answers the Music mode", function()
+        local s = read("shell/mooi-surface.luau")
+        for _, e in ipairs({ "mu_mode", "mu_at", "mu_wh", "mu_pick", "mu_edge", "mu_tog", "mu_clear" }) do assert(s:find('on("' .. e .. '"', 1, true), e) end
+        assert(s:find('sys.ask, "capture.pixel"', 1, true), "the colour read from the screen")
+        assert(s:find("d.music = S.music", 1, true), "kept beside what surface.json holds")
+        assert(s:find("music = S.music", 1, true), "and when the Presences' rewrite happens")
+        assert(s:find('widgets_say("emit wg_quiet 1")', 1, true) and s:find('widgets_say("emit wg_quiet 0")', 1, true), "the widgets step aside")
+        local w = read("shell/mooi-widgets.plm")
+        assert(w:find("event wg_quiet ->", 1, true) and w:find("show: not sf_on or w.above or editing or wg_desk or (op_vis and not wg_quiet)", 1, true))
     end)
 end
 

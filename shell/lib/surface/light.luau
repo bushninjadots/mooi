@@ -9,6 +9,8 @@
 
 local skin = require("lib/surface/skin")
 local hypr = require("lib/hypr")
+local mu = require("lib/surface/music")        -- D223
+local vizfeed = require("lib/vizfeed")
 
 -- the light's beats (ms): the spark, then the line, then the border, the line and border fade, the spark fades
 local LT_TRAVEL, LT_BORDER, LT_FADE, LT_SPARK, LT_END = 300, 1000, 2600, 6000, 6600
@@ -62,7 +64,30 @@ return function(ctx)
             fact["lw_" .. k .. "_p"] = skin.pack(skin.LIVE_MODE[k], e.strength, e.size, e.blend)
             fact["lw_" .. k .. "_s"] = math.min(99, e.strength)
         end
-        fact.lw_on = any
+        -- D223: Music in the picture — where it grows from (surface.json's places), and whether it draws now
+        local P = ctx.music and ctx.music() or mu.read(nil)
+        local m_wants = L.music.on and not resting and (playing or trying)
+        if covered >= 0.9 then m_wants = false end
+        local e = mu.edge_rect(scr, P.edge_at, L.music.height)
+        fact.mu_e = P.edge
+        fact.mu_ex, fact.mu_ey, fact.mu_ew, fact.mu_eh = e.x, e.y, e.w, e.h
+        for i = 1, mu.AREAS do
+            local a = P.areas[i]
+            fact["mu_a" .. i] = a ~= nil
+            if a then fact["mu_a" .. i .. "x"], fact["mu_a" .. i .. "y"], fact["mu_a" .. i .. "w"], fact["mu_a" .. i .. "h"] = a.x, a.y, a.w, a.h end
+        end
+        for i = 1, mu.COLOURS do
+            local c = P.colours[i]
+            fact["mu_c" .. i] = c ~= nil
+            local v = mu.hex(c)
+            fact["mu_c" .. i .. "v"] = v
+            fact["mu_c" .. i .. "r"], fact["mu_c" .. i .. "g"], fact["mu_c" .. i .. "b"] = (v // 65536) / 255, ((v // 256) % 256) / 255, (v % 256) / 255
+        end
+        local cut = ctx.cut and ctx.cut() or ""
+        fact.mu_s = P.subject and cut ~= ""
+        fact.lw_music = m_wants and (P.edge or #P.areas > 0 or #P.colours > 0 or fact.mu_s)
+        fact.lw_music_p = skin.pack(5, L.music.strength, L.music.size, L.music.blend)
+        fact.lw_on = any or fact.lw_music
     end
 
     -- ── the rest: the glow through (the Subsurface's) ──
@@ -292,6 +317,38 @@ return function(ctx)
         was_open = open
         rest()
     end
+
+    -- D223: the music's bands, read every 50 ms only while Music in the picture draws (Try it with nothing
+    -- playing makes up its own); let fall to nothing once it stops
+    local mb_was, tk = false, 0
+    every(50, function()
+        if not fact.lw_music then
+            if mb_was then for i = 0, 15 do fact["mb_t" .. i] = 0 end; mb_was = false end
+            return
+        end
+        mb_was = true
+        local b
+        if playing then
+            local t
+            local ok2, raw2 = pcall(sys.ask, "files.read", vizfeed.FILE_V2)
+            if ok2 and type(raw2) == "string" then t = vizfeed.decode_v2(raw2) end
+            if not t then
+                local ok, raw = pcall(sys.ask, "files.read", vizfeed.FILE)
+                if ok and type(raw) == "string" then t = vizfeed.decode(raw) end
+            end
+            if t and t.playing then
+                t.bands = vizfeed.resample(t.bands, 32)
+                b = mu.bands16(t.bands)
+            end
+        end
+        if not b and trying then
+            tk = tk + 1
+            b = {}
+            for i = 1, 16 do b[i] = math.max(0, 0.45 + 0.4 * math.sin(tk * 0.35 + i * 0.8) * math.sin(tk * 0.11 + i * 0.3)) end
+        end
+        b = b or {}
+        for i = 1, 16 do fact["mb_t" .. (i - 1)] = b[i] or 0 end
+    end)
 
     light_off()
     fact.pu_on, fact.pu_bt, fact.pu_wt = false, 0, 0

@@ -53,7 +53,9 @@ fn shade(s: Shader) -> vec4<f32> {
         let src = vec2<f32>(s.pos.x, box.y - (up / h) * base);
         let pic = inside(s, src);
         let tip = smoothstep(4.0, 0.0, h - up);
-        let col = clamp(pic.rgb * (1.0 + 0.25 * lvl) + warm * tip * 0.35, vec3<f32>(0.0), vec3<f32>(1.0));
+        // a faint lit body, so a strip of a dark part of the picture is still seen rising
+        let body = warm * (0.05 + 0.08 * lvl) * (up / h);
+        let col = clamp(pic.rgb * (1.0 + 0.25 * lvl) + body + warm * tip * 0.35, vec3<f32>(0.0), vec3<f32>(1.0));
         let soft = 1.0 + blend * 6.0;
         let a = smoothstep(0.0, soft, side) * smoothstep(0.0, soft, h - up + 1.0) * (1.0 - 0.4 * blend);
         return vec4<f32>(col, a * pic.a);

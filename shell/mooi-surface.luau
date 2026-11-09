@@ -16,6 +16,7 @@ local layout = require("lib/surface/layout")
 local reveal = require("lib/surface/reveal")
 local below = require("lib/surface/below")          -- D209
 local opening = require("lib/surface/opening")
+local music = require("lib/surface/music")      -- D223: Music in the picture's places
 
 local HOSTS_FILE, FEED_FILE, NOTICES = "sigil-hosts.json", "sigil-feed.json", "nexus-feed.json"
 local SLOT = { pill = 0, isl1 = 1, isl2 = 2, isl3 = 3 }
@@ -418,7 +419,7 @@ surface_file = function()
     if not ok or type(d) ~= "table" then SF.broken = true; log("surface · surface.json could not be read; not overwriting it"); return end
     if d.presences == nil and d.places == nil and d.usage == nil then return end
     pcall(sys.call, "files.write", "surface.json.bak", raw)
-    pcall(sys.call, "files.write", SFILE, { version = 3, monitor = SF.monitor })
+    pcall(sys.call, "files.write", SFILE, { version = 3, monitor = SF.monitor, music = S.music })
     log("surface · the Presences are widgets now; surface.json keeps only its monitor")
 end
 
@@ -471,7 +472,8 @@ local function broadcast()
         widgets_say("emit wg_rise " .. tostring(rise))
     end
     if SK then SK.opening(shown ~= opening.MODES.closed) end
-    local full = shown == opening.MODES.full and surface_on()
+    -- (D223: not while the Overview's Music mode has the picture)
+    local full = shown == opening.MODES.full and surface_on() and not SF.mu
     if full ~= SF.editing then
         SF.editing = full
         widgets_say("emit wg_edit " .. (full and 1 or 0))
@@ -522,6 +524,7 @@ end
 
 local function heal_opening()
     if SF.op.mode == opening.MODES.closed then return end
+    if SF.mu then SF.mu = false; fact.sf_mu = false; widgets_say("emit wg_quiet 0") end
     opening.heal(SF.op)
     SF.opened, SF.sent, SF.dragging = false, nil, nil
     drag_restore()
@@ -748,7 +751,7 @@ local function wallpaper()
     -- -e: nothing for a missing picture (review I5), so the Aperture draws its plain subsurface
     run("readlink", { "-e", home .. "/.cache/current_wallpaper" }, function(out)
         local path = tostring(out or ""):gsub("%s+$", "")
-        if path ~= "" then text.rv_wall = path end
+        if path ~= "" then text.rv_wall = path; S.wall_path = path end
     end)
 end
 run("hyprctl", { "-j", "monitors" }, function(out)
@@ -767,8 +770,78 @@ end)
 wallpaper()
 SF_wall = wallpaper       -- the palette watcher above calls it: one watcher per file (review M7)
 
+-- ── D223: Music in the picture — its places (surface.json's `music`), the picture's subject, the Music mode ──
+local function load_music()
+    local raw = read(SFILE)
+    local ok, d = pcall(json.decode, type(raw) == "string" and raw or "")
+    S.music = music.read(ok and type(d) == "table" and d.music or nil)
+end
+local function save_music()
+    if SF.broken then return end
+    local raw = read(SFILE)
+    local ok, d = pcall(json.decode, type(raw) == "string" and raw or "")
+    if type(raw) == "string" and raw:match("%S") and not (ok and type(d) == "table") then return end
+    d = ok and type(d) == "table" and d or { version = 3 }
+    d.monitor = d.monitor or SF.monitor
+    d.music = S.music
+    pcall(sys.call, "files.write", SFILE, d)
+    if SK then SK.refresh() end
+end
+load_music()
+local function cut_now()
+    local w = read("wall-map.json", "json")
+    S.cut = type(w) == "table" and type(w.cutpath) == "string" and w.cutpath or ""
+    text.mu_cutp = S.cut
+    if SK then SK.refresh() end
+end
+pcall(sys.watch, "files:wall-map.json", cut_now)
+on("mu_mode", function(v)
+    local want = math.floor(tonumber(v) or 0) == 1 and SF.op.mode == opening.MODES.full
+    SF.mu = want
+    fact.sf_mu = want
+    if want then widgets_say("emit wg_quiet 1") else widgets_say("emit wg_quiet 0") end
+    broadcast()
+end)
+on("mu_at", function(v) SF.mu_at = math.floor(tonumber(v) or 0) end)
+on("mu_wh", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local at = SF.mu_at or 0
+    S.music = music.add_area(S.music, { x = at // 4096, y = at % 4096, w = v // 4096, h = v % 4096 })
+    save_music()
+end)
+on("mu_pick", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local ok, c = pcall(sys.ask, "capture.pixel", v // 4096 + (SF.mox or 0), v % 4096 + (SF.moy or 0))
+    if ok and type(c) == "string" then S.music = music.add_colour(S.music, c); save_music() end
+end)
+on("mu_edge", function(v)
+    local h = tonumber(SF.scr and SF.scr.h) or 1080
+    S.music.edge_at = math.floor((tonumber(v) or h) / h * 100 + 0.5)
+    S.music = music.read(S.music)
+    if SK then SK.refresh() end
+    SF.mu_save = (SF.mu_save or 0) + 1
+    local mine = SF.mu_save
+    after(400, function() if SF.mu_save == mine then save_music() end end)
+end)
+on("mu_tog", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if v == 1 then S.music.edge = not S.music.edge end
+    if v == 2 then
+        S.music.subject = not S.music.subject
+        -- the subject needs mooi's cut-out of the picture; made once per wallpaper (a while, the first time)
+        if S.music.subject and (S.cut or "") == "" and S.wall_path then run("mooi", { "wallmap", S.wall_path }, function() end) end
+    end
+    save_music()
+end)
+on("mu_clear", function()
+    S.music.areas, S.music.colours = {}, {}
+    save_music()
+end)
+
 -- D217: push up from below — the glow, the moving wallpaper, the bulge and words, the notice's light
 SK = require("lib/surface/light")({
+    music = function() return S.music end,
+    cut = function() return S.cut or "" end,
     settings = function() return S.settings end,
     widgets = function() return S.widget_list end,
     bar_h = bar_h,
@@ -776,6 +849,7 @@ SK = require("lib/surface/light")({
     scr = function() return SF.scr end,
 })
 if S.r.music then SK.song(S.r.music) end
+cut_now()
 
 feed(); notices(); hosts()
 widgets_file()

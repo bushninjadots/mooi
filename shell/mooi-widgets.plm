@@ -1103,6 +1103,10 @@ scene Widgets {
     fact wg_oc5 = true
     fact wg_oc6 = true
     fact wg_ocf = true
+    // D223: the Overview's Music mode has the picture: what lives below steps aside
+    event wg_quiet ->
+    fact wg_quiet = false
+    on wg_quiet(v) { wg_quiet = v == 1 }
     fact wg_oab = false    // D222: the chosen widget is on the desktop (above the wallpaper)
     fact wg_omeet = true   // D217: the chosen widget meets the wallpaper (pushes up, or moves it), not still
     text wg_folder = ""
@@ -1355,7 +1359,7 @@ scene Widgets {
             let acc = pick(wg_style, if(nl_ad, rgb(nl_ar, nl_ag, nl_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(nl_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or nl_above or editing or wg_desk or op_vis or nt_ed > -1.5) and nl_on and (editing or wg_dkp > 0.01 or nl_opn or nl_st < 1.5)
+            show: (not sf_on or nl_above or editing or wg_desk or (op_vis and not wg_quiet) or nt_ed > -1.5) and nl_on and (editing or wg_dkp > 0.01 or nl_opn or nl_st < 1.5)
             let nl_clip = sf_on and not nl_above and not editing and not wg_desk and nt_ed < -1.5
             opacity: (nl_base + (1 - nl_base) * wg_dkp) * (0.72 + 0.28 * nl_rs)
             pivot: if(wg_rk == nl_k, wg_sx, nl_x) + if(wg_rk == nl_k, wg_sw, nl_w) / 2, if(wg_rk == nl_k, wg_sy, nl_y) + if(wg_rk == nl_k, wg_sh, nl_h) / 2
@@ -1382,7 +1386,7 @@ scene Widgets {
             let acc = pick(wg_style, if(g1_ad, rgb(g1_ar, g1_ag, g1_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(g1_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or g1_above or editing or wg_desk or op_vis) and g1_on and (editing or wg_dkp > 0.01 or g1_opn or g1_st < 1.5)
+            show: (not sf_on or g1_above or editing or wg_desk or (op_vis and not wg_quiet)) and g1_on and (editing or wg_dkp > 0.01 or g1_opn or g1_st < 1.5)
             let g1_clip = sf_on and not g1_above and not editing and not wg_desk
             opacity: (g1_base + (1 - g1_base) * wg_dkp) * (0.72 + 0.28 * g1_rs)
             pivot: if(wg_rk == g1_k, wg_sx, g1_x) + if(wg_rk == g1_k, wg_sw, g1_w) / 2, if(wg_rk == g1_k, wg_sy, g1_y) + if(wg_rk == g1_k, wg_sh, g1_h) / 2
@@ -1409,7 +1413,7 @@ scene Widgets {
             let acc = pick(wg_style, if(g2_ad, rgb(g2_ar, g2_ag, g2_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(g2_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or g2_above or editing or wg_desk or op_vis) and g2_on and (editing or wg_dkp > 0.01 or g2_opn or g2_st < 1.5)
+            show: (not sf_on or g2_above or editing or wg_desk or (op_vis and not wg_quiet)) and g2_on and (editing or wg_dkp > 0.01 or g2_opn or g2_st < 1.5)
             let g2_clip = sf_on and not g2_above and not editing and not wg_desk
             opacity: (g2_base + (1 - g2_base) * wg_dkp) * (0.72 + 0.28 * g2_rs)
             pivot: if(wg_rk == g2_k, wg_sx, g2_x) + if(wg_rk == g2_k, wg_sw, g2_w) / 2, if(wg_rk == g2_k, wg_sy, g2_y) + if(wg_rk == g2_k, wg_sh, g2_h) / 2
@@ -1436,7 +1440,7 @@ scene Widgets {
             let acc = pick(wg_style, if(wh_ad, rgb(wh_ar, wh_ag, wh_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(wh_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or wh_above or editing or wg_desk or op_vis) and wh_on and (editing or wg_dkp > 0.01 or wh_opn or wh_st < 1.5)
+            show: (not sf_on or wh_above or editing or wg_desk or (op_vis and not wg_quiet)) and wh_on and (editing or wg_dkp > 0.01 or wh_opn or wh_st < 1.5)
             let wh_clip = sf_on and not wh_above and not editing and not wg_desk
             opacity: (wh_base + (1 - wh_base) * wg_dkp) * (0.72 + 0.28 * wh_rs)
             pivot: if(wg_rk == wh_k, wg_sx, wh_x) + if(wg_rk == wh_k, wg_sw, wh_w) / 2, if(wg_rk == wh_k, wg_sy, wh_y) + if(wg_rk == wh_k, wg_sh, wh_h) / 2
@@ -1463,7 +1467,7 @@ scene Widgets {
             let acc = pick(wg_style, if(sp_ad, rgb(sp_ar, sp_ag, sp_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(sp_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or sp_above or editing or wg_desk or op_vis) and sp_on and (editing or wg_dkp > 0.01 or sp_opn or sp_st < 1.5)
+            show: (not sf_on or sp_above or editing or wg_desk or (op_vis and not wg_quiet)) and sp_on and (editing or wg_dkp > 0.01 or sp_opn or sp_st < 1.5)
             let sp_clip = sf_on and not sp_above and not editing and not wg_desk
             opacity: (sp_base + (1 - sp_base) * wg_dkp) * (0.72 + 0.28 * sp_rs)
             pivot: if(wg_rk == sp_k, wg_sx, sp_x) + if(wg_rk == sp_k, wg_sw, sp_w) / 2, if(wg_rk == sp_k, wg_sy, sp_y) + if(wg_rk == sp_k, wg_sh, sp_h) / 2
@@ -1490,7 +1494,7 @@ scene Widgets {
             let acc = pick(wg_style, if(cd_ad, rgb(cd_ar, cd_ag, cd_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(cd_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or cd_above or editing or wg_desk or op_vis) and cd_on and (editing or wg_dkp > 0.01 or cd_opn or cd_st < 1.5)
+            show: (not sf_on or cd_above or editing or wg_desk or (op_vis and not wg_quiet)) and cd_on and (editing or wg_dkp > 0.01 or cd_opn or cd_st < 1.5)
             let cd_clip = sf_on and not cd_above and not editing and not wg_desk
             opacity: (cd_base + (1 - cd_base) * wg_dkp) * (0.72 + 0.28 * cd_rs)
             pivot: if(wg_rk == cd_k, wg_sx, cd_x) + if(wg_rk == cd_k, wg_sw, cd_w) / 2, if(wg_rk == cd_k, wg_sy, cd_y) + if(wg_rk == cd_k, wg_sh, cd_h) / 2
@@ -1517,7 +1521,7 @@ scene Widgets {
             let acc = pick(wg_style, if(ln_ad, rgb(ln_ar, ln_ag, ln_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(ln_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or ln_above or editing or wg_desk or op_vis) and ln_on and (editing or wg_dkp > 0.01 or ln_opn or ln_st < 1.5)
+            show: (not sf_on or ln_above or editing or wg_desk or (op_vis and not wg_quiet)) and ln_on and (editing or wg_dkp > 0.01 or ln_opn or ln_st < 1.5)
             let ln_clip = sf_on and not ln_above and not editing and not wg_desk
             opacity: (ln_base + (1 - ln_base) * wg_dkp) * (0.72 + 0.28 * ln_rs)
             pivot: if(wg_rk == ln_k, wg_sx, ln_x) + if(wg_rk == ln_k, wg_sw, ln_w) / 2, if(wg_rk == ln_k, wg_sy, ln_y) + if(wg_rk == ln_k, wg_sh, ln_h) / 2
@@ -1547,7 +1551,7 @@ scene Widgets {
             let acc = pick(wg_style, if(nc_ad, rgb(nc_ar, nc_ag, nc_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(nc_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or nc_above or editing or wg_desk or op_vis) and nc_on and (editing or wg_dkp > 0.01 or nc_opn or nc_st < 1.5)
+            show: (not sf_on or nc_above or editing or wg_desk or (op_vis and not wg_quiet)) and nc_on and (editing or wg_dkp > 0.01 or nc_opn or nc_st < 1.5)
             let nc_clip = sf_on and not nc_above and not editing and not wg_desk
             opacity: (nc_base + (1 - nc_base) * wg_dkp) * (0.72 + 0.28 * nc_rs)
             pivot: if(wg_rk == nc_k, wg_sx, nc_x) + if(wg_rk == nc_k, wg_sw, nc_w) / 2, if(wg_rk == nc_k, wg_sy, nc_y) + if(wg_rk == nc_k, wg_sh, nc_h) / 2
@@ -1574,7 +1578,7 @@ scene Widgets {
             let acc = pick(wg_style, if(wp_ad, rgb(wp_ar, wp_ag, wp_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(wp_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or wp_above or editing or wg_desk or op_vis) and wp_on and (editing or wg_dkp > 0.01 or wp_opn or wp_st < 1.5)
+            show: (not sf_on or wp_above or editing or wg_desk or (op_vis and not wg_quiet)) and wp_on and (editing or wg_dkp > 0.01 or wp_opn or wp_st < 1.5)
             let wp_clip = sf_on and not wp_above and not editing and not wg_desk
             opacity: (wp_base + (1 - wp_base) * wg_dkp) * (0.72 + 0.28 * wp_rs)
             pivot: if(wg_rk == wp_k, wg_sx, wp_x) + if(wg_rk == wp_k, wg_sw, wp_w) / 2, if(wg_rk == wp_k, wg_sy, wp_y) + if(wg_rk == wp_k, wg_sh, wp_h) / 2
@@ -1601,7 +1605,7 @@ scene Widgets {
             let acc = pick(wg_style, if(pg_ad, rgb(pg_ar, pg_ag, pg_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(pg_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or pg_above or editing or wg_desk or op_vis) and pg_on and (editing or wg_dkp > 0.01 or pg_opn or pg_st < 1.5)
+            show: (not sf_on or pg_above or editing or wg_desk or (op_vis and not wg_quiet)) and pg_on and (editing or wg_dkp > 0.01 or pg_opn or pg_st < 1.5)
             let pg_clip = sf_on and not pg_above and not editing and not wg_desk
             opacity: (pg_base + (1 - pg_base) * wg_dkp) * (0.72 + 0.28 * pg_rs)
             pivot: if(wg_rk == pg_k, wg_sx, pg_x) + if(wg_rk == pg_k, wg_sw, pg_w) / 2, if(wg_rk == pg_k, wg_sy, pg_y) + if(wg_rk == pg_k, wg_sh, pg_h) / 2
@@ -1628,7 +1632,7 @@ scene Widgets {
             let acc = pick(wg_style, if(ct_ad, rgb(ct_ar, ct_ag, ct_ab), fl.phos), fl.phos, fl.ember, #a9c4dc, #b4532f)
             z: if(ct_beh, 1, 3)
             // D209: below the wallpaper it is only there while the opening shows, and only inside the hole
-            show: (not sf_on or ct_above or editing or wg_desk or op_vis) and ct_on and (editing or wg_dkp > 0.01 or ct_opn or ct_st < 1.5)
+            show: (not sf_on or ct_above or editing or wg_desk or (op_vis and not wg_quiet)) and ct_on and (editing or wg_dkp > 0.01 or ct_opn or ct_st < 1.5)
             let ct_clip = sf_on and not ct_above and not editing and not wg_desk
             opacity: (ct_base + (1 - ct_base) * wg_dkp) * (0.72 + 0.28 * ct_rs)
             pivot: if(wg_rk == ct_k, wg_sx, ct_x) + if(wg_rk == ct_k, wg_sw, ct_w) / 2, if(wg_rk == ct_k, wg_sy, ct_y) + if(wg_rk == ct_k, wg_sh, ct_h) / 2
@@ -1649,7 +1653,7 @@ scene Widgets {
         let lA_opn = sf_on and op_vis and not lA_above and not editing and not wg_desk
         group {
             z: if(lA_beh, 1, 3)
-            show: (not sf_on or lA_above or editing or wg_desk or op_vis) and lA_on and (editing or wg_dkp > 0.01 or lA_opn or (lA_st < 1.5 and not viz_ext))
+            show: (not sf_on or lA_above or editing or wg_desk or (op_vis and not wg_quiet)) and lA_on and (editing or wg_dkp > 0.01 or lA_opn or (lA_st < 1.5 and not viz_ext))
             opacity: if(editing, if(lA_gh, 0.4, 1), if(lA_opn, 1, if(viz_still, if(lA_st < 0.5, 1, 0.35), pick(lA_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * lA_opa * (0.72 + 0.28 * lA_rs)
             move: if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dx, 0) + lA_dx * wg_dkp, if(wg_dk == lA_k or (wg_dk >= 0 and wg_dksel and lA_sel), wg_dy, 0) + lA_dy * wg_dkp
             scale: 0.96 + 0.04 * lA_rs
@@ -1676,7 +1680,7 @@ scene Widgets {
         let lB_opn = sf_on and op_vis and not lB_above and not editing and not wg_desk
         group {
             z: if(lB_beh, 1, 3)
-            show: (not sf_on or lB_above or editing or wg_desk or op_vis) and lB_on and (editing or wg_dkp > 0.01 or lB_opn or (lB_st < 1.5 and not viz_ext))
+            show: (not sf_on or lB_above or editing or wg_desk or (op_vis and not wg_quiet)) and lB_on and (editing or wg_dkp > 0.01 or lB_opn or (lB_st < 1.5 and not viz_ext))
             opacity: if(editing, if(lB_gh, 0.4, 1), if(lB_opn, 1, if(viz_still, if(lB_st < 0.5, 1, 0.35), pick(lB_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * lB_opa * (0.72 + 0.28 * lB_rs)
             move: if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dx, 0) + lB_dx * wg_dkp, if(wg_dk == lB_k or (wg_dk >= 0 and wg_dksel and lB_sel), wg_dy, 0) + lB_dy * wg_dkp
             scale: 0.96 + 0.04 * lB_rs
@@ -1702,7 +1706,7 @@ scene Widgets {
         let lC_opn = sf_on and op_vis and not lC_above and not editing and not wg_desk
         group {
             z: if(lC_beh, 1, 3)
-            show: (not sf_on or lC_above or editing or wg_desk or op_vis) and lC_on and (editing or wg_dkp > 0.01 or lC_opn or (lC_st < 1.5 and not viz_ext))
+            show: (not sf_on or lC_above or editing or wg_desk or (op_vis and not wg_quiet)) and lC_on and (editing or wg_dkp > 0.01 or lC_opn or (lC_st < 1.5 and not viz_ext))
             opacity: if(editing, if(lC_gh, 0.4, 1), if(lC_opn, 1, if(viz_still, if(lC_st < 0.5, 1, 0.35), pick(lC_k, po0, po1, po2, po3, po4, po5, po6, po7, po8, po9, po10, po11, po12, po13, po14, po15)))) * lC_opa * (0.72 + 0.28 * lC_rs)
             move: if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dx, 0) + lC_dx * wg_dkp, if(wg_dk == lC_k or (wg_dk >= 0 and wg_dksel and lC_sel), wg_dy, 0) + lC_dy * wg_dkp
             scale: 0.96 + 0.04 * lC_rs
@@ -1757,7 +1761,7 @@ scene Widgets {
             // D209: below the wallpaper the widget is only there while the opening shows, and only
             // inside the hole; kept above (or being edited, or in desk mode) it is whole again.
             group {
-                show: not sf_on or w.above or editing or wg_desk or op_vis
+                show: not sf_on or w.above or editing or wg_desk or (op_vis and not wg_quiet)
                 // a clip box cannot be shown/hidden: when the widget is not below, its region is the whole surface
                 let clip_on = sf_on and not w.above and not editing and not wg_desk
                 clip box { from: if(clip_on, op_x, 0), if(clip_on, op_y - wall_bar, 0); size: if(clip_on, op_w, desk.width), if(clip_on, op_h, desk.height); corner: if(clip_on, op_r, 0) }
