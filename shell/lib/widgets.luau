@@ -95,9 +95,9 @@ M.DEFAULT_IDLE = { nowplaying = "rest", visualiser = "hide" }   -- every other k
 M.DEFAULT_MODE = "spectrum"
 -- every option a widget of each kind may carry, with its default
 M.OPTIONS = {
-    nowplaying = { lyrics = true, progress = true, plate = false, scroll_volume = true, text = 1, adapt = true, behind = false, viz = false },
-    visualiser = { glow = 0.6, plate = false, bars = 64, gap = 0.3, smooth = 0.5, angle = 0, lean = 0, peaks = true, reflection = false, adapt = true, behind = false },
-    clock = { h24 = true, seconds = true, plate = false, adapt = true, behind = false },
+    nowplaying = { meet = "woven", lyrics = true, progress = true, plate = false, scroll_volume = true, text = 1, adapt = true, behind = false, viz = false },
+    visualiser = { meet = "moves", glow = 0.6, plate = false, bars = 64, gap = 0.3, smooth = 0.5, angle = 0, lean = 0, peaks = true, reflection = false, adapt = true, behind = false },
+    clock = { meet = "moves", h24 = true, seconds = true, plate = false, adapt = true, behind = false },
     notes = { rows = 6, plate = false, adapt = true, behind = false },
     github = { repo = "bushninjadots/mooi", plate = false, adapt = true, behind = false },
     weather = { plate = false, adapt = true, behind = false },
@@ -107,7 +107,7 @@ M.OPTIONS = {
     claude = { plate = false, adapt = true, behind = false },
     photo = { folder = "~/Pictures", every = 10, pop = true, plate = false, adapt = true, behind = false },
     launch = { apps = "kitty,zen,code,nautilus,spotify", plate = false, adapt = true, behind = false },
-    notices = { nrows = 4, plate = false, adapt = true, behind = false },
+    notices = { meet = "woven", nrows = 4, plate = false, adapt = true, behind = false },
     wallpapers = { plate = false, adapt = true, behind = false },
     settings = { plate = false, adapt = true, behind = false },
     controls = { wifi = true, bt = true, volume = true, bright = true, battery = true, power = true,
@@ -130,6 +130,8 @@ function M.option_string(key, v)
     if key == "folder" and type(v) == "string" and #v > 0 and #v < 400 and not v:find("[%c]") then return v end
     -- the launcher's apps: desktop file ids or commands, comma-separated, twelve at most
     if key == "apps" and type(v) == "string" and #v < 600 and not v:find("[%c;|&$`]") then return v end
+    -- D217: how it meets the wallpaper while below (lib/surface/skin): pushing up, moving it, or still
+    if key == "meet" and (v == "woven" or v == "moves" or v == "still") then return v end
     return nil
 end
 local function option_number(key, v, d)

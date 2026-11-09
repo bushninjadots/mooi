@@ -8144,6 +8144,98 @@ do
     end)
 end
 
+section("push up from below: the decisions (D217)")
+do
+    local skin = require("lib/surface/skin")
+    local W = require("lib/widgets")
+    local ws = {
+        { id = "np", kind = "nowplaying", x = 100, y = 100, w = 360, h = 140, options = {} },
+        { id = "nc", kind = "notices", x = 1400, y = 600, w = 360, h = 260, options = { meet = "still" } },
+        { id = "nc2", kind = "notices", x = 900, y = 600, w = 360, h = 260, above = true },
+        { id = "vz", kind = "visualiser", x = 500, y = 300, w = 400, h = 120 },
+        { id = "ck", kind = "clock", x = 20, y = 20, w = 200, h = 80, options = { meet = "moves" } },
+        { id = "wx", kind = "weather", x = 20, y = 300, w = 200, h = 80 },
+    }
+    test("meet: each kind's default, the option, still for the rest, above for one kept above", function()
+        eq(skin.meet(ws[1]), "woven"); eq(skin.meet(ws[2]), "still"); eq(skin.meet(ws[3]), "above")
+        eq(skin.meet(ws[4]), "moves"); eq(skin.meet(ws[5]), "moves"); eq(skin.meet(ws[6]), "still")
+        eq(skin.meet({ kind = "nowplaying", options = { meet = "moves" } }), "woven", "a value the kind has not: its default")
+    end)
+    test("meet is an option of the four kinds, a word it knows", function()
+        for k, v in pairs({ nowplaying = "woven", notices = "woven", visualiser = "moves", clock = "moves" }) do
+            eq(W.OPTIONS[k].meet, v, k)
+        end
+        eq(W.option_string("meet", "still"), "still"); eq(W.option_string("meet", "woven"), "woven")
+        eq(W.option_string("meet", "sideways"), nil)
+        eq(W.OPTIONS.weather.meet, nil, "the rest have none")
+    end)
+    test("target: the first of the kind below that meets that way, on the screen (the bar added)", function()
+        local b = skin.target(ws, "nowplaying", "woven", 34)
+        eq(b.x, 100); eq(b.y, 134); eq(b.w, 360); eq(b.h, 140)
+        eq(skin.target(ws, "notices", "woven", 34), nil, "still, and the other is kept above")
+        eq(skin.target(ws, "visualiser", "moves", 0).x, 500)
+        eq(skin.target({}, "clock", "moves", 0), nil)
+        eq(skin.target(nil, "clock", "moves", 0), nil)
+    end)
+    test("words: the song or the notice, short", function()
+        eq(skin.words("nowplaying", { title = "Teardrop", artist = "Massive Attack" }), "Teardrop — Massive Attack")
+        eq(skin.words("nowplaying", { title = "Teardrop" }), "Teardrop")
+        eq(skin.words("notices", { app = "Signal", title = "Dinner?" }), "Signal · Dinner?")
+        local long = skin.words("notices", { app = "A", title = string.rep("x", 100) })
+        assert(#long <= 64 and long:sub(-3) == "…", "an ellipsis")
+        eq(skin.words("notices", {}), "")
+    end)
+    test("queue: one at a time; a burst waits as one, counted", function()
+        local q = skin.queue()
+        eq(skin.push(q, { kind = "notices", words = "a" }), true, "the first starts")
+        eq(skin.push(q, { kind = "notices", words = "b" }), false)
+        eq(skin.push(q, { kind = "notices", words = "c" }), false)
+        eq(skin.push(q, { kind = "notices", words = "d" }), false)
+        local nx = skin.done(q)
+        eq(nx.words, "d", "the newest"); eq(nx.n, 3, "three merged")
+        eq(skin.done(q), nil, "then nothing"); eq(q.busy, false)
+        eq(skin.push(q, { kind = "nowplaying", words = "s" }), true, "free again")
+    end)
+    local clients = {
+        { mapped = true, hidden = false, workspace = { id = 1 }, at = { 1900, 0 }, size = { 1020, 1080 }, class = "kitty", title = "~", fullscreen = 0, address = "0x1" },
+        { mapped = true, hidden = false, workspace = { id = 1 }, at = { 1920 + 40, 600 }, size = { 400, 300 }, class = "org.signal.Signal", title = "Signal", fullscreen = 0, address = "0x2" },
+        { mapped = true, hidden = false, workspace = { id = 2 }, at = { 2000, 0 }, size = { 500, 500 }, class = "firefox", title = "Firefox", fullscreen = 2, address = "0x3" },
+    }
+    local mon = { x = 1920, y = 0 }
+    test("rects: the active workspace's windows, on this monitor's coordinates", function()
+        local r = skin.rects(clients, 1, mon)
+        eq(#r, 2); eq(r[1].x, -20); eq(r[2].x, 40); eq(r[2].y, 600)
+        eq(skin.fullscreen(clients, 1), false); eq(skin.fullscreen(clients, 2), true)
+    end)
+    test("spark: the widget's middle, or the nearest edge when a window covers it, or the top right", function()
+        local scr = { w = 1920, h = 1080 }
+        local p = skin.spark({ x = 1400, y = 100, w = 200, h = 100 }, skin.rects(clients, 1, mon), scr)
+        eq(p.x, 1500); eq(p.y, 150)
+        local q = skin.spark({ x = 100, y = 600, w = 200, h = 100 }, skin.rects(clients, 1, mon), scr)
+        eq(q.x, 14, "covered: the left edge is nearest"); eq(q.y, 650)
+        local r = skin.spark(nil, {}, scr)
+        eq(r.x, 1906); eq(r.y, 14)
+    end)
+    test("window_for: the sender's window by class or title, else the focused one, else none", function()
+        local w = skin.window_for("Signal", clients, 1, mon, "0x1")
+        eq(w.x, 40); eq(w.w, 400)
+        local f = skin.window_for("Discord", clients, 1, mon, "0x1")
+        eq(f.x, -20, "no match: the focused window")
+        eq(skin.window_for("Discord", clients, 1, mon, nil), nil, "nothing focused here")
+        eq(skin.window_for("Signal", {}, 1, mon, nil), nil)
+    end)
+    test("edge_point: where the line from the spark meets the window's border", function()
+        local p = skin.edge_point({ x = 0, y = 500 }, { x = 400, y = 300, w = 400, h = 400 })
+        eq(p.x, 400); eq(p.y, 500)
+        local q = skin.edge_point({ x = 600, y = 0 }, { x = 400, y = 300, w = 400, h = 400 })
+        eq(q.x, 600); eq(q.y, 300)
+    end)
+    test("hour: the sweep comes when the hour turns", function()
+        eq(skin.hour("09:59", "10:00"), true); eq(skin.hour("10:00", "10:01"), false)
+        eq(skin.hour(nil, "10:00"), false, "the first reading is not a turn"); eq(skin.hour("23:59", "00:00"), true)
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
