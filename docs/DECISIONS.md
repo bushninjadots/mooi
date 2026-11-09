@@ -6207,3 +6207,56 @@ spec's); 15 scenes compile; `tests/gate.sh` ok. Rendered on the desk through a l
 the overlay level: the snapped Music hub risen in a torn hole, the Overview with the real Settings pages, the
 notice chip and the per-row power arm, and the section before and after the repaint fix. The live suite
 (`tests/surface.sh`, which knows the faint code now) was not run: it needs this branch running on the desk.
+
+## D215 · 2026-11-09 · The widgets below: one system under the wallpaper
+
+The owner, after D214: "the widgets we have already should be the ones there, plus new designs to facilitate
+what we're trying to build". Of three ways to make one system out of the subsurface's two, the owner chose
+**widgets only** (spec `docs/superpowers/specs/2026-11-09-widgets-below-design.md`, plan
+`docs/superpowers/plans/2026-11-09-widgets-below.md`, both approved in advance).
+
+**What lives below is mooi's widgets.** Music is Now Playing and a Visualiser; Apps is Launch, with a new
+**grid** layout (the twelve most launched, counts kept in `widgets.json`, filtered by what is typed in the
+Overview). Four new kinds, each a lane in the widgets' Ferrolume look, honouring the five styles and the
+Wardrobe, with their options in the editor: **Notices** (the newest notices with their first action, a
+dismiss cross, CLEAR, "Nothing new"; 3–6 rows), **Wallpapers** (the six newest of the picker's index; a press
+wears one), **Settings** (the eight real pages, each opening the window there) and **Controls** (Wi-Fi,
+Bluetooth, volume, brightness, battery, power, in a row or a column; which show is an option; the three
+destructive ways out ask again, each for itself, also an option). The limit rose from 12 to 16 widgets.
+Drawings: `shell/ui/wbelow.plm`; feeds and presses: `shell/lib/wbelow_feed.luau` (a module, since
+mooi-widgets.luau is near Lua's 200 locals; the services it already watched reach it through hooks, one
+watcher per service); pure decisions: `shell/lib/wbelow.luau`.
+
+**Placed once.** The first time the Surface is on, mooi-widgets places the default set below — Now Playing,
+Visualiser, Launch (grid), Clock, Calendar, Weather, Notices, Wallpapers, Settings, Controls — only the kinds
+the owner has none of, laid out by the arrangement (arc, row, grid, calm: `below.arrange`, rows that fit the
+width, wholly on the screen, apart). `widgets.json` remembers (`below_seeded`).
+
+**Presences are widgets kept above.** A widget kept above (D209) is what a Presence was. mooi-widgets turns the
+Presences of D208 into widgets kept above, centred where they were (one per kind: the owner's two Music ghosts
+become one Now Playing), once (`migrated_presences`); mooi-surface then rewrites `surface.json` without them
+(backup kept). The Presence layer, its library and its eight slots are gone.
+
+**mooi-surface keeps only the opening**: the hole and its faint/away/follow/snap/section/full, the eight effects,
+the wallpaper under it, the Overview's canvas and Close, the keyboard walk over the widgets and BMO, the
+repaint veil, the Sigil. The hubs, components, power row, places, shapes, handles and their events went
+(≈ 3,000 lines out). The light through the skin now glows at the Now Playing and Notices widgets.
+
+**The Overview is edit mode.** Opening it turns the widgets' edit mode on (drag, resize, inspector,
+multi-select, align, undo); healing it turns it off. The opening holds the keyboard there, so the widgets'
+edit keys (arrows, Delete, Ctrl+D, Ctrl+Z, Ctrl+Shift+Z, Ctrl+A) are sent on to them, and letters to
+Launch's grid; Esc clears what was typed, then heals.
+
+**Settings → The Subsurface:** "Where things sit" is the arrangement and **Re-arrange** (undoable); the
+components' side, Edit/Reset places and power confirm are retired (their keys stay valid, their setter slots
+kept).
+
+**Rulings** (the plan's ledger): seeding arranges only what it added; migration makes one widget per kind;
+the controls' column layout is named `ccolumn`; the power ways out replace the controls inside the widget (a
+popup would be cut by the hole's clip); "coming up" (a snapped thing rising) and Return in the keyboard walk
+went with the hubs and are not yet the widgets' (docs/TODO).
+
+**Verified.** Unit 749 / 0 (the D209–D214 tests of what was removed retired; D215's 15 new); 15 scenes compile;
+gate ok. The four new kinds and Launch's grid rendered through a throwaway scene that imports the real
+drawings (Adaptive and Phosphor; power open with Restart asking again; the column layout). The live suite
+(`tests/surface.sh`) now checks the default set and the Overview's edit mode; it needs this build on the desk.

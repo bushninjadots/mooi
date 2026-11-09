@@ -1,6 +1,6 @@
 # The widgets below: one system under the wallpaper — design
 
-> Status: approved in conversation (2026-11-09). The owner approved the design, then the spec and its plan in
+> Status: built (D215, 2026-11-09). Approved in conversation (2026-11-09). The owner approved the design, then the spec and its plan in
 > advance ("choose all you recommended options and build").
 > Revises: `2026-11-08-subsurface-design.md` §5 (what lives below) and §9's Presences. The opening (§3–§4), the
 > effects (§10), the Overview's idea (§7) and the later phases (§8, §9, §9a) stand.

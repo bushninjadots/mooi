@@ -21,6 +21,11 @@ what was done, and why, is docs/DECISIONS.md.
       typing, Music seek and visualiser, Settings at its page (real pages), Notices' actions, BMO where he
       stands (and woken), per-row power arming, components and Presences dragged properly (and buried back),
       fractional places, `lib/surface/citizen`, reduced motion for every program below, the repaint trails
+- [x] **D215, the widgets below**: what lives under the wallpaper is mooi's widgets — Launch's grid and four new
+      kinds (Notices, Wallpapers, Settings, Controls), a default set placed once, Presences migrated to widgets
+      kept above, the Overview as the widgets' edit mode; mooi-surface keeps only the opening
+- [ ] **D215's carry-overs**: a snapped widget rising (the spec's "coming up"), Return pressing the snapped
+      widget in the keyboard walk, the widgets' edit bar clear of the Overview's title
 - [ ] **Phase 2b-ii-b, the Nexus as a citizen**: move the Nexus deck and canvas cards into the Overview
       (the full-screen successor to the Nexus); the Nexus is a separate scene whose drawer needs a
       place/snapshot design first
