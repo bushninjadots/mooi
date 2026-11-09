@@ -402,6 +402,9 @@ M.SCHEMA = {
     { path = "keys.search", kind = "key", default = "SUPER + ALT + Space" },
     { path = "keys.window", kind = "key", default = "SUPER + ALT + W" },
     { path = "keys.stop", kind = "key", default = "SUPER + ALT + SHIFT + Space" },
+    -- D226: the node's keys (Super+Space was ArchEclipse's float toggle; Super+Tab the Overview's)
+    { path = "keys.node_launch", kind = "key", default = "SUPER + space" },
+    { path = "keys.node_universe", kind = "key", default = "SUPER + Tab" },
     { path = "keys.settings", kind = "key", default = "SUPER + ALT + S" },
     -- D160: the lock screen at once. The session also locks itself after `lock.idle` minutes
     -- (hypridle, Settings → Lock); this is the key for when you are leaving now.
@@ -529,6 +532,20 @@ M.SCHEMA = {
     { path = "herdr.focus_on_open", kind = "boolean", default = false },
     -- D219: Live wallpaper — the picture itself moves, round the widgets below or all of it; four effects, each
     -- with its strength, size and blend (lib/surface/skin `live`)
+    -- D226: the Dynamic Pill as a living node (docs/superpowers/specs/2026-11-09-dynamic-pill-node-design.md §9):
+    -- what it may unfold, how it moves and answers the pointer, where it sits — intent, not implementation
+    { path = "node.on", kind = "boolean", default = true },
+    { path = "node.personality", kind = "enum", values = { "organic", "minimal", "technical", "cyber" }, default = "organic" },
+    { path = "node.motion", kind = "enum", values = { "calm", "normal", "lively" }, default = "normal" },
+    { path = "node.pointer", kind = "enum", values = { "off", "low", "normal", "high" }, default = "normal" },
+    { path = "node.anchor", kind = "enum", values = { "left", "centre", "right" }, default = "centre" },
+    { path = "node.media", kind = "boolean", default = true },
+    { path = "node.notices", kind = "boolean", default = true },
+    { path = "node.workspaces", kind = "boolean", default = true },
+    { path = "node.volume", kind = "boolean", default = true },
+    { path = "node.system", kind = "boolean", default = true },
+    { path = "node.satellites", kind = "boolean", default = true },
+    { path = "node.wallpaper", kind = "boolean", default = true },
     { path = "live.on", kind = "boolean", default = true },
     { path = "live.where", kind = "enum", values = { "widgets", "whole" }, default = "widgets" },
     { path = "live.speed", kind = "integer", default = 100, min = 50, max = 200 },

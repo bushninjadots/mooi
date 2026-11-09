@@ -1487,8 +1487,11 @@ test("overview: Super+Tab while asked for, its own key always", function()
     local desktop = require("lib/desktop")
     local keys = config.defaults().keys
     local function has(list, key) for _, b in ipairs(list) do if b[1] == key then return b[2] end end return nil end
-    eq(has(desktop.binds(keys, nil, { super_tab = true }), "SUPER + Tab"), "overview", "Super+Tab opens it")
-    eq(has(desktop.binds(keys, nil, { super_tab = false }), "SUPER + Tab"), nil, "and can be left to another shell")
+    -- D226: Super+Tab is the node's universe by default (`mooi node universe` opens the Overview when no node runs)
+    eq(has(desktop.binds(keys, nil, { super_tab = true }), "SUPER + Tab"), "node universe", "Super+Tab: the node's")
+    local k2 = {}; for a, b in pairs(keys) do k2[a] = b end; k2.node_universe = "SUPER + ALT + U"
+    eq(has(desktop.binds(k2, nil, { super_tab = true }), "SUPER + Tab"), "overview", "the node's key moved: the Overview's again")
+    eq(has(desktop.binds(k2, nil, { super_tab = false }), "SUPER + Tab"), nil, "and can be left to another shell")
     eq(has(desktop.binds(keys, nil, { super_tab = false }), "SUPER + ALT + O"), "overview", "its own key stays")
 end)
 

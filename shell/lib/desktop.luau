@@ -20,6 +20,10 @@ M.ACTIONS = {
     -- D160: the lock screen at once (`mooi lock`, the same scene hypridle reaches when the session
     -- sits idle): the shell's own key for it, so it is rebindable and shown in Settings → Keys.
     { key = "lock", cmd = "lock", name = "Lock screen" },
+    -- D226: the node (the Dynamic Pill) — search, and the workspaces round it; with no node, mooi's own search
+    -- and the Overview answer instead (`mooi node`)
+    { key = "node_launch", cmd = "node launch", name = "The Pill: search" },
+    { key = "node_universe", cmd = "node universe", name = "The Pill: the workspaces round it" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 
@@ -243,7 +247,8 @@ M.SUPER_TAB = "SUPER + Tab"
 function M.binds(keys, shutter, atlas)
     local out = {}
     -- Super+Tab: the Overview, as it is in iNiR and most desktops (atlas.super_tab)
-    if type(atlas) == "table" and atlas.super_tab ~= false then out[#out + 1] = { M.SUPER_TAB, "overview" } end
+    -- (D226: not when the node's own key is Super+Tab — one press, one thing)
+    if type(atlas) == "table" and atlas.super_tab ~= false and keys.node_universe ~= M.SUPER_TAB then out[#out + 1] = { M.SUPER_TAB, "overview" } end
     for _, a in ipairs(M.ACTIONS) do
         if a.key ~= "shutter" or not shutter or shutter.enabled ~= false then out[#out + 1] = { keys[a.key], a.cmd } end
     end

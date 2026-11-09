@@ -1139,13 +1139,17 @@ return function(ctx)
     -- D207: what only the bar reads, for mooi-surface (sigil-feed.json): once a second while it has a host,
     -- written only when it changed. `at` is the wall clock in ms, so the Sigil can tell a dead feed.
     every(1000, function()
-        if sig.n == 0 then return end
+        -- (D226: the node — the Dynamic Pill — reads it too, while the bar is in Pill mode)
+        local node = type(ctx.settings) == "function" and ctx.settings() or nil
+        local node_on = type(node) == "table" and type(node.bar) == "table" and node.bar.mode == "pill"
+        if sig.n == 0 and not node_on then return end
         local function hex(r, g, b) return string.format("#%02x%02x%02x", math.floor((r or 0) * 255 + .5), math.floor((g or 0) * 255 + .5), math.floor((b or 0) * 255 + .5)) end
         local doc = {
             -- nothing before it was read: the Sigil shows a dash, not "0°" (review I2)
             resources = sig.res_ok and { cpu = fact.res_cpu, mem = fact.res_mem, temp = fact.res_temp } or nil,
             weather = fact.wx_ok and { temp = fact.wx_temp, word = text.wx_word, city = text.wx_city } or nil,
             music = { title = text.mu_title, artist = text.mu_artist, playing = fact.mu_playing == true },
+            recording = fact.recording == true,     -- D226: the node's REC satellite
             cover = fact.mu_has and { hex(fact.pc1_r, fact.pc1_g, fact.pc1_b), hex(fact.pc2_r, fact.pc2_g, fact.pc2_b), hex(fact.pc3_r, fact.pc3_g, fact.pc3_b) } or nil,
         }
         local enc = json.encode(doc)
