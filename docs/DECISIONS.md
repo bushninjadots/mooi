@@ -6289,3 +6289,42 @@ Controls, Clock, Calendar, Weather and the rest have no Return.
 **Verified.** Unit 754 / 0; 15 scenes compile; `bin/mooi check` green. Not seen yet: the rise on the desk (it needs
 this build live; `tests/surface.sh` with the owner).
 
+## D217 · 2026-11-09 · Push up from below: the Subsurface's phase 3
+
+The owner: "do next stages". The spec's §9 and §9a (`2026-11-08-subsurface-design.md`), with D215's revision (what
+lives below is widgets); plan `docs/superpowers/plans/2026-11-09-push-up.md`.
+
+**`meet`, per widget below** (an option of four kinds, `lib/surface/skin`): Now Playing and Notices are **woven**,
+the Visualiser and the Clock **move the wallpaper**; any of them may be **still**; a widget kept above is "above".
+Each has its switch in the editor ("PUSHES UP THROUGH THE PICTURE", "MOVES THE WALLPAPER").
+
+**While the opening is shut** (and the Surface on, and no window fullscreen), a new surface `skin` (level bottom:
+over the wallpaper, under the windows; patches only) draws:
+- *the push*: a new song, or a new notice, bulges the picture over its widget's place (`shaders/bulge.wgsl`, a
+  lens-like swell lit from the top left, faded out well inside its patch so no seam shows) and its words press up
+  through it, then settle back (≈ 4.6 s). One at a time; what comes meanwhile waits, the newest in place of the rest.
+  High contrast: a plate under the words. Reduced motion: the words without the bulge.
+- *the glow through*: a soft breath at Now Playing while it plays (with the music's level) and at Notices while it
+  holds news — the existing Glow setting, now also at rest.
+- *the moving wallpaper*: a playing visualiser's rings round its place, with the music; the clock's band of light
+  across its place when the hour turns (`shaders/skin.wgsl`).
+
+**A notice's light** (a new surface `light`, level overlay, one zone): a spark where the Notices widget lives — at
+the nearest screen edge when a window covers that place, at the top right with no Notices — then a line to the
+window of the app that sent it (its class or title; the focused window when none matches) and once round its
+border, from the side the line met, then it fades. A burst is one spark with its count; a press on it opens the
+Nexus. Reduced motion: the spark and the border lit at once. Settings → The Subsurface → Light through the skin:
+"A notice pings" (no longer behind the glow), "The light travels" and "Push up from below" (new, `surface.trace`,
+`surface.push`, on; their setter slots appended).
+
+**Rulings:** the spark's press opens the Nexus (the opening lives only while Super is held, so it cannot be opened
+"at the hub" from a click); the words are the palette's light ink over a soft shadow (Pleamar cannot tint text from
+the pixels beneath); the calendar has no events to push, so it is not woven; contour traces wait for
+`wall-sense.json`, which does not exist yet (the spec's fallback: the glow alone).
+
+**Verified.** Unit 772 / 0; 15 scenes compile; `bin/mooi check` green. Rendered through a throwaway scene with the real
+shaders over the real wallpaper: the two glows, the hour's band, the words, the line and the half-traced border,
+the spark with its count; the bulge measured (on against off: ≈ 14 000 pixels of its patch move, up to 204 levels;
+the patch's edge band at most 1 — no seam). Not yet seen: any of it live on the desk (it needs this build running
+with the Surface on).
+

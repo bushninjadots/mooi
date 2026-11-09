@@ -29,7 +29,8 @@ what was done, and why, is docs/DECISIONS.md.
 - [ ] **Phase 2b-ii-b, the Nexus as a citizen**: move the Nexus deck and canvas cards into the Overview
       (the full-screen successor to the Nexus); the Nexus is a separate scene whose drawer needs a
       place/snapshot design first
-- [ ] **Phase 3, push up from below**: `meet` per thing (woven); a song change, a notice or an event makes a
+- [x] **D217, phase 3, push up from below** (contour traces wait for wall-sense)
+- [ ] **Phase 3's leftover**: `meet` per thing (woven); a song change, a notice or an event makes a
       soft bulge in the wallpaper over its place, its words pressing up through the picture; light through
       the skin (glow and contour traces, the notification ping and border trace) once wall-sense exists
 - [ ] **Phase 4, peering and burying**: hold Super over a window with another behind it — a live patch of the
