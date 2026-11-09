@@ -8,9 +8,12 @@ what was done, and why, is docs/DECISIONS.md.
 - [x] **Phase 1, the opening**: the shared hole, the Tear and Aperture, follow/snap/section/full/heal, the
       hubs and components below, widgets and BMO as citizens, click to use, drag out and back, the keyboard
       path, the drag bind (`docs/plans/2026-11-08-subsurface-phase1.md`)
-- [ ] **Phase 2, the Overview**: scrolled fully open, the whole wallpaper peels back into one canvas — the
-      full-screen successor to the Nexus; everything at its place and awake, arranged there (move, resize,
-      snap, undo); the Nexus's deck and canvas cards move in
+- [x] **Phase 2a, the Overview canvas (D211)**: full open, the wallpaper pulls back to the thin lit
+      margin and an opaque canvas with a faint grid takes the screen; hubs and components are arranged
+      there — drag by the body, eight-pixel snap, clamped, saved to `surface.json`, with Undo / Reset /
+      Close on the canvas and a Super tap, Esc or a press on the margin to close
+- [ ] **Phase 2b, the Overview's shapes and the Nexus**: resize a place with a shape handle and inspector,
+      and move the Nexus deck and canvas cards in as citizens (the full-screen successor to the Nexus)
 - [ ] **Phase 3, push up from below**: `meet` per thing (woven); a song change, a notice or an event makes a
       soft bulge in the wallpaper over its place, its words pressing up through the picture; light through
       the skin (glow and contour traces, the notification ping and border trace) once wall-sense exists

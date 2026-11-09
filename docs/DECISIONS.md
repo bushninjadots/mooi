@@ -6030,3 +6030,34 @@ opening and the new page are in `.show-your-work/d210-*.png`. Ships behind `surf
 settings have it on). Not yet: the Overview's real canvas (phase 2), push-up/woven and light through the
 skin (phase 3), peering and burying (phase 4), and the owner's own shaders and chains (what remains of
 phase 5) — docs/TODO.md.
+
+## D211 — the Overview is a canvas you can arrange (phase 2a)
+
+**The decision.** The fully open subsurface is now a place, not just a bigger hole. In full mode the
+wallpaper pulls back to the thin lit margin `surface.overview` wide, and an opaque slate canvas takes the
+screen inside it, with a faint five-line grid and the words “THE SUBSURFACE / drag to arrange / Esc to
+close”. The canvas is a `box` in the ground group at `op_x + sf_ovm … op_w - 2·sf_ovm`; the wallpaper
+still shows in the margin, so the opening is visibly a hole in the picture rather than a window.
+
+**Arrange in place.** While the opening is full, dragging a hub's plate (or a component) moves its saved
+place instead of dragging out a Presence. The pointer position comes from the edge's existing `rv_move`;
+the place is centred under the pointer, snapped to an eight-pixel grid by the pure
+`below.snap(x, y, step)`, clamped inside the screen, and drawn live. Letting go saves it to
+`surface.json` beside the Presences. The same path still serves the settings page's Edit places.
+
+**Undo and the way out.** Each drop remembers the place it came from in `SF.place_undo` (the last 32), so
+the Overview's **UNDO** control puts the last one back; **RESET** restores the current layout's defaults
+and clears the history; **CLOSE** heals. A press on the thin margin also closes, as does a Super tap while
+full: `rv_up` now recognises that a tap in full is the Overview's close, not the bar's tap. Esc was
+already routed. The three controls and the margin live beside the canvas's `op_vis and op_mode == 4`.
+
+**What is deliberately not here yet.** Resizing a place and a shape handle/inspector are phase 2b, as are
+the Nexus deck and canvas cards moving into the Overview as citizens. Hubs keep their designed sizes
+because their contents (the app grid, the wall strip, the notice rows) are laid out for those sizes; a
+resize would crop them. The `surface.overview` setting is the margin; the grid is the ground's existing
+`surface.grid` setting, now visible through the canvas.
+
+**Verified.** `below.snap` and the scene's controls have unit tests; unit 745 / 0; 15 scenes compile; the
+live suite is 42 checks, 0 failed. Live: opening full, dragging Apps moved it from `50,279` to `520,392`
+on the grid, the drop saved it, and Undo returned it; a Super tap in full healed to `op_tc = 90`. Screenshot
+`.show-your-work/d211-overview-7.png`. Ships behind `surface.on`; nothing pushed.

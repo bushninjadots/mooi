@@ -137,6 +137,17 @@ function M.boxes(places, widgets, bar_h)
     return out
 end
 
+-- Arrange: a dragged place sits on the nearest line of the canvas's grid.
+function M.snap(x, y, step)
+    step = tonumber(step) or 8
+    if step < 1 then step = 1 end
+    local function one(v)
+        v = tonumber(v) or 0
+        return math.floor(v / step + 0.5) * step
+    end
+    return one(x), one(y)
+end
+
 -- The Apps hub's marks: the most launched first (counts by the app's id, kept in surface.json), the rest in
 -- the service's own order; at most n.
 function M.apps(list, counts, n)

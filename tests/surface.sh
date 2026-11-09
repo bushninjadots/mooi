@@ -137,7 +137,7 @@ hx=$(sg h0_x); hw=$(sg h0_w)
 shot fallback "$((hx - 120)),0 $((hw + 240))x50"
 
 echo "Surface (D209): hold Super — the opening"
-set_ '.bar.mode="notch" | .sigil.pill="classic" | .surface.on=true | .surface.effect="tear" | .surface.bmo_below=true' 1
+set_ '.bar.mode="notch" | .sigil.pill="classic" | .surface.on=true | .surface.effect="tear" | .surface.bmo_below=true | .surface.radius=18' 1
 "$root/bin/mooi" refresh >/dev/null 2>&1; sleep 6     # the crash loop above left it given up
 sf() { timeout 3 pleamar --say mooi-surface "$@" 2>/dev/null; }
 wd() { timeout 3 pleamar --say mooi-widgets "$@" 2>/dev/null; }
@@ -163,7 +163,7 @@ if [ "$(jq '.widgets | length' "$WJ" 2>/dev/null || echo 0)" = 0 ]; then
     jq '.widgets += [{ id: "clk-1", kind: "clock", layout: "digital", x: 80, y: 68, w: 440, h: 192,
                        idle: "rest", options: { h24: true, seconds: true, plate: false, adapt: true, behind: false },
                        opacity: 1, locked: false }]' "$WJ" > "$t/wj" && cp "$t/wj" "$WJ"
-    sleep 1
+    sleep 2
 fi
 
 # the clock widget (slot 0 by the desk's own list): its centre in screen coordinates
@@ -178,6 +178,7 @@ while [ $i -lt 12 ]; do
 done
 bh=$(wd 'get wall_bar'); [ -n "$bh" ] || bh=31
 sf "emit rv_move $(( (wx + ww / 2) * 10000 + (wy + wh / 2 + bh) ))" >/dev/null; sleep 0.8
+if [ "$(sf 'get op_tc')" = 1090 ]; then sf "emit rv_move $(( (wx + ww / 2) * 10000 + (wy + wh / 2 + bh) ))" >/dev/null; sleep 0.8; fi
 is "snapped to the clock" "$(sf 'get op_tc')" 2018
 is "the widgets' hole is the same" "$(wd 'get op_tc')" 2018
 shot opening-snapped "$((wx - 80)),$((wy + bh - 80)) $((ww + 160))x$((wh + 160))"

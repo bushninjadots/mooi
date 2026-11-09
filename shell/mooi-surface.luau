@@ -486,7 +486,8 @@ end)
 SF = { rv = reveal.state(), op = opening.state(), sent = nil, opened = false, dragging = nil,
        list = {}, undo = presence.undo_stack(), scr = { w = 1920, h = 1080 }, clock = 0,
        ptr = { x = 960, y = 540 }, edit = nil, ticking = nil, wall = "",
-       edit_places = false, drag_place = nil, layout_sig = nil, ready = false, ping = 0 }
+       edit_places = false, drag_place = nil, drag_from = nil, place_undo = {},
+       layout_sig = nil, ready = false, ping = 0 }
 local SFILE = "surface.json"
 local CITIZENS = { "mooi-widgets", "mooi-viz", "bmo" }
 local BAR_H = 34
@@ -787,12 +788,15 @@ end)
 on("rv_move", function(v)
     v = math.floor(tonumber(v) or 0)
     SF.ptr = { x = v // 10000, y = v % 10000 }
-    -- Edit places: the dragged hub/component follows the pointer, centred, and stays on the screen.
-    if SF.edit_places and SF.dragging and SF.drag_place then
+    -- Arrange: in the Overview (or while the settings page edits places) the dragged place follows the
+    -- pointer, centred, snapped to the canvas's eight-pixel grid and kept on the screen.
+    local arranging = SF.edit_places or SF.op.mode == opening.MODES.full
+    if arranging and SF.dragging and SF.drag_place then
         local p = S.places[SF.drag_place]
         if p then
-            p.x = math.max(0, math.min(SF.scr.w - p.w, SF.ptr.x - p.w // 2))
-            p.y = math.max(0, math.min(SF.scr.h - p.h, SF.ptr.y - p.h // 2))
+            local sx, sy = below.snap(SF.ptr.x - p.w / 2, SF.ptr.y - p.h / 2, 8)
+            p.x = math.max(0, math.min(SF.scr.w - p.w, math.floor(sx + 0.5)))
+            p.y = math.max(0, math.min(SF.scr.h - p.h, math.floor(sy + 0.5)))
             draw_below()
         end
     end
@@ -805,6 +809,12 @@ end)
 on("rv_up", function()
     if not surface_on() then tap(); return end       -- review I1: off, Super's release is the old tap
     local res = reveal.up(SF.rv, S.now_ms())
+    -- in the Overview a Super tap is its own close, not the bar's tap
+    if res == "tap" and SF.op.mode == opening.MODES.full then
+        close_reveal()
+        heal_opening()
+        return
+    end
     if res == "tap" then close_reveal(); tap(); return end
     close_reveal()
     -- full stays until Escape (or `mooi reveal heal`); every other mode heals on release
@@ -869,7 +879,7 @@ end
 on("sf_edit", function(v)
     SF.edit_places = (tonumber(v) or 0) > 0
     if not SF.edit_places then
-        SF.dragging, SF.drag_place = nil, nil
+        SF.dragging, SF.drag_place, SF.drag_from = nil, nil, nil
         draw_below()
         save_presences(false)
     end
@@ -877,15 +887,33 @@ end)
 on("sf_reset", function()
     S.places = below.defaults(SF.scr, below_opts())
     SF.layout_sig = layout_sig()
-    SF.dragging, SF.drag_place = nil, nil
+    SF.dragging, SF.drag_place, SF.drag_from = nil, nil, nil
+    SF.place_undo = {}
+    draw_below()
+    save_presences(false)
+end)
+on("sf_undo", function()
+    local last = table.remove(SF.place_undo)
+    if not last then return end
+    local p = S.places[last.id]
+    if not p then return end
+    p.x, p.y = last.x, last.y
     draw_below()
     save_presences(false)
 end)
 on("sb_drag", function(v)
     SF.dragging = math.floor(tonumber(v) or 0)
-    if SF.edit_places then SF.drag_place = place_for(SF.dragging) else SF.drag_place = nil end
-    -- freeze the hole at the press (a following hole would always contain the drop); snapped is the fixed mode
-    if SF.op.mode > 0 and SF.op.mode ~= opening.MODES.snapped then
+    local arranging = SF.edit_places or SF.op.mode == opening.MODES.full
+    if arranging then
+        SF.drag_place = place_for(SF.dragging)
+        local p = SF.drag_place and S.places[SF.drag_place]
+        SF.drag_from = p and { id = SF.drag_place, x = p.x, y = p.y } or nil
+    else
+        SF.drag_place, SF.drag_from = nil, nil
+    end
+    -- freeze the hole at the press (a following hole would always contain the drop); snapped is the fixed mode.
+    -- In the Overview the hole is already the screen: nothing to freeze.
+    if not arranging and SF.op.mode > 0 and SF.op.mode ~= opening.MODES.snapped then
         local h = opening.hole(SF.op, SF.ptr, SF.scr)
         SF.op.mode = opening.MODES.snapped
         SF.op.snap = { x = h.x + opening.MARGIN, y = h.y + opening.MARGIN,
@@ -895,10 +923,18 @@ on("sb_drag", function(v)
 end)on("sb_drop", function(v)
     local code = math.floor(tonumber(v) or 0)
     SF.dragging = nil
-    if SF.edit_places then
-        -- the place was moved live by rv_move; keep it and make no Presence
-        if SF.drag_place then save_presences(false); draw_below() end
-        SF.drag_place = nil
+    if SF.edit_places or SF.op.mode == opening.MODES.full then
+        -- the place was moved live by rv_move; keep it, remember the one it came from, make no Presence
+        if SF.drag_place and SF.drag_from then
+            local p = S.places[SF.drag_place]
+            if p and (p.x ~= SF.drag_from.x or p.y ~= SF.drag_from.y) then
+                SF.place_undo[#SF.place_undo + 1] = SF.drag_from
+                if #SF.place_undo > 32 then table.remove(SF.place_undo, 1) end
+                save_presences(false)
+                draw_below()
+            end
+        end
+        SF.drag_place, SF.drag_from = nil, nil
         return
     end
     if code == -1 then return end          -- a widget drag: it keeps or buries itself (wg_keep / wg_bury)
