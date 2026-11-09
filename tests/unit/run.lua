@@ -8657,6 +8657,51 @@ do
     end)
 end
 
+section("phase 4: peering and burying — the decisions (D224)")
+do
+    local peer = require("lib/surface/peer")
+    local mon = { x = 0, y = 0 }
+    local cl = {
+        { address = "0xa", class = "kitty", title = "~", workspace = { id = 1 }, at = { 0, 0 }, size = { 1920, 1080 }, floating = false, fullscreen = 0, focusHistoryID = 1, mapped = true },
+        { address = "0xb", class = "zen", title = "Mail", workspace = { id = 1 }, at = { 400, 300 }, size = { 800, 500 }, floating = true, fullscreen = 0, focusHistoryID = 0, mapped = true },
+        { address = "0xc", class = "mpv", title = "film", workspace = { id = 2 }, at = { 0, 0 }, size = { 500, 500 }, floating = true, fullscreen = 0, focusHistoryID = 2, mapped = true },
+    }
+    test("peer: the window in front under the pointer and the one behind it; none behind, nothing", function()
+        local f, b = peer.peer(cl, 1, mon, { x = 500, y = 400 })
+        eq(f.address, "0xb", "floating over tiled"); eq(b.address, "0xa")
+        local f2, b2 = peer.peer(cl, 1, mon, { x = 100, y = 100 })
+        eq(f2.address, "0xa"); eq(b2, nil, "nothing behind: no peek")
+        eq(peer.peer(cl, 1, mon, { x = 1950, y = 10 }), nil, "over no window")
+        eq(select(2, peer.peer(cl, 2, mon, { x = 100, y = 100 })), nil, "another workspace's windows are not behind")
+    end)
+    test("peer: a fullscreen window is in front of all its workspace; the focused before the rest", function()
+        local c2 = { cl[1], cl[2], { address = "0xd", class = "game", title = "g", workspace = { id = 1 }, at = { 0, 0 }, size = { 1920, 1080 }, floating = false, fullscreen = 2, focusHistoryID = 5, mapped = true } }
+        local f, b = peer.peer(c2, 1, mon, { x = 500, y = 400 })
+        eq(f.address, "0xd"); eq(b.address, "0xb")
+    end)
+    test("thumb_for: its live picture by app and title, else by app", function()
+        local th = { { id = 7, app = "zen", title = "Other" }, { id = 9, app = "zen", title = "Mail" }, { id = 3, app = "kitty", title = "x" } }
+        eq(peer.thumb_for(th, cl[2]), 9); eq(peer.thumb_for(th, cl[1]), 3)
+        eq(peer.thumb_for(th, cl[3]), nil); eq(peer.thumb_for(nil, cl[1]), nil)
+    end)
+    test("bury: a tile where the pointer is, on the screen, eight at most, one per window; read back valid", function()
+        local scr = { w = 1920, h = 1080 }
+        local t = peer.bury({}, cl[2], { x = 10, y = 10 }, scr)
+        eq(#t, 1); eq(t[1].address, "0xb"); eq(t[1].x, 0, "kept on the screen"); eq(t[1].w, peer.TILE_W)
+        t = peer.bury(t, cl[2], { x = 900, y = 500 }, scr)
+        eq(#t, 1, "one per window"); eq(t[1].x, 900 - peer.TILE_W / 2)
+        for i = 1, 9 do t = peer.bury(t, { address = "0x" .. (100 + i), class = "k", title = "t" }, { x = 500, y = 500 }, scr) end
+        eq(#t, peer.MAX, "eight at most")
+        eq(#peer.read({ { address = "zz", x = 1, y = 1 }, { address = "0xfe", class = "a", title = "b", x = 5, y = 6, w = 240, h = 150 }, "junk" }), 1)
+    end)
+    test("prune: a buried window that closed takes its tile with it", function()
+        local t = { { address = "0xb", x = 0, y = 0, w = 240, h = 150 }, { address = "0xgone", x = 0, y = 0, w = 240, h = 150 } }
+        local kept = peer.prune(t, cl)
+        eq(#kept, 1); eq(kept[1].address, "0xb")
+        eq(#peer.prune(t, nil), 2, "no list read: nothing dropped")
+    end)
+end
+
 section("surface: review fixes (D208)")
 do
     local function read(p) local f = io.open(p); local t = f:read("a"); f:close(); return t end
