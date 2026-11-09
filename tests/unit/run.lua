@@ -7128,6 +7128,18 @@ test("sigil settings: the page has its fold", function()
     assert(t:find("sv_sigil_pill", 1, true) and t:find("sv_sigil_temperament", 1, true))
 end)
 
+section("the settings window")
+test("settings window declares a row for every bar module", function()
+    local bl = require("lib/barlayout")
+    local f = io.open("shell/mooi-settings.plm"); local plm = f:read("a"); f:close()
+    for _, id in ipairs(bl.ORDER) do
+        for _, prefix in ipairs({ "m_", "fi_", "g_" }) do
+            assert(plm:find("fact " .. prefix .. id .. " ", 1, true),
+                "the settings scene declares " .. prefix .. id)
+        end
+    end
+end)
+
 section("the sigil: shapes")
 do
     local SH = require("lib/surface/shapes")

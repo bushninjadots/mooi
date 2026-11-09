@@ -156,6 +156,12 @@ scene Mooi {
     fact m_sigil = true
     fact fi_sigil = 0
     fact g_sigil = false
+    fact m_bmo = true
+    fact fi_bmo = 0
+    fact g_bmo = false
+    fact m_herdr = true
+    fact fi_herdr = 0
+    fact g_herdr = false
     fact helix_frame = true   // bar.helix_frame
     fact media_mode = 0       // media.mode · 0 full · 1 compact · 2 art · 3 viz
     fact media_idle = 0       // media.idle · 0 collapse · 1 keep · 2 hide
