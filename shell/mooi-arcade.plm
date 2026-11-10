@@ -282,6 +282,22 @@ scene Arcade {
     text mz_glyph = "󰯈"
     text mz_state = "SPACE · BOOST 30 s"
 
+    // ── Senda ──
+    model sdteam max 4 { name: text; glyph: text; level: text; hp: text; maxhp: text; hpn: number; passive: text; element: text }
+    model sdf max 4 { name: text; glyph: text; level: text; hp: text; maxhp: text; hpn: number; passive: text; element: text; boss: bool }
+    model sdoffers max 3 { kind: text; title: text; line: text; glyph: text; full: bool }
+    model sdpath max 8 { n: text; done: bool; now: bool; boss: bool }
+    model sdlog max 5 { line: text }
+    fact sd_state = 0      // 0 battle · 1 choose · 2 over · 3 won
+    fact sd_stage = 1
+    fact sd_cleared = 0
+    fact sd_best = 0
+    fact sd_round = 1
+    fact sd_boss = false
+    fact sd_sel = 0
+    text sd_line = "STAGE 1 / 8 · ROUND 1"
+    text sd_best_text = "BEST 0"
+
     event ac_cmd ->       // from `mooi arcade`: 1 open (or close) · 0 close
     event ac_key ->       // a key while the arcade holds the keyboard
     event ac_pick ->      // a game's card pressed
@@ -305,21 +321,21 @@ scene Arcade {
                 box { from: px, py; size: 860, 600; corner: 22; stroke: 1.2; color: fl.trace }
                 zone box acz_in { from: px, py; size: 860, 600; role: region; label: "Arcade"; show: ac_page > 0 }
                 text "󰊴" { at: px + 34, py + 34; anchor: center; size: 18; family: "CaskaydiaCove Nerd Font"; color: fl.phos }
-                text pick(ac_page, "", "Arcade", "Snake", "La Grieta", "Mazmorra") { at: px + 56, py + 34; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: fl.engrave }
-                text pick(ac_page, "", "← → CHOOSE · RETURN PLAYS · ESC CLOSES", "ESC BACK TO THE GAMES · SPACE STARTS", "A–Z TYPE · BACKSPACE ERASES · TAB SEALS · ESC BACK", "Z X C V / KEYPAD 1–4 BUY · SPACE BOOST · ESC BACK") { at: px + 860 - 28, py + 34; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                text pick(ac_page, "", "Arcade", "Snake", "La Grieta", "Mazmorra", "Senda") { at: px + 56, py + 34; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: fl.engrave }
+                text pick(ac_page, "", "← → CHOOSE · RETURN PLAYS · ESC CLOSES", "ESC BACK TO THE GAMES · SPACE STARTS", "A–Z TYPE · BACKSPACE ERASES · TAB SEALS · ESC BACK", "Z X C V / KEYPAD 1–4 BUY · SPACE BOOST · ESC BACK", "← → CHOOSE · RETURN CONFIRM · SPACE FAST · ESC BACK") { at: px + 860 - 28, py + 34; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
                 line { from: px + 20, py + 58; to: px + 860 - 20, py + 58; width: 1; color: fl.trace_dim }
                 group { show: ac_page == 1
                     for g in gm {
-                        let gx = px + 20 + g.index * (260.0 + 20)
+                        let gx = px + 20 + g.index * (196.0 + 12)
                         let gy = py + 110
                         let on = g.index == ac_sel
-                        box { from: gx, gy; size: 260.0, 300; corner: 18; color: fl.well; opacity: if(on, 1, 0.7) }
-                        box { from: gx, gy; size: 260.0, 300; corner: 18; stroke: if(on, 2, 1); color: if(on, fl.phos, fl.trace_dim) }
-                        text g.glyph { at: gx + 260.0 / 2, gy + 96; anchor: center; size: 64; family: "CaskaydiaCove Nerd Font"; color: if(g.ready, fl.phos, fl.muted) }
-                        text g.name { at: gx + 260.0 / 2, gy + 178; anchor: center; align: center; size: 18; weight: 700; family: "Exo 2"; color: fl.engrave }
-                        text g.line { at: gx + 260.0 / 2, gy + 214; anchor: center; align: center; size: 11; family: "Exo 2"; color: fl.muted; width: 260.0 - 32; lines: 2 }
-                        text g.best { at: gx + 260.0 / 2, gy + 268; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(g.ready, fl.phos, fl.muted) }
-                        zone box acz_g { from: gx, gy; size: 260.0, 300; corner: 18; cursor: pointer; role: button; label: "{g.name}"; show: ac_page == 1 }
+                        box { from: gx, gy; size: 196.0, 300; corner: 18; color: fl.well; opacity: if(on, 1, 0.7) }
+                        box { from: gx, gy; size: 196.0, 300; corner: 18; stroke: if(on, 2, 1); color: if(on, fl.phos, fl.trace_dim) }
+                        text g.glyph { at: gx + 196.0 / 2, gy + 96; anchor: center; size: 64; family: "CaskaydiaCove Nerd Font"; color: if(g.ready, fl.phos, fl.muted) }
+                        text g.name { at: gx + 196.0 / 2, gy + 178; anchor: center; align: center; size: 18; weight: 700; family: "Exo 2"; color: fl.engrave }
+                        text g.line { at: gx + 196.0 / 2, gy + 214; anchor: center; align: center; size: 11; family: "Exo 2"; color: fl.muted; width: 196.0 - 32; lines: 2 }
+                        text g.best { at: gx + 196.0 / 2, gy + 268; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(g.ready, fl.phos, fl.muted) }
+                        zone box acz_g { from: gx, gy; size: 196.0, 300; corner: 18; cursor: pointer; role: button; label: "{g.name}"; show: ac_page == 1 }
                         on press acz_g { emit ac_pick(g.index) }
                     }
                 }
@@ -442,6 +458,85 @@ scene Arcade {
                         zone box mzu { from: ux, uy; size: 186.0, 92; corner: 12; cursor: pointer; role: button; label: "Buy {u.name}"; show: ac_page == 4 }
                         on press mzu { emit ac_key(49 + u.index) }
                     }
+                }
+                group { show: ac_page == 5
+                    line { from: px + 40 + 50, py + 78; to: px + 40 + 722, py + 78; width: 1; color: fl.trace_dim }
+                    for p in sdpath {
+                        let sx = px + 40 + 50 + p.index * 96
+                        ellipse { at: sx, py + 78; radius: 9; color: if(p.done, fl.phos, fl.well); opacity: 0.95 }
+                        ellipse { at: sx, py + 78; radius: 10; stroke: if(p.now, 2, if(p.boss, 1.5, 0)); color: if(p.now, fl.phos, if(p.boss, fl.ember, fl.trace_dim)); opacity: 0.95 }
+                        text p.n { at: sx, py + 96; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(p.done, fl.phos, if(p.boss, fl.ember, fl.muted)) }
+                    }
+                    text sd_line { at: px + 40, py + 116; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                    text "MEDAL STAGE" { at: px + 860 / 2, py + 116; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: sd_boss }
+                    text sd_best_text { at: px + 40 + 780, py + 116; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    text "YOUR TEAM" { at: px + 40, py + 142; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                    text "THE ROAD'S OWN" { at: px + 40 + 420, py + 142; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                    for c in sdteam {
+                        let col = c.index - floor(c.index / 2) * 2
+                        let row = floor(c.index / 2)
+                        let cx = px + 40 + col * 182
+                        let cy = py + 154 + row * 112
+                        box { from: cx, cy; size: 170, 104; corner: 12; color: fl.well; opacity: 0.72 }
+                        box { from: cx, cy; size: 170, 104; corner: 12; stroke: 1; color: fl.trace_dim }
+                        ellipse { at: cx + 24, cy + 26; radius: 17; color: fl.well; opacity: 0.95 }
+                        ellipse { at: cx + 24, cy + 26; radius: 18; stroke: 1.5; color: fl.phos; opacity: 0.6 }
+                        text c.glyph { at: cx + 24, cy + 26; anchor: center; size: 19; family: "CaskaydiaCove Nerd Font"; color: fl.phos }
+                        text c.name { at: cx + 46, cy + 18; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; width: 112; lines: 1 }
+                        text c.level { at: cx + 46, cy + 36; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text c.element { at: cx + 158, cy + 36; anchor: right center; align: right; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+                        text "HP {c.hp} / {c.maxhp}" { at: cx + 12, cy + 62; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        box { from: cx + 12, cy + 74; size: 146, 6; corner: 3; color: fl.ground; opacity: 0.8 }
+                        box { from: cx + 12, cy + 74; size: max(1, 146 * c.hpn), 6; corner: 3; color: if(c.hpn < 0.3, fl.ember, fl.phos) }
+                        text c.passive { at: cx + 12, cy + 90; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted; width: 146; lines: 1 }
+                    }
+                    for f in sdf {
+                        let col = f.index - floor(f.index / 2) * 2
+                        let row = floor(f.index / 2)
+                        let fx = px + 40 + 420 + col * 182
+                        let fy = py + 154 + row * 112
+                        box { from: fx, fy; size: 170, 104; corner: 12; color: fl.well; opacity: 0.55 }
+                        box { from: fx, fy; size: 170, 104; corner: 12; stroke: if(f.boss, 2, 1); color: if(f.boss, fl.ember, fl.trace_dim) }
+                        ellipse { at: fx + 24, fy + 26; radius: 17; color: fl.well; opacity: 0.95 }
+                        ellipse { at: fx + 24, fy + 26; radius: if(f.boss, 19, 18); stroke: if(f.boss, 2.5, 1.5); color: if(f.boss, fl.ember, fl.phos); opacity: 0.65 }
+                        text f.glyph { at: fx + 24, fy + 26; anchor: center; size: if(f.boss, 21, 19); family: "CaskaydiaCove Nerd Font"; color: if(f.boss, fl.ember, fl.phos) }
+                        text f.name { at: fx + 46, fy + 18; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: fl.engrave; width: 112; lines: 1 }
+                        text f.level { at: fx + 46, fy + 36; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        text f.element { at: fx + 158, fy + 36; anchor: right center; align: right; size: 7; weight: 700; family: "Share Tech Mono"; color: if(f.boss, fl.ember, fl.phos) }
+                        text "HP {f.hp} / {f.maxhp}" { at: fx + 12, fy + 62; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+                        box { from: fx + 12, fy + 74; size: 146, 6; corner: 3; color: fl.ground; opacity: 0.8 }
+                        box { from: fx + 12, fy + 74; size: max(1, 146 * f.hpn), 6; corner: 3; color: if(f.boss, fl.ember, fl.phos) }
+                        text f.passive { at: fx + 12, fy + 90; anchor: left center; size: 7; family: "Share Tech Mono"; color: fl.muted; width: 146; lines: 1 }
+                    }
+                    text "THE ROAD REMEMBERS" { at: px + 40, py + 390; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                    for l in sdlog {
+                        text l.line { at: px + 40, py + 410 + l.index * 18; anchor: left center; size: 9; family: "Share Tech Mono"; color: if(l.index == 0, fl.engrave, fl.muted); width: 780; lines: 1 }
+                    }
+                    group { show: sd_state == 1
+                        box { from: px + 34, py + 124; size: 860 - 68, 392; corner: 16; color: fl.ground; opacity: 0.94 }
+                        box { from: px + 34, py + 124; size: 860 - 68, 392; corner: 16; stroke: 1; color: fl.trace_dim }
+                        text "STAGE {sd_stage} CLEARED · CHOOSE ONE" { at: px + 860 / 2, py + 154; anchor: center; align: center; size: 17; weight: 700; family: "Exo 2"; color: fl.phos }
+                        for o in sdoffers {
+                            let ox = px + 50 + o.index * 260
+                            let oy = py + 190
+                            let on = o.index == sd_sel
+                            box { from: ox, oy; size: 240, 250; corner: 16; color: fl.well; opacity: if(on, 1, 0.7) }
+                            box { from: ox, oy; size: 240, 250; corner: 16; stroke: if(on, 2, 1); color: if(on, fl.phos, fl.trace_dim) }
+                            text o.glyph { at: ox + 120, oy + 58; anchor: center; size: 38; family: "CaskaydiaCove Nerd Font"; color: if(on, fl.phos, fl.muted) }
+                            text o.title { at: ox + 120, oy + 112; anchor: center; align: center; size: 16; weight: 700; family: "Exo 2"; color: fl.engrave; width: 210; lines: 1 }
+                            text o.line { at: ox + 120, oy + 144; anchor: center; align: center; size: 10; family: "Exo 2"; color: fl.muted; width: 208; lines: 2 }
+                            text "TEAM FULL" { at: ox + 120, oy + 208; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.ember; show: o.full }
+                            text "{o.index + 1, 0}" { at: ox + 18, oy + 18; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(on, fl.phos, fl.muted) }
+                            zone box sdo { from: ox, oy; size: 240, 250; corner: 16; cursor: pointer; role: button; label: "{o.title}"; show: ac_page == 5 and sd_state == 1 }
+                            on press sdo { emit ac_key(49 + o.index) }
+                        }
+                        text "← → CHOOSE · RETURN TAKES IT" { at: px + 860 / 2, py + 466; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.muted } }
+                    group { show: sd_state == 2 or sd_state == 3
+                        box { from: px + 140, py + 176; size: 580, 244; corner: 16; color: fl.ground; opacity: 0.95 }
+                        box { from: px + 140, py + 176; size: 580, 244; corner: 16; stroke: 1; color: if(sd_state == 3, fl.phos, fl.ember) }
+                        text pick(sd_state, "", "", "THE ROAD ENDS", "THE ROAD IS WALKED") { at: px + 860 / 2, py + 238; anchor: center; align: center; size: 26; weight: 700; family: "Exo 2"; color: if(sd_state == 3, fl.phos, fl.ember) }
+                        text "{sd_cleared} / 8 STAGES · {sd_best_text}" { at: px + 860 / 2, py + 286; anchor: center; align: center; size: 13; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                        text "RETURN STARTS AGAIN · ESC BACK TO THE GAMES" { at: px + 860 / 2, py + 334; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.muted } }
                 }
             }
         }

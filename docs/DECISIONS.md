@@ -7620,3 +7620,41 @@ screen cannot show undoes itself with nobody able to see. Every word is checked 
 start-up file on this screen (then removed again, so nothing of yours changed), `hyprctl reload` with no errors,
 and the Displays page with its new row. The revert was proven against the stand-in, not by changing this screen's
 mode.
+
+## D291 · 2026-11-10 · Senda, the arcade's autobattler (opencode's)
+
+Senda is the arcade's fourth game, on page 5. A road of eight stages; a team of up to four creatures; battles that
+fight themselves in rounds. The owner asked for k4's Senda without copying its code, text or art, so the creatures,
+names and writing here are mooi's own, drawn with shapes, text and Nerd Font glyphs.
+
+Each creature has one of five elements — fire, water, leaf, stone, spark — on a five-step wheel: fire beats leaf,
+leaf beats stone, stone beats spark, spark beats water, water beats fire, for ×1.5; the reverse is ×0.67. It also
+carries one passive: **mend** heals its side a little at the end of each round, **first** strikes once before round
+one, and **thorns** hurts whoever hits it. The built-in pool is 30 creatures, six per element.
+
+A run starts with two creatures (so the first stage can be fought) and stage 1. Enemy counts grow from two to four;
+every fourth stage is a medal boss, first in the line, with half again the health and two more attack. Rounds are
+ordered by speed, team first on a tie; every action hits the first living foe. Damage is `max(1, floor(atk ×
+advantage + 0.5))`. A lost team ends the run; stage 8 cleared wins it.
+
+Between stages the road offers three things: two creatures to recruit, and either rest (when anyone is hurt) or
+training for the lowest-level creature (when the team is whole). Recruiting stops at four and is marked `TEAM
+FULL`. Each choice advances the stage. Best is stages cleared, kept as `senda` in `arcade.json`'s best table.
+
+`shell/lib/arcade/senda.luau` is pure and seeded: `new(seed)`, `offers(st)`, `choose(st, i)`, `battle_step(st)`,
+plus `advantage(a, b)`. `new` draws two distinct starters and the stage's foes from the seed; offers use a local
+stream derived from the seed and stage, so the same run offers the same three things. The scene gained the `sdteam`,
+`sdf`, `sdoffers`, `sdpath`, and `sdlog` models, its facts and texts, and the page; the picker now shows four cards
+across. ← → choose, Return confirms, Space or Return speeds a battle, Esc goes back.
+
+**Verified.** Unit 928 / 0, including the wheel both ways, a seeded battle's exact ending, recruiting at four,
+training the lowest, rest filling the team, offers with and without a hurt creature, and a fallen team ending the
+run. The scene compiles (121 properties, 18 zones); `luau-ops`, the gate and the arcade's globals check pass.
+
+**Reviewed (Claude), D291.** Renumbered from D289 (the drop-down terminal's). Balance measured over a thousand seeded
+runs before bringing it in: 39 % of runs lost stage 1 (two starters against two foes) and none got past the first
+medal. Retuned: one foe at stage 1, two up to the first medal, three after; foes gain a level every four stages, not
+three; and after each win the team makes camp, every creature getting back a third of what it lost (the fallen
+too). Now a player who recruits until the team is full and then rests wins stage 1 in 998 of 1000 runs and walks the
+whole road in about one in five, the medals the hard points; a unit test holds that range. Checked live: the road,
+the two starters against one foe, the log.

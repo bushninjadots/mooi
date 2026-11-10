@@ -73,6 +73,17 @@ def scene():
           '    fact mz_boss = false', '    fact mz_boost = 0', '    fact mz_rest = 0',
           '    text mz_name = "Slime"', '    text mz_glyph = "󰯈"', '    text mz_state = "SPACE · BOOST 30 s"',
           '',
+          '    // ── Senda ──',
+          '    model sdteam max 4 { name: text; glyph: text; level: text; hp: text; maxhp: text; hpn: number; passive: text; element: text }',
+          '    model sdf max 4 { name: text; glyph: text; level: text; hp: text; maxhp: text; hpn: number; passive: text; element: text; boss: bool }',
+          '    model sdoffers max 3 { kind: text; title: text; line: text; glyph: text; full: bool }',
+          '    model sdpath max 8 { n: text; done: bool; now: bool; boss: bool }',
+          '    model sdlog max 5 { line: text }',
+          '    fact sd_state = 0      // 0 battle · 1 choose · 2 over · 3 won',
+          '    fact sd_stage = 1', '    fact sd_cleared = 0', '    fact sd_best = 0', '    fact sd_round = 1',
+          '    fact sd_boss = false', '    fact sd_sel = 0',
+          '    text sd_line = "STAGE 1 / 8 · ROUND 1"', '    text sd_best_text = "BEST 0"',
+          '',
           '    event ac_cmd ->       // from `mooi arcade`: 1 open (or close) · 0 close',
           '    event ac_key ->       // a key while the arcade holds the keyboard',
           '    event ac_pick ->      // a game\'s card pressed']
@@ -100,13 +111,14 @@ def surface():
          f'{c}        box {{ from: px, py; size: {PW}, {PH}; corner: 22; stroke: 1.2; color: fl.trace }}',
          f'{c}        zone box acz_in {{ from: px, py; size: {PW}, {PH}; role: region; label: "Arcade"; show: ac_page > 0 }}',
          f'{c}        text "󰊴" {{ at: px + 34, py + 34; anchor: center; size: 18; family: {NERD}; color: {acc} }}',
-         f'{c}        text pick(ac_page, "", "Arcade", "Snake", "La Grieta", "Mazmorra") {{ at: px + 56, py + 34; anchor: left center; size: 16; weight: 700; family: {SANS}; color: {ink} }}',
-         f'{c}        text pick(ac_page, "", "← → CHOOSE · RETURN PLAYS · ESC CLOSES", "ESC BACK TO THE GAMES · SPACE STARTS", "A–Z TYPE · BACKSPACE ERASES · TAB SEALS · ESC BACK", "Z X C V / KEYPAD 1–4 BUY · SPACE BOOST · ESC BACK") {{ at: px + {PW} - 28, py + 34; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}        text pick(ac_page, "", "Arcade", "Snake", "La Grieta", "Mazmorra", "Senda") {{ at: px + 56, py + 34; anchor: left center; size: 16; weight: 700; family: {SANS}; color: {ink} }}',
+         f'{c}        text pick(ac_page, "", "← → CHOOSE · RETURN PLAYS · ESC CLOSES", "ESC BACK TO THE GAMES · SPACE STARTS", "A–Z TYPE · BACKSPACE ERASES · TAB SEALS · ESC BACK", "Z X C V / KEYPAD 1–4 BUY · SPACE BOOST · ESC BACK", "← → CHOOSE · RETURN CONFIRM · SPACE FAST · ESC BACK") {{ at: px + {PW} - 28, py + 34; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim} }}',
          f'{c}        line {{ from: px + 20, py + 58; to: px + {PW} - 20, py + 58; width: 1; color: fl.trace_dim }}']
     L += picker(c, ink, dim, acc)
     L += snake(c, ink, dim, acc)
     L += grieta(c, ink, dim, acc)
     L += mazmorra(c, ink, dim, acc)
+    L += senda(c, ink, dim, acc)
     L += [f'{c}    }}', f'{c}}}']
     for k, codes in KEYMAP.items():
         emits = "; ".join(f"emit ac_key({code})" for code in codes)
@@ -116,10 +128,10 @@ def surface():
 
 
 def picker(c, ink, dim, acc):
-    cw, ch = (PW - 40 - 2 * 20) / 3, 300
+    cw, ch = (PW - 40 - 3 * 12) / 4, 300
     L = [f'{c}        group {{ show: ac_page == 1',
          f'{c}            for g in gm {{',
-         f'{c}                let gx = px + 20 + g.index * ({cw} + 20)',
+         f'{c}                let gx = px + 20 + g.index * ({cw} + 12)',
          f'{c}                let gy = py + 110',
          f'{c}                let on = g.index == ac_sel',
          f'{c}                box {{ from: gx, gy; size: {cw}, {ch}; corner: 18; color: fl.well; opacity: if(on, 1, 0.7) }}',
@@ -275,6 +287,90 @@ def mazmorra(c, ink, dim, acc):
          f'{c}                zone box mzu {{ from: ux, uy; size: {shop_w}, {shop_h}; corner: 12; cursor: pointer; role: button; label: "Buy {{u.name}}"; show: ac_page == 4 }}',
          f'{c}                on press mzu {{ emit ac_key(49 + u.index) }}',
          f'{c}            }}',
+         f'{c}        }}']
+    return L
+
+
+def senda(c, ink, dim, acc):
+    bx = "px + 40"
+    L = [f'{c}        group {{ show: ac_page == 5',
+         f'{c}            line {{ from: {bx} + 50, py + 78; to: {bx} + 722, py + 78; width: 1; color: fl.trace_dim }}',
+         f'{c}            for p in sdpath {{',
+         f'{c}                let sx = {bx} + 50 + p.index * 96',
+         f'{c}                ellipse {{ at: sx, py + 78; radius: 9; color: if(p.done, {acc}, fl.well); opacity: 0.95 }}',
+         f'{c}                ellipse {{ at: sx, py + 78; radius: 10; stroke: if(p.now, 2, if(p.boss, 1.5, 0)); color: if(p.now, {acc}, if(p.boss, fl.ember, fl.trace_dim)); opacity: 0.95 }}',
+         f'{c}                text p.n {{ at: sx, py + 96; anchor: center; align: center; size: 8; weight: 700; family: {MONO}; color: if(p.done, {acc}, if(p.boss, fl.ember, {dim})) }}',
+         f'{c}            }}',
+         f'{c}            text sd_line {{ at: {bx}, py + 116; anchor: left center; size: 11; weight: 700; family: {MONO}; color: {ink} }}',
+         f'{c}            text "MEDAL STAGE" {{ at: px + {PW} / 2, py + 116; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: fl.ember; show: sd_boss }}',
+         f'{c}            text sd_best_text {{ at: {bx} + 780, py + 116; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}            text "YOUR TEAM" {{ at: {bx}, py + 142; anchor: left center; size: 8; weight: 700; family: {MONO}; color: {dim} }}',
+         f'{c}            text "THE ROAD\'S OWN" {{ at: {bx} + 420, py + 142; anchor: left center; size: 8; weight: 700; family: {MONO}; color: {dim} }}',
+         f'{c}            for c in sdteam {{',
+         f'{c}                let col = c.index - floor(c.index / 2) * 2',
+         f'{c}                let row = floor(c.index / 2)',
+         f'{c}                let cx = {bx} + col * 182',
+         f'{c}                let cy = py + 154 + row * 112',
+         f'{c}                box {{ from: cx, cy; size: 170, 104; corner: 12; color: fl.well; opacity: 0.72 }}',
+         f'{c}                box {{ from: cx, cy; size: 170, 104; corner: 12; stroke: 1; color: fl.trace_dim }}',
+         f'{c}                ellipse {{ at: cx + 24, cy + 26; radius: 17; color: fl.well; opacity: 0.95 }}',
+         f'{c}                ellipse {{ at: cx + 24, cy + 26; radius: 18; stroke: 1.5; color: {acc}; opacity: 0.6 }}',
+         f'{c}                text c.glyph {{ at: cx + 24, cy + 26; anchor: center; size: 19; family: {NERD}; color: {acc} }}',
+         f'{c}                text c.name {{ at: cx + 46, cy + 18; anchor: left center; size: 12; weight: 700; family: {SANS}; color: {ink}; width: 112; lines: 1 }}',
+         f'{c}                text c.level {{ at: cx + 46, cy + 36; anchor: left center; size: 8; family: {MONO}; color: {dim} }}',
+         f'{c}                text c.element {{ at: cx + 158, cy + 36; anchor: right center; align: right; size: 7; weight: 700; family: {MONO}; color: {acc} }}',
+         f'{c}                text "HP {{c.hp}} / {{c.maxhp}}" {{ at: cx + 12, cy + 62; anchor: left center; size: 8; family: {MONO}; color: {dim} }}',
+         f'{c}                box {{ from: cx + 12, cy + 74; size: 146, 6; corner: 3; color: fl.ground; opacity: 0.8 }}',
+         f'{c}                box {{ from: cx + 12, cy + 74; size: max(1, 146 * c.hpn), 6; corner: 3; color: if(c.hpn < 0.3, fl.ember, {acc}) }}',
+         f'{c}                text c.passive {{ at: cx + 12, cy + 90; anchor: left center; size: 7; family: {MONO}; color: {dim}; width: 146; lines: 1 }}',
+         f'{c}            }}',
+         f'{c}            for f in sdf {{',
+         f'{c}                let col = f.index - floor(f.index / 2) * 2',
+         f'{c}                let row = floor(f.index / 2)',
+         f'{c}                let fx = {bx} + 420 + col * 182',
+         f'{c}                let fy = py + 154 + row * 112',
+         f'{c}                box {{ from: fx, fy; size: 170, 104; corner: 12; color: fl.well; opacity: 0.55 }}',
+         f'{c}                box {{ from: fx, fy; size: 170, 104; corner: 12; stroke: if(f.boss, 2, 1); color: if(f.boss, fl.ember, fl.trace_dim) }}',
+         f'{c}                ellipse {{ at: fx + 24, fy + 26; radius: 17; color: fl.well; opacity: 0.95 }}',
+         f'{c}                ellipse {{ at: fx + 24, fy + 26; radius: if(f.boss, 19, 18); stroke: if(f.boss, 2.5, 1.5); color: if(f.boss, fl.ember, {acc}); opacity: 0.65 }}',
+         f'{c}                text f.glyph {{ at: fx + 24, fy + 26; anchor: center; size: if(f.boss, 21, 19); family: {NERD}; color: if(f.boss, fl.ember, {acc}) }}',
+         f'{c}                text f.name {{ at: fx + 46, fy + 18; anchor: left center; size: 11; weight: 700; family: {SANS}; color: {ink}; width: 112; lines: 1 }}',
+         f'{c}                text f.level {{ at: fx + 46, fy + 36; anchor: left center; size: 8; family: {MONO}; color: {dim} }}',
+         f'{c}                text f.element {{ at: fx + 158, fy + 36; anchor: right center; align: right; size: 7; weight: 700; family: {MONO}; color: if(f.boss, fl.ember, {acc}) }}',
+         f'{c}                text "HP {{f.hp}} / {{f.maxhp}}" {{ at: fx + 12, fy + 62; anchor: left center; size: 8; family: {MONO}; color: {dim} }}',
+         f'{c}                box {{ from: fx + 12, fy + 74; size: 146, 6; corner: 3; color: fl.ground; opacity: 0.8 }}',
+         f'{c}                box {{ from: fx + 12, fy + 74; size: max(1, 146 * f.hpn), 6; corner: 3; color: if(f.boss, fl.ember, {acc}) }}',
+         f'{c}                text f.passive {{ at: fx + 12, fy + 90; anchor: left center; size: 7; family: {MONO}; color: {dim}; width: 146; lines: 1 }}',
+         f'{c}            }}',
+         f'{c}            text "THE ROAD REMEMBERS" {{ at: {bx}, py + 390; anchor: left center; size: 8; weight: 700; family: {MONO}; color: {dim} }}',
+         f'{c}            for l in sdlog {{',
+         f'{c}                text l.line {{ at: {bx}, py + 410 + l.index * 18; anchor: left center; size: 9; family: {MONO}; color: if(l.index == 0, {ink}, {dim}); width: 780; lines: 1 }}',
+         f'{c}            }}',
+         f'{c}            group {{ show: sd_state == 1',
+         f'{c}                box {{ from: px + 34, py + 124; size: {PW} - 68, 392; corner: 16; color: fl.ground; opacity: 0.94 }}',
+         f'{c}                box {{ from: px + 34, py + 124; size: {PW} - 68, 392; corner: 16; stroke: 1; color: fl.trace_dim }}',
+         f'{c}                text "STAGE {{sd_stage}} CLEARED · CHOOSE ONE" {{ at: px + {PW} / 2, py + 154; anchor: center; align: center; size: 17; weight: 700; family: {SANS}; color: {acc} }}',
+         f'{c}                for o in sdoffers {{',
+         f'{c}                    let ox = px + 50 + o.index * 260',
+         f'{c}                    let oy = py + 190',
+         f'{c}                    let on = o.index == sd_sel',
+         f'{c}                    box {{ from: ox, oy; size: 240, 250; corner: 16; color: fl.well; opacity: if(on, 1, 0.7) }}',
+         f'{c}                    box {{ from: ox, oy; size: 240, 250; corner: 16; stroke: if(on, 2, 1); color: if(on, {acc}, fl.trace_dim) }}',
+         f'{c}                    text o.glyph {{ at: ox + 120, oy + 58; anchor: center; size: 38; family: {NERD}; color: if(on, {acc}, {dim}) }}',
+         f'{c}                    text o.title {{ at: ox + 120, oy + 112; anchor: center; align: center; size: 16; weight: 700; family: {SANS}; color: {ink}; width: 210; lines: 1 }}',
+         f'{c}                    text o.line {{ at: ox + 120, oy + 144; anchor: center; align: center; size: 10; family: {SANS}; color: {dim}; width: 208; lines: 2 }}',
+         f'{c}                    text "TEAM FULL" {{ at: ox + 120, oy + 208; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: fl.ember; show: o.full }}',
+         f'{c}                    text "{{o.index + 1, 0}}" {{ at: ox + 18, oy + 18; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(on, {acc}, {dim}) }}',
+         f'{c}                    zone box sdo {{ from: ox, oy; size: 240, 250; corner: 16; cursor: pointer; role: button; label: "{{o.title}}"; show: ac_page == 5 and sd_state == 1 }}',
+         f'{c}                    on press sdo {{ emit ac_key(49 + o.index) }}',
+         f'{c}                }}',
+         f'{c}                text "← → CHOOSE · RETURN TAKES IT" {{ at: px + {PW} / 2, py + 466; anchor: center; align: center; size: 9; family: {MONO}; color: {dim} }} }}',
+         f'{c}            group {{ show: sd_state == 2 or sd_state == 3',
+         f'{c}                box {{ from: px + 140, py + 176; size: 580, 244; corner: 16; color: fl.ground; opacity: 0.95 }}',
+         f'{c}                box {{ from: px + 140, py + 176; size: 580, 244; corner: 16; stroke: 1; color: if(sd_state == 3, {acc}, fl.ember) }}',
+         f'{c}                text pick(sd_state, "", "", "THE ROAD ENDS", "THE ROAD IS WALKED") {{ at: px + {PW} / 2, py + 238; anchor: center; align: center; size: 26; weight: 700; family: {SANS}; color: if(sd_state == 3, {acc}, fl.ember) }}',
+         f'{c}                text "{{sd_cleared}} / 8 STAGES · {{sd_best_text}}" {{ at: px + {PW} / 2, py + 286; anchor: center; align: center; size: 13; weight: 700; family: {MONO}; color: {ink} }}',
+         f'{c}                text "RETURN STARTS AGAIN · ESC BACK TO THE GAMES" {{ at: px + {PW} / 2, py + 334; anchor: center; align: center; size: 9; family: {MONO}; color: {dim} }} }}',
          f'{c}        }}']
     return L
 

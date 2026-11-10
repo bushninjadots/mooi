@@ -432,6 +432,102 @@ do
     end)
 end
 
+section("Senda (D291; k4's autobattler, written fresh for mooi)")
+do
+    local SD = require("lib/arcade/senda")
+    test("the wheel: each element beats the next and is weak to the one before it", function()
+        local m, l = SD.advantage("fire", "leaf")
+        eq(m, 1.5); eq(l, "strong")
+        m, l = SD.advantage("leaf", "fire")
+        eq(m, 0.67); eq(l, "weak")
+        eq(SD.advantage("water", "fire"), 1.5)
+        eq(SD.advantage("stone", "spark"), 1.5)
+        eq(SD.advantage("spark", "water"), 1.5)
+        eq(SD.advantage("leaf", "stone"), 1.5)
+        eq(SD.advantage("fire", "fire"), 1)
+        eq(SD.advantage("fire", "water"), 0.67)
+        eq(SD.advantage(nil, "fire"), 1)
+    end)
+    test("a new road: two starters, stage one, battle, the same team for the same seed", function()
+        local a, b = SD.new(42), SD.new(42)
+        eq(#a.team, 2); eq(a.stage, 1); eq(a.state, "battle"); eq(a.best, 0)
+        eq(a.team[1].name, b.team[1].name); eq(a.team[2].name, b.team[2].name)
+        eq(a.team[1].element, b.team[1].element)
+        eq(a.foes[1].name, b.foes[1].name)
+        eq(SD.TEAM_MAX, 4); eq(SD.STAGES, 8)
+    end)
+    test("offers: two recruits and rest when hurt, training when whole, and a full team is marked", function()
+        local st = SD.new(7)
+        st.state = "choose"
+        st.team[1].hp = 1
+        local offers = SD.offers(st)
+        eq(#offers, 3); eq(offers[1].kind, "recruit"); eq(offers[2].kind, "recruit")
+        eq(offers[3].kind, "rest")
+        st.team[1].hp = st.team[1].max_hp
+        eq(SD.offers(st)[3].kind, "train")
+        st.team[3] = SD.new(8).team[1]; st.team[4] = SD.new(9).team[1]
+        eq(SD.offers(st)[1].full, true)
+    end)
+    test("recruiting stops at four; training the lowest; rest fills the team", function()
+        local st = SD.new(10)
+        st.state, st.offers = "choose", { { kind = "recruit", base = "Emberling" } }
+        eq(SD.choose(st, 0), true); eq(#st.team, 3)
+        st.state, st.offers = "choose", { { kind = "recruit", base = "Emberling" } }
+        eq(SD.choose(st, 0), true); eq(#st.team, 4)
+        st.state, st.offers = "choose", { { kind = "recruit", base = "Emberling" } }
+        eq(SD.choose(st, 0), false); eq(#st.team, 4)
+
+        local tr = SD.new(11)
+        tr.state, tr.offers = "choose", { { kind = "train" } }
+        tr.team[1].level = 3; tr.team[2].level = 1
+        local low = tr.team[2]; local max = low.max_hp
+        eq(SD.choose(tr, 0), true); eq(low.level, 2); eq(low.max_hp, max + 6)
+
+        local rest = SD.new(12)
+        rest.state, rest.offers = "choose", { { kind = "rest" } }
+        rest.team[1].hp, rest.team[2].hp = 1, 2
+        eq(SD.choose(rest, 0), true)
+        eq(rest.team[1].hp, rest.team[1].max_hp); eq(rest.team[2].hp, rest.team[2].max_hp)
+    end)
+    test("a battle is the same for the same seed and resolves; a fallen team ends the run", function()
+        local a, b = SD.new(123), SD.new(123)
+        local steps = 0
+        while a.state == "battle" and steps < 400 do
+            SD.battle_step(a); SD.battle_step(b); steps = steps + 1
+        end
+        assert(steps < 400, "the road resolves")
+        eq(a.state, b.state); eq(a.stage, b.stage); eq(a.round, b.round)
+        for i = 1, #a.team do eq(a.team[i].hp, b.team[i].hp, "the team's hit points") end
+        -- (D291 review) stage 1 is one foe now, so seed 123 wins it and makes camp: a third of each loss comes back
+        eq(a.state, "choose"); eq(a.stage, 1); eq(a.cleared, 1)
+        for _, c in ipairs(a.team) do assert(c.hp > 0 or c.max_hp > 0) end
+        local dead = SD.new(13)
+        dead.team[1].hp, dead.team[2].hp = 0, 0
+        SD.battle_step(dead)
+        eq(dead.state, "over"); assert(dead.log[1]:find("road ends", 1, true))
+    end)
+end
+
+section("Senda's road is walkable (D291 review)")
+do
+    local SD = require("lib/arcade/senda")
+    test("a player who recruits until the team is full, then rests, wins stage 1 nearly always and some walk the road", function()
+        local first, whole = 0, 0
+        for seed = 1, 200 do
+            local st = SD.new(seed)
+            for _ = 1, 5000 do
+                if st.state == "battle" then SD.battle_step(st)
+                elseif st.state == "choose" then if not SD.choose(st, 0) then SD.choose(st, 2) end
+                else break end
+            end
+            if st.cleared >= 1 then first = first + 1 end
+            if st.state == "won" then whole = whole + 1 end
+        end
+        assert(first >= 190, "stage 1 won in " .. first .. " of 200")
+        assert(whole >= 10 and whole <= 120, "the whole road walked in " .. whole .. " of 200")
+    end)
+end
+
 section("the arcade's two new games on their pages (D283, D284)")
 do
     test("the picker knows them, their pages are drawn, and the logic has both games' state", function()
@@ -447,6 +543,26 @@ do
         assert(p:find("event ac_key ->", 1, true) and p:find("keyboard: exclusive while ac_page > 0", 1, true))
         assert(g:find('"KP_1"', 1, true) and g:find('"KP_4"', 1, true), "the number keys are bound where the language allows")
         assert(l:find("mazmorra = A.maz", 1, true), "the run is saved under mazmorra")
+    end)
+end
+
+section("Senda on the arcade's fifth page (D291)")
+do
+    test("the picker makes room for four, Senda has a page, and its road is drawn from the model", function()
+        local l, p, g = read("shell/mooi-arcade.luau"), read("shell/mooi-arcade.plm"), read("tools/gen-arcade.py")
+        assert(l:find('{ id = "senda", name = "Senda"', 1, true) and l:find("page = 5, ready = true", 1, true))
+        assert(l:find("SENDA.battle_step(sd)", 1, true), "the battle is the pure module's")
+        assert(l:find("sd = SENDA.new(os.time())", 1, true) and l:find("A.scores.senda", 1, true))
+        assert(g:find("(PW - 40 - 3 * 12) / 4", 1, true), "four cards across the picker")
+        assert(p:find("show: ac_page == 5", 1, true))
+        assert(p:find("model sdteam max 4", 1, true) and p:find("model sdf max 4", 1, true))
+        assert(p:find("for p in sdpath", 1, true) and p:find("for o in sdoffers", 1, true))
+        assert(p:find("for c in sdteam", 1, true) and p:find("for f in sdf", 1, true))
+        assert(p:find("for l in sdlog", 1, true) and p:find("text sd_line", 1, true))
+        assert(p:find("zone box sdo", 1, true) and p:find("emit ac_key(49 + o.index)", 1, true))
+        assert(p:find("show: sd_state == 2 or sd_state == 3", 1, true))
+        assert(p:find("event ac_key ->", 1, true) and p:find("keyboard: exclusive while ac_page > 0", 1, true))
+        assert(read("README.md"):find("Snake, La Grieta, Mazmorra and Senda", 1, true))
     end)
 end
 
