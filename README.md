@@ -10,6 +10,8 @@ apps and lock screen all follow it.
 
 - **The bar** (Ferrolume): workspaces, media, system stats, tray, weather and notifications, with islands that grow out of it.
 - **Control Nexus**: a deck of cards for audio, network, bluetooth, brightness, music, weather and GitHub.
+- **Side drawers**: Super+D slides a Dashboard out of the frame's left side (your GitHub, half a year of contributions,
+  the system's updates, a quote); Super+N slides your notifications out of the right.
 - **Side notch**: a sliver on the screen edge that fans out into Claude chat, music, workspaces, wallpapers and games.
 - **Wallpapers**: local folders or Wallhaven, video wallpapers, parallax, and colours pulled from the picture.
 - **Music player**: library, lyrics, EQ and visualisers.
@@ -38,6 +40,9 @@ from clean defaults: no one else's settings, accounts or pictures.
 | Super + A | search and apps |
 | Super + R | system panel |
 | Super + W | wallpapers |
+| Super + D | the Dashboard drawer |
+| Super + N | the notifications drawer |
+| Super + K | every shortcut, in words |
 | Super + L | lock |
 | Super + Shift + V | clipboard history |
 | Super + Shift + R | record the screen |

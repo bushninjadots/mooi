@@ -299,6 +299,9 @@ M.SETTERS = {
     "keys.node_keys",
     -- D271: holding Super is its own switch; the Overview's key. Appended.
     "surface.hold", "keys.surface",
+    -- D275: the side drawers. Appended.
+    "drawers.on", "drawers.dashboard", "drawers.notices", "drawers.edge", "drawers.github", "drawers.quote",
+    "keys.drawer_left", "keys.drawer_right",
 }
 
 local function row_of(path)

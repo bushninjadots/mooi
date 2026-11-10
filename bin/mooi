@@ -38,6 +38,7 @@
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi game-mode [on|off|status]  game mode: no animations, blur, shadows or gaps; VRR on; put back exactly after
+#   mooi drawer [dashboard|notices|close]  the side drawers out of the frame (Super+D, Super+N)
 #   mooi capture text      choose a region of the screen: its words (tesseract) go to the clipboard
 #   mooi pkg search WORDS | install NAME [repo|aur] | update   packages: search, and install or update in a terminal
 #   mooi keys-text         Hyprland's config files as written (the node's shortcut sheet reads its words)
@@ -1094,7 +1095,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-surface mooi-node; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-surface mooi-node mooi-drawers; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         if [ -e "$link" ]; then
@@ -1157,6 +1158,7 @@ mooi-viz.plm:the visualisers
 mooi-lock.plm:the lock screen
 mooi-surface.plm:Surface
 mooi-node.plm:the Pill (the node)
+mooi-drawers.plm:the side drawers
 bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
@@ -1614,6 +1616,20 @@ case "$cmd" in
     capture) # D269: `mooi capture text` — a region's words to the clipboard
         case "${1:-}" in text) capture_text; exit $? ;; *) echo "usage: mooi capture text" >&2; exit 2 ;; esac ;;
     pkg) pkg_cmd "$@"; exit $? ;;
+    drawer) # D275: the side drawers — dashboard (left, Super+D) | notices (right, Super+N) | close
+        case "${1:-dashboard}" in dashboard|left) n=1 ;; notices|right) n=2 ;; close) n=0 ;; *) echo "usage: mooi drawer [dashboard|notices|close]" >&2; exit 2 ;; esac
+        "$pleamar" --say mooi-drawers "emit dr_cmd $n" >/dev/null 2>&1 || : ;;
+    drawer-update) # D275: the Dashboard's Update — `mooi pkg update` in the first terminal that is installed
+        for t in ${TERMINAL:-} kitty foot alacritty wezterm ghostty konsole xterm; do
+            command -v "$t" >/dev/null 2>&1 || continue
+            case "$t" in
+                foot) setsid -f "$t" "$self" pkg update ;;
+                wezterm) setsid -f "$t" start -- "$self" pkg update ;;
+                *) setsid -f "$t" -e "$self" pkg update ;;
+            esac
+            exit 0
+        done
+        echo "no terminal found" >&2; exit 1 ;;
     keys-text) # D267: Hyprland's config as written, for the node's shortcut sheet to read the binds' own words
                # from (Hyprland 0.57's Lua binds do not say what they run). The main file, then the parts it reads.
         c="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"

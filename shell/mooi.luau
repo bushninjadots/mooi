@@ -357,6 +357,7 @@ sys.watch("files:" .. FILE, function()
     if frame_sync then frame_sync() end
     if surface_sync then surface_sync() end
     if node_sync then node_sync() end           -- D226
+    if drawers_sync then drawers_sync() end     -- D275
     if notch_cut then notch_cut() end
 end)
 sys.watch("files:" .. PALETTE, function()
@@ -2323,6 +2324,29 @@ function node_sync()
     NODE.win = mine
 end
 node_sync()
+-- D275: the side drawers (shell/mooi-drawers.plm), kept like the node while Settings → Side drawers has them on
+DRAWERS = { win = nil, tries = 0, gave_up = false }
+function drawers_sync()
+    local want = not (type(settings.drawers) == "table" and settings.drawers.on == false)
+    if not want then
+        DRAWERS.tries, DRAWERS.gave_up = 0, false
+        if DRAWERS.win then DRAWERS.win = nil; run("pleamar", { "--say", "mooi-drawers", "quit" }) end
+        return
+    end
+    if DRAWERS.win or DRAWERS.gave_up then return end
+    local mine
+    local started = os.time()
+    mine = spawn("pleamar", SURFACE.args(shell_dir() .. "/mooi-drawers.plm"), function() end, function(_, code)
+        if DRAWERS.win ~= mine then return end
+        DRAWERS.win = nil
+        if os.time() - started < 5 then DRAWERS.tries = DRAWERS.tries + 1 else DRAWERS.tries = 0 end
+        if code ~= 0 then log("drawers · ended (" .. tostring(code) .. ")") end
+        if DRAWERS.tries < 5 then after(1000 * (DRAWERS.tries + 1), drawers_sync)
+        else DRAWERS.gave_up = true; log("drawers · gave up after five quick ends") end
+    end, { errors = true })
+    DRAWERS.win = mine
+end
+after(3000, drawers_sync)
 -- D209 live: the opening's ground is at level background, so its layer must map AFTER mooi-desk's
 -- wallpaper (map order is the level's order; the probe had the opposite). The desk starts at 1.5 s.
 after(2500, surface_sync)

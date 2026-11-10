@@ -300,6 +300,12 @@ local rows = {
     { title = "Size", desc = "How wide each strip is", tab = 22, page = "Live wallpaper", y = 1806 },
     { title = "Blend", desc = "How softly the strips melt back into the picture", tab = 22, page = "Live wallpaper", y = 1866 },
     { title = "Height", desc = "How tall the strips may grow from the edge line, of the screen", tab = 22, page = "Live wallpaper", y = 1926 },
+    { title = "Side drawers", desc = "Off: neither drawer runs, and Super+D and Super+N do nothing", tab = 23, page = "Side drawers", y = 156 },
+    { title = "Dashboard (left)", desc = "GitHub, your contributions, the system's updates and a quote. Super+D", tab = 23, page = "Side drawers", y = 216 },
+    { title = "Notifications (right)", desc = "Your notices with Silent and Clear all. Super+N", tab = 23, page = "Side drawers", y = 276 },
+    { title = "Open by touching the side", desc = "Push the pointer against the screen's left or right edge to open that drawer", tab = 23, page = "Side drawers", y = 336 },
+    { title = "GitHub", desc = "Your profile, four numbers, half a year of contributions and your top repository. Uses the GitHub CLI (gh auth login)", tab = 23, page = "Side drawers", y = 462 },
+    { title = "A quote", desc = "A line for the day under the updates", tab = 23, page = "Side drawers", y = 522 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "island.morph", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -325,6 +331,7 @@ rows.resets = {
     [20] = { "surface.on", "surface.hold", "surface.delay", "surface.effect", "surface.intensity", "surface.edge", "surface.colour", "surface.speed", "surface.radius", "surface.wall", "surface.dim", "surface.tint", "surface.fit", "surface.grid", "surface.labels", "surface.glow", "surface.ping", "surface.trace", "surface.push", "surface.layout", "surface.overview", "surface.widget_style", "surface.bmo_below" },
     [21] = { "herdr.show_idle", "herdr.show_done", "herdr.brief", "herdr.brief_lines", "herdr.poll" },
     [22] = { "live.on", "live.where", "live.speed", "live.ripple.on", "live.ripple.strength", "live.ripple.size", "live.ripple.blend", "live.breathe.on", "live.breathe.strength", "live.breathe.size", "live.breathe.blend", "live.flow.on", "live.flow.strength", "live.flow.size", "live.flow.blend", "live.sweep.on", "live.sweep.strength", "live.sweep.size", "live.sweep.blend", "live.music.on", "live.music.strength", "live.music.size", "live.music.blend", "live.music.height" },
+    [23] = { "drawers.on", "drawers.dashboard", "drawers.notices", "drawers.edge", "drawers.github", "drawers.quote" },
 }
 rows.layout_tab = 3
 rows.modules_fold = "fd_3_4"

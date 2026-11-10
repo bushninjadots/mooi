@@ -162,6 +162,9 @@ SETTERS = [
     "keys.node_keys",
     # D271: holding Super is its own switch; the Overview's key. Appended.
     "surface.hold", "keys.surface",
+    # D275: the side drawers. Appended.
+    "drawers.on", "drawers.dashboard", "drawers.notices", "drawers.edge", "drawers.github", "drawers.quote",
+    "keys.drawer_left", "keys.drawer_right",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -200,6 +203,8 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("node_time", "The Pill: time", "A timer, a stopwatch, focus rounds and an alarm, grown from the node"),
         ("node_keys", "The Pill: shortcuts", "Every key Hyprland has bound, in words, with a filter"),
         ("surface", "Under the windows", "The Subsurface's Overview: the widgets under the wallpaper, at once; again closes it"),
+        ("drawer_left", "Dashboard drawer", "GitHub, updates and a quote, out of the frame's left side"),
+        ("drawer_right", "Notifications drawer", "Your notices, out of the frame's right side"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),
@@ -782,6 +787,18 @@ SECTIONS = [
         ("slider", "Blend", "How softly the strips melt back into the picture", "live.music.blend", 0, 100, "{sv_live_music_blend, 0} %", "sv_live_on > 0.5 and sv_live_music_on > 0.5"),
         ("slider", "Height", "How tall the strips may grow from the edge line, of the screen", "live.music.height", 5, 80, "{sv_live_music_height + 5, 0} %", "sv_live_on > 0.5 and sv_live_music_on > 0.5"),
         ("note", "true", "IT RESTS WHILE A WINDOW IS FULLSCREEN, WHILE THE OPENING SHOWS, AND — THE WHOLE PICTURE — WHILE WINDOWS COVER IT"),
+    ]),
+    # D275: the side drawers (Minflair's Convex panels), appended last so no page's place moves
+    ("Side drawers", "Side drawers", "Panels that slide out of the frame's sides: a Dashboard on the left, your notices on the right", "SHELL", [
+        ("card", "The drawers"),
+        ("toggle", "Side drawers", "Off: neither drawer runs, and Super+D and Super+N do nothing", "drawers.on", "sv_drawers_on"),
+        ("toggle", "Dashboard (left)", "GitHub, your contributions, the system's updates and a quote. Super+D", "drawers.dashboard", "sv_drawers_dashboard", "sv_drawers_on > 0.5"),
+        ("toggle", "Notifications (right)", "Your notices with Silent and Clear all. Super+N", "drawers.notices", "sv_drawers_notices", "sv_drawers_on > 0.5"),
+        ("toggle", "Open by touching the side", "Push the pointer against the screen's left or right edge to open that drawer", "drawers.edge", "sv_drawers_edge", "sv_drawers_on > 0.5"),
+        ("card", "On the Dashboard"),
+        ("toggle", "GitHub", "Your profile, four numbers, half a year of contributions and your top repository. Uses the GitHub CLI (gh auth login)", "drawers.github", "sv_drawers_github", "sv_drawers_on > 0.5"),
+        ("toggle", "A quote", "A line for the day under the updates", "drawers.quote", "sv_drawers_quote", "sv_drawers_on > 0.5"),
+        ("note", "true", "SUPER+D THE DASHBOARD · SUPER+N THE NOTICES · THE SAME KEY OR ESC CLOSES (SETTINGS → KEYS)"),
     ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}

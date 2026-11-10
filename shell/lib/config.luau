@@ -325,7 +325,15 @@ M.SCHEMA = {
     { path = "keys.node_universe", kind = "key", default = "SUPER + Tab" },
     { path = "keys.node_time", kind = "key", default = "SUPER + T" },
     { path = "keys.node_keys", kind = "key", default = "SUPER + K" },
-    { path = "keys.surface", kind = "key", default = "SUPER + ALT + U" },   -- D271: the Subsurface's Overview   -- D267: the shortcut sheet
+    { path = "keys.surface", kind = "key", default = "SUPER + ALT + U" },   -- D271: the Subsurface's Overview
+    { path = "keys.drawer_left", kind = "key", default = "SUPER + D" },      -- D275: the Dashboard drawer
+    { path = "keys.drawer_right", kind = "key", default = "SUPER + N" },     -- D275: the notices drawer
+    { path = "drawers.on", kind = "boolean", default = true },
+    { path = "drawers.dashboard", kind = "boolean", default = true },
+    { path = "drawers.notices", kind = "boolean", default = true },
+    { path = "drawers.edge", kind = "boolean", default = false },
+    { path = "drawers.github", kind = "boolean", default = true },
+    { path = "drawers.quote", kind = "boolean", default = true },   -- D267: the shortcut sheet
     { path = "keys.settings", kind = "key", default = "SUPER + ALT + S" },
     -- D160: the lock screen at once. The session also locks itself after `lock.idle` minutes
     -- (hypridle, Settings → Lock); this is the key for when you are leaving now.

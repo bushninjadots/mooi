@@ -7280,3 +7280,37 @@ The owner asked that the settings "reflect everything we have correctly". On Set
 Super, Super+Space, Super+Tab, Super+T and Super+K. The Subsurface's page gained its two switches in D271.
 
 **Verified.** Unit 860 / 0; both scenes compile; the settings generator is deterministic.
+
+## D275 · 2026-11-10 · Side drawers out of the frame (Minflair's Convex panels)
+
+The owner: "minflair has that github thing and also has those side notches, I want those too; make settings for
+this easy and understandable". In Minflair's Convex style, panels slide out of the screen frame's edges: a
+dashboard on the left (a GitHub profile with its numbers and contribution grid, pending updates, a quote) and the
+notifications on the right. mooi's are a program of their own, `mooi-drawers`, started and kept by the bar like the
+node.
+
+**The look.** The frame sits under the windows, so it cannot be the drawer's body when the drawer opens over them.
+Each drawer draws its own body in the frame's fill and edge colour, flush against the screen's side, rounded on the
+far side and with a concave fillet where it leaves the band, so it reads as the frame growing a drawer. It slides
+out on a calm spring and fades its contents in.
+
+**The Dashboard (Super+D).** Your avatar, name and login (a press on the GitHub mark opens the profile); four
+numbers — contributions this year, repositories, followers, stars; half a year of contributions as a grid of 26
+weeks; your most-starred repository; the system's updates from the bar's own `updates.json`, with **Update**, which
+opens a terminal on `mooi pkg update`; and a quote for the day from a short list of public-domain lines. GitHub is
+asked through `gh api graphql` when the drawer opens, at most every five minutes; without `gh` or a login it says
+how to fix it.
+
+**The notices (Super+N).** The five newest from the bar's feed, each with its app, title, the start of its body and
+its age; a press does the notice's default and × dismisses it, both asked of the bar (only the bar may receive
+notifications — a second receiver would take them from it). **Silent** and **Clear all** at the top. Empty, it
+says All caught up.
+
+**Settings → Side drawers.** One switch for the drawers, one each for the Dashboard and the notices, **Open by
+touching the side** (off by default), and on the Dashboard, GitHub and the quote. The keys are in Settings → Keys
+(`keys.drawer_left`, `keys.drawer_right`). The same key or Esc closes a drawer; so does a press outside it.
+
+**Verified.** Unit 864 / 0; the scene compiles; live after `mooi refresh`: the Dashboard filled from this account
+(4.4k contributions, 13 repositories, the grid, mooi as the top repository, up to date, a quote) and the notices
+drawer said All caught up. The old side notch still opens from the left edge too; the two do not yet know of each
+other.

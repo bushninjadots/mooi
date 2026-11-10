@@ -29,6 +29,9 @@ M.ACTIONS = {
     { key = "node_keys", cmd = "node keys", name = "The Pill: shortcuts" },
     -- D271: the Subsurface's Overview on purpose (holding Super is its own switch, off by default)
     { key = "surface", cmd = "reveal overview", name = "Under the windows (the Overview)" },
+    -- D275: the side drawers
+    { key = "drawer_left", cmd = "drawer dashboard", name = "The Dashboard drawer" },
+    { key = "drawer_right", cmd = "drawer notices", name = "The notices drawer" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 

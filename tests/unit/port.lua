@@ -222,3 +222,52 @@ do
         eq(require("lib/node/geometry").PANEL_H.home, 660)
     end)
 end
+
+section("the side drawers (D275, Minflair's Convex panels)")
+do
+    local DR = require("lib/drawers")
+    local function viewer(days)
+        local weeks = {}
+        for w = 1, 30 do
+            local d = {}
+            for k = 1, 7 do d[k] = { contributionCount = days and days(w, k) or 0 } end
+            weeks[w] = { contributionDays = d }
+        end
+        return { login = "someone", name = "Some One", bio = "hi", avatarUrl = "https://avatars.githubusercontent.com/u/1",
+                 followers = { totalCount = 3 },
+                 repositories = { totalCount = 2, nodes = { { name = "a", stargazerCount = 1, forkCount = 0, primaryLanguage = { name = "Lua" } },
+                                                            { name = "b", description = "best", stargazerCount = 5, forkCount = 2 } } },
+                 contributionsCollection = { contributionCalendar = { totalContributions = 1234, weeks = weeks } } }
+    end
+    test("GitHub's answer becomes the card: four numbers and the starred-most repository", function()
+        local g = DR.github(viewer())
+        eq(g.login, "someone"); eq(g.name, "Some One"); eq(g.contributions, 1234); eq(g.repos, 2); eq(g.followers, 3); eq(g.stars, 6)
+        eq(g.top.name, "b"); eq(g.top.desc, "best"); eq(g.top.lang, "")
+        eq(DR.github(nil), nil); eq(DR.github({}), nil)
+        eq(DR.short(1234), "1.2k"); eq(DR.short(45678), "45k"); eq(DR.short(12), "12")
+    end)
+    test("the grid: the last 26 weeks, levels 0 to 4 by the busiest day", function()
+        local h = DR.heat(viewer(function(w, k) return w == 30 and k == 7 and 8 or (w == 30 and k == 6 and 2 or 0) end))
+        eq(#h, 26 * 7); eq(h[#h].v, 4); eq(h[#h - 1].v, 1); eq(h[1].v, 0)
+        eq(#DR.heat(nil), 0)
+    end)
+    test("updates, a quote for the day, the notices from the bar's feed", function()
+        eq(DR.updates({ total = 0 }), "Up to date"); eq(DR.updates({ total = 1 }), "1 update waiting")
+        eq(select(2, DR.updates({ total = 21 })), 21); eq(DR.updates(nil), "Not checked yet")
+        local q1, a1 = DR.quote(0); local q2 = DR.quote(3600); local q3 = DR.quote(86400)
+        eq(q1, q2, "the same all day"); assert(q1 ~= q3, "another the next"); assert(a1 ~= "")
+        local rows, n = DR.notices({ count = 9, items = { { app = "firefox", title = "Done", body = "a\n b", ago = "1 min", actions = { "Open" } } } })
+        eq(#rows, 1); eq(n, 9); eq(rows[1].app, "FIREFOX"); eq(rows[1].body, "a b"); eq(rows[1].act, "Open")
+    end)
+    test("the program: started by the bar, opened by Super+D and Super+N, its settings on their own page", function()
+        local c = require("lib/config").defaults()
+        eq(c.keys.drawer_left, "SUPER + D"); eq(c.keys.drawer_right, "SUPER + N"); eq(c.drawers.on, true); eq(c.drawers.edge, false)
+        assert(read("shell/mooi.luau"):find('spawn("pleamar", SURFACE.args(shell_dir() .. "/mooi-drawers.plm")', 1, true))
+        assert(read("bin/mooi"):find('"$pleamar" --say mooi-drawers "emit dr_cmd $n"', 1, true))
+        local p = read("shell/mooi-drawers.plm")
+        assert(p:find("event dr_cmd ->", 1, true) and p:find("keyboard: exclusive while dr_open > 0", 1, true))
+        assert(read("tools/gen-settings.py"):find('("Side drawers", "Side drawers"', 1, true))
+        -- the notices are the bar's: the drawer reads its feed and never receives notifications itself
+        assert(not read("shell/mooi-drawers.luau"):find('sys.watch, "notifications"', 1, true))
+    end)
+end
