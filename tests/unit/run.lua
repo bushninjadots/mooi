@@ -6564,6 +6564,8 @@ do
         eq(CMD.score("wpp", "Wallpaper picker", ""), 1)
         local K = require("lib/node/calc")
         eq(K.eval("os.exit()"), nil); eq(K.eval('load("return 1")()'), nil)
+        assert(l:find('local u = UN.answer(N.q)', 1, true), "D238: a conversion first")
+        eq(require("lib/node/units").answer("0.0000001 mg in t").text, "1e-16 t", "far below one: %g")
     end)
     test("the node: a chosen row acts by its kind; a window's address goes through lib/hypr's check", function()
         local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()

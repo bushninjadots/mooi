@@ -6757,3 +6757,13 @@ the minute turns (checked every five seconds), so a clock at rest costs nothing 
 capsule still takes its place while one runs.
 
 **Verified.** Unit 724 / 0; scenes compile; `bin/mooi check` green.
+
+## D238 · 2026-11-10 · Conversions in the search line
+
+From opencode (task 5), reviewed. `lib/node/units` answers "5 km in mi", "20 c to f", "2 GB in MiB" (and `to`,
+`as`, `->`, `=`) across length, mass, time, temperature, volume, area, speed, data (bits vs bytes, 1000 vs
+1024), energy, pressure and angle, with plurals and common aliases. It is pure parsing with nothing run. The
+answer comes first in the launcher (`= 3.10686 mi`), and Return copies it. One guard added in review: results
+far below one use `%g`, since a fixed format's precision is capped at 99.
+
+**Verified.** Unit 745 / 0; scenes compile; `bin/mooi check` green.

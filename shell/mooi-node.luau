@@ -19,6 +19,7 @@ local HY = require("lib/hypr")
 local MK = require("lib/node/mediakit")
 local NT = require("lib/node/notices")
 local CALC = require("lib/node/calc")
+local UN = require("lib/node/units")
 local MX = require("lib/node/mixer")
 local LY = require("lib/node/lyrics")
 local VF = require("lib/vizfeed")
@@ -578,8 +579,13 @@ local function search()
     -- D234: mooi's own commands and the open windows, when something is typed
     if N.q:match("%S") then
         apps = CMD.merge(apps, CMD.match(N.q, 3), CMD.windows(N.clients, N.q, 2), 6)
+        -- D238: a conversion ("5 km in mi", "20 c to f") is answered first; Return copies the answer
+        local u = UN.answer(N.q)
+        if u then
+            table.insert(apps, 1, { kind = "calc", name = "= " .. u.text, value = u.text })
+            while #apps > 6 do table.remove(apps) end
         -- D235: a sum is worked out (lib/node/calc: its own parser, nothing run) and comes first; Return copies it
-        if CALC.looks_like(N.q) then
+        elseif CALC.looks_like(N.q) then
             local v = CALC.eval(N.q)
             if v then
                 local shown = CALC.format(v)

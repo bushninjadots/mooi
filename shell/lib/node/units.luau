@@ -202,6 +202,8 @@ local function format(value)
     if a >= 10 ^ (exponent + 1) then exponent = exponent + 1 end
     if a < 10 ^ exponent then exponent = exponent - 1 end
     local decimals = 5 - exponent
+    -- far below one, six significant digits in the %g form (a fixed format's precision is capped at 99)
+    if decimals > 20 then return (string.format("%.6g", value)) end
     local out
     if decimals > 0 then
         out = string.format("%." .. decimals .. "f", a)
