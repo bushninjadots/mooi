@@ -465,9 +465,11 @@ render = function()
     if kind == "player" then show_media(b); if N.player_show then N.player_show() end end
     if kind == "done" then show_done() end
     if kind == "volume" then
-        local v = N.vol or (studio and 0.6) or 0
-        fact.nd_vol = v
-        text.nd_vlabel = "VOLUME " .. math.floor(v * 100 + 0.5) .. "%"
+        -- the gauge (D265): the last reading that grew it — the volume, the light, a mute, a lock, the cable
+        local g = (not studio and N.gauge) or { icon = "󰕾", label = "VOLUME 60%", level = 0.6 }
+        fact.nd_gv = math.max(0, math.min(1, tonumber(g.level) or 0))
+        text.nd_vlabel, text.nd_gicon = g.label, g.icon
+        fact.nd_gwarm = g.warm == true
     end
     if reacting then N.pointer_due = math.min(N.pointer_due or math.huge, now() + ST.REACT_MS + 10) end
     schedule()
@@ -508,11 +510,30 @@ pcall(sys.watch, "workspaces", function(w)
     N.seen_ws = true
     render()
 end)
+-- ── the gauge (D265, Minflair's OSD): one reading at a time — what changed last is what it shows ──
+local GA = require("lib/node/gauge")
+local function gauge(g)
+    if not on_for("volume") or not g then return end
+    N.gauge = g
+    ST.push(N.st, "volume", now())
+end
+N.gauge_show = gauge
 pcall(sys.watch, "audio", function(a)
     if type(a) ~= "table" then return end
-    local v = tonumber(a.volume)
-    if v and N.vol and math.abs(v - N.vol) > 0.004 and on_for("volume") then ST.push(N.st, "volume", now()) end
-    N.vol = v
+    local v, muted, mic = tonumber(a.volume), a.muted == true, a.input_muted == true
+    if N.seen_audio then
+        if v and N.vol and math.abs(v - N.vol) > 0.004 then gauge(GA.volume(v, muted))
+        elseif muted ~= N.muted then gauge(GA.volume(v or 0, muted)) end
+        if mic ~= N.mic_muted then gauge(GA.mic(mic)) end
+    end
+    N.vol, N.muted, N.mic_muted, N.seen_audio = v, muted, mic, true
+    render()
+end)
+pcall(sys.watch, "brightness", function(b)
+    if type(b) ~= "table" or b.present == false then return end
+    local l = tonumber(b.level)
+    if l and N.light and math.abs(l - N.light) > 0.004 then gauge(GA.light(l)) end
+    N.light = l
     render()
 end)
 -- the battery (D233): falling into its last fifth unplugged grows a warm card, with the time left from upower
@@ -537,7 +558,7 @@ pcall(sys.watch, "battery", function(b)
     end
     local before, was_charging = N.bat, N.charging
     N.bat, N.charging = tonumber(b.percent), b.charging == true
-    if N.seen_bat and was_charging ~= N.charging then react(false) end
+    if N.seen_bat and was_charging ~= N.charging then react(false); gauge(GA.cable(N.charging, N.bat)) end
     if N.bat and N.seen_bat and DV.crossed_critical(before, N.bat, N.charging) then battery_card(N.bat) end
     N.seen_bat = true
     render()
@@ -1753,6 +1774,9 @@ on("nd_cmd", function(v)
         if ST.held(N.st, "time") then ST.release(N.st, "time"); render() else open_time() end
     end
 end)
+
+-- ── `mooi osd …` (D265): what has no service of its own — a lock key's light, game mode — told to the gauge ──
+on("nd_osd", function(v) gauge(GA.decode(v)); render() end)
 
 -- ── the panel's own input (D260): its pages, its four toggles, its notices and the way home ──
 on("nd_pg", function(v)

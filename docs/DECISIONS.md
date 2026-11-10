@@ -7109,3 +7109,20 @@ Bluetooth, settings, Control Nexus and power. Time stays the Timer button's page
 Settings' own, and `󰣇` runs `mooi nexus` and closes the panel.
 
 **Verified.** Unit 838 / 0; scenes compile; `bin/mooi check` green.
+
+## D265 · 2026-11-10 · The gauge reads everything (k4 / Minflair port, wave 1)
+
+The owner asked for k4 and Minflair to be ported into mooi, features and all
+(docs/superpowers/specs/2026-11-10-k4-minflair-port-design.md maps every feature of both to what mooi has, what
+wave 1 builds and what is left, and why). First, Minflair's on-screen display. The node already grew a bar for
+the volume; it now grows the same bar, with an icon, for the speakers' mute, the microphone's mute (warm when
+off), the brightness, the power cable, Caps Lock, Num Lock and game mode. The last change is the one shown.
+
+The mutes and the light come from Pleamar's own `audio` and `brightness` services, so nothing polls. The lock
+keys have no service: Hyprland's `Caps_Lock` and `Num_Lock` binds (non-consuming, so the keys still lock) run
+`mooi osd caps|num`, which asks `hyprctl devices -j` for the main keyboard's state a moment after the press and
+tells the node. The words and icons live in `lib/node/gauge`, so they are unit-tested. Settings' Volume row is
+now **Gauges**, the same `node.volume`.
+
+**Verified.** Unit 843 / 0; the node's scene compiles; the two binds are live (`hyprctl binds`, no config
+errors).

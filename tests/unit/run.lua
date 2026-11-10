@@ -7016,7 +7016,7 @@ do
         assert(p:find("show: nd_kind == 13 and nd_pgp == 8", 1, true), "the Wi-Fi page")
         assert(p:find("show: nd_kind == 13 and nd_pgp == 9", 1, true), "the Bluetooth page")
         assert(p:find("input nd_wpw", 1, true) and p:find("secret: true", 1, true), "a password line, never shown")
-        assert(g:find('services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "network.*", "bluetooth", "bluetooth.*"', 1, true), "the scenes' services")
+        assert(g:find('services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "brightness", "network", "network.*", "bluetooth", "bluetooth.*"', 1, true), "the scenes' services")
     end)
     test("the logic watches both services and asks them, not a shell", function()
         assert(l:find('pcall(sys.watch, "network", function(n)', 1, true))
@@ -7479,6 +7479,13 @@ do
         -- there but broken (a bad merge): a failure, never a quiet skip
         test("tests/unit/node_helpers.lua loads", function() error(err) end)
     end
+end
+
+-- the k4 / Minflair port's tests (D265 on; docs/superpowers/specs/2026-11-10-k4-minflair-port-design.md)
+do
+    local chunk, err = loadfile("tests/unit/port.lua")
+    if chunk then chunk(section, test, eq)
+    elseif io.open("tests/unit/port.lua") then test("tests/unit/port.lua loads", function() error(err) end) end
 end
 
 print(string.format("\n%d tests, %d failed", count, failures))

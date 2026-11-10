@@ -87,7 +87,7 @@ local rows = {
     { title = "Music", desc = "A strip with the cover, the song and its controls when music starts", tab = 3, page = "Bar & Frame", y = 5030, fold = "fd_3_5", fy = 1220 },
     { title = "Notices", desc = "A branch with each new notice and its action", tab = 3, page = "Bar & Frame", y = 5090, fold = "fd_3_5", fy = 1280 },
     { title = "Workspaces", desc = "A rail with the workspaces when you change them", tab = 3, page = "Bar & Frame", y = 5150, fold = "fd_3_5", fy = 1340 },
-    { title = "Volume", desc = "A gauge while the volume changes", tab = 3, page = "Bar & Frame", y = 5210, fold = "fd_3_5", fy = 1400 },
+    { title = "Gauges", desc = "A gauge for the volume, the light, a mute, Caps or Num Lock and the cable", tab = 3, page = "Bar & Frame", y = 5210, fold = "fd_3_5", fy = 1400 },
     { title = "System", desc = "Processor, memory, temperature and network round it when you press it", tab = 3, page = "Bar & Frame", y = 5270, fold = "fd_3_5", fy = 1460 },
     { title = "On the wallpaper", desc = "A notice ripples the wallpaper under it", tab = 3, page = "Bar & Frame", y = 5330, fold = "fd_3_5", fy = 1520 },
     { title = "Lyrics in the player", desc = "The words in time with the song, from a file beside it or from LRCLIB (which is told the song's title and artist; each song is asked about once)", tab = 3, page = "Bar & Frame", y = 5390, fold = "fd_3_5", fy = 1580 },

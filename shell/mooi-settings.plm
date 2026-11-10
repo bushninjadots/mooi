@@ -3532,7 +3532,7 @@ scene Mooi {
                 group {
                     show: fd_3_5
                     move: 0, gy_3_68 - 5210
-                    SRow(5210, "Volume", "A gauge while the volume changes", true, "", 768, true)
+                    SRow(5210, "Gauges", "A gauge for the volume, the light, a mute, Caps or Num Lock and the cable", true, "", 768, true)
                     SToggle(1092, 5228, sv_node_volume, set_value, 501, "node.volume")
                     SRevert(1062, 5240, sv_node_volume != df_node_volume, set_value, 501000 + df_node_volume)
                 }

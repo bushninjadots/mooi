@@ -63,7 +63,7 @@ def scene():
          'scene Node {',
          '    permissions {',
          '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm"',
-         '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "network.*", "bluetooth", "bluetooth.*", "workspaces", "apps", "apps.launch"',
+         '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "brightness", "network", "network.*", "bluetooth", "bluetooth.*", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
     L += palette_block()
@@ -103,6 +103,8 @@ def scene():
           '    fact nd_ncl = 1       // how much of their time is left (D237)', '    prop nd_ncs = 1 ~nd.aux', '    follow nd_ncs = nd_ncl',
           '    // volume',
           '    fact nd_vol = 0', '    text nd_vlabel = ""',
+          '    // the gauge (D265): any reading — how full, its icon, warm for a warning',
+          '    fact nd_gv = 0', '    text nd_gicon = ""', '    fact nd_gwarm = false', '    measure gmw',
           '    // workspaces',
           '    model rl max 12 { x: number; n: text; on: bool; used: bool }',
           '    fact nd_beadx = 960', '    prop nd_bead = 960 ~nd.aux', '    follow nd_bead = nd_beadx',
@@ -221,6 +223,7 @@ def scene():
           '    event nd_un ->        // a workspace in the universe',
           '    event nd_key ->       // a key while the node holds the keyboard',
           '    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time',
+          '    event nd_osd ->       // from `mooi osd` (D265): a lock key or game mode for the gauge (lib/node/gauge decode)',
           '    event nd_tab ->       // the studio: a page',
           '    event nd_sk ->        // the studio: a slider, row * 2000 + where along it (0 … 1000: a stride of 2000, never ambiguous)',
           '    event nd_so ->        // the studio: a choice, row * 10 + which',
@@ -1112,10 +1115,11 @@ def surface():
           f'{c}    text "+{{nd_more, 0}} MORE" {{ at: nb_x + nb_w / 2, nb_y + nb_h + 22 + nd_ncn * 66 + 8; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: {dim}; opacity: nd_grow; show: nd_more > 0.5 }}',
           f'{c}}}']
     # volume
-    L += [f'{c}// volume or brightness: the node becomes a gauge',
+    L += [f'{c}// the gauge (D265): the volume, the light, a mute, a lock key, the cable — the node becomes its bar',
           f'{c}group {{ show: nd_kind == 3; opacity: nd_cf',
-          f'{c}    box {{ from: nb_x + 3, nb_y + 3; size: max(0, (nb_w - 6) * nd_vol), nb_h - 6; corner: max(0, nb_r - 3); color: {acc}; opacity: 0.85 }}',
-          f'{c}    text nd_vlabel {{ at: nb_x + nb_w / 2, nb_y + nb_h + 12; anchor: center; align: center; size: 9; family: {MONO}; color: {ink}; opacity: nd_grow }} }}']
+          f'{c}    box {{ from: nb_x + 3, nb_y + 3; size: max(0, (nb_w - 6) * nd_gv), nb_h - 6; corner: max(0, nb_r - 3); color: if(nd_gwarm, fl.ember, {acc}); opacity: 0.85 }}',
+          f'{c}    text nd_gicon {{ at: nb_x + nb_w / 2 - 6 - gmw.width / 2, nb_y + nb_h + 12; anchor: center; align: center; size: 12; family: "CaskaydiaCove Nerd Font"; color: if(nd_gwarm, fl.ember, {acc}); opacity: nd_grow }}',
+          f'{c}    text nd_vlabel {{ at: nb_x + nb_w / 2 + 8, nb_y + nb_h + 12; anchor: center; align: center; size: 9; family: {MONO}; color: {ink}; opacity: nd_grow; measure: gmw }} }}']
     # workspaces
     L += [f'{c}// workspaces: a rail drawn out from the middle, the active one a bead that slides along it — or (D255) the rail',
           f'{c}// sliding in from the side it came from, flipping over, the bead pulsing, or only the number',

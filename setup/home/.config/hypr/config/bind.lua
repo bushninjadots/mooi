@@ -84,6 +84,13 @@ hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(changeBrightness .. " +10"), { lo
 hl.bind("ALT + F2", hl.dsp.exec_cmd(changeBrightness .. " -10"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(changeBrightness .. " -10"), { locked = true, repeating = true })
 
+-- Lock keys (mooi D265): the node's gauge says whether Caps Lock or Num Lock is now on. non_consuming, so the
+-- key still reaches the keyboard; ignore_mods, since Hyprland counts the lock itself as a modifier.
+--- caps lock shown
+hl.bind("Caps_Lock", hl.dsp.exec_cmd(home .. "/Projects/mooi/bin/mooi osd caps"), { non_consuming = true, locked = true, ignore_mods = true })
+--- num lock shown
+hl.bind("Num_Lock", hl.dsp.exec_cmd(home .. "/Projects/mooi/bin/mooi osd num"), { non_consuming = true, locked = true, ignore_mods = true })
+
 -- System Controls
 --- lock
 hl.bind(mainMod .. " + SHIFT + Escape", hl.dsp.exec_cmd(lock))

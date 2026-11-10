@@ -356,7 +356,7 @@ SECTIONS = [
         ("toggle", "Music", "A strip with the cover, the song and its controls when music starts", "node.media", "sv_node_media"),
         ("toggle", "Notices", "A branch with each new notice and its action", "node.notices", "sv_node_notices"),
         ("toggle", "Workspaces", "A rail with the workspaces when you change them", "node.workspaces", "sv_node_workspaces"),
-        ("toggle", "Volume", "A gauge while the volume changes", "node.volume", "sv_node_volume"),
+        ("toggle", "Gauges", "A gauge for the volume, the light, a mute, Caps or Num Lock and the cable", "node.volume", "sv_node_volume"),
         ("toggle", "System", "Processor, memory, temperature and network round it when you press it", "node.system", "sv_node_system"),
         ("toggle", "On the wallpaper", "A notice ripples the wallpaper under it", "node.wallpaper", "sv_node_wallpaper"),
         ("toggle", "Lyrics in the player", "The words in time with the song, from a file beside it or from LRCLIB (which is told the song's title and artist; each song is asked about once)", "node.lyrics", "sv_node_lyrics"),

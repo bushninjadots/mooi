@@ -119,11 +119,20 @@ leave the bar.
 
 If On the wallpaper is on, a new notice also ripples the wallpaper under the node.
 
-### Volume
+### The gauge
 
-When the volume changes by more than 0.4%, the seed grows a small gauge reading `VOLUME N%` for
-about two seconds. It is a reading, not a control; use the volume keys or the player's meter to
-change it.
+When a reading changes, the seed grows into a bar that fills to it, with an icon and the reading
+under it, for about two seconds. It is a reading, not a control. It grows for:
+
+- the volume, when it changes by more than 0.4% (`VOLUME N%`), and the speakers being muted or
+  unmuted (`MUTED`);
+- the microphone being muted or unmuted (`MICROPHONE OFF` is warm);
+- the screen's brightness (`BRIGHTNESS N%`), when the machine has a backlight;
+- the power cable going in or coming out (`CHARGING · N%`, `ON BATTERY · N%`);
+- Caps Lock and Num Lock (`CAPS LOCK ON`); the lock keys still work as usual;
+- game mode turning on or off.
+
+The last change is the one shown. Settings → The Pill → Gauges turns all of them off.
 
 ### Workspaces
 
@@ -366,7 +375,7 @@ Shape → Pill above.
 | Music | `node.media` | on | A strip with the cover, the song and its controls when music starts. |
 | Notices | `node.notices` | on | A column of cards with each new notice and its action. |
 | Workspaces | `node.workspaces` | on | A rail with the workspaces when you change them. |
-| Volume | `node.volume` | on | A gauge while the volume changes. |
+| Gauges | `node.volume` | on | A gauge for the volume, the light, a mute, Caps or Num Lock and the cable. |
 | System | `node.system` | on | Processor, memory, temperature, network and battery on the panel's system page. |
 | On the wallpaper | `node.wallpaper` | on | A notice ripples the wallpaper under it. |
 | Lyrics in the player | `node.lyrics` | off | The words in time with the song, from the cache or LRCLIB. |
@@ -432,6 +441,8 @@ The node is local. It does not send anything anywhere except the one lyrics requ
   `hyprctl` to focus a workspace or a window. `hyprctl -j monitors` once, for the screen's size.
 - **A finished time tool** — if it finishes under a fullscreen window, `hyprctl -j activewindow`
   checks, and `notify-send` shows a desktop notification.
+- **The lock keys** — Hyprland's `Caps_Lock` and `Num_Lock` binds run `mooi osd caps|num`, which asks
+  `hyprctl devices -j` whether the main keyboard's lock is on. Nothing is read from the keyboard itself.
 - **Copying an answer** — a chosen sum or conversion goes to `wl-copy`.
 - **The wallpaper and the bar** — `pleamar` carries a notice's ripple to the wallpaper, asks the bar
   for the visualiser's bands, and sends a notice's action back to mooi.

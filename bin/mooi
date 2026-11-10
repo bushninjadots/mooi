@@ -37,6 +37,7 @@
 #   mooi game <folder>    start a game found on the disk where it lies: its own launcher, or wine / PortProton
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
+#   mooi osd caps|num      the node's gauge for a lock key (Hyprland's Caps_Lock and Num_Lock binds call it)
 #   mooi open              same as `window` (kept for old scripts)
 #   mooi say CMD…          pass a command to the running scene (pleamar --say)
 #   mooi theme-sync [--light] [image]
@@ -1492,6 +1493,14 @@ case "$cmd" in
         PLEAMAR_SWAPCHAIN=1 MOOI_SHELL="$root/shell" exec "$pleamar" --scene "$src" --no-hud --stall 0 $(reduced_flag) "$@" ;;
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
+    osd) # D265: a lock key's state for the node's gauge, as Hyprland's main keyboard has it (Minflair's OSD).
+         # The bind runs on the press, before Hyprland has turned the lock, so it looks a moment later.
+        case "${1:-}" in caps) field=capsLock code=1 ;; num) field=numLock code=2 ;; *) echo "usage: mooi osd caps|num" >&2; exit 2 ;; esac
+        sleep 0.12
+        on=$(hyprctl devices -j 2>/dev/null | jq -r --arg f "$field" \
+            '[.keyboards[] | select(.main)] as $m | (if ($m | length) > 0 then $m else .keyboards end) | map(.[$f]) | any' 2>/dev/null) || on=false
+        [ "$on" = true ] && n=$((code * 10 + 1)) || n=$((code * 10))
+        "$pleamar" --say mooi-node "emit nd_osd $n" >/dev/null 2>&1 || : ;;
     pill) "$pleamar" --say mooi-node "emit nd_cmd 1" >/dev/null 2>&1 || : ;;   # D226: the node; none, nothing (D227)
     node) # D226: the node (the Dynamic Pill) — wake | launch (Super+Space) | universe (Super+Tab) | studio (D229:
           # its look); without it, mooi's own search and the Overview answer
