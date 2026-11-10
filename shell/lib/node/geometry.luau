@@ -33,6 +33,12 @@ function M.body(kind, scr, anchor, shape, data)
         w, h = tonumber(shape.seed_w) or 22, tonumber(shape.seed_h) or 6
     elseif kind == "panel" then
         w, h = M.PANEL_W, M.PANEL_H[data.page] or M.PANEL_H.home
+        -- D288: Home is as tall as its notices: the rows start at 493, 58 each, and the icon row takes 66 under
+        -- them; with none, one line says so. Three is its tallest (732).
+        if (data.page or "home") == "home" and tonumber(data.notices) then
+            local n = math.max(0, math.min(3, math.floor(tonumber(data.notices))))
+            h = 493 + (n == 0 and 24 or n * 58) + 66
+        end
     else
         local s = SIZE[kind] or SIZE.rest
         w, h = s[1], s[2]

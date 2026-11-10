@@ -535,3 +535,16 @@ do
         eq(require("lib/config").defaults().keys.ask, "SUPER + SHIFT + G")
     end)
 end
+
+section("Home is as tall as its notices (D288)")
+do
+    local G = require("lib/node/geometry")
+    test("none, one or three notices: the panel grows by a row each, never past 732", function()
+        local scr = { w = 1920 }
+        eq(G.body("panel", scr, "center", nil, { page = "home", notices = 0 }).h, 583)
+        eq(G.body("panel", scr, "center", nil, { page = "home", notices = 1 }).h, 617)
+        eq(G.body("panel", scr, "center", nil, { page = "home", notices = 3 }).h, 733)
+        eq(G.body("panel", scr, "center", nil, { page = "home", notices = 9 }).h, 733)
+        eq(G.body("panel", scr, "center", nil, { page = "notes", notices = 0 }).h, 450, "other pages keep theirs")
+    end)
+end

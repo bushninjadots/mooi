@@ -1732,7 +1732,7 @@ do
     end)
 end
 
-section("the panel's Home profile (D280): who it is")
+section("the panel's Home profile (D285): who it is")
 do
     local HM = require("lib/node/home")
 
@@ -1800,7 +1800,7 @@ do
     end)
 end
 
-section("the panel's Home profile (D280): the scene")
+section("the panel's Home profile (D285): the scene")
 do
     local function read(path)
         local f = io.open(path, "r")
@@ -1889,7 +1889,7 @@ do
     end)
 end
 
-section("the week's weather (D282): rows and ranges")
+section("the week's weather (D287): rows and ranges")
 do
     local WEEK = require("lib/node/week")
 
@@ -1948,7 +1948,7 @@ do
     end)
 end
 
-section("the week's weather and the panel's foot (D282): the scene that wears them")
+section("the week's weather and the panel's foot (D287): the scene that wears them")
 do
     local function read(path)
         local f = io.open(path, "r")

@@ -420,7 +420,7 @@ render = function()
     end
     if studio then shape.top = 96 end
     local anchor = studio and "centre" or (cfg().anchor or "centre")
-    local data = { n = #N.ws.list, page = N.panel }
+    local data = { n = #N.ws.list, page = N.panel, notices = math.min(3, #N.notices) }
     -- at rest with something running, the seed is the time capsule
     local cap = (not studio and kind == "rest") and TK.capsule(N.time, wall()) or nil
     -- the music in the form the look chose (D246): a capsule, a visualiser strip, or a record (always round)
@@ -1305,7 +1305,7 @@ local function panel_state()
     if N.kind == "panel" then render() end
 end
 
--- D280: who this machine is. The Nexus's own identity, and the hostname, on the card above Home's clock.
+-- D285: who this machine is. The Nexus's own identity, and the hostname, on the card above Home's clock.
 local HOME_FOLDER = tostring(sys.ask("files.folder") or "")
 N.host = ""
 N.show_identity = function()
@@ -1450,7 +1450,7 @@ local function show_calendar()
     model.cal = rows
     N.panel_sub = string.upper(mo.title)
 end
--- D282: the week's weather page, from the Nexus's cached forecast: today now, then the days on one range
+-- D287: the week's weather page, from the Nexus's cached forecast: today now, then the days on one range
 local WEATHER_FILE = "nexus-weather.json"
 local function show_weather_week()
     local wk = WEEK.week(read(WEATHER_FILE, "json"))
@@ -1730,7 +1730,7 @@ open_panel = function(page)
     render()
 end
 N.open_panel, N.close_panel = open_panel, function() ST.release(N.st, "panel"); render() end
--- D282: a new forecast while the week's page is open is shown at once
+-- D287: a new forecast while the week's page is open is shown at once
 pcall(sys.watch, "files:nexus-weather.json", function()
     if N.kind == "panel" and N.panel == "weather" then N.panel_shown = nil; render() end
 end)
@@ -2129,7 +2129,7 @@ on("nd_out", function()
     render()
 end)
 
--- D282: Home's weather, pressed, opens the week's page in the same panel
+-- D287: Home's weather, pressed, opens the week's page in the same panel
 on("nd_hweather", function() open_panel("weather") end)
 -- ── the panel's own input (D260): its pages, its four toggles, its notices and the way home ──
 on("nd_pg", function(v)

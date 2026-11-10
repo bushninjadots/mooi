@@ -7508,7 +7508,7 @@ down 58 px and Home is 718 px tall. `lib/node/home.identity` trims the words and
 `lib/node/home.face` decides whether the picture is there; the logic reads `settings.nexus.identity` and the data
 folder, asks `hostname`, and refreshes the card when `settings.json` changes.
 
-## D281 · 2026-11-10 · Home's profile moves under the header and becomes editable (opencode's)
+## D286 · 2026-11-10 · Home's profile moves under the header and becomes editable (opencode's)
 
 The owner: "great i want to be able to change it, also i think it should go under the time,weather and battery".
 The card now sits under the clock/date/weather/battery header instead of above it. Home's top is tightened by 44 px
@@ -7542,7 +7542,7 @@ properties, 338 zones); `luau-ops`, the gate and the node's globals check pass. 
 desktop: the card opens the field, typed text appears, Escape cancels without closing the panel, Return saves an
 unchanged name, and the picture chooser opens above the full-screen node and gives the node back when cancelled.
 
-## D282 · 2026-11-10 · Home opens the week's weather, and the panel keeps time at its foot (opencode's)
+## D287 · 2026-11-10 · Home opens the week's weather, and the panel keeps time at its foot (opencode's)
 
 The owner: "when the pill is open and has music playing on the bottom on the inside a small dynamic visualiser i
 want that. and also on the top right is the weather, i want to click that and the pill morphs into weather
@@ -7573,3 +7573,16 @@ missing document and missing current; the weather press, page, rows, summary and
 the scene compiles (781 properties, 339 zones); `luau-ops`, the gate and the node's globals check pass. Seen live on
 the running desktop: the week's page with its seven days, and the foot's bars while MPD played "Renegade"; they
 settle to a line when the music pauses.
+
+**Reviewed (Claude), D285–D287.** The owner asked opencode for these directly and asked Claude to look at them,
+improve them and bring them in. Brought onto main in their six commits, renumbered (D280–D282 were taken by the
+dock, `mooi ask` and the notch fold), and checked live: the profile card under the clock, the week's page with
+its seven days, the music at the panel's foot. The name is written through `lib/settingsfile` and the picture
+through `mooi identity avatar`, both argv-only.
+
+## D288 · 2026-11-10 · Home is as tall as its notices
+
+Seen on review: with no notices, Home left some 180 px of empty panel under "No notifications". Its height now
+follows them: the rows start at 493 px and take 58 each, the icon row 66 under them, and with none one line says
+so — 583 px with none, 732 with three (the most it shows). Other pages keep their heights. The panel re-renders when
+a notice arrives, so it grows on its springs as the body does. `lib/node/geometry`; unit-tested.

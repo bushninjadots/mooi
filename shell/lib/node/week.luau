@@ -1,4 +1,4 @@
--- The week's weather (D282): the Nexus's cached forecast as today plus six days, with one shared range for the
+-- The week's weather (D287): the Nexus's cached forecast as today plus six days, with one shared range for the
 -- bars. Pure, so the unit suite runs it.
 
 local M = {}

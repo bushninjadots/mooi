@@ -192,7 +192,7 @@ def scene():
           '    // D279: the Notes board\'s six cards and the Stash page\'s six rows',
           '    model ncard max 6 { id: number; title: text; rest: text; more: bool; age: text; pinned: bool; tag: number }',
           '    model stz max 6 { id: number; icon: text; name: text; detail: text }',
-          '    // D282: the weather page — the days of the week, their shared temperature range, and today now',
+          '    // D287: the weather page — the days of the week, their shared temperature range, and today now',
           '    model wkw max 7 { label: text; glyph: text; hi: text; lo: text; lo_v: number; hi_v: number; wet: bool }',
           '    text nd_wtemp = ""', '    text nd_wword = ""', '    text nd_wglyph = ""', '    text nd_wfeels = ""',
           '    text nd_whum = ""', '    text nd_wwind = ""', '    text nd_wcity = ""', '    text nd_wsum = ""',
@@ -670,7 +670,7 @@ def panel_parts(c, acc, ink, dim, hull):
          f'{c}    // a press on the body where nothing else is drawn closes it',
          f'{c}    zone box pcz {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "Close the panel"; show: nd_kind == 13 }}',
          f'{c}    on press pcz {{ emit nd_pclose }}']
-    # ── the profile card (D280; D281: under the header, editable in place) ──
+    # ── the profile card (D285; D286: under the header, editable in place) ──
     L += [f'{c}    group {{ show: nd_pgp == 0',
           f'{c}        box {{ from: nb_x + 14, nb_y + 78; size: nb_w - 28, 58; corner: 14; color: fl.well }}',
           f'{c}        box {{ from: nb_x + 14, nb_y + 78; size: nb_w - 28, 58; corner: 14; stroke: 1; color: {acc}; opacity: if(nd_hedit, 0.9, if(phz.hover, 0.45, 0)) }}',
@@ -818,7 +818,7 @@ def panel_parts(c, acc, ink, dim, hull):
           f'{c}            on press pnx {{ emit nd_nc(n.index * 10 + 9) }}',
           f'{c}        }}',
           f'{c}    }}']
-    # ── the week's weather (D282): today now, then seven days on one shared range ────────────────────
+    # ── the week's weather (D287): today now, then seven days on one shared range ────────────────────
     L += [f'{c}    group {{ show: nd_pgp == 11',
           f'{c}        box {{ from: nb_x + 14, nb_y + 56; size: nb_w - 28, 104; corner: 14; color: fl.well }}',
           f'{c}        text "NOW" {{ at: nb_x + 30, nb_y + 74; anchor: left center; size: 8; weight: 700; family: {MONO}; color: {dim} }}',
@@ -1076,7 +1076,7 @@ def panel_parts(c, acc, ink, dim, hull):
           f'{c}            text "No Bluetooth adapter" {{ at: nb_x + nb_w / 2, nb_y + 90; anchor: center; align: center; size: 11; family: {SANS}; color: {dim}; show: not nd_btp }}',
           f'{c}        }}',
           f'{c}    }}']
-    # ── the panel's foot (D282): a thin mirror of the music while it plays, under the icon row ───────
+    # ── the panel's foot (D287): a thin mirror of the music while it plays, under the icon row ───────
     L += [f'{c}    group {{ show: nd_kind == 13 and (nd_playing or nd_paused)']
     for k in range(32):
         L += [f'{c}        box {{ from: nb_x + 14 + {k} * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp{k} * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp{k} * 8, 1); corner: 1; color: {acc}; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp{k}, 0.3) }}']

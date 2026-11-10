@@ -601,7 +601,7 @@ scene Node {
     // D279: the Notes board's six cards and the Stash page's six rows
     model ncard max 6 { id: number; title: text; rest: text; more: bool; age: text; pinned: bool; tag: number }
     model stz max 6 { id: number; icon: text; name: text; detail: text }
-    // D282: the weather page — the days of the week, their shared temperature range, and today now
+    // D287: the weather page — the days of the week, their shared temperature range, and today now
     model wkw max 7 { label: text; glyph: text; hi: text; lo: text; lo_v: number; hi_v: number; wet: bool }
     text nd_wtemp = ""
     text nd_wword = ""
