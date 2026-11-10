@@ -27,7 +27,7 @@ M.PERSONAS = {
 -- without --auto, so it can only talk: nothing it would need permission for is approved.
 M.FALLBACK_MODELS = { "opencode/deepseek-v4.1-flash-free", "opencode/big-pickle", "opencode/beam-free" }
 
--- The free models are a third party: they are asked only when Settings → Nexus → Claude says so
+-- The free models are a third party: they are asked only when Settings → Control deck → Claude says so
 -- (claude.free_fallback, off by default), and opencode is told to deny every tool rather than
 -- trusting the prompt's "do not use tools" (fourth pass, L3). `env` reads these before the command.
 M.FREE_ENV = { 'OPENCODE_CONFIG_CONTENT={"permission":{"*":"deny","edit":"deny","bash":"deny","webfetch":"deny"}}',

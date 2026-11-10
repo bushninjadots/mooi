@@ -652,7 +652,7 @@ library FerrolumeParts {
         text m.mode { at: 1120, y + 18; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.engrave }
         text m.place { at: 1120, y + 37; anchor: right center; size: 10; family: "Share Tech Mono"; color: fl.muted }
     }
-    // A wallpaper folder (Settings → Wallpapers, D147): its path, how many it holds, and × to let it go.
+    // A wallpaper folder (Settings → Wallpaper, D147): its path, how many it holds, and × to let it go.
     component SFolder(m: record, y0: number) {
         size: 864, 42
         let y = y0 + m.index * 46

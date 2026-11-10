@@ -7797,3 +7797,26 @@ Pure parts (each tile's words, the sliders' codes, the profiles) are `lib/drawer
 **Verified.** Unit 940 / 0; the drawers and Settings scenes compile. Live: the Control Center opened with Super+N's
 command, its tiles read the real Wi-Fi network, Bluetooth off, battery charging, and the real (muted) volume; the
 Night light tile started hyprsunset and stopped it again, the tile's words following.
+
+## D300 · 2026-11-11 · Settings regrouped Noctalia's way: sections a newcomer follows, pages named for what they hold
+
+The owner: "improve and simplify all the settings to be understandable … look at how [Noctalia] has their settings
+… make all mooi settings better like theirs." Noctalia's sidebar is a short list of sections named for the thing
+they set (Appearance, Bar, Dock, Desktop, Wallpaper, Notifications, Lock Screen, Power…). mooi's had grown by
+accretion into 25 pages under LOOK / BAR / DESKTOP / SYSTEM / SHELL, several named with mooi's private vocabulary.
+Step one of the spec's settings overhaul (§2):
+- **Six sections**, in the order a newcomer follows: Start, Appearance, Bar & panels, Desktop, Windows, System.
+- **Plain page names**: Colours (was Theme & colour), Bar & Pill (Bar & Frame), Control deck (Nexus), Side panels
+  (Side drawers), Notifications (Signal Loom), Widget layer (The Subsurface), Coding agents (Herdr), Window controls
+  (Shutter), Workspaces (Overview), Mouse & touchpad (Input), Shortcuts (Keys), General (System). mooi's own names
+  are said once, in the page's subtitle ("the Control Nexus", "the Subsurface", "mooi calls them signals").
+- **One Notifications page**: the pop-up rows (who shows them, Do not disturb, quiet hours) left System and joined
+  the signals' arrival and look. General keeps the tray, closing and following windows, and search.
+- The map is one table in tools/gen-settings.py (`SECTION_MAP`); a page left out of it fails the generator.
+- Pages are numbered by their place, so the generated index now also says each page's number by its label
+  (`settings_index.tabs`); the Subsurface's Settings hub looks its pages up by label rather than by number.
+- Every "Settings → …" in the shell's own words, the docs and the generators names the new pages.
+Next: the words of every row (D301) and hiding rows that cannot apply (D302).
+
+**Verified.** Gate green (unit 940 / 0); every scene compiles. Live: the window shows the six sections and the
+merged Notifications page with its pop-ups card first.

@@ -347,7 +347,7 @@ M.SCHEMA = {
     { path = "drawers.quote", kind = "boolean", default = true },   -- D267: the shortcut sheet
     { path = "keys.settings", kind = "key", default = "SUPER + ALT + S" },
     -- D160: the lock screen at once. The session also locks itself after `lock.idle` minutes
-    -- (hypridle, Settings → Lock); this is the key for when you are leaving now.
+    -- (hypridle, Settings → Lock & idle); this is the key for when you are leaving now.
     { path = "keys.lock", kind = "key", default = "SUPER + L" },
     { path = "keys.edit", kind = "key", default = "SUPER + ALT + E" },
     { path = "keys.system", kind = "key", default = "SUPER + ALT + C" },

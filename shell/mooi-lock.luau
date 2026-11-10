@@ -23,7 +23,7 @@ if type(settings) ~= "table" then settings = {} end
 local palette = read("palette.json", "json")
 local ROLES = { "ground", "hull", "steel_900", "trace_dim", "trace", "phos", "ember", "muted", "ink" }
 
--- The backdrop (Settings → Lock): how far the wallpaper behind the plate is blurred, and how far it
+-- The backdrop (Settings → Lock & idle): how far the wallpaper behind the plate is blurred, and how far it
 -- is dimmed. Read from the settings.json `mooi lock` copies beside this scene, so a change lands on
 -- the next lock; nothing unreadable is allowed to blank the screen — the design's own stands in.
 local BLUR = { off = 0, light = 22, medium = 54, heavy = 96 }
@@ -35,7 +35,7 @@ local function backdrop()
 end
 backdrop()
 
--- Whether the lock wears the Nexus's two pictures (Settings → Lock: `lock.banner` for the strip
+-- Whether the lock wears the Nexus's two pictures (Settings → Lock & idle: `lock.banner` for the strip
 -- along the top, `lock.avatar` for the plate above the clock), each on unless turned off and
 -- independent of the other — a banner without your face, or your face without a banner. Read from
 -- the same copy of settings.json as the backdrop, so a choice lands on the next lock.

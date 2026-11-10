@@ -38,7 +38,7 @@ ANIMATED_EXT = {"gif", "apng"}
 VIDEO_EXT = {"mp4", "webm", "mkv", "mov", "m4v", "avi"}
 GREY_SAT = 0.12          # below this a picture has no hue worth placing (the notch's rule too)
 ORBIT = {"inner": 0.34, "outer": 1.0, "grey": 0.2, "size": 1024, "dot": 5}
-try:  # walls.dots (Settings → Wallpapers, D147), passed by `mooi wall index`
+try:  # walls.dots (Settings → Wallpaper, D147), passed by `mooi wall index`
     ORBIT["dot"] = max(2, min(10, int(os.environ.get("MOOI_ORBIT_DOT", "5"))))
 except ValueError:
     pass

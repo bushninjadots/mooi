@@ -63,7 +63,7 @@
 #   mooi theme save <name> [description]  the current look as a package (--force replaces one)
 #   mooi theme list        the packages saved in mooi's own folder
 #   mooi theme apply <name|file>  wear a package: its visual settings, nothing behavioural
-#   mooi idle              write hypridle's file from the lock's idle timeout (Settings → Lock)
+#   mooi idle              write hypridle's file from the lock's idle timeout (Settings → Lock & idle)
 #                          and restart it; `session` and the settings window call it
 #   mooi lock | unlock     the lock screen (D160): the session through pleamar's `kind: lock`
 #                          (ext-session-lock), started here if it is not running. Everything that locks
@@ -503,7 +503,7 @@ PY
     if on nvim && [ -d "$nvc" ]; then
         mkdir -p "$nvc/colors" "$nvc/plugin"
         render "$apps_dir/nvim.lua" "$nvc/colors/mooi.lua"
-        printf '%s\n' '-- written by mooi (Settings → Theme & colour → Neovim): wear the wallpaper colours; off, this file goes' \
+        printf '%s\n' '-- written by mooi (Settings → Colours → Neovim): wear the wallpaper colours; off, this file goes' \
             'vim.api.nvim_create_autocmd("VimEnter", { once = true, callback = function() pcall(vim.cmd.colorscheme, "mooi") end })' \
             > "$nvc/plugin/mooi-theme.lua"
         put nvim_on yes; did="$did nvim"
@@ -858,7 +858,7 @@ wall_apply() { # FILE [--from-y N] [--transition KIND]
 # (wallhaven.key, mode 0600), with ~/.config/mooi/wallhaven.key read as a fallback; never in the
 # settings or the repo. It goes to curl as a header on stdin, so it is never in a process list.
 # Every URL is checked to be on Wallhaven's own hosts, every id to be letters and digits.
-# the key Settings → Wallpapers saves (mooi's data folder, 0600), or one put there by hand
+# the key Settings → Wallpaper saves (mooi's data folder, 0600), or one put there by hand
 wh_keyfile="$folder/wallhaven.key"
 [ -s "$wh_keyfile" ] || wh_keyfile="${XDG_CONFIG_HOME:-$HOME/.config}/mooi/wallhaven.key"
 wh_cache="$walls_cache/wh"
@@ -1608,7 +1608,7 @@ idle_apply() {
     suspend_at=$((lock_at + 1800))
     [ "$suspend_at" -ge 3600 ] || suspend_at=3600
     want=$(cat <<EOF
-#  ◈ HYPRIDLE CONFIGURATION — written by \`mooi idle\` from Settings → Lock. Edit the setting.
+#  ◈ HYPRIDLE CONFIGURATION — written by \`mooi idle\` from Settings → Lock & idle. Edit the setting.
 #  The lock screen is mooi's while mooi is the desktop (harness: ~/.config/hypr/scripts/lock-session.sh).
 
 general {
@@ -1728,7 +1728,7 @@ case "$cmd" in
         # surface instead of starting a process, so a key pressed the instant SUPER+L lands is
         # heard (starting one took long enough that the first keystrokes fell on nothing).
         lock_start >/dev/null 2>&1 || :
-        # the installed hypridle.conf agrees with the setting again (Settings → Lock)
+        # the installed hypridle.conf agrees with the setting again (Settings → Lock & idle)
         idle_apply >/dev/null 2>&1 || :
         ;;
     toggle)
@@ -1944,7 +1944,7 @@ EOF
             index) wall_index ;;
             next) wall_next "$@" ;;
             wallhaven) wall_wallhaven "$@" ;;
-            count) # how many wallpapers a folder holds (Settings → Wallpapers)
+            count) # how many wallpapers a folder holds (Settings → Wallpaper)
                 d=$(printf '%s' "${1:-}" | sed "s|^~|$HOME|")
                 [ -d "$d" ] || exit 1
                 find "$d" -maxdepth 1 -type f | grep -ciE '\.(jpe?g|png|webp|avif|jxl|bmp|gif|apng|mp4|webm|mkv|mov|m4v|avi)$' ;;

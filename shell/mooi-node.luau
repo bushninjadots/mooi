@@ -1461,7 +1461,7 @@ local function show_panel_home(b)
         { HM.reading("TEMP", temp, "°"), math.min(1, (temp or 0) / 100), (temp or 0) > 85 },
         { HM.reading("GPU", N.gpu), (N.gpu or 0) / 100, (N.gpu or 0) > 90 },
     }
-    fact.nd_hstrip = on_for("system")   -- D274: Settings → The Pill → Readings on Home
+    fact.nd_hstrip = on_for("system")   -- D274: Settings → Bar & Pill → Readings on Home
     for i, it in ipairs(strip) do
         text["nd_hs" .. i] = it[1]
         fact["nd_hf" .. i] = math.max(0, math.min(1, it[2]))

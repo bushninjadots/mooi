@@ -48,7 +48,7 @@ local TR_INDEX = { random = 0, grow = 1, wipe = 2, slide = 3, fade = 4 }
 local kept = read("walls-state.json", "json")
 kept = type(kept) == "table" and kept or {}
 local cfg = walls.normalize(settings.walls, HOME)
--- the settings' defaults (Settings → Wallpapers, D147), then what was chosen last time
+-- the settings' defaults (Settings → Wallpaper, D147), then what was chosen last time
 local W = type(settings.walls) == "table" and settings.walls or {}
 local SRC_INDEX = { all = 0, pictures = 1, live = 2, wallhaven = 3 }
 local view = walls.VIEW_INDEX[kept.view] or walls.VIEW_INDEX[W.view] or 0

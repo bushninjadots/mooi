@@ -1,4 +1,4 @@
--- A module's own look (D166): what Settings → Bar & Frame → Modules and the bar's edit mode set under
+-- A module's own look (D166): what Settings → Bar & Pill → Modules and the bar's edit mode set under
 -- bar.modules.<id> (colour, fill, rounding, outline, glow), resolved against the bar's style into the
 -- numbers the frame draws a plate with. Pure. A group of modules (`a+b` in a layout list) shares one
 -- plate, so its look is stored on, and read from, its first module (its head).
@@ -55,7 +55,7 @@ function M.of(s, id, roles)
     return { fill = fill, r = r, outline = outline, glow = GLOW[m.glow] or 0, colour = colour }
 end
 
--- ── The Look card (Settings → Bar & Frame → Modules) ──
+-- ── The Look card (Settings → Bar & Pill → Modules) ──
 -- One event carries a choice: key * 16 + value, the key and value as positions (from 0) in these lists;
 -- key 15 resets the module's look to the style's.
 M.KEYS = { "colour", "fill", "rounding", "outline", "glow", "display", "width" }

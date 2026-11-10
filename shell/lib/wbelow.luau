@@ -21,8 +21,10 @@ M.MIGRATE = { music = "nowplaying", clock = "clock", calendar = "calendar", weat
               battery = "controls", resources = "system" }
 
 -- the Settings widget's marks: the word, and the page's tab in mooi-settings (lib/settings_index's `tab`)
-M.SETTINGS = { { "Theme & colour", 1 }, { "Bar & Frame", 3 }, { "Wallpapers", 9 }, { "Widgets", 10 },
-               { "Sound", 12 }, { "Power", 13 }, { "BMO", 11 }, { "The Subsurface", 20 } }
+-- the Settings pages the hub offers: { shown, the page's label in Settings } — its number is looked up by the
+-- label (settings_index.tabs), so Settings may reorder its pages (D300) without this list going stale
+M.SETTINGS = { { "Colours", "Colours" }, { "Bar & Pill", "Bar & Pill" }, { "Wallpaper", "Wallpaper" }, { "Widgets", "Widgets" },
+               { "Sound", "Sound" }, { "Power", "Power" }, { "BMO", "BMO" }, { "Widget layer", "Widget layer" } }
 
 local function room(screen) return { w = screen.w, h = screen.h - (screen.top or 0) } end
 

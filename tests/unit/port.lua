@@ -266,7 +266,7 @@ do
         assert(read("bin/mooi"):find('"$pleamar" --say mooi-drawers "emit dr_cmd $n"', 1, true))
         local p = read("shell/mooi-drawers.plm")
         assert(p:find("event dr_cmd ->", 1, true) and p:find("keyboard: exclusive while dr_open > 0", 1, true))
-        assert(read("tools/gen-settings.py"):find('("Side drawers", "Side drawers"', 1, true))
+        assert(read("tools/gen-settings.py"):find('("Side drawers", "Side panels", "Side panels"', 1, true))
         -- the notices are the bar's: the drawer reads its feed and never receives notifications itself
         assert(not read("shell/mooi-drawers.luau"):find('sys.watch, "notifications"', 1, true))
     end)

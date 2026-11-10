@@ -63,7 +63,8 @@ return function(ctx)
     -- ── the settings' pages ──
     local function page_go(v)
         local p = WB.SETTINGS[math.floor(tonumber(v) or -1) + 1]
-        if p then say_mooi("emit open_settings_at " .. tostring(p[2])) end
+        local tab = p and require("lib/settings_index").tabs[p[2]]
+        if tab then say_mooi("emit open_settings_at " .. tostring(tab)) end
     end
     on("pg_go", page_go)
 

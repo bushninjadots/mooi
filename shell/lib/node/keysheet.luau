@@ -155,7 +155,7 @@ local function guess(b)
     return GUESS[d] or cap(d:gsub("_", " "))
 end
 
--- mooi's own commands, named as Settings → Keys names them (`actions` is lib/desktop's ACTIONS) and the few bound
+-- mooi's own commands, named as Settings → Shortcuts names them (`actions` is lib/desktop's ACTIONS) and the few bound
 -- outside that list (custom/mooi.lua, bind.lua): what `mooi CMD` does, for a bind with no comment of its own
 local MOOI = {
     walls = "Wallpapers", toggle = "Search and apps", clipboard = "Clipboard history", record = "Record the screen",

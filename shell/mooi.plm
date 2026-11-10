@@ -3296,7 +3296,7 @@ scene Mooi {
 
 
     // ── The hot corner (OVERVIEW-PORT stage 3) ─────────────────
-    // Four little surfaces, each mapped only while Settings → Overview chooses it. While on, a
+    // Four little surfaces, each mapped only while Settings → Workspaces chooses it. While on, a
     // 6×6 patch of that corner belongs to the shell: the price of a corner that answers a rest.
     // Nothing is painted but the zone, so the input region is that patch and no more.
     surface hot_tl {

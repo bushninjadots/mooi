@@ -3656,7 +3656,7 @@ end)
 test("the pages the window offers are the pages the rows carry", function()
     local pages = {}
     for _, r in ipairs(index) do pages[r.page] = true end
-    for _, name in ipairs({ "Quick settings", "Theme & colour", "Bar & Frame", "Windows", "Wallpapers", "Control Nexus" }) do
+    for _, name in ipairs({ "Quick settings", "Colours", "Bar, frame & Pill", "Windows", "Wallpaper", "Control deck", "Notifications", "Widget layer" }) do
         assert(pages[name], "missing page: " .. name)
     end
 end)
@@ -4674,23 +4674,24 @@ do
         local idx = require("lib/settings_index")
         local pages = {}
         for _, r in ipairs(idx) do pages[r.page] = true end
-        for _, gone in ipairs({ "The bar", "Layout", "Screen frame", "Workspaces", "Media" }) do
+        -- (D300: "Workspaces" is a page again, the overview's: the bar's workspaces stay on Bar, frame & Pill)
+        for _, gone in ipairs({ "The bar", "Layout", "Screen frame", "Media" }) do
             eq(pages[gone], nil, "no page " .. gone)
         end
-        eq(pages["Bar & Frame"], true)
+        eq(pages["Bar, frame & Pill"], true)
         local want = { "Shape", "Style", "Screen frame", "Outline", "Surface", "Thickness", "Islands with the frame", "Everyday", "Shows", "Layout", "Band thickness", "Frame corners" }
         for _, title in ipairs(want) do
             local found = false
-            for _, r in ipairs(idx) do if r.title == title and r.page == "Bar & Frame" then found = true end end
-            eq(found, true, title .. " is on Bar & Frame")
+            for _, r in ipairs(idx) do if r.title == title and r.page == "Bar, frame & Pill" then found = true end end
+            eq(found, true, title .. " is on Bar, frame & Pill")
         end
     end)
     test("review I1/I2: search opens a row's fold, lands where it is, and the scroll stays on the page", function()
         local idx = require("lib/settings_index")
         local wheel, frame_edge
         for _, r in ipairs(idx) do
-            if r.page == "Bar & Frame" and r.title == "Mouse wheel" then wheel = r end
-            if r.page == "Bar & Frame" and r.title == "Frame edge" then frame_edge = r end
+            if r.page == "Bar, frame & Pill" and r.title == "Mouse wheel" then wheel = r end
+            if r.page == "Bar, frame & Pill" and r.title == "Frame edge" then frame_edge = r end
         end
         assert(wheel and wheel.fold == idx.modules_fold, "a row knows its fold")
         assert(wheel.fy > idx.modules_look_y + 300, "rows after the layout sit below it (" .. tostring(wheel.fy) .. ")")
@@ -4731,7 +4732,7 @@ do
         assert(plm:find("= not fd_", 1, true), "a header press opens or folds it")
         eq(plm:find("color: fl.ink }", 1, true), nil, "no title in the dark ink (it is for light surfaces)")
         eq(plm:find("mix(fl.ink, fl.phos, fd_", 1, true), nil, "a closed fold's name is legible")
-        assert(plm:find('"Theme & colour"', 1, true), "Colour is Theme & colour")
+        assert(plm:find('"Colours"', 1, true), "the colour page is Colours (D300)")
         eq(plm:find('"Steel"', 1, true), nil, "no Steel anywhere in the window")
         local idx = require("lib/settings_index")
         -- one name per thing, the same on every page; nothing shown that does nothing yet
@@ -5547,7 +5548,10 @@ do
         local r = WB.grid_apps(list, { d = 5 }, "", 12)
         eq(r[1].id, "d", "the most launched first")
         eq(#WB.grid_apps(list, {}, "fi", 12), 2)
-        eq(WB.SETTINGS[8][1], "The Subsurface"); eq(WB.SETTINGS[8][2], 20)   -- (D225: Loom / Fold's page removed, the pages after it moved up one)
+        -- D300: each page is found by its label, so Settings can reorder its pages
+        local tabs = require("lib/settings_index").tabs
+        for _, p in ipairs(WB.SETTINGS) do assert(tabs[p[2]], "no Settings page " .. p[2]) end
+        eq(WB.SETTINGS[8][1], "Widget layer")
     end)
 end
 
@@ -5565,7 +5569,10 @@ do
         for _, e in ipairs({ "emit nc_go(", "emit wp_go(", "emit pg_go(", "emit ct_go(", "emit ct_wheel(", "emit ct_pw(", "emit lg_go(" }) do
             assert(ui:find(e, 1, true), e)
         end
-        assert(ui:find('"Theme & colour", "Bar & Frame", "Wallpapers", "Widgets", "Sound", "Power", "BMO", "The Subsurface"', 1, true), "the real pages")
+        -- the hub draws the names its list offers (each a real Settings page: D300 looks them up by label)
+        local names = {}
+        for _, p in ipairs(require("lib/wbelow").SETTINGS) do names[#names + 1] = '"' .. p[1] .. '"' end
+        assert(ui:find(table.concat(names, ", "), 1, true), "the real pages")
     end)
     test("lanes: the four kinds and the grid are drawn, clipped to the hole like the rest", function()
         local plm = read("shell/mooi-widgets.plm")
@@ -5615,7 +5622,7 @@ do
         for _, s in ipairs({ '"network"', '"bluetooth"', '"brightness"', '"files:walls-index.json"' }) do assert(f:find("sys.watch, " .. s, 1, true), s) end
         assert(f:find('say_mooi("emit note_act " .. tostring(row * 10 + what))', 1, true) and f:find('say_mooi("emit note_clear")', 1, true), "notices")
         assert(f:find('run("mooi", { "wall", "apply", w.path }', 1, true), "wallpapers")
-        assert(f:find('say_mooi("emit open_settings_at " .. tostring(p[2]))', 1, true), "settings")
+        assert(f:find('say_mooi("emit open_settings_at " .. tostring(tab))', 1, true), "settings")
         assert(f:find('opts("controls").power_confirm ~= false and fact.ct_pw_arm ~= n', 1, true), "power asks again, each for itself")
         assert(f:find("d.launch_counts[a.id] = (d.launch_counts[a.id] or 0) + 1", 1, true), "the grid learns what is launched")
         assert(f:find("if v == 27 then q = \"\"", 1, true), "Esc clears what is typed")
@@ -7376,7 +7383,7 @@ test("the new settings are appended, in one block", function()
 end)
 test("the settings window has a Herdr page and the new BMO rows", function()
     local f = io.open("shell/mooi-settings.plm"); local t = f:read("a"); f:close()
-    assert(t:find('"Herdr"', 1, true), "the page")
+    assert(t:find('"Coding agents"', 1, true), "the page (Herdr's, D300: named for what it shows)")
     assert(t:find("sv_herdr_poll", 1, true) and t:find("sv_herdr_brief", 1, true))
     assert(t:find("sv_companion_cheek", 1, true) and t:find("sv_companion_hands", 1, true))
 end)

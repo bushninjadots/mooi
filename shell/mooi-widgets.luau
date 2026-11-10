@@ -1285,7 +1285,7 @@ below_steps = function()
     commit(d)
 end
 on("sf_set", function(v) if math.floor(tonumber(v) or 0) % 2 == 1 then below_steps() end end)
--- Settings → The Subsurface → Re-arrange: every widget below laid out again (one undo puts them back)
+-- Settings → Widget layer → Re-arrange: every widget below laid out again (one undo puts them back)
 on("wg_arrange", function()
     if not doc then return end
     change(WB.arrange_all(doc, room, surface_settings().layout or "arc"), "ARRANGED · UNDO PUTS THEM BACK")

@@ -64,7 +64,7 @@ def scene():
     L += palette_block()
     L += ['',
           '    // ── which drawer is out: 0 none · 1 the Dashboard (left) · 2 the notices (right) ──',
-          '    fact dr_open = 0', '    fact dr_edge = false      // touching the side opens it (Settings → Side drawers)',
+          '    fact dr_open = 0', '    fact dr_edge = false      // touching the side opens it (Settings → Side panels)',
           '    fact dr_lon = true', '    fact dr_ron = true      // each drawer may be off',
           '    prop dr_lk = 0 ~calm', '    follow dr_lk = if(dr_open == 1, 1, 0)',
           '    prop dr_rk = 0 ~calm', '    follow dr_rk = if(dr_open == 2, 1, 0)',

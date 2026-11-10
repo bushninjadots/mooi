@@ -11,7 +11,7 @@ local M = {}
 -- The Overview's grid on a monitor `w` × `h` (logical), after iNiR's workspace view: one panel
 -- just under the bar (`top`, the bar's reserve), rows × columns of the screen at SCALE, smaller only
 -- when that would not fit across the screen or above its lower part (the hint line goes under it).
--- `scale` is the workspace's share of the screen (Settings → Overview → Size; SCALE when not given).
+-- `scale` is the workspace's share of the screen (Settings → Workspaces → Size; SCALE when not given).
 -- Returns { cw, ch, gx, gy, gap }.
 M.SCALE = 0.18
 M.SEARCH_H = 40   -- the search row on top of the panel (D41)

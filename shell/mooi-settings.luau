@@ -113,7 +113,7 @@ local function publish(s)
         fact["fi_" .. id] = P("bar.modules." .. id .. ".frame", mod.frame)
         fact["g_" .. id] = grouped[id] == true
     end
-    -- the lock screen's picture (Settings → Lock): the identity the Nexus shows, which `mooi lock`
+    -- the lock screen's picture (Settings → Lock & idle): the identity the Nexus shows, which `mooi lock`
     -- copies beside the lock's scene
     local id = type(s.nexus) == "table" and type(s.nexus.identity) == "table" and s.nexus.identity or {}
     local function ispic(rel) return type(rel) == "string" and rel ~= "" end
@@ -158,7 +158,7 @@ end
 -- the bar maps it (lib/ferro). Asked again when the wallpaper (the palette) changes.
 local SCHEMES = { "tonal-spot", "content", "expressive", "fidelity", "fruit-salad", "monochrome", "neutral", "rainbow", "vibrant", "smart" }
 local wallpaper = tostring(sys.ask("env", "HOME")) .. "/.cache/current_wallpaper"
--- The lock's backdrop preview (Settings → Lock): the still the shell keeps of what it is wearing
+-- The lock's backdrop preview (Settings → Lock & idle): the still the shell keeps of what it is wearing
 -- (a video's current frame too), so the blur and the dimming chosen there are seen on the picture
 -- they will be applied to. No still, no picture: the scene says so rather than lie.
 local function backdrop_pic()
@@ -747,7 +747,7 @@ on("sw_add", function(v)
     local d, id = W.add(wdoc(), W.ADD_ORDER[math.floor(tonumber(v) or 0) + 1] or "nowplaying", WROOM)
     if id then write_widgets(d) end
 end)
--- ── Settings → Wallpapers: the folders, and Wallhaven's key (D147) ──
+-- ── Settings → Wallpaper: the folders, and Wallhaven's key (D147) ──
 local function folders() return type(settings.walls) == "table" and type(settings.walls.folders) == "table" and settings.walls.folders or {} end
 local function show_folders()
     local rows = {}

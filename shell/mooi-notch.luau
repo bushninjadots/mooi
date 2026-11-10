@@ -411,7 +411,7 @@ on("nt_open_player", function() fact.nt_open, fact.nt_tab, fact.nt_pin = false, 
 local spaces = {}
 -- The windows in the miniatures are the windows themselves, live (pleamar's `thumbnails.live`): only
 -- while the Workspaces panel is up, only those of the three workspaces round the arc's middle (the rest
--- on the arc get a still), and never one that Settings → Overview's privacy keeps back or with previews
+-- on the arc get a still), and never one that Settings → Workspaces's privacy keeps back or with previews
 -- off. A window the compositor is not drawing (another workspace, on Hyprland) keeps its last picture,
 -- or none: its miniature is the plain box it always was.
 local minis, thumbs, asked = {}, {}, nil

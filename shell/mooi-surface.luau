@@ -56,7 +56,7 @@ local function notices()
     end
 end
 
--- ── the opening's look (D210): every fact of Settings → The Subsurface (D226: the Sigil's hosts are gone) ──
+-- ── the opening's look (D210): every fact of Settings → Widget layer (D226: the Sigil's hosts are gone) ──
 local update
 update = function()
     local s = S.settings

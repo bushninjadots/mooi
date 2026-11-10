@@ -1586,7 +1586,7 @@ function picture_burst()
     ask_for_pictures()
     after(BURST_MS, function() if mine == bursts then burst = false; ask_for_pictures() end end)
 end
--- "Every 3 s" (Settings → Overview → Taken): a burst again every three seconds while it is open and
+-- "Every 3 s" (Settings → Workspaces → Taken): a burst again every three seconds while it is open and
 -- nothing is held — each one a small hitch, which is why it is not the default.
 local REFRESH_MS = 3000
 local refreshing = 0
@@ -2330,7 +2330,7 @@ function node_sync()
     NODE.win = mine
 end
 node_sync()
--- D275: the side drawers (shell/mooi-drawers.plm), kept like the node while Settings → Side drawers has them on
+-- D275: the side drawers (shell/mooi-drawers.plm), kept like the node while Settings → Side panels has them on
 DRAWERS = { win = nil, tries = 0, gave_up = false }
 function drawers_sync()
     local want = not (type(settings.drawers) == "table" and settings.drawers.on == false)

@@ -77,7 +77,7 @@ scene MooiLock {
     fact has_wall = false
     fact has_pic = false          // there is a profile picture to draw
     fact has_ban = false          // there is a banner strip to draw
-    fact lk_ban_on = true         // Settings → Lock: the banner strip (the logic's own lock.banner)
+    fact lk_ban_on = true         // Settings → Lock & idle: the banner strip (the logic's own lock.banner)
     fact lk_av_on = true          // …and the profile picture (lock.avatar), each on its own switch
     text password = ""
     text status = ""            // VERIFYING… · INCORRECT · UNLOCKED; empty is the quiet state
@@ -100,7 +100,7 @@ scene MooiLock {
     fact lk_batt_pct = 0
     fact lk_charging = false
     fact lk_notes = 0             // notices waiting (notification_history)
-    // The backdrop's own two settings (Settings → Lock): blur in pleamar's units, dim as a share.
+    // The backdrop's own two settings (Settings → Lock & idle): blur in pleamar's units, dim as a share.
     fact lk_blur = 54
     fact lk_dim = 0.72
     // The visualiser's bands (lib/vizfeed's line, thinned to sixteen by the logic): 0…1, left to right.

@@ -209,7 +209,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("desk", "Desk mode", "The desktop widgets gathered over the desktop, or back where they were"),
         ("mode", "Light or dark", "Turn the whole desktop to the other mode now"),
         ("edit", "Edit the bar", "Move, group and hide the bar's modules"),
-        ("lock", "Lock screen", "mooi's own lock at once; the session also locks itself after the minutes in Settings → Lock"),
+        ("lock", "Lock screen", "mooi's own lock at once; the session also locks itself after the minutes in Settings → Lock & idle"),
         ("node_launch", "The Pill: search", "The node widens into a search line (Super+Space was the float toggle)"),
         ("node_universe", "The Pill: workspaces", "The workspaces round the node; arrows or the wheel, Return goes there"),
         ("node_time", "The Pill: time", "A timer, a stopwatch, focus rounds and an alarm, grown from the node"),
@@ -253,7 +253,7 @@ SECTIONS = [
         ("choice", "Style", "Machined plates, see-through, lifted, a thin line round each, or no plates at all", "bar.style", "sv_bar_style", STYLES),
         ("note", "sv_bar_style > 4.5", "CUSTOM — CHANGED ON THE BAR PAGE"),
         ("slider", "Thickness", "How tall the bar is", "bar.height", 24, 44, "{sv_bar_height + 24, 0} px"),
-        ("button", "The bar and the frame", "Shape, style, frame, every module's place and look", "Open Bar & Frame", "set_pick", "Bar & Frame"),
+        ("button", "The bar and the frame", "Shape, style, frame, every module's place and look", "Open Bar & Pill", "set_pick", "Bar & Pill"),
         ("card", "Workspaces"),
         ("choice", "Switcher", "Everyday", "bar.workspaces", "ws_style", SWITCHERS),
         ("choice", "", "…or an instrument", "bar.workspaces", "ws_style", INSTRUMENTS),
@@ -652,7 +652,7 @@ SECTIONS = [
         ("card", "Locking"),
         ("slider", "Lock after", "Minutes without typing or pointing before mooi's lock screen takes the session",
          "lock.idle", 1, 60, "{sv_lock_idle + 1, 0} min"),
-        # the same lock, now: the key does this too (Settings → Keys), and a lock nobody can find
+        # the same lock, now: the key does this too (Settings → Shortcuts), and a lock nobody can find
         # by hand is half a lock
         ("choice", "Backdrop", "How far the wallpaper is blurred behind the plate", "lock.blur", "sv_lock_blur", ["Off", "Light", "Medium", "Heavy"]),
         ("slider", "Dim", "How far the wallpaper is dimmed, so the clock and the field read over any picture", "lock.dim", 0, 90,
@@ -674,20 +674,21 @@ SECTIONS = [
     ]),
     ("Keys", "Keys", "mooi's keyboard shortcuts. Press Change, then the new keys", "SYSTEM", [("card", "Shortcuts"), ("keys",)]),
     ("System", "System", "Notifications, the islands and comfort", "SYSTEM", [
-        ("card", "Notifications and tray"),
+        ("card", "Tray"),
+        ("choice", "Tray icons", "In the palette's colours, or as the apps draw them", "tray.style", "tray_style", ["Themed", "Original"]),
+        ("card", "Windows"),
+        ("toggle", "Confirm before closing", "Ask once more before closing a window", "island.confirm_close", "confirm_close"),
+        ("toggle", "Follow a window you move", "Moving a window to a workspace takes you there too", "island.follow_on_send", "sv_island_follow_on_send"),
+        ("card", "Search"),
+        ("slider", "Search results", "How many results search shows", "command.max_results", 3, 10, "{sv_command_max_results + 3, 0}"),
+    ]),
+    ("Signals", "Signal Loom", "How notifications arrive, join up and unfold; Reset puts them back as they came", "SYSTEM", [
+        ("card", "Pop-ups"),
         ("choice", "mooi shows notifications", "As the desktop (not a development run), always, or never", "notifications.server", "note_server", ["Desktop", "Always", "Never"]),
         ("choice", "Do not disturb", "No pop-ups (urgent ones still come); the notices wait in the panel, and the Pill is not taken by them", "notifications.dnd", "sv_notifications_dnd",
          ["Off", "On", "While focusing", "Quiet hours"]),
         ("slider", "Quiet from", "The hour quiet begins", "notifications.quiet_from", 0, 23, "{sv_notifications_quiet_from, 0}:00", "sv_notifications_dnd == 3"),
         ("slider", "Quiet until", "The hour it ends", "notifications.quiet_to", 0, 23, "{sv_notifications_quiet_to, 0}:00", "sv_notifications_dnd == 3"),
-        ("choice", "Tray icons", "In the palette's colours, or as the apps draw them", "tray.style", "tray_style", ["Themed", "Original"]),
-        ("card", "Windows"),
-        ("toggle", "Confirm before closing", "Ask once more before closing a window", "island.confirm_close", "confirm_close"),
-        ("toggle", "Follow a window you move", "Moving a window to a workspace takes you there too", "island.follow_on_send", "sv_island_follow_on_send"),
-        ("card", "Comfort"),
-        ("slider", "Search results", "How many results search shows", "command.max_results", 3, 10, "{sv_command_max_results + 3, 0}"),
-    ]),
-    ("Signals", "Signal Loom", "How notifications arrive, join up and unfold; Reset puts them back as they came", "SYSTEM", [
         ("card", "Where they arrive"),
         ("choice", "Origin", "The corner the signals unfold from; the Signal Field opens there too", "signals.edge", "sv_signals_edge",
          ["Top right", "Top left", "Bottom right", "Bottom left"]),
@@ -833,6 +834,56 @@ SECTIONS = [
         ("note", "true", "SUPER+SHIFT+D HOLDS IT UP UNTIL PRESSED AGAIN (SETTINGS → KEYS)"),
     ]),
 ]
+# D300 (Noctalia's way): the sidebar regrouped into sections a newcomer follows, each page a plain name. A page
+# is (its label above, its new label, its title, its subtitle — None keeps the one above). mooi's own names (the
+# Nexus, the Subsurface, the Signal Loom) are said once, in a subtitle, never as a label.
+SECTION_MAP = [
+    ("START", [("Quick", "Quick settings", "Quick settings", None)]),
+    ("APPEARANCE", [
+        ("Theme & colour", "Colours", "Colours", "One palette for everything mooi draws: the bar, its panels, your window borders and apps"),
+        ("Motion", "Motion & effects", "Motion & effects", None),
+        ("Wallpaper", "Wallpaper", "Wallpaper", None),
+        ("Live wallpaper", "Live wallpaper", "Live wallpaper", None)]),
+    ("BAR & PANELS", [
+        ("Bar & Frame", "Bar & Pill", "Bar, frame & Pill", "The bar or the Pill along the top, the frame round the screen, and every module in them"),
+        ("Nexus", "Control deck", "Control deck", "The deck from the bar's mark (the Control Nexus): its cards, its notches, and the Claude they ask"),
+        ("Side drawers", "Side panels", "Side panels", "Panels out of the frame's sides: a Dashboard on the left (Super+D), a Control Center on the right (Super+N)"),
+        ("Dock", "Dock", "Dock", None),
+        ("Signals", "Notifications", "Notifications", "Pop-ups and quiet hours, then how they arrive and look (mooi calls them signals)")]),
+    ("DESKTOP", [
+        ("Widgets", "Widgets", "Widgets", None),
+        ("The Subsurface", "Widget layer", "Widget layer", "Hold Super on the wallpaper to open onto the widgets that live under it (the Subsurface)"),
+        ("BMO", "BMO", "BMO", None),
+        ("Herdr", "Coding agents", "Coding agents", "Coding agents in the bar through Herdr: what each is doing, and a press to go to it")]),
+    ("WINDOWS", [
+        ("Windows", "Windows", "Windows", None),
+        ("Shutter", "Window controls", "Window controls", "A window's controls unfolding from its edge (the shutter): Super+Alt+right-click, or on hover"),
+        ("Overview", "Workspaces", "Workspaces", "Super+Tab: every workspace at once (the overview) — search it, move windows, swipe to it"),
+        ("Input", "Mouse & touchpad", "Mouse & touchpad", None),
+        ("Displays", "Displays", "Displays", None)]),
+    ("SYSTEM", [
+        ("Sound", "Sound", "Sound", None),
+        ("Power", "Power", "Power", None),
+        ("Lock", "Lock & idle", "Lock & idle", None),
+        ("Keys", "Shortcuts", "Keyboard shortcuts", None),
+        ("System", "General", "General", "The tray, closing and following windows, and search"),
+        ("Advanced", "Advanced", "Advanced", None)]),
+]
+
+
+def _remap(sections, mapping):
+    by = {label: (title, sub, rows) for label, title, sub, _grp, rows in sections}
+    out, seen = [], set()
+    for grp, pages in mapping:
+        for old, new, title, sub in pages:
+            t0, s0, rows = by[old]
+            out.append((new, title or t0, sub or s0, grp, rows)); seen.add(old)
+    missing = [l for l in by if l not in seen]
+    assert not missing, f"pages missing from SECTION_MAP: {missing}"
+    return out
+
+
+SECTIONS = _remap(SECTIONS, SECTION_MAP)
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}
 
 W, H = 1180, 800    # the window
@@ -1529,8 +1580,8 @@ def main():
     event nd_settings_studio -> // to the logic: open the Pill's studio (this window goes)
     text pw_text = ""
     text bat_text = ""        // D293: the charge limit's state
-    text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
-    text lk_wp = ""           // the wallpaper still the lock's backdrop preview wears (Settings → Lock)
+    text lock_pic_now = ""    // the lock screen's picture (Settings → Lock & idle): the identity's banner or picture
+    text lk_wp = ""           // the wallpaper still the lock's backdrop preview wears (Settings → Lock & idle)
     fact lk_wp_on = false     // there is one to show
     image lkwp = from lk_wp, 640, 360
     event lock_pic ->         // to the logic: choose it (0 the profile picture, 1 the banner)
@@ -1589,7 +1640,8 @@ def main():
         "-- each page's Reset puts back (`@layout`: the bar's lists; `@keys`: the keys).\n"
         "-- `tab` is the page (from 0), `y` the row's place on it with every row shown.\nlocal rows = {\n" + rows + "\n}\n"
         "rows.resets = {\n" + resets + "\n}\n"
-        f"rows.layout_tab = {TAB['Bar & Frame']}\nrows.modules_fold = \"{MODULES_FOLD[0]}\"\nrows.modules_look_y = {MODULES_FOLD[1]}\nrows.layout_folds = {{ " + ", ".join('\"' + f + '\"' for f, _ in PAGE_FOLDS[TAB['Bar & Frame']]) + " }\n"
+        f"rows.layout_tab = {TAB['Bar & Pill']}\nrows.modules_fold = \"{MODULES_FOLD[0]}\"\nrows.modules_look_y = {MODULES_FOLD[1]}\nrows.layout_folds = {{ " + ", ".join('\"' + f + '\"' for f, _ in PAGE_FOLDS[TAB['Bar & Pill']]) + " }\n"
+        "rows.tabs = { " + ", ".join(f'["{l}"] = {i}' for l, i in TAB.items()) + " }\n"
         "rows.page_folds = { " + ", ".join(f"[{k}] = {{ " + ", ".join('\"' + f + '\"' for f, _ in v) + " }" for k, v in sorted(PAGE_FOLDS.items())) + " }\nreturn rows\n")
     text = SCENE.read_text()
     pat = re.compile(r"([ \t]*)// <gen:edit>\n.*?// </gen:edit>", re.S)

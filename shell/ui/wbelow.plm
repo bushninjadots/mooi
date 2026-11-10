@@ -91,10 +91,10 @@ library WBelow {
             let cx = x + pad + mod(i, 2) * (cw + 8 * u)
             let cy = y + 30 * u + floor(i / 2) * rh
             zone box pgz { from: cx, cy; size: cw, max(18 * u, rh - 4 * u); corner: 4 * u; cursor: pointer; role: button
-                           label: pick(i, "Theme & colour", "Bar & Frame", "Wallpapers", "Widgets", "Sound", "Power", "BMO", "The Subsurface"); show: not editing }
+                           label: pick(i, "Colours", "Bar & Pill", "Wallpaper", "Widgets", "Sound", "Power", "BMO", "Widget layer"); show: not editing }
             box { from: cx, cy; size: cw, max(18 * u, rh - 4 * u); corner: 4 * u; color: ink; opacity: 0.06 + 0.12 * pgz.hover }
             box { from: cx, cy + 3 * u; size: 2 * u, max(12 * u, rh - 10 * u); corner: u; color: acc; opacity: 0.4 + 0.6 * pgz.hover }
-            text pick(i, "Theme & colour", "Bar & Frame", "Wallpapers", "Widgets", "Sound", "Power", "BMO", "The Subsurface") {
+            text pick(i, "Colours", "Bar & Pill", "Wallpaper", "Widgets", "Sound", "Power", "BMO", "Widget layer") {
                 at: cx + 9 * u, cy + max(18 * u, rh - 4 * u) / 2; anchor: left center; size: 10 * u; family: "Exo 2"; color: ink; width: cw - 14 * u; lines: 1 }
             on press pgz { emit pg_go(i) }
         }

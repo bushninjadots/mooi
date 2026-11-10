@@ -6,7 +6,7 @@ a notice, the volume, the workspaces, the microphone, the battery, the search li
 player and one panel with everything else, and it can be shaped and coloured to suit you.
 
 It is one program, `mooi-node`, which mooi starts and keeps while the bar's shape is Pill and
-Settings → Bar & Frame → The Pill → The node is on. It asks the system only for what it needs, when
+Settings → Bar & Pill → The Pill → The node is on. It asks the system only for what it needs, when
 it needs it; between events it has nothing of its own to draw.
 
 ## What it is
@@ -160,7 +160,7 @@ under it, for about two seconds. It is a reading, not a control. It grows for:
 - Caps Lock and Num Lock (`CAPS LOCK ON`); the lock keys still work as usual;
 - game mode turning on or off.
 
-The last change is the one shown. Settings → The Pill → Gauges turns all of them off.
+The last change is the one shown. Settings → Bar & Pill → Gauges turns all of them off.
 
 ### Workspaces
 
@@ -419,7 +419,7 @@ in the units it shows: per cent, pixels, and tenths of a pixel for the outline.
 
 ## Settings
 
-Settings → Bar & Frame → The Pill. If the bar is not in the Pill shape, the page tells you to choose
+Settings → Bar & Pill → The Pill. If the bar is not in the Pill shape, the page tells you to choose
 Shape → Pill above.
 
 | Row | Setting | Default | What it does |
