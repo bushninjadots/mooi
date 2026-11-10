@@ -736,3 +736,20 @@ do
         assert(p:find('"thumbnails", "thumbnails.*"', 1, true))
     end)
 end
+
+section("the frame's corner notches (D295, Minflair's Convex corners)")
+do
+    local LK = require("lib/node/look")
+    test("each corner has its own list, edited like the pill's; none, no notch", function()
+        local t = LK.normalise({})
+        eq(#t.left, 0); eq(#t.right, 0)
+        assert(LK.module_add(t, "clock", "left")); assert(LK.module_add(t, "spaces", "left")); assert(LK.module_add(t, "battery", "right"))
+        eq(table.concat(t.left, ","), "clock,spaces"); eq(table.concat(t.right, ","), "battery"); eq(#t.modules, 0, "the pill's own untouched")
+        assert(LK.module_move(t, 2, -1, "left")); eq(t.left[1], "spaces")
+        assert(LK.module_remove(t, 1, "right")); eq(#t.right, 0)
+        eq(table.concat(LK.normalise({ left = { "clock", "nonsense", "clock" } }).left, ","), "clock")
+        local l, p = read("shell/mooi-node.luau"), read("shell/mooi-node.plm")
+        assert(l:find("N.corner_layout = function()", 1, true) and l:find('on("nd_mside", function(v)', 1, true))
+        assert(p:find("for m in lml {", 1, true) and p:find("for m in lmr {", 1, true) and p:find("zone box mside2", 1, true))
+    end)
+end

@@ -6389,7 +6389,7 @@ do
         for _ = 1, 200 do
             local t = LK.shuffle(rand, { false, false, false })
             local n = LK.normalise(t)
-            for k, v in pairs(n) do if k ~= "slots" and k ~= "modules" then eq(t[k], v, k) end end
+            for k, v in pairs(n) do if k ~= "slots" and k ~= "modules" and k ~= "left" and k ~= "right" then eq(t[k], v, k) end end
             eq(table.concat(t.modules, ","), table.concat(n.modules, ","), "modules")
             assert(t.glow <= 85 and t.fill >= 60 and t.seed_h >= 3, "never too faint or too loud")
             eq(t.custom, true)

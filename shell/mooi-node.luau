@@ -424,6 +424,7 @@ render = function()
         if form == "notch" and not studio then shape.top = 0; shape.seed_h = N.near and 34 or 28 end
     end
     if studio then shape.top = 96 end
+    if N.corner_layout then N.corner_layout() end
     local anchor = studio and "centre" or (cfg().anchor or "centre")
     local data = { n = #N.ws.list, page = N.panel, notices = math.min(3, #N.notices) }
     -- at rest with something running, the seed is the time capsule
@@ -1224,11 +1225,12 @@ local function weather_word()
     local t = type(cur) == "table" and tonumber(cur.temperature_2m)
     return t and (math.floor(t + 0.5) .. "°") or ""
 end
-N.long_layout = function()
+-- the modules of one list laid out left to right from x = 14 (D295: the pill's own, or a corner notch's)
+local function lay_modules(list)
     local x, rows = 14, {}
     local f = type(N.feed.resources) == "table" and N.feed.resources or {}
     local function pct(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v * 100 or v end
-    for _, name in ipairs(LK.modules(N.look.modules)) do
+    for _, name in ipairs(LK.modules(list)) do
         local kind = MOD_KIND[name]
         local w, label = 0, ""
         if kind == 1 then w, label = 40, os.date("%H:%M")
@@ -1253,8 +1255,20 @@ N.long_layout = function()
         end
         if w > 0 then rows[#rows + 1] = { kind = kind, x = x, w = w, label = label }; x = x + w + 12 end
     end
+    return rows, x
+end
+N.long_layout = function()
+    local rows, x = lay_modules(N.look.modules)
     model.lm = rows
     return math.max(40, x + 2)
+end
+-- D295: the corner notches, each as wide as what it holds (none, none); laid out on every render
+N.corner_layout = function()
+    local lr, lx = lay_modules(N.look.left)
+    local rr, rx = lay_modules(N.look.right)
+    model.lml, model.lmr = lr, rr
+    fact.nd_lw = #lr > 0 and lx + 4 or 0
+    fact.nd_rw = #rr > 0 and rx + 4 or 0
 end
 -- what has the focus, while the long pill shows it (asked every second and a half, only then)
 every(1500, function()
@@ -1947,7 +1961,8 @@ local function studio_rows()
     -- D257: the module editor, on the Rest page
     if tab == "Pill" then
         local inl, has, rest = {}, {}, {}
-        for i, k in ipairs(LK.modules(N.look.modules)) do inl[i] = { label = string.upper(LK.MODULE_NAMES[k]) }; has[k] = true end
+        fact.nd_mside = ({ modules = 0, left = 1, right = 2 })[N.mod_side or "modules"] or 0
+        for i, k in ipairs(LK.modules(N.look[N.mod_side or "modules"])) do inl[i] = { label = string.upper(LK.MODULE_NAMES[k]) }; has[k] = true end
         N.mod_rest = {}
         for _, k in ipairs(LK.MODULES) do
             if not has[k] then rest[#rest + 1] = { label = string.upper(LK.MODULE_NAMES[k]) }; N.mod_rest[#N.mod_rest + 1] = k end
@@ -2020,18 +2035,25 @@ end)
 on("nd_md", function(v)
     v = math.floor(tonumber(v) or -1)
     local done
-    if v >= 100 then done = LK.module_add(N.look, (N.mod_rest or {})[v - 99])
+    local side = N.mod_side or "modules"
+    if v >= 100 then done = LK.module_add(N.look, (N.mod_rest or {})[v - 99], side)
     elseif v >= 0 then
         local i, op = v // 10 + 1, v % 10
-        if op == 1 then done = LK.module_move(N.look, i, -1)
-        elseif op == 2 then done = LK.module_move(N.look, i, 1)
-        elseif op == 9 then done = LK.module_remove(N.look, i) end
+        if op == 1 then done = LK.module_move(N.look, i, -1, side)
+        elseif op == 2 then done = LK.module_move(N.look, i, 1, side)
+        elseif op == 9 then done = LK.module_remove(N.look, i, side) end
     end
     if done then
         -- the stage shows the pill as it is now
         N.studio.pv = 0
         look_changed()
     end
+end)
+-- D295: which list the module editor edits — the pill's own, the left corner's or the right's
+on("nd_mside", function(v)
+    N.mod_side = ({ [0] = "modules", [1] = "left", [2] = "right" })[math.floor(tonumber(v) or 0)] or "modules"
+    studio_rows()
+    render()
 end)
 on("nd_pv", function(v)
     N.studio.pv = math.max(0, math.min(#PREVIEW, math.floor(tonumber(v) or 0)))

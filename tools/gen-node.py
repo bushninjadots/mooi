@@ -229,6 +229,11 @@ def scene():
           '    prop pk_flow2 = 0', '    spin pk_flow2 by if(pb_asleep and nd_kind == 0 and nd_seed == 6, 8, 0)',
           '    // the long pill (D248): what it holds at rest, each a module laid out by the logic',
           '    model lm max 5 { kind: number; x: number; w: number; label: text }',
+          '    // the frame\'s corner notches (D295): the modules each holds, and how wide (0: none there)',
+          '    model lml max 6 { kind: number; x: number; w: number; label: text }',
+          '    model lmr max 6 { kind: number; x: number; w: number; label: text }',
+          '    fact nd_lw = 0', '    fact nd_rw = 0', '    fact nd_mside = 0',
+          '    prop nd_lwk = 0 ~nd.aux', '    follow nd_lwk = nd_lw', '    prop nd_rwk = 0 ~nd.aux', '    follow nd_rwk = nd_rw',
           '    fact nd_lmws = 0', '    fact nd_lmwa = 0   // the workspaces: how many, which one is on (0-based)',
           '    fact nd_lmbat = 0',
           '    fact nd_nfr = false   // D257: the frame draws the notch (it is a piece of the frame\'s body)',
@@ -254,6 +259,7 @@ def scene():
           '    event nd_ps ->        // the studio: a preset',
           '    event nd_slot ->      // the studio: a saved look, slot * 10 + 0 save · 1 wear · 9 clear',
           '    event nd_stc ->       // the studio: 1 shuffle · 2 done · 3 reset',
+          '    event nd_mside ->     // D295: the module editor edits 0 the pill · 1 the left corner · 2 the right corner',
           '    event nd_md ->        // the module editor: in the pill, i * 10 + 1 left · 2 right · 9 out; 100 + i adds the i-th of the rest',
           '    event nd_tm ->        // the time tools: 0-3 a mode · 10 go · 11 reset · 12 lap or skip · 2x timer · 3x alarm',
           '    event nd_dn ->        // the finish card answered',
@@ -381,8 +387,23 @@ def studio_deck():
     L += [f'{d}// the modules (D257): what the long pill or the notch holds, in its order — ‹ › to move one, × to take it',
           f'{d}// out; a press on one of the rest adds it at the end',
           f'{d}group {{ show: nd_tab == 1',
-          f'{d}    text "IN THE PILL" {{ at: st_x + 24, st_dy + 196; anchor: left center; size: 9; weight: 700; family: {MONO}; color: fl.muted }}',
-          f'{d}    text "NONE: THE PILL RESTS AS A SEED (SHAPE → SEED)" {{ at: st_x + 130, st_dy + 196; anchor: left center; size: 9; family: {MONO}; color: fl.muted; show: md.count == 0 }}',
+          f'{d}    text pick(nd_mside, "IN THE PILL", "IN THE LEFT CORNER", "IN THE RIGHT CORNER") {{ at: st_x + 24, st_dy + 196; anchor: left center; size: 9; weight: 700; family: {MONO}; color: fl.muted }}',
+          f'{d}    text pick(nd_mside, "NONE: THE PILL RESTS AS A SEED (SHAPE → SEED)", "NONE: NO NOTCH IN THE LEFT CORNER", "NONE: NO NOTCH IN THE RIGHT CORNER") {{ at: st_x + 170, st_dy + 196; anchor: left center; size: 9; family: {MONO}; color: fl.muted; show: md.count == 0 }}',
+          f'{d}    box {{ from: st_x + 520 + 0 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); color: nd_acc; opacity: if(nd_mside == 0, 0.22, if(mside0.hover, 0.1, 0)) }}',
+          f'{d}    box {{ from: st_x + 520 + 0 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); stroke: 1; color: if(nd_mside == 0, nd_acc, fl.trace_lit) }}',
+          f'{d}    text "CENTRE" {{ at: st_x + 520 + 0 * 118 + 55, st_dy + 196; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(nd_mside == 0, nd_acc, fl.engrave) }}',
+          f'{d}    zone box mside0 {{ from: st_x + 520 + 0 * 118, st_dy + 184; size: 110, 24; cursor: pointer; role: tab; label: "The pill"; selected: nd_mside == 0; show: nd_studio and nd_tab == 1 }}',
+          f'{d}    on press mside0 {{ emit nd_mside(0) }}',
+          f'{d}    box {{ from: st_x + 520 + 1 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); color: nd_acc; opacity: if(nd_mside == 1, 0.22, if(mside1.hover, 0.1, 0)) }}',
+          f'{d}    box {{ from: st_x + 520 + 1 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); stroke: 1; color: if(nd_mside == 1, nd_acc, fl.trace_lit) }}',
+          f'{d}    text "LEFT CORNER" {{ at: st_x + 520 + 1 * 118 + 55, st_dy + 196; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(nd_mside == 1, nd_acc, fl.engrave) }}',
+          f'{d}    zone box mside1 {{ from: st_x + 520 + 1 * 118, st_dy + 184; size: 110, 24; cursor: pointer; role: tab; label: "The left corner notch"; selected: nd_mside == 1; show: nd_studio and nd_tab == 1 }}',
+          f'{d}    on press mside1 {{ emit nd_mside(1) }}',
+          f'{d}    box {{ from: st_x + 520 + 2 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); color: nd_acc; opacity: if(nd_mside == 2, 0.22, if(mside2.hover, 0.1, 0)) }}',
+          f'{d}    box {{ from: st_x + 520 + 2 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); stroke: 1; color: if(nd_mside == 2, nd_acc, fl.trace_lit) }}',
+          f'{d}    text "RIGHT CORNER" {{ at: st_x + 520 + 2 * 118 + 55, st_dy + 196; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(nd_mside == 2, nd_acc, fl.engrave) }}',
+          f'{d}    zone box mside2 {{ from: st_x + 520 + 2 * 118, st_dy + 184; size: 110, 24; cursor: pointer; role: tab; label: "The right corner notch"; selected: nd_mside == 2; show: nd_studio and nd_tab == 1 }}',
+          f'{d}    on press mside2 {{ emit nd_mside(2) }}',
           f'{d}    for m in md {{',
           f'{d}        let mx = st_x + 24 + m.index * 148',
           f'{d}        box {{ from: mx, st_dy + 210; size: 140, 36; corner: 18 * max(0.3, nd_rnd); color: fl.hull_raised }}',
@@ -1115,6 +1136,38 @@ def panel_parts(c, acc, ink, dim, hull):
     return L
 
 
+def corner_notch(c, side, ink, dim, acc):
+    """The frame's corner notch (D295; Minflair's Convex corners): flush in the screen's top-left or top-right
+    corner, concave where it leaves each band, holding the modules the look gave that corner."""
+    W = "nd_lwk" if side == "left" else "nd_rwk"
+    H, F, r = 28, 12, 12
+    def X(v):
+        return str(v) if side == "left" else f"node.width - ({v})"
+    steps = [f"move {X(0)}, 0", f"line {X(f'{W} + {F}')}, 0", f"curve {X(W)}, {F} via {X(W)}, 0",
+             f"line {X(W)}, {H - r}", f"curve {X(f'{W} - {r}')}, {H} via {X(W)}, {H}", f"line {X(F)}, {H}",
+             f"curve {X(0)}, {H + F} via {X(0)}, {H}"]
+    model = "lml" if side == "left" else "lmr"
+    base = "0" if side == "left" else f"node.width - {W}"
+    z = "ndz_" + side[0] + "c"
+    L = [f"{c}// the {side} corner notch (D295)",
+         f"{c}group {{ show: {W} > 1 and not nd_studio; opacity: min(1, {W} / 40)",
+         f"{c}    body {{ color: fl.ground", f"{c}        path {{"]
+    L += [f"{c}            {st}" for st in steps] + [f"{c}            close }} }}"]
+    L += [f"{c}    path {{ stroke: 1; color: fl.trace; opacity: 0.85"] + [f"{c}        {st}" for st in steps] + [f"{c}    }}"]
+    L += [f"{c}    for m in {model} {{",
+          f"{c}        let mx = {base} + m.x",
+          f"{c}        text m.label {{ at: mx, 14; anchor: left center; size: 11; weight: 700; family: {MONO}; color: if(m.kind == 1, {acc}, {ink}); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }}",
+          f"{c}        text m.label {{ at: mx + if(m.kind == 5, 10, 0), 14; anchor: left center; size: 10; family: {SANS}; color: {ink}; width: m.w - if(m.kind == 5, 10, 0); lines: 1; show: m.kind == 2 or m.kind == 5 }}",
+          f"{c}        repeat wsd in 0..10 {{ ellipse {{ at: mx + 4 + wsd * 12, 14; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, {acc}, {dim}); show: m.kind == 3 and wsd < nd_lmws }} }}",
+          f"{c}        box {{ from: mx + m.w - 3, 9; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, {acc}); show: m.kind == 4 }}",
+          f"{c}        ellipse {{ at: mx + 3, 14; radius: 2 + 2 * lv.level; color: {acc}; show: m.kind == 5 }}",
+          f"{c}    }}",
+          f'{c}    zone box {z} {{ from: {base}, 0; size: {W}, {H}; cursor: pointer; role: button; label: "Open the panel"; show: nd_kind == 0 and {W} > 1 }}',
+          f"{c}    on press {z} {{ emit nd_cmd(1) }}",
+          f"{c}}}"]
+    return L
+
+
 def surface():
     c = "        "
     ink, dim, hull = "fl.engrave", "fl.muted", "fl.hull"
@@ -1194,6 +1247,7 @@ def surface():
     # the body
     L += [f'{c}// the body: one shape that is the seed, a capsule, a rail, a search line — its glow by the look, swelling',
           f'{c}// a little with the music as far as the look lets it',
+    ] + corner_notch(c, 'left', ink, dim, acc) + corner_notch(c, 'right', ink, dim, acc) + [
           f'{c}let nd_glow = nd_gw * (1 + 0.4 * lv.level * nd_mu)',
           f'{c}let nd_sw = nb_w + if(nd_kind == 0 and nd_playing and nd_smu == 1, lv.level * 16 * nd_mu, 0)',
           f'{c}let nd_sx = nb_x - (nd_sw - nb_w) / 2',

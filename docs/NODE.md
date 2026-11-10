@@ -92,6 +92,15 @@ Wi-Fi, Bluetooth, settings, Control Nexus and power. The current page is lit. Wi
 pages here; time is the Timer button's page, studio is Settings' own, and Control Nexus leaves the panel
 for `mooi nexus`, as Settings does.
 
+### The corner notches
+
+Minflair's Convex frame has notches in its top corners. The Pill can have them too: one in the top-left corner and
+one in the top-right, each flush in its corner of the frame with concave joins where it leaves the band, and each
+holding whatever modules you give it — workspaces, the window, music, the clock, the date, battery, CPU, RAM,
+volume, weather or notices, up to six. A corner with no modules has no notch. Give them modules in the studio's
+**Pill** page: the module editor's **Centre · Left corner · Right corner** chips choose which you are editing. A
+press on a corner notch opens the panel.
+
 ### The time capsule
 
 While a time tool is running, the seed becomes a capsule. It shows the tool's name on the left and

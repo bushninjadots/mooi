@@ -7702,3 +7702,19 @@ size a picture loop inside every tile made it.
 
 **Verified.** Unit 936 / 0; the scene compiles; live after `mooi refresh`: the galaxy opened with workspace 2's
 kitty as a live picture in its tile, and closed.
+
+## D295 · 2026-11-10 · The frame's corner notches (Minflair's Convex corners)
+
+The owner: "does the pill have those frame notches on left and right like the other repo — I want those too; they're
+optional and I can put whatever modules I want". Minflair's Convex frame carries notches in its top corners (the
+workspaces on the left, the system's icons on the right). The Pill's look gains two module lists, `left` and
+`right`, beside its own; each is laid out like the Pill's modules (the same eleven, up to six) and drawn as a notch
+flush in its top corner — the frame's fill and edge, rounded on its inner bottom corner, concave where it leaves
+the top and the side bands, sliding open with its width. A corner with no modules has no notch, so they cost nothing
+until wanted. A press on one opens the panel. The studio's module editor (the Pill page) gains **Centre · Left
+corner · Right corner** chips choosing which list it edits; `LK.module_add/move/remove` take the list's name, the
+Pill's own by default. They are hidden in the studio, whose stage is the Pill.
+
+**Verified.** Unit 937 / 0; the scene compiles; live after `mooi refresh`: with `left = spaces, window` and
+`right = battery, clock, date` written into the look by hand, both notches stood in their corners with their
+modules; the owner's look was then put back as it was.

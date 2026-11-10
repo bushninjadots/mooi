@@ -125,6 +125,9 @@ function M.normalise(t, fallback)
     -- (modules someone added are kept whatever "at rest" said: they were added to be seen)
     if t.rest == "notch" and t.place == nil then out.place = "attached" end
     out.modules = M.modules(src or {})
+    -- D295: the frame's corner notches (Minflair's): what the top-left and top-right ones hold; none, no notch there
+    out.left = M.modules(t.left or {})
+    out.right = M.modules(t.right or {})
     -- the saved looks: up to M.SLOTS, each a look of its own (or nothing)
     out.slots = {}
     if type(t.slots) == "table" then
@@ -258,28 +261,34 @@ function M.modules(list)
     end
     return out
 end
--- the editor's moves: add one at the end, take one out, move one a place left (-1) or right (1)
-function M.module_add(t, k)
-    local l = M.modules(t.modules)
+-- the editor's moves: add one at the end, take one out, move one a place left (-1) or right (1). `field` is which
+-- list: the pill's own ("modules", the default) or a corner notch's ("left", "right"; D295)
+local FIELDS = { modules = true, left = true, right = true }
+local function field_of(f) return FIELDS[f] and f or "modules" end
+function M.module_add(t, k, field)
+    field = field_of(field)
+    local l = M.modules(t[field])
     for _, x in ipairs(l) do if x == k then return false end end
     if not M.MODULE_NAMES[k] or #l >= M.MODULES_MAX then return false end
     l[#l + 1] = k
-    t.modules, t.custom = l, true
+    t[field], t.custom = l, true
     return true
 end
-function M.module_remove(t, i)
-    local l = M.modules(t.modules)
+function M.module_remove(t, i, field)
+    field = field_of(field)
+    local l = M.modules(t[field])
     if not l[i] then return false end
     table.remove(l, i)
-    t.modules, t.custom = l, true
+    t[field], t.custom = l, true
     return true
 end
-function M.module_move(t, i, d)
-    local l = M.modules(t.modules)
+function M.module_move(t, i, d, field)
+    field = field_of(field)
+    local l = M.modules(t[field])
     local j = i + d
     if not l[i] or not l[j] then return false end
     l[i], l[j] = l[j], l[i]
-    t.modules, t.custom = l, true
+    t[field], t.custom = l, true
     return true
 end
 
