@@ -36,6 +36,8 @@ M.ACTIONS = {
     { key = "arcade", cmd = "arcade", name = "The arcade (games)" },
     -- D280: the dock
     { key = "dock", cmd = "dock", name = "Hold the dock up" },
+    -- D281: ask Claude about a region of the screen
+    { key = "ask", cmd = "ask", name = "Ask Claude about the screen" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 

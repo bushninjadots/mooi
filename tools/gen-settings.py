@@ -169,6 +169,8 @@ SETTERS = [
     "keys.arcade",
     # D280: the dock. Appended.
     "dock.on", "dock.empty", "keys.dock",
+    # D281. Appended.
+    "keys.ask",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -211,6 +213,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("drawer_right", "Notifications drawer", "Your notices, out of the frame's right side"),
         ("arcade", "Arcade", "mooi's games: Snake, and more to come"),
         ("dock", "Dock", "Hold the dock up until this is pressed again"),
+        ("ask", "Ask about the screen", "Choose a region: its words start a question to Claude in the side notch"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),

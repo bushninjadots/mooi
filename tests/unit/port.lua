@@ -385,3 +385,15 @@ do
         assert(read("tools/gen-settings.py"):find('("Dock", "Dock"', 1, true))
     end)
 end
+
+section("ask Claude about the screen (D281, k4's)")
+do
+    test("a region's words start the notch's question through a file, never a command line", function()
+        local b, l = read("bin/mooi"), read("shell/mooi-notch.luau")
+        assert(b:find('f="$(dirname "$settings")/ask-region.txt"', 1, true) and b:find("umask 077", 1, true))
+        assert(b:find('--say mooi-notch "emit nt_region"', 1, true))
+        assert(l:find('on("nt_region", function()', 1, true) and l:find('pcall(sys.call, "files.remove", "ask-region.txt")', 1, true))
+        assert(read("shell/mooi-notch.plm"):find("event nt_region ->", 1, true))
+        eq(require("lib/config").defaults().keys.ask, "SUPER + SHIFT + G")
+    end)
+end

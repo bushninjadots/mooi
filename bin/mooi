@@ -42,6 +42,7 @@
 #   mooi arcade            mooi's games: Snake, La Grieta, Mazmorra (Super+G)
 #   mooi dock              hold the dock up, or let it hide again (Super+Shift+D)
 #   mooi drawer [dashboard|notices|close]  the side drawers out of the frame (Super+D, Super+N)
+#   mooi ask               choose a region: its words start a question to Claude in the side notch (Super+Shift+G)
 #   mooi capture text      choose a region of the screen: its words (tesseract) go to the clipboard
 #   mooi pkg search WORDS | install NAME [repo|aur] | update   packages: search, and install or update in a terminal
 #   mooi keys-text         Hyprland's config files as written (the node's shortcut sheet reads its words)
@@ -1618,6 +1619,18 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     game-mode) game_mode "$@"; exit $? ;;
+    ask) # D281 (k4's "ask about the screen"): a region's words, read by tesseract, become the start of a question in
+        # the notch's Claude chat; you add what to ask and press Return. The words go through a file in mooi's own
+        # folder (ask-region.txt), never a command line; the notch reads it once and removes it
+        geo=$(slurp 2>/dev/null) || exit 0
+        words=$(grim -g "$geo" - | tesseract stdin stdout -l "${MOOI_OCR_LANG:-eng}" 2>/dev/null | sed -e 's/[[:space:]]*$//' | sed -e '/./,$!d')
+        [ -n "$(printf '%s' "$words" | tr -d '[:space:]')" ] || { notify-send -a mooi "Ask about the screen" "No words found there" 2>/dev/null; exit 1; }
+        f="$(dirname "$settings")/ask-region.txt"
+        ( umask 077; printf '%s' "$words" | head -c 6000 > "$f" )
+        "$pleamar" --say mooi-notch "emit nt_show 0" >/dev/null 2>&1 && "$pleamar" --say mooi-notch "emit nt_region" >/dev/null 2>&1 || {
+            notify-send -a mooi "Ask about the screen" "The side notch is not running; the words are copied instead" 2>/dev/null
+            printf '%s' "$words" | wl-copy; rm -f "$f"; }
+        exit 0 ;;
     capture) # D269: `mooi capture text` — a region's words to the clipboard
         case "${1:-}" in text) capture_text; exit $? ;; *) echo "usage: mooi capture text" >&2; exit 2 ;; esac ;;
     pkg) pkg_cmd "$@"; exit $? ;;

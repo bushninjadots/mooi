@@ -7413,3 +7413,19 @@ workspaces or the focused window change, never on a timer. `lib/dock` is the pur
 **Verified.** Unit 887 / 0; the scene compiles; live after `mooi refresh`: Super+Shift+D's command brought it up
 with the running apps (Kitty's icon, Zen's letter) and let it go again. Pressing, pinning and the edge were not
 tried with a real pointer.
+
+## D281 · 2026-11-10 · Ask Claude about the screen (k4's)
+
+k4's assistant takes the screen, a region or the selection as context (Super+G and its neighbours). mooi's Claude
+lives in the side notch, and it runs with every tool switched off, so it cannot open a picture. `mooi ask`
+(Super+Shift+G, `keys.ask`, and **Ask Claude about the screen** in the search line) lets you choose a region;
+tesseract reads its words; the notch opens on Claude with the field already saying
+`About this from my screen: "…" — `, and you add what you want to know and press Return. The words go through
+`ask-region.txt` in mooi's own folder (written owner-only, read once by the notch and removed), never a command
+line; without a running notch they are copied to the clipboard instead. A region with no words says so.
+
+The notch's scene gains `files.remove`, which it lacked: without it the file stayed behind after being read.
+
+**Verified.** Unit 888 / 0; the notch's scene compiles; live after `mooi refresh`: sample words left in the file
+reached the field as one line and the file was removed. The region step is the same slurp/grim/tesseract path as
+D269's tested `mooi capture text`; no question was sent to Claude.

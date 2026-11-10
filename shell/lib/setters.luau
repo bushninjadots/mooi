@@ -306,6 +306,8 @@ M.SETTERS = {
     "keys.arcade",
     -- D280: the dock. Appended.
     "dock.on", "dock.empty", "keys.dock",
+    -- D281. Appended.
+    "keys.ask",
 }
 
 local function row_of(path)

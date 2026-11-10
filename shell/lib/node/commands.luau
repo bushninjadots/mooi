@@ -26,6 +26,8 @@ M.LIST = {
     { name = "Keyboard shortcuts", args = { "node", "keys" }, words = "keys keybinds keybindings shortcuts hotkeys cheat sheet bindings" },
     -- D268: the system's packages brought up to date, in the owner's terminal (`term`: never in the background)
     { name = "Update the system", args = { "pkg", "update" }, term = true, words = "update upgrade packages pacman paru yay syu" },
+    -- D281: k4's ask about the screen
+    { name = "Ask Claude about the screen", args = { "ask" }, words = "ask claude explain screen region question ai" },
     -- D276: the arcade
     { name = "Games (the arcade)", args = { "arcade" }, words = "games arcade play snake grieta mazmorra fun" },
     -- D269: Minflair's OCR — choose a region, its words are copied

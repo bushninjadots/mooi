@@ -273,6 +273,14 @@ local function ask(prompt)
     asking = mine
 end
 on("nt_ask", function() local t = text.ch_in; text.ch_in = ""; ask(t) end)
+-- D281: `mooi ask` — words read off a region of the screen start the question; the file is read once, then gone
+on("nt_region", function()
+    local ok, words = pcall(sys.ask, "files.read", "ask-region.txt")
+    pcall(sys.call, "files.remove", "ask-region.txt")
+    if not ok or type(words) ~= "string" or words == "" then return end
+    -- the field is one line: the words folded onto it, quoted, with room left for the question
+    text.ch_in = "About this from my screen: \"" .. (words:gsub("%s+", " "):gsub("^ ", ""):gsub(" $", "")) .. "\" — "
+end)
 on("nt_sugg", function(v) ask(SUGGEST[(tonumber(v) or -1) + 1]) end)
 -- BMO's own chat (his panel's CHAT tab, D109): he sends what was said (nb_q); asked in his voice, on
 -- his own session, and the answer goes back to him to be said and written in his panel.
