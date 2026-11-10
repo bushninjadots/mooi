@@ -37,6 +37,7 @@
 #   mooi game <folder>    start a game found on the disk where it lies: its own launcher, or wine / PortProton
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
+#   mooi game-mode [on|off|status]  game mode: no animations, blur, shadows or gaps; VRR on; put back exactly after
 #   mooi osd caps|num      the node's gauge for a lock key (Hyprland's Caps_Lock and Num_Lock binds call it)
 #   mooi open              same as `window` (kept for old scripts)
 #   mooi say CMD…          pass a command to the running scene (pleamar --say)
@@ -918,6 +919,56 @@ theme_watch_stray() { pgrep -f "[b]in/mooi theme-watch" 2>/dev/null; }
 # ws-fx.ms; empty: none chosen) on for one transition — damage tracking and vfr off with it, since a
 # shader's `time` runs only so — then puts all three back as it found them. A screen shader of your own
 # (hyprshade's and the like) is never replaced. It starts and stops with the theme watch.
+# Game mode (D266, Minflair's): the compositor's costly looks off — animations, blur, shadows, rounding, gaps, a
+# thick border — and variable refresh on, with the performance power profile when power-profiles-daemon answers.
+# What it changes is read first (`hyprctl getoption`) and kept in game-mode.json, so `off` puts back exactly that,
+# whatever the look was; the file's presence is what "on" means. Hyprland's reload while it is on loses nothing.
+GAME_OPTIONS="animations:enabled decoration:blur:enabled decoration:shadow:enabled decoration:rounding general:gaps_in general:gaps_out general:border_size misc:vrr"
+GAME_ON='hl.config({ animations = { enabled = false }, decoration = { blur = { enabled = false }, shadow = { enabled = false }, rounding = 0 }, general = { gaps_in = 0, gaps_out = 0, border_size = 1 }, misc = { vrr = 1 } })'
+game_mode() {
+    local f; f="$(dirname "$settings")/game-mode.json"
+    local want="${1:-toggle}"
+    command -v jq >/dev/null 2>&1 || { echo "game mode needs jq" >&2; return 1; }
+    case "$want" in
+        toggle) if [ -f "$f" ]; then want=off; else want=on; fi ;;
+        on | off) ;;
+        status) if [ -f "$f" ]; then echo on; else echo off; fi; return 0 ;;
+        *) echo "usage: mooi game-mode [on|off|status]" >&2; return 2 ;;
+    esac
+    if [ "$want" = on ]; then
+        [ -f "$f" ] && { echo "game mode is already on"; return 0; }
+        local saved="{}" o v prof=""
+        for o in $GAME_OPTIONS; do
+            v=$(hyprctl getoption "$o" -j 2>/dev/null) || continue
+            saved=$(printf '%s' "$saved" | jq -c --arg o "$o" --argjson v "$v" '. + { ($o): (["int", "bool", "float", "css", "str"] | map(select(. as $k | $v | has($k))) | .[0] as $k | if $k then $v[$k] else null end) } | with_entries(select(.value != null))' 2>/dev/null) || saved="{}"
+        done
+        [ "$saved" = "{}" ] && { echo "game mode: Hyprland did not answer" >&2; return 1; }
+        prof=$(powerprofilesctl get 2>/dev/null) || prof=""
+        mkdir -p "$(dirname "$f")"
+        printf '%s' "$saved" | jq --arg p "$prof" '{ options: ., profile: $p }' > "$f.tmp" && mv "$f.tmp" "$f" || return 1
+        if ! hyprctl eval "$GAME_ON" >/dev/null 2>&1; then rm -f "$f"; echo "game mode: Hyprland refused it" >&2; return 1; fi
+        [ -n "$prof" ] && powerprofilesctl set performance >/dev/null 2>&1
+        "$pleamar" --say mooi-node "emit nd_osd 31" >/dev/null 2>&1 || :
+        echo "game mode on"
+    else
+        [ -f "$f" ] || { echo "game mode is off"; return 0; }
+        # each option back in a call of its own, so one Hyprland no longer knows cannot keep the others away;
+        # gaps were read as "top right bottom left" and are given back as the table Hyprland's Lua takes
+        jq -r '.options | to_entries[] | .key as $k | .value as $v
+               | (if ($v | type) == "string" then ($v | split(" ") | map(tonumber)) as $p
+                     | "{ top = \($p[0]), right = \($p[1] // $p[0]), bottom = \($p[2] // $p[0]), left = \($p[3] // $p[1] // $p[0]) }"
+                  else ($v | tostring) end) as $lua
+               | ($k | split(":")) as $path
+               | "hl.config(" + ([$path[] | "{ \(.) = "] | join("")) + $lua + ([$path[] | " }"] | join("")) + ")"' "$f" 2>/dev/null |
+        while IFS= read -r line; do hyprctl eval "$line" >/dev/null 2>&1 || echo "game mode: could not put back $line" >&2; done
+        local prof; prof=$(jq -r '.profile // ""' "$f" 2>/dev/null)
+        [ -n "$prof" ] && powerprofilesctl set "$prof" >/dev/null 2>&1
+        rm -f "$f"
+        "$pleamar" --say mooi-node "emit nd_osd 30" >/dev/null 2>&1 || :
+        echo "game mode off"
+    fi
+}
+
 ws_fx() {
     exec 9>"$rt/ws-fx.lock"
     flock -n 9 2>/dev/null || { echo "mooi-ws-fx: already running" >&2; exit 1; }
@@ -1493,6 +1544,7 @@ case "$cmd" in
         PLEAMAR_SWAPCHAIN=1 MOOI_SHELL="$root/shell" exec "$pleamar" --scene "$src" --no-hud --stall 0 $(reduced_flag) "$@" ;;
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
+    game-mode) game_mode "$@"; exit $? ;;
     osd) # D265: a lock key's state for the node's gauge, as Hyprland's main keyboard has it (Minflair's OSD).
          # The bind runs on the press, before Hyprland has turned the lock, so it looks a moment later.
         case "${1:-}" in caps) field=capsLock code=1 ;; num) field=numLock code=2 ;; *) echo "usage: mooi osd caps|num" >&2; exit 2 ;; esac

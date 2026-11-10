@@ -7126,3 +7126,26 @@ now **Gauges**, the same `node.volume`.
 
 **Verified.** Unit 843 / 0; the node's scene compiles; the two binds are live (`hyprctl binds`, no config
 errors).
+
+## D266 · 2026-11-10 · Game mode (Minflair's)
+
+`mooi game-mode [on|off|status]`, and **Game mode** in the search line. On turns off what costs the compositor
+while a game runs: animations, blur and shadows, rounding and gaps to 0, the border to one pixel; variable refresh
+on; and the performance power profile when power-profiles-daemon answers (on this machine it is masked, so that
+step is skipped without a word). Minflair also strips its bar; mooi leaves the bar alone, since a fullscreen game
+covers it.
+
+What it changes is read first with `hyprctl getoption` and kept in `game-mode.json` in mooi's data folder; off
+gives each option back in a call of its own, in Hyprland 0.57's Lua terms (gaps were read as `"5 5 5 5"` and go
+back as `{ top = 5, … }`, which is all `hl.config` takes), restores the power profile and removes the file. So
+the look comes back exactly, whatever it was, and the file's presence is what "on" means. The gauge says
+`GAME MODE ON` or `OFF`.
+
+Reading the options found a trap: jq's `//` treats `false` as missing, so a blur that was already off would have
+been kept as nothing. Each value is now taken by the type Hyprland names it with, and the test has a false one.
+
+A change to mooi's own look (Settings → Windows) while game mode is on is applied as usual; off then puts back
+what was there when game mode began.
+
+**Verified.** `tests/game-mode.sh` 21 / 0 (in the gate); live on Hyprland 0.57.2, on then off left all eight
+options as they were.

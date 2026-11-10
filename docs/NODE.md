@@ -188,7 +188,7 @@ Super+Space opens the search line. Type, and the node looks for:
 - **Applications** — the apps you use most first, then the ones whose names match.
 - **mooi's commands** — Settings, The Pill's studio, the time panel, the wallpaper picker, arranging
   the widgets, Control Nexus, the music player, clipboard history, quick notes, the board, every
-  workspace, light or dark, locking the screen and recording the screen. Nothing that stops,
+  workspace, light or dark, locking the screen, recording the screen and game mode. Nothing that stops,
   restarts or rewrites anything is in the list.
 - **Open windows** — by title or application; each row is tagged `WINDOW` and the workspace it is on.
 - **Sums** — `200+10%` gives `= 220`, `2^10` gives `= 1024`, `sqrt(9)` gives `= 3`.

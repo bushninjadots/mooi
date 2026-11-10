@@ -22,6 +22,8 @@ M.LIST = {
     { name = "Light or dark", args = { "mode" }, words = "light dark mode night day theme" },
     { name = "Lock the screen", args = { "lock" }, words = "lock screen away" },
     { name = "Record the screen", args = { "record" }, words = "record recording screen capture video" },
+    -- D266: Minflair's game mode — reversible, and the gauge says which way it went
+    { name = "Game mode", args = { "game-mode" }, words = "game gaming performance vrr fps animations blur" },
 }
 
 local function lower(s) return string.lower(tostring(s or "")) end
