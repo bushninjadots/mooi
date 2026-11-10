@@ -7444,3 +7444,55 @@ Wave 2 of the k4 / Minflair port is built except four, each for a reason the own
   Settings → Theme & colour → Everything else already runs the owner's Matugen templates (btop, cava, fish,
   Vesktop, Zen, Spicetify).
 - **Island terminal sessions**: k4's is its own terminal, k4term; mooi opens the owner's terminal.
+
+## D283 · 2026-11-10 · La Grieta, the arcade's typing roguelike (opencode's)
+
+k4's La Grieta is a typing roguelike: words crawl out of a crack and must be typed before they reach the
+line. mooi's is written fresh, with its own words, drawing and rules. The board is a dark inset under a
+jagged ember crack; words fall from it toward a lit line, and typing a word's first letters lights them
+in phos over the rest. An exact word bursts into six small particles and is gone. A wrong letter flashes
+the line ember; Backspace takes one letter back. Three lives; each wave spawns more words, closer together
+and quicker. Clearing one offers three of four upgrades — a gentler fall, an extra life, long words worth
+double, and a Tab charge that seals everything on screen. Score is letters sealed times the wave (long
+words count double after their upgrade); the best is kept as `grieta` in `arcade.json`.
+
+The rules are `lib/arcade/grieta`, pure and seeded: `new`, `spawn`, `tick`, `type`, `backspace`,
+`use_seal`, `offers`, `select`, `choose`, `start`. Its ~360-word pool is three to nine letters, each once,
+and is ours. The scene gets the page (`page = 3`), three cards for the upgrades and the fall line; the logic
+ticks it every 50 ms and speaks only through `ac_key`.
+
+Pleamar names keys by their XKB keysym, and a name may not begin with a digit, so the top-row `1`–`4`
+cannot be written in a rule. The upgrades answer to Return and ←/→, and to `Z` `X` `C` (or keypad 1–3)
+as the digits' stand-ins; the hint says so.
+
+**Verified.** Unit 897 / 0 (the word pool, typing, lives, waves, every upgrade, the scene's zones); the
+scene compiles; a renamed copy ran live: the picker opened La Grieta, Return started it, the clock spawned
+and moved words, and Escape returned to the picker.
+
+## D284 · 2026-11-10 · Mazmorra, the arcade's idle dungeon (opencode's)
+
+k4's Mazmorra is an idle dungeon. mooi's hero walks a floor at a time; every floor is a monster drawn as a
+Nerd Font glyph in a circle, with its own HP bar. Fights resolve by themselves on one-second ticks while
+the page is shown, and the time away is fought through when it comes back, capped at eight hours. The
+state lives under `mazmorra` in `arcade.json`, with `last` so the away time is known; Snake's `best` table
+is untouched.
+
+Gold drops with each fall, more from a boss and with Luck. Four upgrades — Attack, Health, Speed, Luck —
+are bought with the four buttons or `Z` `X` `C` `V` / keypad 1–4; costs rise with the level, and buying
+needs the gold. Every tenth floor is a boss: a larger glyph in a warm ember ring, more health and a harder
+hit. Death returns the hero to the last boss floor cleared, whole again. Space gives a 30-second boost at
+double speed, then two minutes of rest. The log keeps the last five lines (`Floor 12: a Slime falls, +14
+gold`). Best is the highest floor reached.
+
+The rules are `lib/arcade/mazmorra`, pure and seeded: `new`, `tick`, `offline`, `boost`, `buy`, `cost`,
+`price`, `restore`, with the deterministic monster table. The page is 4; it draws the two HP bars, the
+floor/gold/best line, the log and the four shop cards, and asks the logic for a tick each second.
+
+**Verified.** Unit 897 / 0 (the eight-hour cap, death, bosses, prices, boost, restore); the scene compiles;
+a renamed copy ran live: Mazmorra opened from the picker, a floor fell for gold, and the page kept its
+state under `mazmorra`.
+
+**Reviewed (Claude), D283 and D284.** Brought onto main by hand and renumbered (D280 and D281 were the dock and
+`mooi ask`). The rules follow Snake's: pure, seeded and tested, each game's clock guarded by its own number so a
+pause cannot leave two running. Mazmorra's away time is capped at eight hours. The upgrades answer to the keypad's
+1–4 and Z X C V, since a Pleamar key name cannot start with a digit.

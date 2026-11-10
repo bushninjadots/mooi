@@ -312,6 +312,144 @@ do
     end)
 end
 
+section("La Grieta (D283; k4's typing roguelike, written fresh for mooi)")
+do
+    local GR = require("lib/arcade/grieta")
+    test("the crack's words: three to nine letters, each once, and a pool of some three hundred", function()
+        assert(#GR.WORDS >= 300, "the built-in list is a pool, not a handful: " .. #GR.WORDS)
+        local seen = {}
+        for _, w in ipairs(GR.WORDS) do
+            assert(#w >= 3 and #w <= 9, "a word of the crack: " .. w)
+            assert(not seen[w], "a word twice: " .. w); seen[w] = true
+            assert(w:match("^[a-z]+$"), "letters only: " .. w)
+        end
+    end)
+    test("a new game: ready, three lives, wave one; the same seed spills the same first word", function()
+        local a, b = GR.new(42), GR.new(42)
+        eq(a.state, "ready"); eq(a.lives, 3); eq(a.wave, 1); eq(a.score, 0)
+        eq(GR.start(a), true); eq(a.state, "playing"); GR.start(b)
+        GR.tick(a, 1000); GR.tick(b, 1000)
+        eq(#a.words, #b.words); eq(a.words[1].text, b.words[1].text); eq(a.words[1].x, b.words[1].x)
+    end)
+    test("typing: a prefix holds, the exact word seals for its letters times the wave, a wrong letter flashes", function()
+        local st = GR.new(1); GR.start(st)
+        st.words = { { id = 1, text = "cat", x = 20, y = 10, speed = 1 } }
+        eq(GR.type(st, "c"), "typed"); eq(st.typed, "c")
+        eq(GR.type(st, "a"), "typed"); eq(st.typed, "ca")
+        eq(GR.type(st, "z"), "wrong"); assert(st.flash > 0); eq(st.typed, "ca")
+        local r, word, gain = GR.type(st, "t")
+        eq(r, "sealed"); eq(word, "cat"); eq(gain, 3); eq(st.score, 3); eq(#st.words, 0); eq(st.typed, "")
+        eq(GR.backspace({ typed = "ab" }), "a")
+    end)
+    test("a word at the line costs a life; the last one ends it; clearing a wave offers three of four", function()
+        local st = GR.new(2); GR.start(st)
+        st.spawn_left = 0
+        st.words = { { id = 1, text = "dog", x = 20, y = 83, speed = 10 } }
+        local ev = GR.tick(st, 300)
+        eq(st.lives, 2); eq(#st.words, 0)
+        eq(ev[1].kind, "hit"); eq(st.state, "choose"); eq(#st.options, 3)
+        eq(GR.select(st, 1), 1); eq(GR.select(st, 1), 2)
+        local st2 = GR.new(2); GR.start(st2); st2.lives = 1; st2.spawn_left = 0
+        st2.words = { { id = 1, text = "dog", x = 20, y = 83, speed = 10 } }
+        GR.tick(st2, 300); eq(st2.state, "over"); eq(st2.lives, 0)
+    end)
+    test("upgrades: slow, life, long words and a Tab charge; choosing one begins the next wave", function()
+        local st = GR.new(3); GR.start(st)
+        st.state, st.options = "choose", { { id = "slow" }, { id = "life" }, { id = "long" } }
+        eq(GR.choose(st, 0), "slow"); eq(st.slow, 1); eq(st.wave, 2); eq(st.state, "playing")
+        local base = st.base_speed
+        GR.spawn(st, "cat"); assert(st.words[1].speed < base)
+        st.state, st.options = "choose", { { id = "life" } }; st.lives = 2
+        GR.choose(st, 0); eq(st.lives, 3)
+        st.state, st.options = "choose", { { id = "long" } }; st.wave = 2
+        GR.choose(st, 0); eq(GR.worth(st, "seventh"), 7 * 3 * 2)
+        st.state, st.options = "choose", { { id = "seal" } }
+        GR.choose(st, 0); eq(st.charges, 1)
+        st.words = { { id = 1, text = "cat", x = 1, y = 1, speed = 1 } }
+        local sum = GR.use_seal(st); eq(sum, 3 * st.wave); eq(st.charges, 0); eq(#st.words, 0)
+    end)
+end
+
+section("Mazmorra (D284; k4's idle dungeon, written fresh for mooi)")
+do
+    local MZ = require("lib/arcade/mazmorra")
+    test("a new run: floor one, the hero whole, a monster with a bar, the same for the same seed", function()
+        local a, b = MZ.new(42), MZ.new(42)
+        eq(a.floor, 1); eq(a.best, 1); eq(a.hero_hp, MZ.hero_max(a)); assert(a.monster.hp > 0)
+        MZ.tick(a, 60); MZ.tick(b, 60)
+        eq(a.floor, b.floor); eq(a.gold, b.gold); eq(a.monster.hp, b.monster.hp); eq(a.log[1], b.log[1])
+    end)
+    test("fights resolve by the second: the monster falls, gold drops, the floor rises and is the best", function()
+        local st = MZ.new(1)
+        local hp = st.monster.hp
+        MZ.tick(st, 1); assert(st.monster.hp < hp)
+        st.monster.hp = 1
+        MZ.tick(st, 1)
+        eq(st.floor, 2); eq(st.best, 2); assert(st.gold > 0)
+        assert(st.log[1]:find("falls", 1, true) and st.log[1]:find("gold", 1, true))
+    end)
+    test("every tenth floor is a boss; its fall is the floor the hero returns to", function()
+        local st = MZ.new(1); st.floor = 10; MZ.spawn(st)
+        eq(st.monster.boss, true); assert(st.monster.name:find("Elder", 1, true))
+        st.monster.hp = 1
+        MZ.tick(st, 1)
+        eq(st.floor, 11); eq(st.last_boss, 10)
+    end)
+    test("death returns the hero to the last boss floor, whole again", function()
+        local st = MZ.new(1); st.floor, st.last_boss = 11, 10; MZ.spawn(st)
+        st.hero_hp, st.monster.dmg, st.atk = 1, 99, 0
+        MZ.tick(st, 1)
+        eq(st.floor, 10); eq(st.hero_hp, MZ.hero_max(st)); assert(st.deaths > 0)
+    end)
+    test("buying needs the gold; costs rise; health fills the new bar", function()
+        local st = MZ.new(7); st.gold = 0
+        eq(MZ.cost(0), 12); eq(MZ.cost(1), 25); eq(MZ.cost(2), 44)
+        eq(MZ.buy(st, 0), false)
+        st.gold = 10000; local first = MZ.price(st, 1)
+        eq(MZ.buy(st, 1), true); eq(st.hp, 1); eq(st.hero_hp, MZ.hero_max(st))
+        assert(MZ.price(st, 1) > first, "the next costs more")
+        eq(MZ.buy(st, 9), false)
+    end)
+    test("time away is fought through, capped at eight hours, and the last time moves to now", function()
+        local st = MZ.new(2); local now = 10 ^ 9
+        st.last = now - 20 * 3600
+        eq(MZ.offline(st, now), 8 * 3600); eq(st.last, now)
+        st.last = now - 30
+        eq(MZ.offline(st, now), 30)
+    end)
+    test("Space doubles speed for thirty seconds, then rests for two minutes", function()
+        local st = MZ.new(3)
+        eq(MZ.boost(st), true); eq(st.boost, 30)
+        MZ.tick(st, 31); eq(st.boost, 0); assert(st.rest >= 118 and st.rest <= 120)
+        eq(MZ.boost(st), false)
+        MZ.tick(st, 120); eq(st.rest, 0); eq(MZ.boost(st), true)
+    end)
+    test("a saved run comes back with its floor, gold and monster", function()
+        local st = MZ.new(5); st.floor, st.gold, st.hp = 7, 123, 2
+        local back = MZ.restore({ floor = st.floor, gold = st.gold, hp = st.hp, seed = 5, hero_hp = 1, log = {}, version = 1 })
+        eq(back.floor, 7); eq(back.gold, 123); eq(MZ.hero_max(back), MZ.hero_max(st)); assert(back.monster.hp > 0)
+        eq(MZ.restore({}), nil); eq(MZ.restore(nil), nil)
+    end)
+end
+
+section("the arcade's two new games on their pages (D283, D284)")
+do
+    test("the picker knows them, their pages are drawn, and the logic has both games' state", function()
+        local l, p, g = read("shell/mooi-arcade.luau"), read("shell/mooi-arcade.plm"), read("tools/gen-arcade.py")
+        assert(l:find('{ id = "grieta", name = "La Grieta"', 1, true) and l:find("page = 3, ready = true", 1, true))
+        assert(l:find('{ id = "mazmorra", name = "Mazmorra"', 1, true) and l:find("page = 4, ready = true", 1, true))
+        assert(l:find("MAZMORRA.offline(mz, os.time())", 1, true) and l:find("MAZMORRA.buy(mz, i)", 1, true))
+        assert(p:find("show: ac_page == 3", 1, true) and p:find("show: ac_page == 4", 1, true))
+        assert(p:find("for w in gz", 1, true) and p:find("for u in gzu", 1, true))
+        assert(p:find("zone box gzu", 1, true) and p:find("zone box mzu", 1, true))
+        assert(p:find("for l in mzlog", 1, true) and p:find("for u in mzshop", 1, true))
+        assert(p:find("emit ac_key(49 + u.index)", 1, true), "the upgrades and the shop are pressed through the key event")
+        assert(p:find("event ac_key ->", 1, true) and p:find("keyboard: exclusive while ac_page > 0", 1, true))
+        assert(g:find('"KP_1"', 1, true) and g:find('"KP_4"', 1, true), "the number keys are bound where the language allows")
+        assert(l:find("mazmorra = A.maz", 1, true), "the run is saved under mazmorra")
+    end)
+end
+
 section("where the sound plays, from Home (D277; k4's per-device sound)")
 do
     local GA = require("lib/node/gauge")
