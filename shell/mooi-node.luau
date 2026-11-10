@@ -433,7 +433,6 @@ render = function()
     local bkind = cap and "capsule" or kind
     if kind == "media" and look.music_form ~= "capsule" then bkind = "media_" .. look.music_form end
     local b = G.body(bkind, N.scr, anchor, shape, data)
-    if bkind == "media_vinyl" then b.r = b.w / 2; b.y = b.y + 6 end
     show_capsule(cap)
     -- leaning toward where the pointer came in from
     if N.near and not studio and kind ~= "rest" and kind ~= "universe" then b.x = math.max(0, math.min(N.scr.w - b.w, b.x + (N.lean or 0) * 24)) end

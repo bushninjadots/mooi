@@ -7846,3 +7846,18 @@ adds a new window or a new setting.
 ranges and agenda dates. `pleamar --check shell/mooi-widgets.plm` says ok (10,223 properties, 1,079 zones);
 `luau-ops` and the gate pass. Not checked live on the running desktop: the scene needs a separate widgets instance to
 avoid moving the owner's widgets.
+
+## D304 · 2026-11-11 · The Pill's record: half out of a slot under the song, turning, in the theme and the cover
+
+The owner: "improve massively the vinyl style music visualiser for the pill — half of the vinyl sticking out,
+turning, with theming and album art." D246's record replaced the Pill with a round 176 px body. Now:
+- The Pill keeps the music capsule (the cover, the song, its controls); the capsule's own visualisers stay off.
+- A record (82 px radius) rises out of a slot along the Pill's lower edge as the music form opens, and stops half
+  out. The slot is a lit line in the accent.
+- It turns at 33⅓ (200°/s) while the music plays and stands still when paused; two sheens across the grooves make
+  the turning visible, and the cover is its label (a plain accent label with a marker dot without one).
+- Disc, grooves and rim are tinted by the theme's accent; the spectrum stands out round the half that shows (28 rays).
+The record only spins while it shows and plays (the existing `nd_vrot` spin), so it costs nothing otherwise.
+
+**Verified.** The Pill scene compiles; unit tests pass. Not seen live: the owner was at the machine, and the preview
+goes through the studio, which they were using.

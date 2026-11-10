@@ -40,7 +40,7 @@ overhaul, in steps:
 2. **The words** (D302, with opencode): every label one to three plain words; every description one line, saying
    what it changes, in what unit, and what "off" means; mooi's private names explained once (a page subtitle) and
    never used as labels.
-3. **Hide, don't dim** (D303): rows whose condition fails are folded away with the space they took.
+3. **Hide, don't dim**: already so — the generator gives a row whose condition fails no height (checked 2026-11-11), so no change is needed.
 
 ## 3. Ports from Noctalia (refining what mooi has)
 

@@ -672,31 +672,38 @@ def music_forms(c, acc, ink, dim, hull):
         L += [f'{c}        box {{ from: nb_x + 6 + {k} * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp{k} * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp{k} * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: {acc}; opacity: 0.55 + 0.45 * nd_sp{k} }}']
     L += [f'{c}    }}',
           f'{c}}}',
-          f'{c}// the music as a record: grooves, the cover for its label, a glint that turns with it, the tonearm resting on',
-          f'{c}// it, and the spectrum standing out round its rim',
+f'{c}// the music as a record (D304): the pill carries the song and its controls, and a record rises half out of a',
+          f'{c}// slot along its lower edge — turning at 33⅓ while it plays, the cover for its label, grooves and rim in the',
+          f'{c}// theme\'s accent, the spectrum standing out round the half that shows',
           f'{c}group {{ show: nd_kind == 1 and nd_mf == 2; opacity: nd_cf',
+          f'{c}    let vr = 82',
           f'{c}    let vx = nb_x + nb_w / 2',
-          f'{c}    let vy = nb_y + nb_h / 2',
-          f'{c}    let vr = min(nb_w, nb_h) / 2']
-    for k in range(32):
-        a = f"({k} * 11.25 - 90)"
-        L += [f'{c}    line {{ from: vx + cos({a}) * (vr + 3), vy + sin({a}) * (vr + 3); to: vx + cos({a}) * (vr + 4 + nd_sp{k} * 26), vy + sin({a}) * (vr + 4 + nd_sp{k} * 26); width: 3; color: {acc}; opacity: 0.35 + 0.6 * nd_sp{k} }}']
-    L += [f'{c}    group {{ glow: 16, 0.35 * nd_gw, nd_glc',
-          f'{c}        ellipse {{ at: vx, vy; radius: vr; color: #0b0b0d }} }}']
-    for gr in range(7):
-        L += [f'{c}    ellipse {{ at: vx, vy; radius: vr * {0.92 - gr * 0.075:.3f}; stroke: 0.8; color: fl.trace_lit; opacity: {0.10 + 0.03 * (gr % 2):.2f} }}']
-    L += [f'{c}    group {{ pivot: vx, vy; rotate: nd_vrot',
-          f'{c}        arc {{ at: vx, vy; radius: vr * 0.7; span: 50deg; rotate: -40deg; width: vr * 0.45; color: #ffffff; opacity: 0.05 }}',
-          f'{c}        arc {{ at: vx, vy; radius: vr * 0.7; span: 50deg; rotate: 140deg; width: vr * 0.45; color: #ffffff; opacity: 0.035 }}',
-          f'{c}        group {{ clip box {{ from: vx - vr * 0.34, vy - vr * 0.34; size: vr * 0.68, vr * 0.68; corner: vr * 0.34 }}',
-          f'{c}            ellipse {{ at: vx, vy; radius: vr * 0.34; color: {acc} }}',
-          f'{c}            image nd_cover {{ at: vx - vr * 0.34, vy - vr * 0.34; size: vr * 0.68, vr * 0.68; fit: cover; show: nd_arted }} }}',
+          f'{c}    let vy = nb_y + nb_h - vr * (1 - nd_cf)',
+          f'{c}    group {{',
+          f'{c}        clip box {{ from: vx - vr - 48, nb_y + nb_h; size: vr * 2 + 96, vr + 56 }}']
+    for k in range(28):
+        a_ = f"({k} * 180 / 27)"
+        L += [f'{c}        line {{ from: vx + cos({a_}) * (vr + 4), vy + sin({a_}) * (vr + 4); to: vx + cos({a_}) * (vr + 6 + nd_sp{k} * 30), vy + sin({a_}) * (vr + 6 + nd_sp{k} * 30); width: 3; color: {acc}; opacity: 0.3 + 0.65 * nd_sp{k} }}']
+    L += [f'{c}        group {{ glow: 18, 0.3 + 0.3 * nd_gw, nd_glc',
+          f'{c}            ellipse {{ at: vx, vy; radius: vr; color: mix(#0a0a0c, {acc}, 0.07) }} }}']
+    for gr in range(9):
+        L += [f'{c}        ellipse {{ at: vx, vy; radius: vr * {0.95 - gr * 0.062:.3f}; stroke: {0.6 if gr % 3 else 1.1}; color: {acc}; opacity: {0.07 + 0.05 * (gr % 3 == 0):.2f} }}']
+    L += [f'{c}        ellipse {{ at: vx, vy; radius: vr - 0.5; stroke: 1; color: {acc}; opacity: 0.45 }}',
+          f'{c}        group {{ pivot: vx, vy; rotate: nd_vrot',
+          f'{c}            // two sheens across the grooves, which is what makes a record read as turning',
+          f'{c}            arc {{ at: vx, vy; radius: vr * 0.68; span: 38deg; rotate: -30deg; width: vr * 0.5; color: #ffffff; opacity: 0.06 }}',
+          f'{c}            arc {{ at: vx, vy; radius: vr * 0.68; span: 38deg; rotate: 150deg; width: vr * 0.5; color: #ffffff; opacity: 0.045 }}',
+          f'{c}            group {{ clip ellipse {{ at: vx, vy; radius: vr * 0.36 }}',
+          f'{c}                ellipse {{ at: vx, vy; radius: vr * 0.36; color: {acc} }}',
+          f'{c}                image nd_cover {{ at: vx - vr * 0.36, vy - vr * 0.36; size: vr * 0.72, vr * 0.72; fit: cover; show: nd_arted }} }}',
+          f'{c}            ellipse {{ at: vx, vy; radius: vr * 0.36; stroke: 1.5; color: {acc}; opacity: 0.8 }}',
+          f'{c}            ellipse {{ at: vx + vr * 0.27, vy; radius: 2; color: fl.ground; opacity: 0.7; show: not nd_arted }}',
+          f'{c}        }}',
+          f'{c}        ellipse {{ at: vx, vy; radius: 3.5; color: fl.ground }}',
           f'{c}    }}',
-          f'{c}    ellipse {{ at: vx, vy; radius: 3; color: fl.ground }}',
-          f'{c}    // the tonearm, from its pivot beside the record to the grooves',
-          f'{c}    ellipse {{ at: vx + vr * 0.95, vy - vr * 0.8; radius: 6; color: fl.hull_raised }}',
-          f'{c}    line {{ from: vx + vr * 0.95, vy - vr * 0.8; to: vx + vr * 0.35, vy + vr * 0.25; width: 3; color: fl.trace_lit }}',
-          f'{c}    box {{ from: vx + vr * 0.35 - 4, vy + vr * 0.25 - 3; size: 9, 7; corner: 2; color: {acc} }}',
+          f'{c}    // the slot it comes out of, lit in the accent',
+          f'{c}    group {{ glow: 8, 0.6 * nd_gw, {acc}',
+          f'{c}        line {{ from: vx - vr - 8, nb_y + nb_h; to: vx + vr + 8, nb_y + nb_h; width: 2; color: {acc}; opacity: 0.7 }} }}',
           f'{c}}}']
     return L
 
@@ -1403,12 +1410,12 @@ def surface():
           f'{c}on scroll nd_bz {{ emit nd_wheel(if(wheel > 0, 1, -1)) }}']
     # media
     L += [f'{c}// media: a lateral capsule — revealed by the body as it grows (its own clip), the music woven into it',
-          f'{c}group {{ show: nd_kind == 1 and nd_mf == 0; opacity: nd_cf',
+          f'{c}group {{ show: nd_kind == 1 and (nd_mf == 0 or nd_mf == 2); opacity: nd_cf',
           f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
           f'{c}    // the music, by the look: bars from the floor, a wave through the middle, or dots that swell',
-          f'{c}    repeat vb in 0..40 {{ box {{ from: nb_x + 8 + vb * (nb_w - 16) / 40, nb_y + nb_h - (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7; size: (nb_w - 16) / 40 * 0.55, (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7 + 1; color: {acc}; opacity: 0.16; show: nd_viz == 0 }} }}',
-          f'{c}    repeat vw in 0..60 {{ ellipse {{ at: nb_x + 8 + vw * (nb_w - 16) / 60, nb_y + nb_h / 2 + sin(vw * 14 + nd_vph * 2) * (0.15 + lv.level) * nb_h * 0.32; radius: 1.3; color: {acc}; opacity: 0.3; show: nd_viz == 1 }} }}',
-          f'{c}    repeat vd in 0..24 {{ ellipse {{ at: nb_x + 14 + vd * (nb_w - 28) / 23, nb_y + nb_h - 8; radius: 1 + 3 * lv.level * abs(sin(vd * 31 + nd_vph)); color: {acc}; opacity: 0.3; show: nd_viz == 2 }} }}',
+          f'{c}    repeat vb in 0..40 {{ box {{ from: nb_x + 8 + vb * (nb_w - 16) / 40, nb_y + nb_h - (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7; size: (nb_w - 16) / 40 * 0.55, (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7 + 1; color: {acc}; opacity: 0.16; show: nd_mf == 0 and nd_viz == 0 }} }}',
+          f'{c}    repeat vw in 0..60 {{ ellipse {{ at: nb_x + 8 + vw * (nb_w - 16) / 60, nb_y + nb_h / 2 + sin(vw * 14 + nd_vph * 2) * (0.15 + lv.level) * nb_h * 0.32; radius: 1.3; color: {acc}; opacity: 0.3; show: nd_mf == 0 and nd_viz == 1 }} }}',
+          f'{c}    repeat vd in 0..24 {{ ellipse {{ at: nb_x + 14 + vd * (nb_w - 28) / 23, nb_y + nb_h - 8; radius: 1 + 3 * lv.level * abs(sin(vd * 31 + nd_vph)); color: {acc}; opacity: 0.3; show: nd_mf == 0 and nd_viz == 2 }} }}',
           f'{c}    group {{ clip box {{ from: nb_x + 8, nb_y + 8; size: 48, 48; corner: if(nd_cov == 1, 24, max(2, 10 * nd_rnd)) }}',
           f'{c}        box {{ from: nb_x + 8, nb_y + 8; size: 48, 48; color: fl.well }}',
           f'{c}        image nd_cover {{ at: nb_x + 8, nb_y + 8; size: 48, 48; fit: cover; show: nd_arted }} }}',

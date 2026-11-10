@@ -8,7 +8,7 @@ local SIZE = {
     rest = { 22, 6 }, media = { 440, 64 }, notice = { 180, 10 }, volume = { 280, 16 },
     launcher = { 600, 46 }, universe = { 64, 64 },
     time = { 560, 170 }, done = { 440, 76 }, capsule = { 124, 22 }, privacy = { 360, 44 }, battery = { 360, 44 }, player = { 660, 236 },
-    media_visualiser = { 420, 46 }, media_vinyl = { 176, 176 },
+    media_visualiser = { 420, 46 }, media_vinyl = { 440, 64 },   -- D304: the record hangs half out under the capsule
 }
 
 -- D260: the panel is one width; its height is the page's own. Home carries the media, the toggles, the two
