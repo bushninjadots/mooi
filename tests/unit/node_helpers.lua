@@ -1754,6 +1754,14 @@ do
         eq(blank.name, "mooi"); eq(blank.initial, "M")
         eq(blank.host, ""); eq(blank.avatar, "")
     end)
+
+    test("face: a picture that is there, and an empty path when it is not", function()
+        eq(HM.face("/data", "ada.png", function() return true end), "/data/ada.png")
+        eq(HM.face("/data", "ada.png", function() return false end), "", "a missing file leaves the initial")
+        eq(HM.face("", "ada.png", function() return true end), "", "no folder")
+        eq(HM.face("/data", "   ", function() return true end), "", "no picture")
+        eq(HM.face("/data", "ada.png"), "/data/ada.png", "a caller without a checker trusts the name")
+    end)
 end
 
 section("the panel's Home profile (D280): the scene")
@@ -1786,15 +1794,28 @@ do
     test("Home's rows moved below the card and the height made room", function()
         has("nb_y + 182", plm, "the media card")
         has("nb_y + 306", plm, "the toggles")
+        has("nb_y + 321", plm, "the toggles' glyphs")
+        has("nb_y + 338", plm, "the toggles' labels")
+        has("nb_y + 326", plm, "the Wi-Fi and Bluetooth settings zones")
         has("nb_y + 358", plm, "the volume")
         has("eq(G.PANEL_H.home, 718", read("tests/unit/run.lua"), "Home's height")
+    end)
+
+    test("every command the logic runs is permitted by the scene", function()
+        local allowed = plm:match("permissions%s*{%s*run:([^\n]*)") or ""
+        local function permits(cmd)
+            assert(allowed:find('"' .. cmd .. '"', 1, true), "the scene does not permit " .. cmd)
+        end
+        for cmd in luau:gmatch('run%("([^"]+)"') do permits(cmd) end
+        for cmd in luau:gmatch('pcall%(run, "([^"]+)"') do permits(cmd) end
     end)
 
     test("the logic takes the Nexus's identity and the hostname, and asks again when settings change", function()
         has("N.show_identity = function()", luau, "the updater")
         has("HM.identity(id.name, N.host, id.avatar)", luau, "the helper's call")
-        has('run("hostname", {}, function(out)', luau, "the hostname")
+        has('pcall(run, "hostname", {}, function(out)', luau, "the hostname")
         has("if N.show_identity then N.show_identity() end", luau, "the settings watch")
-        has("text.nd_face = who.avatar ~= \"\" and (HOME_FOLDER .. \"/\" .. who.avatar) or \"\"", luau, "the picture's path")
+        has("HM.face(HOME_FOLDER, who.avatar, there)", luau, "the picture's path")
+        has('pcall(sys.ask, "files.exists", name)', luau, "the file is asked for")
     end)
 end

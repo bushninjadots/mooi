@@ -62,7 +62,7 @@ def scene():
          '// this springs and draws.', '',
          'scene Node {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "hyprctl", "df", "nvidia-smi", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "wl-paste", "find", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm"',
+         '        run: "pleamar", "mooi", "hyprctl", "df", "nvidia-smi", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "wl-paste", "find", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm", "hostname"',
          '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "brightness", "network", "network.*", "bluetooth", "bluetooth.*", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
@@ -739,12 +739,12 @@ def panel_parts(c, acc, ink, dim, hull):
         x = f'nb_x + 14 + {code - 1} * ({tw} + 8)'
         L += [f'{c}        box {{ from: {x}, nb_y + 306; size: {tw}, 40; corner: 12; color: {acc}; opacity: if({lit}, 0.2, if(pt{code}.hover, 0.12, 0.05)) }}',
               f'{c}        box {{ from: {x}, nb_y + 306; size: {tw}, 40; corner: 12; stroke: 1; color: if({lit}, {acc}, fl.trace_dim); opacity: if({lit}, 0.9, 0.7) }}',
-              f'{c}        text {glyph} {{ at: {x} + {tw} / 2, nb_y + 263; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if({lit}, {acc}, {ink}) }}',
-              f'{c}        text {label} {{ at: {x} + {tw} / 2, nb_y + 280; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if({lit}, {acc}, {dim}); width: {tw} - 8; lines: 1 }}',
+              f'{c}        text {glyph} {{ at: {x} + {tw} / 2, nb_y + 321; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if({lit}, {acc}, {ink}) }}',
+              f'{c}        text {label} {{ at: {x} + {tw} / 2, nb_y + 338; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if({lit}, {acc}, {dim}); width: {tw} - 8; lines: 1 }}',
               f'{c}        zone box pt{code} {{ from: {x}, nb_y + 306; size: {tw}, 40; corner: 12; cursor: pointer; role: toggle; label: "{role}"; checked: {lit}; show: nd_kind == 13 and nd_pgp == 0 }}',
               f'{c}        on press pt{code} {{ emit nd_ptog({code}) }}']
         if code == 1 or code == 4:
-            L += [f'{c}        zone box pt{code}n {{ from: {x} + 6, nb_y + 268; size: {tw} - 12, 18; corner: 8; cursor: pointer; role: button; label: "{word} settings"; show: nd_kind == 13 and nd_pgp == 0 }}',
+            L += [f'{c}        zone box pt{code}n {{ from: {x} + 6, nb_y + 326; size: {tw} - 12, 18; corner: 8; cursor: pointer; role: button; label: "{word} settings"; show: nd_kind == 13 and nd_pgp == 0 }}',
                   f'{c}        on press pt{code}n {{ emit nd_pg({7 if code == 1 else 8}) }}']
     L += [f'{c}    }}']
     # sliders: volume, then the screen's light (hidden without a backlight)

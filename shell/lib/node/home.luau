@@ -60,4 +60,13 @@ function M.identity(name, host, avatar)
     return { name = name, host = host, avatar = avatar, initial = string.upper(string.sub(name, 1, 1)) }
 end
 
+-- the picture's path, or "" when there is no name or the file is not there (then the card keeps the initial)
+function M.face(folder, avatar, exists)
+    folder = trim(folder)
+    avatar = trim(avatar)
+    if folder == "" or avatar == "" then return "" end
+    if exists and not exists(avatar) then return "" end
+    return folder .. "/" .. avatar
+end
+
 return M
