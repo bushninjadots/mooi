@@ -268,9 +268,10 @@ Above the stage are eight preview chips: `REST`, `MUSIC`, `NOTICE`, `VOLUME`, `R
 `SEARCH` and `TOUR`. Press a chip to see that state. Tour moves through them every 2.2 seconds.
 Pressing the node on the stage moves to the next chip.
 
-Below the stage is the deck, with five pages: Presets, Shape, Surface, Motion and Parts, and the
-buttons `RESET`, `SHUFFLE` and `DONE`. Sliders are dragged; choices are chips. Changes are written to
-`node-look.json` 300 milliseconds after they stop, and a hand edit of that file is worn at once.
+Below the stage is the deck, with seven pages: Presets, Pill, Shape, Surface, Motion, Music and Parts, and
+the buttons `RESET`, `SHUFFLE` and `DONE`. Sliders are dragged; choices are chips. A row that cannot matter
+under the look as it stands is dimmed and says why, and its slider or chips cannot be moved (D261). Changes
+are written to `node-look.json` 300 milliseconds after they stop, and a hand edit of that file is worn at once.
 
 ### Presets
 

@@ -208,13 +208,34 @@ function M.shown(t, row)
     return word, (v - row.lo) / math.max(1, row.hi - row.lo), -1
 end
 
+-- whether a row can matter under the look as it stands (D261): a choice that has no effect is still worth
+-- reading, but not worth dragging. Returns false and the reason it cannot matter.
+local function applicable(t, row)
+    local form = M.form(t)
+    local seedless = "The pill holds modules: there is no seed to shape."
+    if row.key == "seed" or row.key == "seed_w" or row.key == "seed_h" or row.key == "breath" then
+        if form ~= "seed" then return false, seedless end
+    end
+    if row.key == "clock_style" then
+        if form ~= "seed" then return false, seedless end
+        if t.seed ~= "clock" then return false, "Only the clock seed tells the time." end
+    end
+    if row.key == "top" and t.place == "attached" then return false, "Attached, its top is the frame's." end
+    if row.key == "round" and form == "notch" then return false, "A notch takes its corners from the frame." end
+    if row.key == "viz" and t.music_form ~= "capsule" then return false, "The visualiser is the media capsule's shape." end
+    if row.key == "cover" and t.music_form == "visualiser" then return false, "A visualiser shows no cover." end
+    return true, row.desc
+end
+M.applicable = applicable
+
 -- the rows of a tab, as the studio's model takes them
 function M.rows(t, tab)
     local out = {}
     for i, row in ipairs(M.SCHEMA[tab] or {}) do
         local word, frac, sel = M.shown(t, row)
+        local on, why = applicable(t, row)
         local r = { kind = row.values and 1 or 0, label = row.label, desc = row.desc, value = word, frac = frac, sel = sel,
-                    n = row.values and #row.values or 0 }
+                    n = row.values and #row.values or 0, off = not on, why = why }
         for j = 0, 6 do r["o" .. j] = row.names and row.names[j + 1] or "" end
         out[i] = r
     end

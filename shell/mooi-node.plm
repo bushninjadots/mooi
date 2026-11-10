@@ -1742,11 +1742,12 @@ scene Node {
             for r in sk {
                 let ry = st_dy + 78 + r.index * 52
                 let tx = st_x + 430
-                group { show: nd_tab > 0
+                group { show: nd_tab > 0; opacity: if(r.off, 0.35, 1)
                     box { from: st_x + 12, ry; size: 916, 46; corner: 10; color: fl.well; opacity: if(nd_kr == r.index, 0.85, 0) }
                     box { from: st_x + 12, ry + 10; size: 3, 26; corner: 1; color: nd_acc; show: nd_kr == r.index }
                     text r.label { at: st_x + 32, ry + 16; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: fl.engrave }
-                    text r.desc { at: st_x + 32, ry + 33; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted; width: 380; lines: 1 }
+                    text r.desc { at: st_x + 32, ry + 33; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted; width: 380; lines: 1; show: not r.off }
+                    text r.why { at: st_x + 32, ry + 33; anchor: left center; size: 10; family: "Exo 2"; color: fl.ember; width: 380; lines: 1; show: r.off }
                     group { show: r.kind == 0
                         box { from: tx, ry + 21; size: 380, 4; corner: 2; color: fl.trace_dim }
                         box { from: tx, ry + 21; size: 380 * r.frac, 4; corner: 2; color: nd_acc }
@@ -1759,52 +1760,52 @@ scene Node {
                         box { from: tx + 0, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 0, nd_acc, fl.trace_lit) }
                         text r.o0 { at: tx + 0 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 0, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko0 { from: tx + 0, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o0}"; selected: r.sel == 0; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 0 }
+                    zone box sko0 { from: tx + 0, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o0}"; selected: r.sel == 0; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 0 and not r.off }
                     on press sko0 { emit nd_so(r.index * 10 + 0) }
                     group { show: r.kind == 1 and r.n > 1
                         box { from: tx + 69, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 1, 0.9, if(sko1.hover, 0.16, 0)) }
                         box { from: tx + 69, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 1, nd_acc, fl.trace_lit) }
                         text r.o1 { at: tx + 69 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 1, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko1 { from: tx + 69, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o1}"; selected: r.sel == 1; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 1 }
+                    zone box sko1 { from: tx + 69, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o1}"; selected: r.sel == 1; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 1 and not r.off }
                     on press sko1 { emit nd_so(r.index * 10 + 1) }
                     group { show: r.kind == 1 and r.n > 2
                         box { from: tx + 138, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 2, 0.9, if(sko2.hover, 0.16, 0)) }
                         box { from: tx + 138, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 2, nd_acc, fl.trace_lit) }
                         text r.o2 { at: tx + 138 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 2, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko2 { from: tx + 138, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o2}"; selected: r.sel == 2; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 2 }
+                    zone box sko2 { from: tx + 138, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o2}"; selected: r.sel == 2; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 2 and not r.off }
                     on press sko2 { emit nd_so(r.index * 10 + 2) }
                     group { show: r.kind == 1 and r.n > 3
                         box { from: tx + 207, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 3, 0.9, if(sko3.hover, 0.16, 0)) }
                         box { from: tx + 207, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 3, nd_acc, fl.trace_lit) }
                         text r.o3 { at: tx + 207 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 3, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko3 { from: tx + 207, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o3}"; selected: r.sel == 3; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 3 }
+                    zone box sko3 { from: tx + 207, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o3}"; selected: r.sel == 3; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 3 and not r.off }
                     on press sko3 { emit nd_so(r.index * 10 + 3) }
                     group { show: r.kind == 1 and r.n > 4
                         box { from: tx + 276, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 4, 0.9, if(sko4.hover, 0.16, 0)) }
                         box { from: tx + 276, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 4, nd_acc, fl.trace_lit) }
                         text r.o4 { at: tx + 276 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 4, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko4 { from: tx + 276, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o4}"; selected: r.sel == 4; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 4 }
+                    zone box sko4 { from: tx + 276, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o4}"; selected: r.sel == 4; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 4 and not r.off }
                     on press sko4 { emit nd_so(r.index * 10 + 4) }
                     group { show: r.kind == 1 and r.n > 5
                         box { from: tx + 345, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 5, 0.9, if(sko5.hover, 0.16, 0)) }
                         box { from: tx + 345, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 5, nd_acc, fl.trace_lit) }
                         text r.o5 { at: tx + 345 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 5, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko5 { from: tx + 345, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o5}"; selected: r.sel == 5; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 5 }
+                    zone box sko5 { from: tx + 345, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o5}"; selected: r.sel == 5; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 5 and not r.off }
                     on press sko5 { emit nd_so(r.index * 10 + 5) }
                     group { show: r.kind == 1 and r.n > 6
                         box { from: tx + 414, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 6, 0.9, if(sko6.hover, 0.16, 0)) }
                         box { from: tx + 414, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 6, nd_acc, fl.trace_lit) }
                         text r.o6 { at: tx + 414 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 6, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko6 { from: tx + 414, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o6}"; selected: r.sel == 6; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 6 }
+                    zone box sko6 { from: tx + 414, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o6}"; selected: r.sel == 6; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 6 and not r.off }
                     on press sko6 { emit nd_so(r.index * 10 + 6) }
                 }
-                zone box skz { from: tx - 12, ry + 4; size: 404, 38; cursor: grab; role: slider; label: "{r.label}"; value: "{r.value}"; show: nd_studio and nd_tab > 0 and r.kind == 0 }
+                zone box skz { from: tx - 12, ry + 4; size: 404, 38; cursor: grab; role: slider; label: "{r.label}"; value: "{r.value}"; show: nd_studio and nd_tab > 0 and r.kind == 0 and not r.off }
                 on press skz { emit nd_sk(r.index * 2000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }
                 on drag skz { emit nd_sk(r.index * 2000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }
             }
