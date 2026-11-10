@@ -302,6 +302,8 @@ M.SETTERS = {
     -- D275: the side drawers. Appended.
     "drawers.on", "drawers.dashboard", "drawers.notices", "drawers.edge", "drawers.github", "drawers.quote",
     "keys.drawer_left", "keys.drawer_right",
+    -- D276: the arcade. Appended.
+    "keys.arcade",
 }
 
 local function row_of(path)

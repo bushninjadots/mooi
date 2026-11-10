@@ -7314,3 +7314,25 @@ touching the side** (off by default), and on the Dashboard, GitHub and the quote
 (4.4k contributions, 13 repositories, the grid, mooi as the top repository, up to date, a quote) and the notices
 drawer said All caught up. The old side notch still opens from the left edge too; the two do not yet know of each
 other.
+
+## D276 · 2026-11-10 · The arcade, and Snake (k4's games, as mooi's own)
+
+The owner: "yes I want the games too". k4's games are its plugins: an idle dungeon (Mazmorra), a typing roguelike
+(La Grieta), an autobattler, Snake, and Digivice. mooi's are written fresh in Pleamar and drawn from shapes and
+glyphs: k4's dungeon art carries no record of where it came from, and Digivice is Digimon's sprites and names,
+which are Bandai's — neither goes into a public repository. Digivice is left out for that reason.
+
+`mooi-arcade` is a program of its own, started the first time `mooi arcade` (Super+G, `keys.arcade`, and **Games**
+in the search line) asks for it and kept after. One window in the frame's colours over a dimmed desktop: a picker
+of three cards (← → and Return, or a press), then the game; Esc goes back to the picker, then shuts it. It holds the
+keyboard only while open. Best scores are kept in `arcade.json`.
+
+**Snake** is the first game: a 28 × 18 board, arrows or WASD, Space or P to start and pause; it grows by two for
+each bite, speeds up as it grows (140 ms a step down to 60), and ends at a wall or its own body (never the cell its
+tail is leaving). The rules are `lib/arcade/snake`, pure, with their own seeded random numbers so the tests can say
+what happens. A pause and a quick resume cannot start a second clock: each start of the clock has its own number.
+**La Grieta** and **Mazmorra** are on the picker as coming next.
+
+**Verified.** Unit 868 / 0; the scene compiles; the gate now parses `shell/lib/arcade/` and `shell/lib/node/`
+too; live after `mooi refresh`: Super+G's command started the arcade, Snake ran and turned on a key, and the arcade
+closed again.

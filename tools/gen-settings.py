@@ -165,6 +165,8 @@ SETTERS = [
     # D275: the side drawers. Appended.
     "drawers.on", "drawers.dashboard", "drawers.notices", "drawers.edge", "drawers.github", "drawers.quote",
     "keys.drawer_left", "keys.drawer_right",
+    # D276: the arcade. Appended.
+    "keys.arcade",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -205,6 +207,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("surface", "Under the windows", "The Subsurface's Overview: the widgets under the wallpaper, at once; again closes it"),
         ("drawer_left", "Dashboard drawer", "GitHub, updates and a quote, out of the frame's left side"),
         ("drawer_right", "Notifications drawer", "Your notices, out of the frame's right side"),
+        ("arcade", "Arcade", "mooi's games: Snake, and more to come"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),

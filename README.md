@@ -19,6 +19,7 @@ apps and lock screen all follow it.
 - **Lock screen**: your colours and wallpaper, PAM password, and media controls.
 - **Settings window**: every option in one place, with no config files to edit.
 - **BMO**: a small desktop companion.
+- **The arcade** (Super+G): mooi's own games, starting with Snake.
 
 ## Install
 
@@ -43,6 +44,7 @@ from clean defaults: no one else's settings, accounts or pictures.
 | Super + D | the Dashboard drawer |
 | Super + N | the notifications drawer |
 | Super + K | every shortcut, in words |
+| Super + G | the arcade |
 | Super + L | lock |
 | Super + Shift + V | clipboard history |
 | Super + Shift + R | record the screen |

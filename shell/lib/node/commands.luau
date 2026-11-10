@@ -26,6 +26,8 @@ M.LIST = {
     { name = "Keyboard shortcuts", args = { "node", "keys" }, words = "keys keybinds keybindings shortcuts hotkeys cheat sheet bindings" },
     -- D268: the system's packages brought up to date, in the owner's terminal (`term`: never in the background)
     { name = "Update the system", args = { "pkg", "update" }, term = true, words = "update upgrade packages pacman paru yay syu" },
+    -- D276: the arcade
+    { name = "Games (the arcade)", args = { "arcade" }, words = "games arcade play snake grieta mazmorra fun" },
     -- D269: Minflair's OCR — choose a region, its words are copied
     { name = "Copy text from the screen", args = { "capture", "text" }, words = "ocr text screen copy read scan tesseract capture" },
     -- D266: Minflair's game mode — reversible, and the gauge says which way it went

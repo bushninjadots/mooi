@@ -271,3 +271,43 @@ do
         assert(not read("shell/mooi-drawers.luau"):find('sys.watch, "notifications"', 1, true))
     end)
 end
+
+section("the arcade and Snake (D276; k4's games, ported as mooi's own)")
+do
+    local SN = require("lib/arcade/snake")
+    test("a new game: four long, heading right, food on a free cell, the same for the same seed", function()
+        local a, b = SN.new(42), SN.new(42)
+        eq(#a.body, 4); eq(a.dir, "right"); eq(a.body[1].x, SN.W // 2)
+        eq(a.food.x, b.food.x); eq(a.food.y, b.food.y)
+        for _, c in ipairs(a.body) do assert(not (c.x == a.food.x and c.y == a.food.y), "food never on the snake") end
+    end)
+    test("it moves, eats and grows by two, and never turns straight back", function()
+        local st = SN.new(1)
+        st.food = { x = st.body[1].x + 1, y = st.body[1].y }
+        eq(SN.step(st), "ate"); eq(st.score, 1)
+        SN.step(st); SN.step(st)
+        eq(#st.body, 6, "grown by two")
+        SN.turn(st, "left"); SN.step(st); eq(st.dir, "right", "no reversing")
+        SN.turn(st, "up"); SN.step(st); eq(st.dir, "up")
+    end)
+    test("a wall or its own body ends it; the cell the tail leaves is free", function()
+        local st = SN.new(1, 6, 4)
+        local r
+        for _ = 1, 10 do r = SN.step(st); if r == "dead" then break end end
+        eq(r, "dead"); eq(st.alive, false)
+        -- a square of four chasing its tail never bites it
+        local sq = SN.new(1, 5, 5)
+        sq.body = { { x = 1, y = 1 }, { x = 1, y = 2 }, { x = 2, y = 2 }, { x = 2, y = 1 } }
+        sq.dir, sq.next_dir, sq.food = "right", "right", { x = 4, y = 4 }
+        eq(SN.step(sq), "moved", "into the tail's cell as it leaves")
+        eq(SN.interval({ score = 0 }), 140); eq(SN.interval({ score = 100 }), 60)
+    end)
+    test("the arcade: Super+G opens it, started on demand; Snake is in its picker and the search line", function()
+        eq(require("lib/config").defaults().keys.arcade, "SUPER + G")
+        assert(read("bin/mooi"):find('"$pleamar" --say mooi-arcade "emit ac_cmd 1"', 1, true))
+        local l = read("shell/mooi-arcade.luau")
+        assert(l:find('{ id = "snake", name = "Snake"', 1, true) and l:find("sn_gen = sn_gen + 1", 1, true))
+        assert(read("shell/mooi-arcade.plm"):find("keyboard: exclusive while ac_page > 0", 1, true))
+        eq(require("lib/node/commands").match("games")[1].args[1], "arcade")
+    end)
+end

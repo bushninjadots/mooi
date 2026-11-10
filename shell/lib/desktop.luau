@@ -32,6 +32,8 @@ M.ACTIONS = {
     -- D275: the side drawers
     { key = "drawer_left", cmd = "drawer dashboard", name = "The Dashboard drawer" },
     { key = "drawer_right", cmd = "drawer notices", name = "The notices drawer" },
+    -- D276: the arcade
+    { key = "arcade", cmd = "arcade", name = "The arcade (games)" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 

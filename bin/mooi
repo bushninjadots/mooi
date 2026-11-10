@@ -38,6 +38,7 @@
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi game-mode [on|off|status]  game mode: no animations, blur, shadows or gaps; VRR on; put back exactly after
+#   mooi arcade            mooi's games: Snake, La Grieta, Mazmorra (Super+G)
 #   mooi drawer [dashboard|notices|close]  the side drawers out of the frame (Super+D, Super+N)
 #   mooi capture text      choose a region of the screen: its words (tesseract) go to the clipboard
 #   mooi pkg search WORDS | install NAME [repo|aur] | update   packages: search, and install or update in a terminal
@@ -1095,7 +1096,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-surface mooi-node mooi-drawers; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-surface mooi-node mooi-drawers mooi-arcade; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         if [ -e "$link" ]; then
@@ -1159,6 +1160,7 @@ mooi-lock.plm:the lock screen
 mooi-surface.plm:Surface
 mooi-node.plm:the Pill (the node)
 mooi-drawers.plm:the side drawers
+mooi-arcade.plm:the arcade
 bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
@@ -1616,6 +1618,18 @@ case "$cmd" in
     capture) # D269: `mooi capture text` — a region's words to the clipboard
         case "${1:-}" in text) capture_text; exit $? ;; *) echo "usage: mooi capture text" >&2; exit 2 ;; esac ;;
     pkg) pkg_cmd "$@"; exit $? ;;
+    arcade) # D276: mooi's arcade (Super+G) — started on the first press, kept for the next
+        if ! "$pleamar" --say mooi-arcade "emit ac_cmd 1" >/dev/null 2>&1; then
+            settings_link
+            sc="$live/mooi-arcade.plm"; [ -f "$sc" ] || sc="$root/shell/mooi-arcade.plm"
+            # shellcheck disable=SC2046
+            PLEAMAR_SWAPCHAIN=1 MOOI_SHELL="$(dirname "$sc")" setsid -f "$pleamar" --scene "$sc" --no-hud --stall 0 $(reduced_flag) >> "$log" 2>&1
+            for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+                sleep 0.2
+                "$pleamar" --say mooi-arcade "emit ac_cmd 1" >/dev/null 2>&1 && exit 0
+            done
+            echo "the arcade did not start; see $log" >&2; exit 1
+        fi ;;
     drawer) # D275: the side drawers — dashboard (left, Super+D) | notices (right, Super+N) | close
         case "${1:-dashboard}" in dashboard|left) n=1 ;; notices|right) n=2 ;; close) n=0 ;; *) echo "usage: mooi drawer [dashboard|notices|close]" >&2; exit 2 ;; esac
         "$pleamar" --say mooi-drawers "emit dr_cmd $n" >/dev/null 2>&1 || : ;;
