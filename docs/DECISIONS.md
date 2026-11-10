@@ -6705,3 +6705,14 @@ unchanged.
 to its maximum set the next row to its minimum. Sliders and meters now use a stride of 2000.
 
 **Verified.** Unit 680 / 0; scenes compile; `bin/mooi check` green.
+
+## D237 · 2026-11-10 · The node's notices, gathered
+
+After ActivSpot and DMS: notices are gathered by app, one card per app with its newest notice and how many that
+app has sent (`FIREFOX · 3`). Each card still points at its own notice in the feed's order, so its action and
+its dismissal reach the right one. A line drains along the first card over its life, and the pointer resting
+on the node holds it. "+N MORE" counts notices rather than cards. Expanding a card to read the message and
+copying its body were left out on purpose: the feed never carries bodies out of the bar (lib/nexusfeed). That
+decision stands until the owner says otherwise. `lib/node/notices` is pure and tested.
+
+**Verified.** Unit 688 / 0; scenes compile; `bin/mooi check` green.

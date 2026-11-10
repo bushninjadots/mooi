@@ -6412,7 +6412,7 @@ do
         local p = read("shell/mooi-node.plm")
         assert(p:find("opacity: nd_ldm * nd_ld; show: nd_ld > 0.01", 1, true), "D229: the look's dim")
         assert(p:find('show: nd_more > 0.5', 1, true))
-        assert(read("shell/mooi-node.luau"):find("fact.nd_more = math.max(0, #list - #rows)", 1, true))
+        assert(read("shell/mooi-node.luau"):find("fact.nd_more = math.max(0, #(N.notice_list or N.notices) - shown)", 1, true), "D237: counted by notices, not cards")
     end)
 end
 
@@ -6589,6 +6589,26 @@ do
         assert(l:find("local m = MK.mirrored(bands, 32)", 1, true))
         assert(l:find('run("pleamar", { "--say", "mooi", "emit feed_want" }', 1, true), "the bar asked for its feed")
         assert(read("shell/mooi-node.plm"):find('"brightnessctl"', 1, true))
+    end)
+end
+
+section("the node's notices (D237)")
+do
+    local NT = require("lib/node/notices")
+    test("one card per app, its newest on top, how many it sent; each card still points at its own notice", function()
+        local g = NT.group({ { app = "Firefox", title = "Mail" }, { app = "Discord", title = "Hi" }, { app = "firefox", title = "Old" },
+                             { app = "", title = "" }, "junk" })
+        eq(#g, 3); eq(g[1].title, "Mail"); eq(g[1].count, 2); eq(g[2].idx, 2); eq(g[3].idx, 4)
+        eq(g[3].app, "Notice"); eq(g[3].title, "Something new", "a private notice says only that something came")
+        eq(NT.label(g[1]), "FIREFOX  ·  2"); eq(NT.label(g[2]), "DISCORD")
+        eq(#NT.group(nil), 0)
+    end)
+    test("the node: a card's action reaches its own notice in the feed's order; its time drains and is held while pointed at", function()
+        local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()
+        assert(l:find('"emit note_act " .. tostring((i - 1) * 10 + (what == 9 and 9 or what))', 1, true))
+        assert(l:find("if N.near then ev.till = ev.till + 250 end", 1, true))
+        local p = assert(io.open("shell/mooi-node.plm")):read("a")
+        assert(p:find("size: (n.w - 24) * nd_ncs, 1.5", 1, true))
     end)
 end
 

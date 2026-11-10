@@ -17,6 +17,7 @@ local DV = require("lib/node/devices")
 local CMD = require("lib/node/commands")
 local HY = require("lib/hypr")
 local MK = require("lib/node/mediakit")
+local NT = require("lib/node/notices")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
@@ -131,19 +132,24 @@ local function show_media(b)
     fact.nd_prog = (m.length > 0) and math.max(0, math.min(1, m.position / m.length)) or 0
 end
 
+-- D237: one card per app (its newest notice, and how many it has sent); each row remembers which notice it is
 local function show_notices(b)
-    local list = N.notice_list or N.notices
-    local cards = G.cards(b, math.min(N.look.cards, #list), N.scr)
-    local rows = {}
+    local groups = NT.group(N.notice_list or N.notices)
+    local cards = G.cards(b, math.min(N.look.cards, #groups), N.scr)
+    local rows, idx = {}, {}
+    local shown = 0
     for i, c in ipairs(cards) do
-        local n = list[i]
-        local a1 = type(n.actions) == "table" and n.actions[1] or nil
-        rows[i] = { x = c.x, y = c.y, w = c.w, h = c.h, app = tostring(n.app or ""), title = tostring(n.title or ""),
+        local g = groups[i]
+        local a1 = g.actions[1]
+        rows[i] = { x = c.x, y = c.y, w = c.w, h = c.h, app = NT.label(g), title = g.title,
                     act = type(a1) == "string" and a1 or "", hasact = type(a1) == "string" and a1 ~= "" }
+        idx[i] = g.idx
+        shown = shown + g.count
     end
+    N.notice_rows = idx
     model.nc = rows
     fact.nd_ncn = #rows
-    fact.nd_more = math.max(0, #list - #rows)
+    fact.nd_more = math.max(0, #(N.notice_list or N.notices) - shown)
 end
 
 local function show_rail(b)
@@ -533,9 +539,11 @@ end)
 on("nd_nc", function(v)
     v = math.floor(tonumber(v) or -1)
     local row, what = v // 10, v % 10
-    if not N.notices[row + 1] then return end
-    run("pleamar", { "--say", "mooi", "emit note_act " .. tostring(row * 10 + (what == 9 and 9 or what)) }, function() end)
-    if what == 9 then table.remove(N.notices, row + 1); render() end
+    -- the card's own notice in the feed's order (cards are gathered by app, D237), as mooi numbers them
+    local i = N.notice_rows and N.notice_rows[row + 1]
+    if N.studio.open or not i or not N.notices[i] then return end
+    run("pleamar", { "--say", "mooi", "emit note_act " .. tostring((i - 1) * 10 + (what == 9 and 9 or what)) }, function() end)
+    if what == 9 then table.remove(N.notices, i); render() end
 end)
 on("nd_ws", function(v)
     local w = N.ws.list[math.floor(tonumber(v) or -1) + 1]
@@ -819,6 +827,14 @@ on("nd_mt", function(v)
             after(600, function() if g == N.mt_gen then N.bri_drag, N.mic_drag = false, false end end)
         end)
     end
+end)
+
+-- ── a notice's life (D237): a line drains over it; the pointer resting on the node holds it ──
+every(250, function()
+    local ev = N.st.events.notice
+    if N.kind ~= "notice" or not ev then return end
+    if N.near then ev.till = ev.till + 250 end
+    fact.nd_ncl = math.max(0, math.min(1, (ev.till - now()) / ST.LIFE.notice))
 end)
 
 -- ── the time tools (D231) ──
