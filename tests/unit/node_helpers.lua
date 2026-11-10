@@ -1260,3 +1260,70 @@ do
     end)
 end
 
+section("the node's helpers (D246): cliphist")
+do
+    local C = require("lib/node/cliphist")
+
+    test("cliphist: a text line keeps its id and one tidy line of preview", function()
+        local rows = C.parse("12\thello   world\n")
+        eq(#rows, 1)
+        eq(rows[1].id, "12")
+        eq(rows[1].preview, "hello world")
+        eq(rows[1].kind, "text")
+        eq(rows[1].label, "hello world")
+    end)
+
+    test("cliphist: a long text preview is cut to eighty characters with an ellipsis", function()
+        local long = string.rep("a", 100)
+        local rows = C.parse("7\t" .. long)
+        eq(#rows, 1)
+        eq(#rows[1].preview, 80)
+        eq(rows[1].preview:sub(-3), "…")
+        eq(rows[1].preview:sub(1, 77), string.rep("a", 77))
+    end)
+
+    test("cliphist: an image says what it is, how big and which format", function()
+        local rows = C.parse("34\t[[ binary data 12 KiB png 800x600 ]]")
+        eq(rows[1].kind, "image")
+        eq(rows[1].label, "Image · 800×600 · PNG")
+        eq(rows[1].preview, "[[ binary data 12 KiB png 800x600 ]]")
+    end)
+
+    test("cliphist: other binary data says how big it is", function()
+        local rows = C.parse("35\t[[ binary data 3.5 KiB ]]")
+        eq(rows[1].kind, "binary")
+        eq(rows[1].label, "Binary · 3.5 KiB")
+        local bare = C.parse("36\t[[ binary data ]]")
+        eq(bare[1].label, "Binary")
+    end)
+
+    test("cliphist: the list stops at the limit and a bad limit gives nothing", function()
+        local text = "1\tone\n2\ttwo\n3\tthree\n"
+        eq(#C.parse(text), 3)
+        eq(#C.parse(text, 2), 2)
+        eq(#C.parse(text, 0), 0)
+        eq(#C.parse(text, -3), 0)
+    end)
+
+    test("cliphist: garbage lines and non-numeric ids are skipped", function()
+        local rows = C.parse("no tab here\n12\thello\nabc\tignored\n13\t   \n")
+        eq(#rows, 1)
+        eq(rows[1].id, "12")
+        eq(rows[1].preview, "hello")
+    end)
+
+    test("cliphist: decode takes only a digits-only id", function()
+        eq(table.concat(C.decode_args("123"), " "), "cliphist decode 123")
+        eq(table.concat(C.decode_args(45), " "), "cliphist decode 45")
+        eq(C.decode_args("12a"), nil)
+        eq(C.decode_args(""), nil)
+        eq(C.decode_args(nil), nil)
+    end)
+
+    test("cliphist: odd input gives an empty list rather than an error", function()
+        eq(#C.parse(nil), 0)
+        eq(#C.parse(""), 0)
+        eq(#C.parse(123), 0)
+        eq(#C.parse("1\tone", "many"), 1)
+    end)
+end
