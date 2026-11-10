@@ -308,7 +308,7 @@ local rows = {
     { title = "Height", desc = "How tall the strips may grow from the edge line, of the screen", tab = 22, page = "Live wallpaper", y = 1926 },
     { title = "Side drawers", desc = "Off: neither drawer runs, and Super+D and Super+N do nothing", tab = 23, page = "Side drawers", y = 156 },
     { title = "Dashboard (left)", desc = "GitHub, your contributions, the system's updates and a quote. Super+D", tab = 23, page = "Side drawers", y = 216 },
-    { title = "Notifications (right)", desc = "Your notices with Silent and Clear all. Super+N", tab = 23, page = "Side drawers", y = 276 },
+    { title = "Control Center (right)", desc = "Quick switches, brightness and volume sliders, and your notices. Super+N", tab = 23, page = "Side drawers", y = 276 },
     { title = "Open by touching the side", desc = "Push the pointer against the screen's left or right edge to open that drawer", tab = 23, page = "Side drawers", y = 336 },
     { title = "GitHub", desc = "Your profile, four numbers, half a year of contributions and your top repository. Uses the GitHub CLI (gh auth login)", tab = 23, page = "Side drawers", y = 462 },
     { title = "A quote", desc = "A line for the day under the updates", tab = 23, page = "Side drawers", y = 522 },

@@ -814,11 +814,11 @@ SECTIONS = [
         ("note", "true", "IT RESTS WHILE A WINDOW IS FULLSCREEN, WHILE THE OPENING SHOWS, AND — THE WHOLE PICTURE — WHILE WINDOWS COVER IT"),
     ]),
     # D275: the side drawers (Minflair's Convex panels), appended last so no page's place moves
-    ("Side drawers", "Side drawers", "Panels that slide out of the frame's sides: a Dashboard on the left, your notices on the right", "SHELL", [
+    ("Side drawers", "Side drawers", "Panels that grow out of the frame's sides: a Dashboard on the left, a Control Center on the right", "SHELL", [
         ("card", "The drawers"),
         ("toggle", "Side drawers", "Off: neither drawer runs, and Super+D and Super+N do nothing", "drawers.on", "sv_drawers_on"),
         ("toggle", "Dashboard (left)", "GitHub, your contributions, the system's updates and a quote. Super+D", "drawers.dashboard", "sv_drawers_dashboard", "sv_drawers_on > 0.5"),
-        ("toggle", "Notifications (right)", "Your notices with Silent and Clear all. Super+N", "drawers.notices", "sv_drawers_notices", "sv_drawers_on > 0.5"),
+        ("toggle", "Control Center (right)", "Quick switches, brightness and volume sliders, and your notices. Super+N", "drawers.notices", "sv_drawers_notices", "sv_drawers_on > 0.5"),
         ("toggle", "Open by touching the side", "Push the pointer against the screen's left or right edge to open that drawer", "drawers.edge", "sv_drawers_edge", "sv_drawers_on > 0.5"),
         ("card", "On the Dashboard"),
         ("toggle", "GitHub", "Your profile, four numbers, half a year of contributions and your top repository. Uses the GitHub CLI (gh auth login)", "drawers.github", "sv_drawers_github", "sv_drawers_on > 0.5"),

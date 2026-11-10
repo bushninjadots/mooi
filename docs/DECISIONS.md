@@ -7776,3 +7776,24 @@ The environment is `apps-env.lua` in mooi's data folder, which `custom/mooi.lua`
 
 **Verified.** `tests/apps-more.sh` 17 / 0 (in the gate); the rendered colorscheme loads in a headless Neovim as
 `mooi`; Starship renders the prompt with no error; shellcheck (container) clean; `hyprctl reload` without errors.
+
+## D299 · 2026-11-11 · The right side drawer becomes Minflair's Control Center; both drawers grow out of the frame
+
+The owner, with a screenshot of Minflair's Convex style: "I meant side notches like this." What it shows is a
+Dashboard out of the frame's left side and a **Control Center** out of its right, both one body with the frame. D275
+had the Dashboard; the right drawer held only notices. Now (spec: docs/superpowers/specs/2026-11-11-noctalia-port-design.md §1):
+- **Six tiles**, two by three: Wi-Fi (the network's name), Bluetooth (devices connected), Night light (hyprsunset at
+  4000 K), Caffeine (keep awake), Game mode (`mooi game-mode`), Battery (percent, charging; a press opens Settings).
+  A lit tile has its icon on the accent. Wi-Fi and Bluetooth are switched through the services every surface uses;
+  the night light and caffeine are the bar's (it holds hyprsunset and the inhibitor) and are asked of it.
+- **Three sliders**: brightness (only where a backlight answers), volume, microphone; press or drag.
+- **Performance mode**: Saver, Balanced, Performance, through the bar's own `power.profile` setting so Settings and
+  the power island agree; shown only where power-profiles-daemon answers (hidden, not dimmed).
+- **Notifications** under them: the two newest, Silent and Clear all, "All caught up" when there are none.
+- Both drawers lose their floating shadow: they are the frame bulging out, outlined by its edge.
+
+Pure parts (each tile's words, the sliders' codes, the profiles) are `lib/drawers.luau`, tested.
+
+**Verified.** Unit 940 / 0; the drawers and Settings scenes compile. Live: the Control Center opened with Super+N's
+command, its tiles read the real Wi-Fi network, Bluetooth off, battery charging, and the real (muted) volume; the
+Night light tile started hyprsunset and stopped it again, the tile's words following.

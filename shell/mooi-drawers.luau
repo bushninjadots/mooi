@@ -117,15 +117,92 @@ end
 pcall(sys.watch, "files:nexus-feed.json", function() if D.open == 2 then notices() end end)
 pcall(sys.watch, "files:updates.json", function() if D.open == 1 then dashboard() end end)
 
+local open   -- below; the tiles close the drawer
+-- ── the control centre (D299): Minflair's tiles and sliders, from the services every surface reads ──
+local CC = { wifi_on = false, ssid = "", bt_on = false, bt_conn = 0, nl = false, caf = false, game = false,
+             bat_present = false, bat_pct = 0, bat_charging = false }
+local function tiles()
+    local t = DR.tiles(CC)
+    text.dr_wifit, text.dr_btt, text.dr_nlt, text.dr_caft, text.dr_gamet, text.dr_batt = t.wifi, t.bt, t.nl, t.caf, t.game, t.bat
+    fact.dr_wifi, fact.dr_bt, fact.dr_nl, fact.dr_caf, fact.dr_game = CC.wifi_on, CC.bt_on, CC.nl, CC.caf, CC.game
+    fact.dr_batlow = CC.bat_charging
+end
+pcall(sys.watch, "network", function(n)
+    if type(n) ~= "table" then return end
+    CC.wifi_on, CC.ssid = n.wifi ~= false, ""
+    for _, w in ipairs(type(n.networks) == "table" and n.networks or {}) do if w.active then CC.ssid = tostring(w.ssid or "") end end
+    tiles()
+end)
+pcall(sys.watch, "bluetooth", function(b)
+    if type(b) ~= "table" then return end
+    CC.bt_on, CC.bt_conn = b.powered == true, 0
+    for _, d in ipairs(type(b.devices) == "table" and b.devices or {}) do if d.connected then CC.bt_conn = CC.bt_conn + 1 end end
+    tiles()
+end)
+pcall(sys.watch, "battery", function(b)
+    if type(b) ~= "table" then return end
+    CC.bat_present, CC.bat_pct, CC.bat_charging = b.present == true, tonumber(b.percent) or 0, b.charging == true
+    tiles()
+end)
+pcall(sys.watch, "audio", function(a)
+    if type(a) ~= "table" then return end
+    fact.dr_vol = a.muted and 0 or (tonumber(a.volume) or 0)
+    fact.dr_mic = a.input_muted and 0 or (tonumber(a.input) or 0)
+end)
+pcall(sys.watch, "brightness", function(v)
+    if type(v) ~= "table" then return end
+    local lv = tonumber(v.level)
+    fact.dr_hasbri = v.present == true and lv ~= nil
+    if lv then fact.dr_bri = lv > 1 and lv / 100 or lv end
+end)
+-- the night light and caffeine are the bar's (it holds hyprsunset and the inhibitor): it is asked
+local function ask_bar()
+    run("pleamar", { "--say", "mooi", "get nl_on" }, function(out) CC.nl = tostring(out or ""):match("true") ~= nil; tiles() end)
+    run("pleamar", { "--say", "mooi", "get caffeine_on" }, function(out) CC.caf = tostring(out or ""):match("true") ~= nil; tiles() end)
+    run("mooi", { "game-mode", "status" }, function(out) CC.game = tostring(out or ""):match("^on") ~= nil; tiles() end)
+    run("powerprofilesctl", { "get" }, function(out, code)
+        fact.dr_ppd = code == 0
+        local now = tostring(out or ""):match("[%w%-]+")
+        for i, name in pairs(DR.PROFILES) do if name == now then fact.dr_prof = i end end
+    end)
+end
+local function control()
+    ask_bar(); tiles(); notices()
+    text.dr_cctime = os.date("%a %d %b · %H:%M")
+end
+on("dr_tile", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if v == 1 then pcall(sys.call, "network.wifi", not CC.wifi_on)
+    elseif v == 2 then pcall(sys.call, "bluetooth.power", not CC.bt_on)
+    elseif v == 3 then run("pleamar", { "--say", "mooi", "emit night_light" }, function() after(150, ask_bar) end)
+    elseif v == 4 then run("pleamar", { "--say", "mooi", "emit caffeine" }, function() after(150, ask_bar) end)
+    elseif v == 5 then run("mooi", { "game-mode" }, function() ask_bar() end)
+    elseif v == 6 then open(0); run("pleamar", { "--say", "mooi", "emit open_settings" }, function() end) end
+end)
+on("dr_sl", function(v)
+    local which, lv = DR.slider(v)
+    if not which then return end
+    if which == 0 then pcall(sys.call, "brightness.level", math.max(0.01, lv)); fact.dr_bri = lv
+    elseif which == 1 then pcall(sys.call, "audio.volume", lv); fact.dr_vol = lv
+    else pcall(sys.call, "audio.input", lv); fact.dr_mic = lv end
+end)
+on("dr_prof_go", function(v)
+    local name = DR.PROFILES[math.floor(tonumber(v) or -1)]
+    if not name then return end
+    fact.dr_prof = math.floor(tonumber(v))
+    -- through the bar's own setting (power.profile), so Settings and the power island agree
+    run("pleamar", { "--say", "mooi", "emit pw_set " .. tostring(11 + fact.dr_prof) }, function() end)
+end)
+
 -- ── opening and closing ──
-local function open(which)
+open = function(which)
     if which == 1 and cfg().dashboard == false then which = 0 end
     if which == 2 and cfg().notices == false then which = 0 end
     D.open = which
     fact.dr_open = which
     -- the old side notch opens from the same left edge: the Dashboard folds it away rather than lie over it
     if which == 1 then run("pleamar", { "--say", "mooi-notch", "emit nt_close" }, function() end) end
-    if which == 1 then dashboard() elseif which == 2 then notices() end
+    if which == 1 then dashboard() elseif which == 2 then control() end
 end
 on("dr_cmd", function(v)
     v = math.floor(tonumber(v) or 0)

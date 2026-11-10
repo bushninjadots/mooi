@@ -126,4 +126,35 @@ function M.short(n)
     return tostring(math.floor(n))
 end
 
+-- the control centre's tiles (D299): what each says under its name, from what the services answer.
+-- st: { wifi_on, ssid, bt_on, bt_conn, nl, caf, game, bat_present, bat_pct, bat_charging }
+function M.tiles(st)
+    st = type(st) == "table" and st or {}
+    local out = {}
+    if not st.wifi_on then out.wifi = "Off" elseif st.ssid and st.ssid ~= "" then out.wifi = tostring(st.ssid) else out.wifi = "Not connected" end
+    if not st.bt_on then out.bt = "Off"
+    elseif (tonumber(st.bt_conn) or 0) > 0 then out.bt = (tonumber(st.bt_conn) == 1) and "1 device" or (math.floor(tonumber(st.bt_conn)) .. " devices")
+    else out.bt = "On" end
+    out.nl = st.nl and "Warm, 4000 K" or "Off"
+    out.caf = st.caf and "Staying awake" or "Off"
+    out.game = st.game and "On" or "Off"
+    if not st.bat_present then out.bat = "No battery"
+    else
+        local pct = math.floor((tonumber(st.bat_pct) or 0) + 0.5)
+        out.bat = pct .. "%" .. (st.bat_charging and " · charging" or "")
+    end
+    return out
+end
+
+-- a slider's code (which * 2000 + level 0 … 1000) as which (0 brightness, 1 volume, 2 microphone) and 0 … 1
+function M.slider(v)
+    v = math.floor(tonumber(v) or -1)
+    if v < 0 or v > 5000 then return nil end
+    local which, lv = v // 2000, (v % 2000) / 1000
+    if which > 2 or lv > 1 then return nil end
+    return which, lv
+end
+
+M.PROFILES = { [0] = "power-saver", [1] = "balanced", [2] = "performance" }
+
 return M

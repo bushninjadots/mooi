@@ -16,7 +16,7 @@ MONO = '"Share Tech Mono"'
 SANS = '"Exo 2"'
 NERD = '"CaskaydiaCove Nerd Font"'
 W = 380
-H = {"left": 640, "right": 520}
+H = {"left": 640, "right": 600}
 WEEKS = 26
 FR = 22   # the concave fillet where a drawer meets the frame's side
 
@@ -58,8 +58,8 @@ def scene():
          '// Do not edit: change the generator. The logic (shell/mooi-drawers.luau, lib/drawers) decides; this draws.', '',
          'scene Drawers {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "gh", "curl", "xdg-open", "hyprctl"',
-         '        services: "files", "files.write", "env"',
+         '        run: "pleamar", "mooi", "gh", "curl", "xdg-open", "hyprctl", "powerprofilesctl"',
+         '        services: "files", "files.write", "env", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "brightness", "brightness.*", "battery"',
          '    }']
     L += palette_block()
     L += ['',
@@ -84,6 +84,11 @@ def scene():
           '    // ── the notices ──',
           '    model nt max 5 { app: text; title: text; body: text; ago: text; act: text }',
           '    fact dr_ncount = 0', '    fact dr_silent = false',
+          '    // ── the control centre (D299): its tiles, sliders and the power profile ──',
+          '    fact dr_wifi = false', '    fact dr_bt = false', '    fact dr_nl = false', '    fact dr_caf = false', '    fact dr_game = false', '    fact dr_batlow = false',
+          '    text dr_wifit = ""', '    text dr_btt = ""', '    text dr_nlt = ""', '    text dr_caft = ""', '    text dr_gamet = ""', '    text dr_batt = ""', '    text dr_cctime = ""',
+          '    fact dr_bri = 0', '    fact dr_vol = 0', '    fact dr_mic = 0', '    fact dr_hasbri = false',
+          '    fact dr_ppd = false', '    fact dr_prof = 1',
           '',
           '    event dr_cmd ->       // from `mooi drawer …`: 1 the Dashboard · 2 the notices · 0 close',
           '    event dr_key ->       // a key while a drawer holds the keyboard',
@@ -91,7 +96,10 @@ def scene():
           '    event dr_ghweb ->     // the profile in the browser',
           '    event dr_self_go ->   // D278: bring mooi up to date, in a terminal',
           '    event dr_nact ->      // a notice pressed: row * 10 (its default), row * 10 + 9 (dismiss)',
-          '    event dr_nclear ->', '    event dr_nsilent ->', '    event dr_refresh ->']
+          '    event dr_nclear ->', '    event dr_nsilent ->', '    event dr_refresh ->',
+          '    event dr_tile ->      // D299: a control-centre tile: 1 Wi-Fi · 2 Bluetooth · 3 night light · 4 caffeine · 5 game mode · 6 battery',
+          '    event dr_sl ->        // a slider: which * 2000 + level (0 … 1000): 0 brightness · 1 volume · 2 microphone',
+          '    event dr_prof_go ->   // the power profile: 0 saver · 1 balanced · 2 performance']
     L += surface()
     L += ['}']
     return "\n".join(L) + "\n"
@@ -126,8 +134,9 @@ def surface():
 
 def shell(c, side, k, top, h, fill, edge):
     steps = body(side, k, top, h)
+    # one body with the frame (D299): no floating shadow; the frame's outline is carried round it
     L = [f'{c}group {{ show: {k} > 0.005',
-         f'{c}    body {{ color: {fill}; shadow: 0, 10, 28, 0.45',
+         f'{c}    body {{ color: {fill}',
          f'{c}        path {{']
     L += [f'{c}            {s}' for s in steps]
     L += [f'{c}            close }} }}',
@@ -135,7 +144,7 @@ def shell(c, side, k, top, h, fill, edge):
     L += [f'{c}        {s}' for s in steps]
     L += [f'{c}    }}',
           f'{c}    // a press on the drawer itself is the drawer\'s, not the outside\'s',
-          f'{c}    zone box drz_{side}_in {{ from: {"0" if side == "left" else f"drawers.width - {W}"}, {top}; size: {W}, {h}; role: region; label: "{"Dashboard" if side == "left" else "Notifications"}"; show: {k} > 0.9 }}']
+          f'{c}    zone box drz_{side}_in {{ from: {"0" if side == "left" else f"drawers.width - {W}"}, {top}; size: {W}, {h}; role: region; label: "{"Dashboard" if side == "left" else "Control Center"}"; show: {k} > 0.9 }}']
     return L
 
 
@@ -219,38 +228,80 @@ def left(c, ink, dim, acc, fill, edge):
 
 
 def right(c, ink, dim, acc, fill, edge):
+    """D299: Minflair's control centre — six tiles, three sliders, the power profile, the two newest notices."""
     k, top, h = "dr_rk", "dr_rtop", H["right"]
-    L = [f'{c}// ── the notices, out of the right side ──']
+    L = [f'{c}// ── the control centre, out of the right side (D299) ──']
     L += shell(c, "right", k, top, h, fill, edge)
     X = f'(drawers.width - {W} + {W} * (1 - {k}))'
     def x(v): return f'{X} + {v}'
     def y(v): return f'{top} + {v}'
     L += [f'{c}    group {{ opacity: {k}',
-          f'{c}        text "Notifications" {{ at: {x(24)}, {y(34)}; anchor: left center; size: 15; weight: 700; family: {SANS}; color: {ink} }}',
-          f'{c}        text "{{dr_ncount, 0}} WAITING" {{ at: {x(24)}, {y(54)}; anchor: left center; size: 9; family: {MONO}; color: {dim} }}']
+          f'{c}        text "Control Center" {{ at: {x(24)}, {y(32)}; anchor: left center; size: 15; weight: 700; family: {SANS}; color: {ink} }}',
+          f'{c}        text dr_cctime {{ at: {x(W - 24)}, {y(32)}; anchor: right center; align: right; size: 10; family: {MONO}; color: {dim} }}']
+    tiles = (("dr_wifi", 'if(dr_wifi, "󰖩", "󰖪")', "Wi-Fi", "dr_wifit"), ("dr_bt", 'if(dr_bt, "󰂯", "󰂲")', "Bluetooth", "dr_btt"),
+             ("dr_nl", '"󰖔"', "Night light", "dr_nlt"), ("dr_caf", '"󰅶"', "Caffeine", "dr_caft"),
+             ("dr_game", '"󰊴"', "Game mode", "dr_gamet"), ("dr_batlow", '"󰁹"', "Battery", "dr_batt"))
+    tw = (W - 48 - 10) / 2
+    for i, (lit, glyph, word, sub) in enumerate(tiles):
+        col, row = i % 2, i // 2
+        tx, ty = 24 + col * (tw + 10), 56 + row * 60
+        z = f"drz_t{i + 1}"
+        L += [f'{c}        box {{ from: {x(tx)}, {y(ty)}; size: {tw}, 52; corner: 14; color: fl.well; opacity: if({z}.hover, 1, 0.85) }}',
+              f'{c}        ellipse {{ at: {x(tx + 24)}, {y(ty + 26)}; radius: 15; color: if({lit}, {acc}, fl.hull_raised) }}',
+              f'{c}        text {glyph} {{ at: {x(tx + 24)}, {y(ty + 26)}; anchor: center; size: 14; family: {NERD}; color: if({lit}, fl.ground, {ink}) }}',
+              f'{c}        text "{word}" {{ at: {x(tx + 48)}, {y(ty + 19)}; anchor: left center; size: 11; weight: 700; family: {SANS}; color: {ink}; width: {tw - 56}; lines: 1 }}',
+              f'{c}        text {sub} {{ at: {x(tx + 48)}, {y(ty + 35)}; anchor: left center; size: 9; family: {MONO}; color: {dim}; width: {tw - 56}; lines: 1 }}',
+              f'{c}        zone box {z} {{ from: {x(tx)}, {y(ty)}; size: {tw}, 52; corner: 14; cursor: pointer; role: toggle; label: "{word}"; checked: {lit}; show: dr_open == 2 }}',
+              f'{c}        on press {z} {{ emit dr_tile({i + 1}) }}']
+    for m, glyph, word, val, yy in ((0, "󰃟", "Brightness", "dr_bri", 252), (1, "󰕾", "Volume", "dr_vol", 288), (2, "󰍬", "Microphone", "dr_mic", 324)):
+        z = f"drz_s{m}"
+        show = " and dr_hasbri" if m == 0 else ""
+        L += [f'{c}        group {{ show: true{show}',
+              f'{c}            text "{glyph}" {{ at: {x(36)}, {y(yy)}; anchor: center; size: 14; family: {NERD}; color: {ink} }}',
+              f'{c}            box {{ from: {x(58)}, {y(yy - 2)}; size: {W - 130}, 4; corner: 2; color: fl.trace_dim }}',
+              f'{c}            box {{ from: {x(58)}, {y(yy - 2)}; size: ({W - 130}) * {val}, 4; corner: 2; color: {acc} }}',
+              f'{c}            ellipse {{ at: {x(58)} + ({W - 130}) * {val}, {y(yy)}; radius: if({z}.hover, 7, 5); color: {acc} }}',
+              f'{c}            text "{{round({val} * 100)}}%" {{ at: {x(W - 26)}, {y(yy)}; anchor: right center; align: right; size: 10; weight: 700; family: {MONO}; color: {ink} }}',
+              f'{c}            zone box {z} {{ from: {x(50)}, {y(yy - 14)}; size: {W - 114}, 28; cursor: ew_resize; role: slider; label: "{word}"; value: round({val} * 100); show: dr_open == 2{show} }}',
+              f'{c}            on press {z} {{ emit dr_sl({m} * 2000 + round(clamp((pointer.x - ({x(58)})) / {W - 130}, 0, 1) * 1000)) }}',
+              f'{c}            on drag {z} {{ emit dr_sl({m} * 2000 + round(clamp((pointer.x - ({x(58)})) / {W - 130}, 0, 1) * 1000)) }}',
+              f'{c}        }}']
+    # the power profile, where power-profiles-daemon answers
+    L += [f'{c}        group {{ show: dr_ppd',
+          f'{c}            text "PERFORMANCE MODE" {{ at: {x(24)}, {y(364)}; anchor: left center; size: 8; weight: 700; family: {MONO}; color: {dim} }}']
+    pw = (W - 48 - 12) / 3
+    for i, word in enumerate(("Saver", "Balanced", "Performance")):
+        px = 24 + i * (pw + 6)
+        z = f"drz_p{i}"
+        L += [f'{c}            box {{ from: {x(px)}, {y(376)}; size: {pw}, 28; corner: 14; color: {acc}; opacity: if(dr_prof == {i}, 0.22, if({z}.hover, 0.1, 0)) }}',
+              f'{c}            box {{ from: {x(px)}, {y(376)}; size: {pw}, 28; corner: 14; stroke: 1; color: if(dr_prof == {i}, {acc}, fl.trace_dim) }}',
+              f'{c}            text "{word}" {{ at: {x(px + pw / 2)}, {y(390)}; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(dr_prof == {i}, {acc}, {ink}) }}',
+              f'{c}            zone box {z} {{ from: {x(px)}, {y(376)}; size: {pw}, 28; cursor: pointer; role: button; label: "{word}"; show: dr_open == 2 and dr_ppd }}',
+              f'{c}            on press {z} {{ emit dr_prof_go({i}) }}']
+    L += [f'{c}        }}']
+    # the notices: the two newest, with Silent and Clear all
+    ny0 = "if(dr_ppd, 424, 372)"
+    L += [f'{c}        line {{ from: {x(20)}, {top} + {ny0} - 10; to: {x(W - 20)}, {top} + {ny0} - 10; width: 1; color: fl.trace_dim }}',
+          f'{c}        text "Notifications ({{dr_ncount, 0}})" {{ at: {x(24)}, {top} + {ny0} + 8; anchor: left center; size: 11; weight: 700; family: {SANS}; color: {ink} }}']
     for code, glyph, word, bx, lit, zone, ev in ((1, 'if(dr_silent, "󰂛", "󰂚")', "Silent", W - 176, "dr_silent", "drz_sl", "dr_nsilent"),
                                                  (2, '"󰆴"', "Clear all", W - 96, "false", "drz_cl", "dr_nclear")):
-        L += [f'{c}        box {{ from: {x(bx)}, {y(22)}; size: 72, 26; corner: 13; color: {acc}; opacity: if({lit}, 0.22, if({zone}.hover, 0.12, 0.04)) }}',
-              f'{c}        box {{ from: {x(bx)}, {y(22)}; size: 72, 26; corner: 13; stroke: 1; color: if({lit}, {acc}, fl.trace_dim) }}',
-              f'{c}        text {glyph} {{ at: {x(bx + 16)}, {y(35)}; anchor: center; size: 12; family: {NERD}; color: if({lit}, {acc}, {ink}) }}',
-              f'{c}        text "{word}" {{ at: {x(bx + 44)}, {y(35)}; anchor: center; align: center; size: 8; weight: 700; family: {MONO}; color: if({lit}, {acc}, {dim}); width: 44; lines: 1 }}',
-              f'{c}        zone box {zone} {{ from: {x(bx)}, {y(22)}; size: 72, 26; corner: 13; cursor: pointer; role: button; label: "{word}"; show: dr_open == 2 }}',
+        L += [f'{c}        box {{ from: {x(bx)}, {top} + {ny0} - 5; size: 72, 26; corner: 13; color: {acc}; opacity: if({lit}, 0.22, if({zone}.hover, 0.12, 0.04)) }}',
+              f'{c}        box {{ from: {x(bx)}, {top} + {ny0} - 5; size: 72, 26; corner: 13; stroke: 1; color: if({lit}, {acc}, fl.trace_dim) }}',
+              f'{c}        text {glyph} {{ at: {x(bx + 16)}, {top} + {ny0} + 8; anchor: center; size: 12; family: {NERD}; color: if({lit}, {acc}, {ink}) }}',
+              f'{c}        text "{word}" {{ at: {x(bx + 44)}, {top} + {ny0} + 8; anchor: center; align: center; size: 8; weight: 700; family: {MONO}; color: if({lit}, {acc}, {dim}); width: 44; lines: 1 }}',
+              f'{c}        zone box {zone} {{ from: {x(bx)}, {top} + {ny0} - 5; size: 72, 26; corner: 13; cursor: pointer; role: button; label: "{word}"; show: dr_open == 2 }}',
               f'{c}        on press {zone} {{ emit {ev} }}']
-    L += [f'{c}        group {{ show: nt.count == 0',
-          f'{c}            text "󰂜" {{ at: {x(W / 2)}, {y(h / 2 - 14)}; anchor: center; size: 34; family: {NERD}; color: {dim}; opacity: 0.6 }}',
-          f'{c}            text "All caught up" {{ at: {x(W / 2)}, {y(h / 2 + 22)}; anchor: center; align: center; size: 12; weight: 700; family: {SANS}; color: {ink} }} }}',
+    L += [f'{c}        text "All caught up" {{ at: {x(W / 2)}, {top} + {ny0} + 56; anchor: center; align: center; size: 11; family: {SANS}; color: {dim}; show: nt.count == 0 }}',
           f'{c}        for n in nt {{',
-          f'{c}            let ny = {top} + 72 + n.index * 84',
-          f'{c}            box {{ from: {x(16)}, ny; size: {W - 32}, 76; corner: 12; color: fl.well; opacity: if(drz_n.hover, 1, 0.8) }}',
-          f'{c}            text "󰂚" {{ at: {x(36)}, ny + 20; anchor: center; size: 13; family: {NERD}; color: {acc} }}',
-          f'{c}            text n.app {{ at: {x(52)}, ny + 20; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {dim}; width: 200; lines: 1 }}',
-          f'{c}            text n.ago {{ at: {x(W - 56)}, ny + 20; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 60; lines: 1 }}',
-          f'{c}            text n.title {{ at: {x(30)}, ny + 40; anchor: left center; size: 12; weight: 700; family: {SANS}; color: {ink}; width: {W - 76}; lines: 1 }}',
-          f'{c}            text n.body {{ at: {x(30)}, ny + 59; anchor: left center; size: 10; family: {SANS}; color: {dim}; width: {W - 76}; lines: 1 }}',
-          f'{c}            text "×" {{ at: {x(W - 34)}, ny + 20; anchor: center; size: 15; family: {SANS}; color: if(drz_nx.hover, {ink}, {dim}) }}',
-          f'{c}            zone box drz_n {{ from: {x(16)}, ny; size: {W - 70}, 76; corner: 12; cursor: pointer; role: button; label: "{{n.app}}: {{n.title}}"; show: dr_open == 2 }}',
+          f'{c}            let ny = {top} + {ny0} + 28 + n.index * 64',
+          f'{c}            box {{ from: {x(16)}, ny; size: {W - 32}, 58; corner: 12; color: fl.well; opacity: if(drz_n.hover, 1, 0.8); show: n.index < 2 }}',
+          f'{c}            text n.app {{ at: {x(30)}, ny + 16; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {dim}; width: 200; lines: 1; show: n.index < 2 }}',
+          f'{c}            text n.ago {{ at: {x(W - 56)}, ny + 16; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 60; lines: 1; show: n.index < 2 }}',
+          f'{c}            text n.title {{ at: {x(30)}, ny + 38; anchor: left center; size: 11; weight: 700; family: {SANS}; color: {ink}; width: {W - 76}; lines: 1; show: n.index < 2 }}',
+          f'{c}            text "×" {{ at: {x(W - 34)}, ny + 16; anchor: center; size: 15; family: {SANS}; color: if(drz_nx.hover, {ink}, {dim}); show: n.index < 2 }}',
+          f'{c}            zone box drz_n {{ from: {x(16)}, ny; size: {W - 70}, 58; corner: 12; cursor: pointer; role: button; label: "{{n.app}}: {{n.title}}"; show: dr_open == 2 and n.index < 2 }}',
           f'{c}            on press drz_n {{ emit dr_nact(n.index * 10) }}',
-          f'{c}            zone box drz_nx {{ from: {x(W - 52)}, ny + 4; size: 36, 32; cursor: pointer; role: button; label: "Dismiss"; show: dr_open == 2 }}',
+          f'{c}            zone box drz_nx {{ from: {x(W - 52)}, ny + 2; size: 36, 28; cursor: pointer; role: button; label: "Dismiss"; show: dr_open == 2 and n.index < 2 }}',
           f'{c}            on press drz_nx {{ emit dr_nact(n.index * 10 + 9) }}',
           f'{c}        }}',
           f'{c}        text "SUPER+N · ESC CLOSES" {{ at: {x(W - 26)}, {y(h - 22)}; anchor: right center; align: right; size: 8; family: {MONO}; color: {dim}; opacity: 0.7 }}',

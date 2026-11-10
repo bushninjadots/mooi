@@ -270,6 +270,21 @@ do
         -- the notices are the bar's: the drawer reads its feed and never receives notifications itself
         assert(not read("shell/mooi-drawers.luau"):find('sys.watch, "notifications"', 1, true))
     end)
+    test("the control centre (D299): what each tile says, the sliders' codes, the profiles", function()
+        local t = DR.tiles({ wifi_on = true, ssid = "home", bt_on = true, bt_conn = 2, nl = true, caf = false, game = false,
+                             bat_present = true, bat_pct = 72.6, bat_charging = true })
+        eq(t.wifi, "home"); eq(t.bt, "2 devices"); eq(t.nl, "Warm, 4000 K"); eq(t.caf, "Off"); eq(t.game, "Off"); eq(t.bat, "73% · charging")
+        local o = DR.tiles({})
+        eq(o.wifi, "Off"); eq(o.bt, "Off"); eq(o.bat, "No battery")
+        eq(DR.tiles({ wifi_on = true }).wifi, "Not connected"); eq(DR.tiles({ bt_on = true, bt_conn = 1 }).bt, "1 device")
+        local w, lv = DR.slider(2000 + 450); eq(w, 1); eq(lv, 0.45)
+        w, lv = DR.slider(4000 + 1000); eq(w, 2); eq(lv, 1)
+        eq(DR.slider(-1), nil); eq(DR.slider(6000), nil); eq(DR.slider(1500), nil)
+        eq(DR.PROFILES[0], "power-saver"); eq(DR.PROFILES[2], "performance")
+        local p = read("shell/mooi-drawers.plm")
+        for _, e in ipairs({ "event dr_tile ->", "event dr_sl ->", "event dr_prof_go ->" }) do assert(p:find(e, 1, true), e) end
+        assert(p:find('"audio.*"', 1, true) and p:find('"powerprofilesctl"', 1, true))
+    end)
 end
 
 section("the arcade and Snake (D276; k4's games, ported as mooi's own)")
