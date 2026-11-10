@@ -3530,7 +3530,7 @@ scene Mooi {
                 group {
                     show: fd_3_5
                     move: 0, gy_3_66 - 5090
-                    SRow(5090, "Notices", "A branch with each new notice and its action", true, "", 768, true)
+                    SRow(5090, "Notices", "A card for each new notice, grouped by app, with its action", true, "", 768, true)
                     SToggle(1092, 5108, sv_node_notices, set_value, 499, "node.notices")
                     SRevert(1062, 5120, sv_node_notices != df_node_notices, set_value, 499000 + df_node_notices)
                 }
@@ -3551,7 +3551,7 @@ scene Mooi {
                 group {
                     show: fd_3_5
                     move: 0, gy_3_69 - 5270
-                    SRow(5270, "System", "Processor, memory, temperature and network round it when you press it", true, "", 768, true)
+                    SRow(5270, "Readings on Home", "The panel's Home shows CPU, RAM, heat and GPU under the clock (the System page always has them)", true, "", 768, true)
                     SToggle(1092, 5288, sv_node_system, set_value, 502, "node.system")
                     SRevert(1062, 5300, sv_node_system != df_node_system, set_value, 502000 + df_node_system)
                 }
@@ -3579,7 +3579,7 @@ scene Mooi {
                 group {
                     show: fd_3_5
                     move: 0, gy_3_73 - 5510
-                    text "SUPER WAKES IT · SUPER+SPACE SEARCHES · SUPER+TAB SHOWS THE WORKSPACES ROUND IT (SETTINGS → KEYS)" { at: 274, 5524; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    text "SUPER OPENS ITS PANEL · SUPER+SPACE SEARCH · SUPER+TAB WORKSPACES · SUPER+T TIME · SUPER+K SHORTCUTS (SETTINGS → KEYS)" { at: 274, 5524; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
             }
             group {

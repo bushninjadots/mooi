@@ -620,6 +620,7 @@ scene Node {
     fact nd_hf4 = 0
     fact nd_hh4 = false
     fact nd_game = false
+    fact nd_hstrip = true
     text nd_kq = ""
     fact nd_kmore = 0
     // BMO as the seed (D253): the bar's own face (ui/bmoface.plm), his expression from bmo-shared.json
@@ -1078,22 +1079,26 @@ scene Node {
                 text nd_hwg { at: nb_x + nb_w - 24, nb_y + 28; anchor: right center; align: right; size: 18; family: "CaskaydiaCove Nerd Font"; color: nd_acc }
                 text nd_hwt { at: nb_x + nb_w - 50, nb_y + 28; anchor: right center; align: right; size: 11; family: "Exo 2"; color: fl.engrave; width: 200; lines: 1 }
                 text nd_hbat { at: nb_x + nb_w - 24, nb_y + 58; anchor: right center; align: right; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.muted; width: 120; lines: 1 }
+                group { show: nd_hstrip
                 box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8), nb_y + 78; size: (nb_w - 52) / 4, 34; corner: 10; color: fl.well }
                 text nd_hs1 { at: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_hh1, fl.ember, fl.engrave); width: (nb_w - 52) / 4 - 16; lines: 1 }
                 box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: (nb_w - 52) / 4 - 20, 2; corner: 1; color: fl.trace_dim }
-                box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf1, 2; corner: 1; color: if(nd_hh1, fl.ember, nd_acc) }
+                box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf1, 2; corner: 1; color: if(nd_hh1, fl.ember, nd_acc) } }
+                group { show: nd_hstrip
                 box { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8), nb_y + 78; size: (nb_w - 52) / 4, 34; corner: 10; color: fl.well }
                 text nd_hs2 { at: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_hh2, fl.ember, fl.engrave); width: (nb_w - 52) / 4 - 16; lines: 1 }
                 box { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: (nb_w - 52) / 4 - 20, 2; corner: 1; color: fl.trace_dim }
-                box { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf2, 2; corner: 1; color: if(nd_hh2, fl.ember, nd_acc) }
+                box { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf2, 2; corner: 1; color: if(nd_hh2, fl.ember, nd_acc) } }
+                group { show: nd_hstrip
                 box { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8), nb_y + 78; size: (nb_w - 52) / 4, 34; corner: 10; color: fl.well }
                 text nd_hs3 { at: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_hh3, fl.ember, fl.engrave); width: (nb_w - 52) / 4 - 16; lines: 1 }
                 box { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: (nb_w - 52) / 4 - 20, 2; corner: 1; color: fl.trace_dim }
-                box { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf3, 2; corner: 1; color: if(nd_hh3, fl.ember, nd_acc) }
+                box { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf3, 2; corner: 1; color: if(nd_hh3, fl.ember, nd_acc) } }
+                group { show: nd_hstrip
                 box { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8), nb_y + 78; size: (nb_w - 52) / 4, 34; corner: 10; color: fl.well }
                 text nd_hs4 { at: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_hh4, fl.ember, fl.engrave); width: (nb_w - 52) / 4 - 16; lines: 1 }
                 box { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: (nb_w - 52) / 4 - 20, 2; corner: 1; color: fl.trace_dim }
-                box { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf4, 2; corner: 1; color: if(nd_hh4, fl.ember, nd_acc) }
+                box { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf4, 2; corner: 1; color: if(nd_hh4, fl.ember, nd_acc) } }
             }
             group { show: nd_pgp == 0
                 // the media card: a 64 px cover, the song, its transport, and the seek bar along its foot

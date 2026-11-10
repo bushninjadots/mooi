@@ -196,7 +196,7 @@ def scene():
           '    text nd_hclock = ""', '    text nd_hdate = ""', '    text nd_hwg = ""', '    text nd_hwt = ""', '    text nd_hbat = ""',
           '    text nd_hs1 = ""', '    text nd_hs2 = ""', '    text nd_hs3 = ""', '    text nd_hs4 = ""',
           '    fact nd_hf1 = 0', '    fact nd_hh1 = false', '    fact nd_hf2 = 0', '    fact nd_hh2 = false', '    fact nd_hf3 = 0', '    fact nd_hh3 = false', '    fact nd_hf4 = 0', '    fact nd_hh4 = false',
-          '    fact nd_game = false', '    text nd_kq = ""', '    fact nd_kmore = 0',
+          '    fact nd_game = false', '    fact nd_hstrip = true', '    text nd_kq = ""', '    fact nd_kmore = 0',
           '    // BMO as the seed (D253): the bar\'s own face (ui/bmoface.plm), his expression from bmo-shared.json',
           '    fact pb_ew = 8', '    fact pb_eh = 14', '    fact pb_lid = 0', '    fact pb_brow = 0', '    fact pb_bron = 0',
           '    fact pb_sql = 0', '    fact pb_sqr = 0', '    fact pb_mc = 0.7', '    fact pb_mo = 0.2', '    fact pb_mw = 24', '    fact pb_bl = 0',
@@ -656,10 +656,10 @@ def panel_parts(c, acc, ink, dim, hull):
     sw = '(nb_w - 52) / 4'
     for i in range(4):
         x = f'nb_x + 14 + {i} * ({sw} + 8)'
-        L += [f'{c}        box {{ from: {x}, nb_y + 78; size: {sw}, 34; corner: 10; color: fl.well }}',
+        L += [f'{c}        group {{ show: nd_hstrip', f'{c}        box {{ from: {x}, nb_y + 78; size: {sw}, 34; corner: 10; color: fl.well }}',
               f'{c}        text nd_hs{i + 1} {{ at: {x} + 10, nb_y + 92; anchor: left center; size: 9; weight: 700; family: {MONO}; color: if(nd_hh{i + 1}, fl.ember, {ink}); width: {sw} - 16; lines: 1 }}',
               f'{c}        box {{ from: {x} + 10, nb_y + 103; size: {sw} - 20, 2; corner: 1; color: fl.trace_dim }}',
-              f'{c}        box {{ from: {x} + 10, nb_y + 103; size: ({sw} - 20) * nd_hf{i + 1}, 2; corner: 1; color: if(nd_hh{i + 1}, fl.ember, {acc}) }}']
+              f'{c}        box {{ from: {x} + 10, nb_y + 103; size: ({sw} - 20) * nd_hf{i + 1}, 2; corner: 1; color: if(nd_hh{i + 1}, fl.ember, {acc}) }} }}']
     L += [f'{c}    }}']
     # ── home ───────────────────────────────────────────────────────────────────────────────────────────
     media_y = 'nb_y + 124'

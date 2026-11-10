@@ -7270,3 +7270,13 @@ opens the full picker. The header says `PAGE n OF m · N PICTURES`.
 
 **Verified (both).** Unit 860 / 0; the scene compiles; live after `mooi refresh`: Home with all its parts and both
 sliders; the Wallpaper grid on the worn picture's page.
+
+## D274 · 2026-11-10 · The Pill's settings say what is true
+
+The owner asked that the settings "reflect everything we have correctly". On Settings → Bar & Frame → The Pill,
+**System** described a cluster round the node that D260 removed, and nothing read `node.system` any more; it is now
+**Readings on Home**, and it switches the panel Home's strip of four readings (the System page always has them).
+**Notices** said "a branch"; they are cards grouped by app. The note at the foot names every key the Pill answers:
+Super, Super+Space, Super+Tab, Super+T and Super+K. The Subsurface's page gained its two switches in D271.
+
+**Verified.** Unit 860 / 0; both scenes compile; the settings generator is deterministic.
