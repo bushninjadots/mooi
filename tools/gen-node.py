@@ -61,7 +61,7 @@ def scene():
          '// this springs and draws.', '',
          'scene Node {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser"',
+         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send"',
          '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
@@ -102,7 +102,7 @@ def scene():
           '    model rl max 12 { x: number; n: text; on: bool; used: bool }',
           '    fact nd_beadx = 960', '    prop nd_bead = 960 ~nd.aux', '    follow nd_bead = nd_beadx',
           '    // system',
-          '    model sy max 4 { x: number; y: number; label: text; value: text; hot: bool }',
+          '    model sy max 5 { x: number; y: number; label: text; value: text; hot: bool }',
           '    // launcher',
           '    text nd_q = ""', '    fact nd_sel = 0',
           '    model lr max 6 { x: number; y: number; w: number; h: number; name: text; icon: image 28, 28; iconed: bool; letter: text }',

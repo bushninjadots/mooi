@@ -6509,6 +6509,24 @@ do
     end)
 end
 
+section("the node's devices (D233)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("falling below a fifth unplugged grows the battery card once; the system cluster shows the battery", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find("if N.bat and N.seen_bat and DV.crossed_critical(before, N.bat, N.charging) then battery_card(N.bat) end", 1, true), "not at start-up, only on the crossing")
+        assert(l:find('items[#items + 1] = { "BAT"', 1, true))
+        local D = require("lib/node/devices")
+        eq(D.crossed_critical(21, 19, false), true); eq(D.crossed_critical(19, 18, false), false, "once"); eq(D.crossed_critical(21, 19, true), false, "not charging")
+        assert(read("shell/mooi-node.plm"):find("model sy max 5 {", 1, true))
+    end)
+    test("a finish under a fullscreen window is said by the desktop's notifications too", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('if ok and DV.fullscreen(win) then', 1, true) and l:find('run("notify-send", { "-a", "mooi", "-u", "critical", d.title, d.detail }', 1, true))
+        assert(read("shell/mooi-node.plm"):find('"upower", "notify-send"', 1, true))
+    end)
+end
+
 section("the Pill studio (D229)")
 do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end

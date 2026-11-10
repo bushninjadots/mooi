@@ -13,11 +13,12 @@ local LK = require("lib/node/look")
 local TK = require("lib/node/timekit")
 local PV = require("lib/node/privacy")
 local CF = require("lib/node/clockfont")
+local DV = require("lib/node/devices")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
 
-local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10 }
+local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10 }
 -- what a press, Super or another opening lets go of (`done` is never among them: it waits to be answered)
 local HELD = { "system", "launcher", "universe", "time" }
 local SAT_KIND = { music = 1, rec = 2, battery = 3, network = 4, music_rec = 5, notice = 6, mic = 7, timer = 8, cam = 9 }
@@ -163,6 +164,9 @@ local function show_system(b)
         { "TEMP", f.temp and (math.floor(f.temp) .. "°") or "—", (tonumber(f.temp) or 0) > 85 },
         { "NET", N.online and "ON" or "OFF", not N.online },
     }
+    if N.bat then
+        items[#items + 1] = { "BAT", math.floor(N.bat + 0.5) .. "%" .. (N.charging and "+" or ""), DV.band(N.bat) == "critical" and not N.charging }
+    end
     local sp = G.spokes(b, #items)
     local rows = {}
     for i, it in ipairs(items) do rows[i] = { x = sp[i].x, y = sp[i].y, label = it[1], value = it[2], hot = it[3] } end
@@ -411,9 +415,25 @@ pcall(sys.watch, "audio", function(a)
     N.vol = v
     render()
 end)
+-- the battery (D233): falling into its last fifth unplugged grows a warm card, with the time left from upower
+local function battery_card(pct)
+    text.nd_pvt = "BATTERY " .. math.floor(pct + 0.5) .. "%"
+    text.nd_pvd = "Plug in soon"
+    fact.nd_pvon = true
+    ST.push(N.st, "battery", now())
+    render()
+    run("upower", { "-i", "/org/freedesktop/UPower/devices/DisplayDevice" }, function(out)
+        local u = DV.upower(out)
+        local left = u and DV.format_minutes(u.minutes_left) or ""
+        if left ~= "" then text.nd_pvd = "About " .. left .. " left  ·  plug in soon" end
+    end)
+end
 pcall(sys.watch, "battery", function(b)
     if type(b) ~= "table" or b.present == false then N.bat = nil; return end
+    local before = N.bat
     N.bat, N.charging = tonumber(b.percent), b.charging == true
+    if N.bat and N.seen_bat and DV.crossed_critical(before, N.bat, N.charging) then battery_card(N.bat) end
+    N.seen_bat = true
     render()
 end)
 pcall(sys.watch, "network", function(n)
@@ -657,6 +677,13 @@ local function time_tick()
         for _, d in ipairs(done) do N.done[#N.done + 1] = d end
         save_time()
         chime()
+        -- under a fullscreen window the node cannot be seen: the desktop's notifications say it too
+        run("hyprctl", { "-j", "activewindow" }, function(out)
+            local ok, win = pcall(json.decode, out or "")
+            if ok and DV.fullscreen(win) then
+                for _, d in ipairs(done) do run("notify-send", { "-a", "mooi", "-u", "critical", d.title, d.detail }, function() end) end
+            end
+        end)
         ST.hold(N.st, "done")
         render()
         return

@@ -6667,3 +6667,15 @@ cell is there and dim, the lit ones are drawn in the look's colour and glow. Onl
 model, and only when the string changes (the stopwatch's hundredths ten times a second).
 
 **Verified.** Unit 639 / 0; scenes compile; `bin/mooi check` green.
+
+## D233 · 2026-11-10 · The node and the machine
+
+On top of `lib/node/devices` (opencode's, D232; reviewed: one fix, brightnessctl's fields are now split the same
+way in Luau as in Lua 5.4, since an empty-matching `gmatch` pattern behaves differently in Lua 5.1). The battery
+falling below a fifth, unplugged, grows a warm card once, at the crossing (never at start-up), with the time
+left from upower. The system cluster gains a fifth spoke, BAT (warm when critical and unplugged). When a time
+tool finishes under a fullscreen window, where the node cannot be seen, a desktop notification says so too.
+The harness now fails, instead of quietly skipping, when `tests/unit/node_helpers.lua` is present but does not
+load. A bad merge had left conflict markers in it, and the run had silently dropped those tests.
+
+**Verified.** Unit 657 / 0; scenes compile; `bin/mooi check` green.
