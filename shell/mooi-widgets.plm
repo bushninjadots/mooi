@@ -16,7 +16,7 @@ import "ui/wbelow.plm" as wb
 
 scene Widgets {
     permissions {
-        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink", "gh", "xdg-open", "date", "sensors", "ps", "find", "nmcli", "bluetoothctl", "systemctl", "hyprctl"
+        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink", "gh", "xdg-open", "date", "sensors", "ps", "find", "nmcli", "bluetoothctl", "systemctl", "hyprctl", "df"
         services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env", "battery", "apps", "apps.launch", "window", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*"
     }
 
@@ -683,6 +683,11 @@ scene Widgets {
     text ck_ampm = ""
     text ck_hm24 = ""
     text ck_hm12 = ""
+    text ck_d1 = ""
+    text ck_d2 = ""
+    text ck_d3 = ""
+    text ck_d4 = ""
+    model ckp max 4 { d: text; r0: number; r1: number; r2: number; r3: number; r4: number }
     text ck_wx = ""
     text ck_wxhl = ""
     text ck_due = ""
@@ -713,6 +718,7 @@ scene Widgets {
     // ── D141: weather, system, calendar, focus timer, Claude, photo, launcher (lib/deskdata) ──
     model wxh max 24 { r: number; g: number; b: number; t: number; wet: number; lab: text; kind: number }
     model wxd max 5 { lab: text; kind: number; hi: text; lo: text; a: number; b: number }
+    model wxw max 7 { lab: text; kind: number; hi: text; lo: text; a: number; b: number }
     fact wx_on = false
     fact wx_kind = 2
     text wx_now = ""
@@ -725,11 +731,16 @@ scene Widgets {
     fact sp_c = 0
     fact sp_m = 0
     fact sp_t = 0
+    fact sp_d = 0
     text sp_ctx = ""
     text sp_mtx = ""
     text sp_ttx = ""
+    text sp_dtx = ""
     model cal max 42 { d: text; inm: bool; today: bool; due: number; key: number }
+    model calag max 6 { dow: text; d: text; due: bool }
     text cal_title = ""
+    text cal_big = ""
+    text cal_bigw = ""
     event cal_nav ->             // 0 the month before · 2 the month after
     event cal_day ->             // a day pressed (days since 1970): the board, filtered to it
     fact tm_left = 1500
@@ -1368,7 +1379,10 @@ scene Widgets {
             clip box { from: if(nl_clip, op_x, 0), if(nl_clip, op_y - wall_bar, 0); size: if(nl_clip, op_w, desk.width), if(nl_clip, op_h, desk.height); corner: if(nl_clip, op_r, 0) }
             group { glow: 26, 0.55 * nl_rs, #000000; show: nl_clip and nl_rs > 0.01
                 box { from: if(wg_rk == nl_k, wg_sx, nl_x), if(wg_rk == nl_k, wg_sy, nl_y); size: if(wg_rk == nl_k, wg_sw, nl_w), if(wg_rk == nl_k, wg_sh, nl_h); corner: 6 * if(wg_rk == nl_k, wg_ru, nl_u); color: #000000; opacity: 0.2 * nl_rs } }
-            wg.NotesList(if(wg_rk == nl_k, wg_sx, nl_x), if(wg_rk == nl_k, wg_sy, nl_y), if(wg_rk == nl_k, wg_sw, nl_w), if(wg_rk == nl_k, wg_sh, nl_h), if(wg_rk == nl_k, wg_ru, nl_u), nl_plate, ink, acc, nl_hz, nl_tn)
+            group { show: nl_lay < 0.5
+                    wg.NotesList(if(wg_rk == nl_k, wg_sx, nl_x), if(wg_rk == nl_k, wg_sy, nl_y), if(wg_rk == nl_k, wg_sw, nl_w), if(wg_rk == nl_k, wg_sh, nl_h), if(wg_rk == nl_k, wg_ru, nl_u), nl_plate, ink, acc, nl_hz, nl_tn) }
+            group { show: nl_lay > 0.5
+                    wg.NotesSticky(if(wg_rk == nl_k, wg_sx, nl_x), if(wg_rk == nl_k, wg_sy, nl_y), if(wg_rk == nl_k, wg_sw, nl_w), if(wg_rk == nl_k, wg_sh, nl_h), if(wg_rk == nl_k, wg_ru, nl_u), nl_plate, ink, acc, nl_hz, nl_tn) }
             box { from: nl_x, nl_y; size: nl_w, nl_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - nl_near) }
         }
         // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
@@ -1503,7 +1517,7 @@ scene Widgets {
             clip box { from: if(cd_clip, op_x, 0), if(cd_clip, op_y - wall_bar, 0); size: if(cd_clip, op_w, desk.width), if(cd_clip, op_h, desk.height); corner: if(cd_clip, op_r, 0) }
             group { glow: 26, 0.55 * cd_rs, #000000; show: cd_clip and cd_rs > 0.01
                 box { from: if(wg_rk == cd_k, wg_sx, cd_x), if(wg_rk == cd_k, wg_sy, cd_y); size: if(wg_rk == cd_k, wg_sw, cd_w), if(wg_rk == cd_k, wg_sh, cd_h); corner: 6 * if(wg_rk == cd_k, wg_ru, cd_u); color: #000000; opacity: 0.2 * cd_rs } }
-            wx.CalMonth(if(wg_rk == cd_k, wg_sx, cd_x), if(wg_rk == cd_k, wg_sy, cd_y), if(wg_rk == cd_k, wg_sw, cd_w), if(wg_rk == cd_k, wg_sh, cd_h), if(wg_rk == cd_k, wg_ru, cd_u), cd_plate, ink, acc, cd_hz, cd_tn)
+            wx.CalMonth(if(wg_rk == cd_k, wg_sx, cd_x), if(wg_rk == cd_k, wg_sy, cd_y), if(wg_rk == cd_k, wg_sw, cd_w), if(wg_rk == cd_k, wg_sh, cd_h), if(wg_rk == cd_k, wg_ru, cd_u), cd_lay, cd_plate, ink, acc, cd_hz, cd_tn)
             box { from: cd_x, cd_y; size: cd_w, cd_h; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - cd_near) }
         }
         // how near the pointer is to it (the ambient rest lifts as it comes), and how seen it is
@@ -1785,8 +1799,14 @@ scene Widgets {
                         wg.ClockAnalogue(wx, wy, ww, wh, wu, w.secs, w.plate, ink, acc, w.hz, w.tn) }
                 group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 1.5 and w.lay < 2.5
                         wg.ClockWords(wx, wy, ww, wh, wu, w.plate, ink, acc, w.hz, w.tn) }
-                group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 2.5
+                group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 2.5 and w.lay < 3.5
                         wg.ClockInfo(wx, wy, ww, wh, wu, w.h24, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 3.5 and w.lay < 4.5
+                        wg.ClockFlip(wx, wy, ww, wh, wu, w.h24, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 4.5 and w.lay < 5.5
+                        wg.ClockMinimal(wx, wy, ww, wh, wu, w.h24, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 1.5 and w.kind < 2.5 and w.lay > 5.5
+                        wg.ClockDots(wx, wy, ww, wh, wu, w.h24, w.plate, ink, acc, w.hz, w.tn) }
                 group { show: w.kind > 7.5 and w.kind < 8.5
                         wx.Timer(wx, wy, ww, wh, wu, w.lay, k, w.plate, ink, acc, w.hz, w.tn) }
                 group { show: w.kind > 8.5 and w.kind < 9.5

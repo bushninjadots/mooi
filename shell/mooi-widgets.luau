@@ -1070,6 +1070,11 @@ local function tick()
     text.ck_week = "WEEK " .. calendar.iso_week(t.year, t.month, t.day)
     text.ck_ampm = CF.ampm(t.hour)
     text.ck_hm24, text.ck_hm12 = CF.hhmm(t.hour, t.min, true), CF.hhmm(t.hour, t.min, false)
+    local h24 = true
+    for _, w in ipairs(doc and doc.widgets or {}) do
+        if w.kind == "clock" then h24 = (w.options or {}).h24 ~= false; break end
+    end
+    model.ckp = CF.dotrows(t.hour, t.min, h24)
 end
 every(1000, tick)
 pcall(sys.watch, "battery", function(b)
@@ -1316,6 +1321,7 @@ local function show_weather()
     for i, o in ipairs(DD.horizon(ans, 24) or {}) do rows[i] = { r = o.r, g = o.g, b = o.b, t = o.t, wet = o.wet, lab = o.label, kind = o.kind } end
     model.wxh = rows
     model.wxd = DD.week(f.days)
+    model.wxw = DD.week7(c) or {}
 end
 pcall(sys.watch, "files:nexus-weather.json", function() show_weather(); strip_at = -60 end)
 every(600000, show_weather)
@@ -1345,6 +1351,15 @@ every(2000, function()
         fact.sp_t = math.min(1, c / 100); text.sp_ttx = string.format("%d°", rnd(c))
         model.spt = rows_of(DD.push(samples.t, math.min(1, c / 100), 48))
     end)
+    run("df", { "-P", "/" }, function(out)
+        local pct
+        for line in tostring(out or ""):gmatch("[^\n]+") do
+            local n = line:match("(%d+)%%%s+/$")
+            if n then pct = tonumber(n) end
+        end
+        if not pct then text.sp_dtx = "—"; return end
+        fact.sp_d = math.min(1, pct / 100); text.sp_dtx = string.format("%d%%", pct)
+    end)
 end)
 
 -- calendar: this month (‹ › move it), the board's cards due lit
@@ -1356,6 +1371,10 @@ local function show_cal()
     local today = math.floor((os.time() + zone_off) / 86400)
     model.cal = DD.month_grid(y, m, today, read("board.json", "json"))
     text.cal_title = string.upper(calendar.MONTHS[m] .. " " .. y)
+    local wd = calendar.weekday(t.year, t.month, t.day)
+    text.cal_big = tostring(t.day)
+    text.cal_bigw = string.upper(DAYNAMES[wd + 1])
+    model.calag = DD.agenda(today, read("board.json", "json"), 6)
 end
 pcall(sys.watch, "files:board.json", function() show_cal(); strip_at = -60 end)
 on("cal_nav", function(v) cal_shift = cal_shift + math.floor(tonumber(v) or 1) - 1; show_cal() end)
