@@ -30,6 +30,8 @@ local HI = require("lib/node/history")
 local TM = require("lib/node/terminal")
 local BMOST = require("lib/bmostate")
 local PF = require("lib/pillface")
+local CS = require("lib/node/clockstyles")
+local WFX = require("lib/node/wsfx")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
@@ -260,13 +262,27 @@ local CONTROLS = {
     alarm = { { "H+", 31 }, { "H-", 32 }, { "M+", 33 }, { "M-", 34 } },
 }
 -- the clock seed (D241): the time's lit cells, written when the minute turns (looked at every five seconds)
+-- (D255) and in the style the look chose: digits, hands, words, binary, dots (lib/node/clockstyles)
 local clock_str
+local function clock_draw()
+    local s = os.date("%H:%M")
+    clock_str = s
+    local t = os.date("*t")
+    local style = N.look.clock_style or "pixel"
+    if style == "pixel" then model.ck = CF.cells(s)
+    elseif style == "digital" then text.nd_ckd = CS.digital(t.hour, t.min, true)
+    elseif style == "analog" then local a = CS.analog(t.hour, t.min, 0); fact.nd_ckh, fact.nd_ckm = a.hour, a.minute
+    elseif style == "words" then text.nd_ckw = CS.words(t.hour, t.min)
+    elseif style == "binary" then
+        local b = CS.binary(t.hour, t.min)
+        for i = 1, 6 do fact["nd_cb" .. (i - 1)] = b.h[i] == true; fact["nd_cb" .. (i + 5)] = b.m[i] == true end
+    elseif style == "dots" then local d = CS.dots(t.hour, t.min); fact.nd_ckdh, fact.nd_ckdm = d.hours, d.minutes end
+end
 every(5000, function()
     if N.look.seed ~= "clock" then clock_str = nil; return end
-    local s = os.date("%H:%M")
-    if s ~= clock_str then clock_str = s; model.ck = CF.cells(s) end
+    if os.date("%H:%M") ~= clock_str then clock_draw() end
 end)
-N.clock_now = function() clock_str = nil; if N.look.seed == "clock" then clock_str = os.date("%H:%M"); model.ck = CF.cells(clock_str) end end
+N.clock_now = function() clock_str = nil; if N.look.seed == "clock" then clock_draw() end end
 N.clock_now()
 -- the readout as the matrix's lit cells, written only when what it says changes
 local px_str
@@ -467,7 +483,12 @@ pcall(sys.watch, "workspaces", function(w)
     end
     table.sort(list, function(a, b) return a.id < b.id end)
     N.ws = { active = tonumber(w.active) or before, list = list }
-    if on_for("workspaces") and before ~= N.ws.active and N.seen_ws then ST.push(N.st, "workspaces", now()) end
+    if on_for("workspaces") and before ~= N.ws.active and N.seen_ws then
+        -- (D255) the switch shown in the look's way: from which side, and its number
+        local plan = WFX.plan(N.look.ws_style, before, N.ws.active, #list)
+        fact.nd_wsoff, text.nd_wsl = plan.offset, plan.label
+        ST.push(N.st, "workspaces", now())
+    end
     N.seen_ws = true
     render()
 end)

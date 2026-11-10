@@ -6717,7 +6717,7 @@ do
     test("at rest a seed, or a long pill with the modules chosen; old looks keep the seed", function()
         eq(LK.preset("organic").rest, "seed"); eq(LK.facts(LK.normalise({ rest = "long" })).nd_long, 1)
         eq(LK.normalise({ rest = "huge" }).rest, "seed")
-        eq(#LK.SCHEMA.Rest, 6)
+        eq(#LK.SCHEMA.Rest, 7, "D255: the clock seed's style too")
         for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab) end
     end)
     test("the pill is as wide as what it holds; the window is asked for only while shown", function()
@@ -6795,6 +6795,26 @@ do
         assert(p:find('placeholder: "PASSWORD"; secret: true', 1, true), "the field is secret")
         local l = read("shell/mooi-lock.luau")
         assert(l:find('text.greet = part', 1, true) and l:find('"files.read", "nexus-weather.json", "json"', 1, true))
+    end)
+end
+
+section("clock seeds and workspace switches, six and five ways (D255)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local LK = require("lib/node/look")
+    test("the look: a clock style and a switch style; each clock its own size; pages still fit", function()
+        local t = LK.normalise({ seed = "clock", clock_style = "analog", ws_style = "flip" })
+        eq(LK.facts(t).nd_cks, 2); eq(LK.facts(t).nd_wss, 2)
+        local a = LK.shape(t); eq(a.seed_w, 26); eq(a.seed_h, 26)
+        eq(LK.shape(LK.normalise({ seed = "clock", clock_style = "words" })).seed_w, 170)
+        for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab) end
+    end)
+    test("the node: the clock drawn in its style when the minute turns; a switch planned from its side", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('local plan = WFX.plan(N.look.ws_style, before, N.ws.active, #list)', 1, true))
+        assert(l:find('elseif style == "binary" then', 1, true))
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("show: nd_kind == 4 and nd_wss == 4", 1, true) and p:find("show: nd_cks == 2; opacity: nd_cf", 1, true))
     end)
 end
 

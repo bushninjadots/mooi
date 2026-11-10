@@ -6934,3 +6934,15 @@ in the logic, Esc only clears, and every control exists only while the composito
 
 **Verified.** Unit tests green; both lock files compile and parse. Not seen live: testing it means locking the
 owner's session, so the owner's own `mooi lock` is the first look.
+
+## D255 · 2026-11-10 · Six clocks, five switches
+
+From opencode (task 9): `lib/node/clockstyles` and `lib/node/wsfx`, reviewed and merged unchanged. The studio's
+Rest page gains **Clock seed**, the way the clock seed tells the time: mooi's pixel matrix (D241), digits, hands
+(a tiny dial), words ("quarter to eight", rounded to the nearest five minutes), binary (two rows of six bits)
+or dots (the hours and the five-minute steps, twelve each). Each has its own size, and each is drawn only when
+the minute turns. The Motion page gains **Workspaces**: a switch shown as the bead along the rail (as before),
+the rail sliding in from the side the switch came from, a flip, a pulse ringing out of the bead, or just the
+new workspace's number sliding in.
+
+**Verified.** Unit 822 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.

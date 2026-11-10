@@ -26,6 +26,7 @@ M.SCHEMA = {
         choice("m_spaces", "Workspaces", "A dot for each, the one you are on lit", { "off", "on" }, { "Off", "On" }),
         choice("m_battery", "Battery", "How full it is (only where there is one)", { "off", "on" }, { "Off", "On" }),
         choice("m_music", "Music", "What plays, while something does", { "off", "on" }, { "Off", "On" }),
+        choice("clock_style", "Clock seed", "How the clock seed tells the time (Shape → Seed → Clock)", { "pixel", "digital", "analog", "words", "binary", "dots" }, { "Pixel", "Digits", "Hands", "Words", "Binary", "Dots" }),
     },
     Shape = {
         choice("seed", "Seed", "What rests at the top while nothing happens", { "line", "dot", "ring", "twin", "bar", "clock", "bmo" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock", "BMO" }),
@@ -50,6 +51,7 @@ M.SCHEMA = {
         range("stagger", "Stagger", "Parts one after another, or all at once", 0, 100, "%"),
         range("breath", "Breathing", "How deeply the seed breathes at rest (0: still)", 0, 100, "%"),
         range("music", "Music", "How much it moves with what plays", 0, 100, "%"),
+        choice("ws_style", "Workspaces", "How a switch shows: a bead along a rail, a slide, a flip, a pulse, or its number", { "bead", "slide", "flip", "pulse", "count" }, { "Bead", "Slide", "Flip", "Pulse", "Number" }),
     },
     Music = {
         choice("music_form", "Music as", "When music starts: the capsule with its song, a visualiser, or a turning record", { "capsule", "visualiser", "vinyl" }, { "Capsule", "Spectrum", "Vinyl" }),
@@ -72,7 +74,7 @@ local BASE = {
     texture = "solid", fill = 95, outline = 10, glow = 70, accent = "phos", glow_colour = "phos",
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
     viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse",
-    sys_style = "spokes", rest = "seed", m_clock = "on", m_window = "on", m_spaces = "on", m_battery = "off", m_music = "on", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
+    sys_style = "spokes", rest = "seed", clock_style = "pixel", ws_style = "bead", m_clock = "on", m_window = "on", m_spaces = "on", m_battery = "off", m_music = "on", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
 }
 local PRESET = {
     organic = {},
@@ -254,6 +256,8 @@ function M.facts(t)
         nd_sst = ix({ "pill", "dot", "tick" }, t.sat_style), nd_ldm = t.dim / 100, nd_ur = t.orbit,
         nd_long = t.rest == "long" and 1 or t.rest == "notch" and 2 or 0,
         nd_sys = ix({ "spokes", "rings", "graphs" }, t.sys_style),
+        nd_cks = ix({ "pixel", "digital", "analog", "words", "binary", "dots" }, t.clock_style),
+        nd_wss = ix({ "bead", "slide", "flip", "pulse", "count" }, t.ws_style),
         nd_mf = ix({ "capsule", "visualiser", "vinyl" }, t.music_form), nd_smu = ix({ "still", "pulse", "bars" }, t.seed_music),
     }
 end
@@ -263,7 +267,12 @@ function M.shape(t)
     local w, h = t.seed_w, t.seed_h
     if t.seed == "dot" or t.seed == "ring" then w = math.max(h, math.min(w, 16)); h = w end
     -- the clock (D241): its matrix sets its size — 29 cells of 2 px across, 7 down, and a little air round it
-    if t.seed == "clock" then w, h = 29 * 2 + 16, 7 * 2 + 8 end
+    if t.seed == "clock" then
+        -- (D255) each way of telling the time its own size
+        local S = { pixel = { 74, 22 }, digital = { 62, 22 }, analog = { 26, 26 }, words = { 170, 22 }, binary = { 56, 22 }, dots = { 86, 22 } }
+        local sz = S[t.clock_style] or S.pixel
+        w, h = sz[1], sz[2]
+    end
     -- BMO (D253): his face at three fifths of the bar's, on a small screen of its own
     if t.seed == "bmo" then w, h = 40, 28 end
     return { seed_w = w, seed_h = h, round = t.round / 100, top = t.top }

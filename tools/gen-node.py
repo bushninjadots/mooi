@@ -36,7 +36,7 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_mu", 0.6, "how much it moves with the music"), ("nd_viz", 0, "the media's music: 0 bars · 1 wave · 2 dots · 3 off"),
         ("nd_cov", 0, "the cover: 0 square · 1 round"), ("nd_sst", 0, "satellites: 0 pills · 1 dots · 2 ticks"),
         ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width"),
-        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_sys", 0, "the system as: 0 spokes · 1 rings · 2 graphs"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
+        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_sys", 0, "the system as: 0 spokes · 1 rings · 2 graphs"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "System", "Search", "Tour"]
 TABS = ["Presets", "Shape", "Surface", "Motion", "Music", "Parts"]
@@ -145,6 +145,9 @@ def scene():
           '    model px max 400 { x: number; y: number }   // the readout\'s lit cells (lib/node/clockfont)',
           '    fact nd_pxw = 29      // its width, in cells',
           '    model ck max 120 { x: number; y: number }   // the clock seed\'s lit cells (D241)',
+          '    text nd_ckd = ""', '    text nd_ckw = ""', '    fact nd_ckh = 0', '    fact nd_ckm = 0', '    fact nd_ckdh = 0', '    fact nd_ckdm = 0',
+          ] + [f'    fact nd_cb{i} = false' for i in range(12)] + [
+          '    fact nd_wsoff = 0', '    text nd_wsl = ""',
           '    model tr max 3 { label: text; value: text; on: bool; m: number }',
           '    fact nd_cap = false', '    text nd_capt = ""', '    text nd_capm = ""', '    fact nd_capf = 1', '    fact nd_capu = false',
           '    prop nd_swp = 0', '    spin nd_swp by if(nd_cap and nd_kind == 0, if(nd_capu, 300, 120), 0)',
@@ -731,7 +734,17 @@ def surface():
           f'{c}    group {{ glow: 8, 0.4 * nd_gw, nd_glc',
           f'{c}        box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; opacity: nd_fill }} }}',
           f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: {acc}; opacity: 0.45; show: nd_ol > 0.05 }}',
-          f'{c}    for q in ck {{ box {{ from: nb_x + 8 + q.x * 2, nb_y + 4 + q.y * 2; size: 1.6, 1.6; color: {acc}; opacity: (0.75 + 0.25 * nd_br) * nd_cf }} }}',
+          f'{c}    for q in ck {{ box {{ from: nb_x + 8 + q.x * 2, nb_y + 4 + q.y * 2; size: 1.6, 1.6; color: {acc}; opacity: (0.75 + 0.25 * nd_br) * nd_cf; show: nd_cks == 0 }} }}',
+          f'{c}    // (D255) the other ways of telling it',
+          f'{c}    text nd_ckd {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; anchor: center; align: center; size: 13; weight: 700; family: {MONO}; color: {acc}; opacity: nd_cf; show: nd_cks == 1 }}',
+          f'{c}    group {{ show: nd_cks == 2; opacity: nd_cf',
+          f'{c}        line {{ from: nb_x + nb_w / 2, nb_y + nb_h / 2; to: nb_x + nb_w / 2 + sin(nd_ckh) * 6, nb_y + nb_h / 2 - cos(nd_ckh) * 6; width: 2; color: {ink} }}',
+          f'{c}        line {{ from: nb_x + nb_w / 2, nb_y + nb_h / 2; to: nb_x + nb_w / 2 + sin(nd_ckm) * 9.5, nb_y + nb_h / 2 - cos(nd_ckm) * 9.5; width: 1.4; color: {acc} }}',
+          f'{c}        ellipse {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; radius: 1.6; color: {acc} }} }}',
+          f'{c}    text nd_ckw {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; anchor: center; align: center; size: 10; family: {SANS}; color: {ink}; width: nb_w - 12; lines: 1; opacity: nd_cf; show: nd_cks == 3 }}',
+          ] + [f'{c}    ellipse {{ at: nb_x + 9 + {i % 6} * 7.6, nb_y + 7 + {i // 6} * 8; radius: 2.2; color: if(nd_cb{i}, {acc}, fl.trace_dim); opacity: nd_cf; show: nd_cks == 4 }}' for i in range(12)] + [
+          f'{c}    repeat dh in 0..12 {{ ellipse {{ at: nb_x + 8 + dh * 6.4, nb_y + 7; radius: 1.8; color: if(dh < nd_ckdh, {acc}, fl.trace_dim); opacity: nd_cf; show: nd_cks == 5 }} }}',
+          f'{c}    repeat dm in 0..12 {{ ellipse {{ at: nb_x + 8 + dm * 6.4, nb_y + 15; radius: 1.8; color: if(dm < nd_ckdm, {ink}, fl.trace_dim); opacity: nd_cf; show: nd_cks == 5 }} }}',
           f'{c}}}',
           f'{c}// grown: the body, of the look\'s fill (hollow: barely), its texture, its outline',
           f'{c}group {{ show: nd_kind > 0; glow: 14, nd_glow, nd_glc',
@@ -836,8 +849,12 @@ def surface():
           f'{c}    box {{ from: nb_x + 3, nb_y + 3; size: max(0, (nb_w - 6) * nd_vol), nb_h - 6; corner: max(0, nb_r - 3); color: {acc}; opacity: 0.85 }}',
           f'{c}    text nd_vlabel {{ at: nb_x + nb_w / 2, nb_y + nb_h + 12; anchor: center; align: center; size: 9; family: {MONO}; color: {ink}; opacity: nd_grow }} }}']
     # workspaces
-    L += [f'{c}// workspaces: a rail drawn out from the middle, the active one a bead that slides along it',
-          f'{c}group {{ show: nd_kind == 4; opacity: nd_cf',
+    L += [f'{c}// workspaces: a rail drawn out from the middle, the active one a bead that slides along it — or (D255) the rail',
+          f'{c}// sliding in from the side it came from, flipping over, the bead pulsing, or only the number',
+          f'{c}group {{ show: nd_kind == 4 and nd_wss == 4; opacity: nd_cf',
+          f'{c}    group {{ move: nd_wsoff * 2 * (1 - nd_grow), 0',
+          f'{c}        text nd_wsl {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; anchor: center; align: center; size: 18; weight: 700; family: {MONO}; color: {acc} }} }} }}',
+          f'{c}group {{ show: nd_kind == 4 and nd_wss != 4; opacity: nd_cf; move: if(nd_wss == 1, nd_wsoff * (1 - nd_grow), 0), 0; pivot: nb_x + nb_w / 2, nb_y + nb_h / 2; scale: 1, if(nd_wss == 2, max(0.05, abs(1 - 2 * (1 - nd_grow))), 1)',
           f'{c}    line {{ from: nb_x + nb_w / 2 - (nb_w / 2 - 18) * nd_grow, nb_y + nb_h / 2; to: nb_x + nb_w / 2 + (nb_w / 2 - 18) * nd_grow, nb_y + nb_h / 2; width: 1; color: fl.trace_lit; opacity: 0.7 }}',
           f'{c}    for r in rl {{',
           f'{c}        let rx = nb_x + nb_w / 2 + (r.x - nb_x - nb_w / 2) * nd_grow',
@@ -846,7 +863,8 @@ def surface():
           f'{c}        on press rz {{ emit nd_ws(r.index) }}',
           f'{c}    }}',
           f'{c}    group {{ glow: 12, 0.8 * nd_glow, nd_glc',
-          f'{c}        ellipse {{ at: nd_bead, nb_y + nb_h / 2; radius: 10 * nd_grow; color: {acc} }} }}',
+          f'{c}        ellipse {{ at: nd_bead, nb_y + nb_h / 2; radius: 10 * nd_grow + if(nd_wss == 3, 9 * (1 - nd_grow), 0); color: {acc} }} }}',
+          f'{c}    ellipse {{ at: nd_bead, nb_y + nb_h / 2; radius: 10 + 26 * (1 - nd_grow); stroke: 1.5; color: {acc}; opacity: 0.8 * nd_grow * (1 - nd_grow) * 4; show: nd_wss == 3 }}',
           f'{c}    for r in rl {{ text r.n {{ at: r.x, nb_y + nb_h / 2; anchor: center; align: center; size: 10; weight: 700; family: {MONO}; color: fl.ground; show: r.on and nd_grow > 0.6 }} }}',
           f'{c}}}']
     # system
