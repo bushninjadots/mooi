@@ -7089,3 +7089,23 @@ no polling. The form is decided on each render (`lib/node/look`'s `form` takes w
 frame is told through `node-geo.json` as for any notch (D257).
 
 **Verified.** Unit 836 / 0; scenes compile; `bin/mooi check` green.
+
+## D263 · 2026-11-10 · The radios, in the panel
+
+The panel grows two pages for the radios. **Wi-Fi** shows the network in use, its strength and lock,
+then the networks in reach with their bars, locks and a quiet `known`; a press joins a known or open
+one, and a locked new one asks for its password in a secret line. `×` forgets one, and the refresh
+icon scans. **Bluetooth** shows the adapter and the device in use, with its battery when the device
+says, then the devices — connected, paired, then the rest — and a press connects or disconnects. Its
+refresh icon looks for more.
+
+Both read Pleamar's own `network` and `bluetooth` services, so the page is the same whichever stack
+is underneath: no `nmcli` or `bluetoothctl`, and nothing is written to a file. The Wi-Fi password goes
+only to `sys.call("network.connect", ssid, password)`; it is never put on a command line. Pressing a
+home toggle's **name** opens its page while its icon still turns the radio on or off.
+
+The icon row now has twelve: home, calendar, notes, clipboard, stash, wallpaper, system, Wi-Fi,
+Bluetooth, settings, Control Nexus and power. Time stays the Timer button's page, studio stays
+Settings' own, and `󰣇` runs `mooi nexus` and closes the panel.
+
+**Verified.** Unit 838 / 0; scenes compile; `bin/mooi check` green.

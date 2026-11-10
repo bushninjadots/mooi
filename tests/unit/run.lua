@@ -6747,8 +6747,8 @@ do
         assert(p:find('emit nd_nc(n.index * 10 + 9)', 1, true), "a notice dismissed")
         assert(p:find('emit nd_pclear', 1, true), "all cleared")
         assert(p:find('if(nd_playing, "󰏤", "󰐊")', 1, true) or p:find('show: nd_playing', 1, true), "transport follows what plays")
-        assert(l:find('run("nmcli", { "radio", "wifi"', 1, true) and l:find('run("bluetoothctl", { "power"', 1, true))
-        assert(l:find('run("nmcli", { "-t", "-f", "active,ssid", "dev", "wifi" }', 1, true), "the network's name, polled on the panel")
+        assert(p:find('emit nd_pg(7)', 1, true) and p:find('emit nd_pg(8)', 1, true), "the toggles' names open their pages")
+        assert(l:find('N.wifi_name = tostring(n.name', 1, true), "the network's name comes from its service")
     end)
     test("the pages: a month, notes through the inbox, the stash, the wallpaper through `mooi wall apply`", function()
         assert(l:find('"notes-inbox.json"', 1, true), "never written over the bar's own file (D258: through its inbox)")
@@ -7000,6 +7000,46 @@ do
         local l = assert(io.open("shell/mooi-node.luau")):read("a")
         assert(l:find("local form = LK.form(look, N.media.playing)", 1, true))
         assert(l:find('fact.nd_long = ({ seed = 0, long = 1, notch = 2 })[form]', 1, true))
+    end)
+end
+
+section("the radios in the panel (D263)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local p, l, g = read("shell/mooi-node.plm"), read("shell/mooi-node.luau"), read("tools/gen-node.py")
+    test("Wi-Fi and Bluetooth are pages, with a row for every network and device", function()
+        assert(p:find("event nd_wn ->", 1, true) and p:find("event nd_wf ->", 1, true) and p:find("event nd_wr ->", 1, true), "the network's events")
+        assert(p:find("event nd_bd ->", 1, true) and p:find("event nd_brf ->", 1, true), "Bluetooth's")
+        for _, z in ipairs({ "pwz0", "pwrz", "pwnz", "pwfz", "pwpz", "pbz0", "pbrz", "pbdz" }) do
+            assert(p:find("zone box " .. z, 1, true), z)
+        end
+        assert(p:find("show: nd_kind == 13 and nd_pgp == 8", 1, true), "the Wi-Fi page")
+        assert(p:find("show: nd_kind == 13 and nd_pgp == 9", 1, true), "the Bluetooth page")
+        assert(p:find("input nd_wpw", 1, true) and p:find("secret: true", 1, true), "a password line, never shown")
+        assert(g:find('services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "network.*", "bluetooth", "bluetooth.*"', 1, true), "the scenes' services")
+    end)
+    test("the logic watches both services and asks them, not a shell", function()
+        assert(l:find('pcall(sys.watch, "network", function(n)', 1, true))
+        assert(l:find('pcall(sys.watch, "bluetooth", function(b)', 1, true))
+        assert(l:find('pcall(sys.call, "network.connect", ssid, N.wpw or "")', 1, true))
+        assert(l:find('pcall(sys.call, "network.forget", tostring(row.ssid or ""))', 1, true))
+        assert(l:find('pcall(sys.call, d.connected and "bluetooth.disconnect" or "bluetooth.connect", tostring(d.address))', 1, true))
+        assert(not l:find('run("nmcli"', 1, true) and not l:find('run("bluetoothctl"', 1, true), "no shell for the radios")
+    end)
+    test("a password reaches only the network service, never a command line or a file", function()
+        local used = 0
+        for line in l:gmatch("[^\n]+") do
+            if line:find("nd_wpw", 1, true) or line:find("N.wpw", 1, true) then
+                used = used + 1
+                assert(not line:find("run(", 1, true) and not line:find("files.write", 1, true), line)
+            end
+        end
+        assert(used >= 2, "the input is read")
+    end)
+    test("twelve icons, each its own event", function()
+        for i = 0, 11 do assert(p:find("zone box pi" .. i, 1, true), "icon " .. i); assert(p:find("emit nd_pg(" .. i .. ")", 1, true), "event " .. i) end
+        assert(p:find("zone box pi12", 1, true) == nil, "exactly twelve")
+        assert(p:find('text "󰖩"', 1, true) and p:find('text "󰂯"', 1, true) and p:find('text "󰣇"', 1, true), "Wi-Fi, Bluetooth and the Nexus")
     end)
 end
 

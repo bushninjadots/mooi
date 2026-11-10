@@ -544,7 +544,18 @@ pcall(sys.watch, "battery", function(b)
 end)
 pcall(sys.watch, "network", function(n)
     if type(n) ~= "table" then return end
+    N.net = n
     N.online = n.online ~= false
+    N.wifi_on = n.wifi == true
+    N.wifi_name = tostring(n.name or (N.wifi_on and "Not connected" or "Off"))
+    if N.panel == "wifi" then N.panel_shown = nil end
+    render()
+end)
+pcall(sys.watch, "bluetooth", function(b)
+    if type(b) ~= "table" then return end
+    N.bts = b
+    N.bt_on = b.powered == true
+    if N.panel == "bluetooth" then N.panel_shown = nil end
     render()
 end)
 pcall(sys.watch, "apps", function(a)
@@ -1164,32 +1175,21 @@ every(10000, bmo_show)
 -- pages its icon row reaches hold what the shelf and the branches used to, and each page keeps that row ──
 N.panel = "home"
 N.panel_sub, N.panel_items = "", {}
-local PANEL_PAGES = { home = 0, calendar = 1, notes = 2, clipboard = 3, stash = 4, wallpaper = 5, system = 6, power = 7 }
+local PANEL_PAGES = { home = 0, calendar = 1, notes = 2, clipboard = 3, stash = 4, wallpaper = 5, system = 6, power = 7, wifi = 8, bluetooth = 9 }
 local PANEL_TITLE = { calendar = "Calendar", notes = "Notes", clipboard = "Clipboard", stash = "Stash",
-                      wallpaper = "Wallpaper", system = "System", power = "Power" }
+                      wallpaper = "Wallpaper", system = "System", power = "Power", wifi = "Wi-Fi", bluetooth = "Bluetooth" }
 local function ago(t) local s = os.time() - (tonumber(t) or 0); if s < 3600 then return math.max(1, s // 60) .. " min" elseif s < 86400 then return (s // 3600) .. " h" end; return (s // 86400) .. " d" end
 local function dnd_state()
     local n = type(N.settings.notifications) == "table" and N.settings.notifications or {}
     return n.dnd ~= nil and n.dnd ~= "off"
 end
--- the two radios' own state, asked when the panel opens (the name needs nmcli; Bluetooth only says on or off)
+-- the two radios' own state, from the services that already watch them (D263: no shell, no nmcli)
 local function panel_state()
-    run("nmcli", { "-t", "-f", "active,ssid", "dev", "wifi" }, function(out, code)
-        local name = "Off"
-        if code == 0 then
-            for line in tostring(out or ""):gmatch("[^\n]+") do
-                local on, ssid = line:match("^(%a+):(.*)$")
-                if on == "yes" and ssid ~= "" then name = ssid; break end
-            end
-        end
-        N.wifi_name = name
-        N.wifi_on = name ~= "Off"
-        if N.kind == "panel" then render() end
-    end)
-    run("bluetoothctl", { "show" }, function(out, code)
-        N.bt_on = code == 0 and tostring(out or ""):find("Powered: yes", 1, true) ~= nil
-        if N.kind == "panel" then render() end
-    end)
+    local n = type(N.net) == "table" and N.net or {}
+    N.wifi_on = n.wifi == true
+    N.wifi_name = tostring(n.name or (N.wifi_on and "Not connected" or "Off"))
+    N.bt_on = type(N.bts) == "table" and N.bts.powered == true or false
+    if N.kind == "panel" then render() end
 end
 
 local function show_panel_home(b)
@@ -1294,6 +1294,70 @@ N.clip_choose = function(i)
         if code == 0 and out then run("wl-copy", {}, nil, { input = out, output = false }) end
     end)
 end
+local function strength_bars(s)
+    s = tonumber(s) or 0
+    if s > 1 then s = s / 100 end
+    return math.max(0, math.min(4, math.floor(s * 4 + 0.5)))
+end
+-- Wi-Fi (D263): what the network service sees — the one in use, then the ones in reach. Joining a new secure
+-- network asks for its password here; it goes only to the service, never to a command line or a file.
+local function show_wifi()
+    local n = type(N.net) == "table" and N.net or {}
+    local nets = type(n.networks) == "table" and n.networks or {}
+    local active = tostring(n.name or "")
+    fact.nd_won = n.wifi == true
+    text.nd_wname = active ~= "" and active or (fact.nd_won and "Not connected" or "Off")
+    fact.nd_wbars = strength_bars(n.strength)
+    fact.nd_wsec = false
+    N.wifi_rows = {}
+    local rows = {}
+    for i, net in ipairs(nets) do
+        local ssid = tostring(net.ssid or "")
+        if net.active or ssid == active then fact.nd_wbars, fact.nd_wsec = strength_bars(net.strength), net.secure == true end
+        if i <= 8 then
+            rows[i] = { name = ssid, bars = strength_bars(net.strength), secure = net.secure == true,
+                        known = net.known == true, on = net.active == true or ssid == active }
+            N.wifi_rows[i] = net
+        end
+    end
+    model.nw = rows
+    local err = tostring(n.error or "none")
+    text.nd_werr = err ~= "none" and err or ""
+    fact.nd_werron = err ~= "none"
+    N.panel_sub = #nets .. " IN REACH"
+end
+-- Bluetooth (D263): the adapter, the device in use, then the ones it knows or sees
+local function show_bluetooth()
+    local b = type(N.bts) == "table" and N.bts or {}
+    fact.nd_btp = b.present ~= false
+    fact.nd_btpw = b.powered == true
+    fact.nd_btdis = b.discovering == true
+    local devs, connected = {}, nil
+    for _, d in ipairs(type(b.devices) == "table" and b.devices or {}) do
+        if d.connected then connected = d end
+        devs[#devs + 1] = d
+    end
+    table.sort(devs, function(x, y)
+        if (x.connected == true) ~= (y.connected == true) then return x.connected == true end
+        if (x.paired == true) ~= (y.paired == true) then return x.paired == true end
+        return tostring(x.name or "") < tostring(y.name or "")
+    end)
+    text.nd_bth = connected and tostring(connected.name or connected.address or "Connected") or (fact.nd_btpw and "On" or "Off")
+    fact.nd_btbat = connected and tonumber(connected.battery) or -1
+    if fact.nd_btbat and fact.nd_btbat < 0 then fact.nd_btbat = -1 end
+    N.bt_rows = {}
+    local rows = {}
+    for i, d in ipairs(devs) do
+        if i > 8 then break end
+        local detail = d.connected and "CONNECTED" or d.paired and "PAIRED" or ""
+        local bat = tonumber(d.battery)
+        if bat and bat >= 0 and detail == "" then detail = math.floor(bat * 100 + 0.5) .. "%" end
+        rows[i] = { name = tostring(d.name or d.address or "Device"), detail = detail, on = d.connected == true, paired = d.paired == true }
+        N.bt_rows[i] = d
+    end
+    model.bt = rows
+    N.panel_sub = #devs .. " DEVICES"
+end
 -- power (D256): each needs a second press within three seconds, as on the lock; nothing here ends a session by a slip
 local POWER = { { label = "Lock", argv = { "mooi", "lock" } }, { label = "Sleep", argv = { "systemctl", "suspend" } },
                 { label = "Reboot", argv = { "systemctl", "reboot" } }, { label = "Power off", argv = { "systemctl", "poweroff" } } }
@@ -1321,7 +1385,7 @@ N.power_choose = function(i)
     end
 end
 local PANEL_SHOW = { calendar = show_calendar, notes = show_notes, clipboard = show_clipboard, stash = show_stash,
-                     wallpaper = show_walls, power = show_power }
+                     wallpaper = show_walls, power = show_power, wifi = show_wifi, bluetooth = show_bluetooth }
 show_panel = function(b)
     local pg = PANEL_PAGES[N.panel] or 0
     if pg == 0 then show_panel_home(b); return end
@@ -1335,14 +1399,18 @@ show_panel = function(b)
     end
     text.nd_pgs = N.panel_sub or ""
     if N.panel == "system" then show_system(b) end
+    if N.panel == "wifi" then show_wifi() end
+    if N.panel == "bluetooth" then show_bluetooth() end
 end
 open_panel = function(page)
     for _, k in ipairs(HELD) do ST.release(N.st, k) end
     N.panel = PANEL_PAGES[page] and page or "home"
     N.panel_sub, N.panel_shown = "", nil
     if N.panel == "notes" then text.nd_nq = "" end
+    if N.panel == "wifi" then N.wifi_ssid, fact.nd_wsel, text.nd_wpw, fact.nd_werron = "", 0, "", false end
     ST.hold(N.st, "panel")
     panel_state()
+    if N.panel == "wifi" and N.wifi_on then pcall(sys.call, "network.scan") end
     render()
 end
 N.open_panel, N.close_panel = open_panel, function() ST.release(N.st, "panel"); render() end
@@ -1689,17 +1757,17 @@ end)
 -- ── the panel's own input (D260): its pages, its four toggles, its notices and the way home ──
 on("nd_pg", function(v)
     v = math.floor(tonumber(v) or 0)
-    if v == 7 then
-        for _, k in ipairs(HELD) do ST.release(N.st, k) end
-        open_time()
-    elseif v == 8 then
-        for _, k in ipairs(HELD) do ST.release(N.st, k) end
-        open_studio()
+    if v == 7 then open_panel("wifi")
+    elseif v == 8 then open_panel("bluetooth")
     elseif v == 9 then
         for _, k in ipairs(HELD) do ST.release(N.st, k) end
         render()
         run("mooi", { "settings" }, function() end)
-    elseif v == 10 then open_panel("power")
+    elseif v == 10 then
+        for _, k in ipairs(HELD) do ST.release(N.st, k) end
+        render()
+        run("mooi", { "nexus" }, function() end)
+    elseif v == 11 then open_panel("power")
     else
         local page = ({ [0] = "home", [1] = "calendar", [2] = "notes", [3] = "clipboard", [4] = "stash", [5] = "wallpaper", [6] = "system" })[v]
         if page then open_panel(page) end
@@ -1709,7 +1777,8 @@ on("nd_ptog", function(v)
     v = math.floor(tonumber(v) or 0)
     if v == 1 then
         N.wifi_on = not (N.wifi_on == true)
-        run("nmcli", { "radio", "wifi", N.wifi_on and "on" or "off" }, function() after(300, panel_state) end)
+        pcall(sys.call, "network.wifi", N.wifi_on)
+        if N.wifi_on then pcall(sys.call, "network.scan") end
         render()
     elseif v == 2 then
         N.dnd_on = not dnd_state()
@@ -1721,10 +1790,48 @@ on("nd_ptog", function(v)
         open_time()
     elseif v == 4 then
         N.bt_on = not (N.bt_on == true)
-        run("bluetoothctl", { "power", N.bt_on and "on" or "off" }, function() after(400, panel_state) end)
+        pcall(sys.call, "bluetooth.power", N.bt_on)
         render()
     end
 end)
+-- the radios' pages (D263): join, forget, look again; connect or leave a device
+on("nd_wn", function(v)
+    local row = N.wifi_rows and N.wifi_rows[math.floor(tonumber(v) or 0) + 1]
+    if not row then return end
+    local ssid = tostring(row.ssid or "")
+    if row.known or not row.secure then pcall(sys.call, "network.connect", ssid)
+    else
+        N.wifi_ssid = ssid
+        fact.nd_wssid = ssid
+        fact.nd_wsel = 1
+        text.nd_wpw = ""
+        render()
+    end
+end)
+on("nd_wf", function(v)
+    local row = N.wifi_rows and N.wifi_rows[math.floor(tonumber(v) or 0) + 1]
+    if not row then return end
+    pcall(sys.call, "network.forget", tostring(row.ssid or ""))
+    pcall(sys.call, "network.scan")
+end)
+on("nd_wr", function() if N.wifi_on then pcall(sys.call, "network.scan") end end)
+on("text:nd_wpw", function(v) N.wpw = tostring(v or "") end)
+on("nd_wgo", function()
+    local ssid = N.wifi_ssid or ""
+    if ssid == "" then return end
+    -- the password goes only here: not to run(), not to a file (D263)
+    pcall(sys.call, "network.connect", ssid, N.wpw or "")
+    N.wpw = ""
+    text.nd_wpw = ""
+    fact.nd_wsel = 0
+    render()
+end)
+on("nd_bd", function(v)
+    local d = N.bt_rows and N.bt_rows[math.floor(tonumber(v) or 0) + 1]
+    if not d or not d.address then return end
+    pcall(sys.call, d.connected and "bluetooth.disconnect" or "bluetooth.connect", tostring(d.address))
+end)
+on("nd_brf", function() if N.bt_on then pcall(sys.call, "bluetooth.scan", true) end end)
 on("nd_pclear", function()
     N.notices = {}
     model.pn = {}
