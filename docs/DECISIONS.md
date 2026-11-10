@@ -6767,3 +6767,16 @@ answer comes first in the launcher (`= 3.10686 mi`), and Return copies it. One g
 far below one use `%g`, since a fixed format's precision is capped at 99.
 
 **Verified.** Unit 745 / 0; scenes compile; `bin/mooi check` green.
+
+## D242 · 2026-11-10 · A review pass over the node's new parts
+
+**The keyboard.** The time panel, the player and the finish card no longer take the keyboard. Before, a timer
+ending while you typed would have taken your keys, and a space meant for your editor would have dismissed it.
+Only what is opened in order to type takes it: the search line, the workspace ring and the studio. A finish
+card is answered with a click (or OK); the time panel and the player fold away with Super, or with a press on
+their own body (not on a control). This replaces D231's Esc/Space/Return for the card.
+
+**The privacy watch's cost.** Which audio sources are monitors is asked every 30 s instead of every 2 s (it
+changes only when a device comes or goes), so the watch starts two processes every two seconds, not three.
+
+**Verified.** Unit 745 / 0; scenes compile; `bin/mooi check` green.

@@ -383,7 +383,9 @@ render = function()
         end
     end
     fact.nd_kind = KIND[kind] or 0
-    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or kind == "time" or kind == "done" or kind == "player"
+    -- the keyboard only for what is opened to be typed into: the time panel, the player and a finish card never
+    -- take it, so a timer that ends while you type steals no keys
+    fact.nd_kb = studio or kind == "launcher" or kind == "universe"
     set_body(b, changed and LK.overshoot(look) or 0)
     if kind == "media" then show_media(b) end
     if kind == "notice" then
@@ -537,7 +539,9 @@ end
 on("nd_press", function()
     if N.studio.open then if N.studio_press then N.studio_press() end; return end
     local k = N.kind
-    if k == "launcher" or k == "universe" or k == "time" or k == "done" or k == "player" then return end
+    if k == "launcher" or k == "universe" or k == "done" then return end
+    -- a press on the panel's own body (not one of its controls) folds the time panel or the player away
+    if k == "time" or k == "player" then ST.release(N.st, k); render(); return end
     -- the music capsule pressed: it grows into the player (D236)
     if k == "media" then if N.open_player then N.open_player() end; return end
     if k == "rest" and fact.nd_cap then if N.open_time then N.open_time() end; return end
@@ -711,9 +715,16 @@ every(2000, function()
         return
     end
     pv_busy = true
-    run("pactl", { "-f", "json", "list", "sources" }, function(sout)
-    local sok, sources = pcall(json.decode, sout or "")
-    local monitors = PV.monitors(sok and sources or nil)
+    -- which sources are monitors changes only when a device comes or goes: asked again every half minute
+    local function with_monitors(go)
+        if N.pv_monitors and now() - (N.pv_mon_at or 0) < 30000 then go(N.pv_monitors); return end
+        run("pactl", { "-f", "json", "list", "sources" }, function(sout)
+            local sok, sources = pcall(json.decode, sout or "")
+            N.pv_monitors, N.pv_mon_at = PV.monitors(sok and sources or nil), now()
+            go(N.pv_monitors)
+        end)
+    end
+    with_monitors(function(monitors)
     run("pactl", { "-f", "json", "list", "source-outputs" }, function(out, code)
         local ok, list = pcall(json.decode, out or "")
         local users = (code == 0 and ok) and PV.mic_users(list, monitors) or {}

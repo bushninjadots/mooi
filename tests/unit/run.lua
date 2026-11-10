@@ -6502,6 +6502,7 @@ do
         assert(p:find("spin nd_swp by if(nd_cap and nd_kind == 0, if(nd_capu, 300, 120), 0)", 1, true), "the sweep doubles in the last minute")
         assert(p:find('"sound"', 1, true), "the chime may sound")
         assert(p:find("on key space while nd_kb { emit nd_key(32) }", 1, true))
+        assert(l:find('fact.nd_kb = studio or kind == "launcher" or kind == "universe"\n', 1, true), "a finish card never takes the keyboard")
     end)
     test("a file is made sane: odd values, missing parts, too many laps", function()
         local s = TK.normalise({ mode = "focus", timer = { set = -5 }, stopwatch = { laps = { 1, "x" } }, focus = { phase = "nap", round = 40 }, alarm = { h = 99, m = -3, on = "yes" } })
