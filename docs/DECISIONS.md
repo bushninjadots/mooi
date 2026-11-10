@@ -7861,3 +7861,18 @@ The record only spins while it shows and plays (the existing `nd_vrot` spin), so
 
 **Verified.** The Pill scene compiles; unit tests pass. Not seen live: the owner was at the machine, and the preview
 goes through the studio, which they were using.
+
+## D305 · 2026-11-11 · Less work at rest: silent music frames let go, BMO's body written on change
+
+The owner: "performance — we need a lot more, find ways to increase it." Measured over ten seconds on the running
+desktop (top-level CPU per program): Hyprland 8.8 %, the bar 6.2 %, BMO 4.4 %, the Pill 1.7 %, the widgets 1.6 %,
+every other program under 1 %. Two causes found and removed:
+- **The bar analysed silence 30 times a second.** With the frame following the music (frame.music), cava runs
+  whenever mooi does, so a browser or a game moves the frame too. In silence it prints all-zero lines; each was
+  parsed into 64 bands, gained, resampled and analysed. Now, after half a second of silence the levels and the feed
+  go to rest once, and each silent line after is let go with one look for a non-zero digit.
+- **BMO wrote his body file every second.** Its time stamp made every write differ, so the file was rewritten (and
+  anything watching it woken) every second. It is written when he changes, with a heartbeat every 30 s.
+
+**Verified.** Gate green; scenes compile. Not re-measured live: reloading the bar would have interrupted the owner,
+who was at the machine; the next `mooi refresh` takes it.

@@ -629,12 +629,22 @@ return function(ctx)
     end
     local function listen()
         if cava then return end
-        local mine, frame = nil, 0
+        local mine, frame, quiet = nil, 0, 0
         cava_lines = 0
         mine = spawn("cava", { "-p", folder .. "/" .. CAVA }, function(line)
             if cava ~= mine then return end
             cava_lines = cava_lines + 1
             frame = frame + 1
+            -- silence (every band 0): after half a second of it the levels and the feed go to rest once, and
+            -- each silent frame after is let go with this one look rather than parsed, gained and analysed 30
+            -- times a second — the frame keeps cava running whenever it follows the music (D305)
+            if not string.find(line, "[1-9]") then
+                quiet = quiet + 1
+                if quiet == 15 then rest_levels(); rest_feed(viz_missing) end
+                if quiet >= 15 then return end
+            else
+                quiet = 0
+            end
             local i, b = 0, {}
             for v in string.gmatch(line, "(%d+);") do
                 if i > 63 then break end

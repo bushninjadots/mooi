@@ -286,12 +286,18 @@ end
 local shared_doc = read("bmo-shared.json")
 if shared_doc then shared(shared_doc) end
 pcall(sys.watch, "files:bmo-shared.json", function() shared(read("bmo-shared.json")) end)
-local body_sent
+-- D305: written when he changes, and every 30 s as a heartbeat (`at`); with `at` in the comparison it was a
+-- write — and a wake for anything watching the file — every second, for nothing
+local body_sent, body_at = nil, 0
 every(1000, function()
     local body = { running = not spare, ready = fact.ready == true, x = x, y = y, activity = activity,
-                   panel = fact.panel == true, tab = fact.tab or "", at = os.time(), shared_at = shared_at }
-    local enc = json.encode(body)
-    if enc ~= body_sent then body_sent = enc; pcall(sys.call, "files.write", "bmo-body.json", body) end
+                   panel = fact.panel == true, tab = fact.tab or "", shared_at = shared_at }
+    local enc, now = json.encode(body), os.time()
+    if enc ~= body_sent or now - body_at >= 30 then
+        body_sent, body_at = enc, now
+        body.at = now
+        pcall(sys.call, "files.write", "bmo-body.json", body)
+    end
 end)
 
 local function move(name)
