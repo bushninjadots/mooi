@@ -199,7 +199,7 @@ def scene():
           '    // the Home header (D272): the time, the date, the weather, the battery, four readings, game mode',
           '    text nd_hname = ""', '    text nd_hwho = ""', '    text nd_hinit = ""', '    text nd_face = ""',
           '    image nd_face_img = from nd_face, 96, 96', '    fact nd_face_on = false',
-          '    text nd_hn = ""', '    fact nd_hedit = false',
+          '    text nd_hn = ""', '    fact nd_hedit = false', '    fact nd_hpick = false',
           '    text nd_hclock = ""', '    text nd_hdate = ""', '    text nd_hwg = ""', '    text nd_hwt = ""', '    text nd_hbat = ""',
           '    text nd_hs1 = ""', '    text nd_hs2 = ""', '    text nd_hs3 = ""', '    text nd_hs4 = ""',
           '    fact nd_hf1 = 0', '    fact nd_hh1 = false', '    fact nd_hf2 = 0', '    fact nd_hh2 = false', '    fact nd_hf3 = 0', '    fact nd_hh3 = false', '    fact nd_hf4 = 0', '    fact nd_hh4 = false',
@@ -683,13 +683,15 @@ def panel_parts(c, acc, ink, dim, hull):
           f'{c}        text "󰌢" {{ at: nb_x + nb_w - 30, nb_y + 107; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: {dim}; opacity: 0.7; show: not nd_hedit }}',
           f'{c}        zone box phz {{ from: nb_x + 14, nb_y + 78; size: nb_w - 28, 58; corner: 14; cursor: pointer; role: button; label: "Edit your profile"; show: nd_kind == 13 and nd_pgp == 0 and not nd_hedit }}',
           f'{c}        on press phz {{ emit nd_hopen }}',
+          f'{c}        zone box phc {{ from: nb_x + 14, nb_y + 78; size: nb_w - 28, 58; corner: 14; cursor: pointer; role: button; label: "Edit your profile"; show: nd_kind == 13 and nd_pgp == 0 and nd_hedit }}',
+          f'{c}        on press phc {{ focus nd_hn }}',
           f'{c}        zone box pha {{ from: nb_x + 27, nb_y + 87; size: 40, 40; corner: 20; cursor: pointer; role: button; label: "Choose your profile picture"; show: nd_kind == 13 and nd_pgp == 0 and nd_hedit }}',
           f'{c}        on press pha {{ emit nd_hpic }}',
           f'{c}        zone box phd {{ from: nb_x + nb_w - 44, nb_y + 86; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Save your profile"; show: nd_kind == 13 and nd_pgp == 0 and nd_hedit }}',
           f'{c}        on press phd {{ emit nd_hdone }}',
           f'{c}    }}',
           f'{c}    on submit nd_hn {{ emit nd_hsave }}',
-          f'{c}    on change nd_hedit while nd_hedit and nd_kind == 13 and nd_pgp == 0 {{ focus nd_hn }}']
+          f'{c}    on change nd_kb while nd_kb and nd_kind == 13 and nd_pgp == 0 and nd_hedit {{ focus nd_hn }}']
     # ── home's header (D272): the time and the date on the left, the weather and the battery on the right, and a
     # strip of four readings under them ──
     L += [f'{c}    group {{ show: nd_pgp == 0',
@@ -1076,7 +1078,8 @@ def surface():
     ink, dim, hull = "fl.engrave", "fl.muted", "fl.hull"
     acc = "nd_acc"
     L = ['    surface node {',
-         '        size: full, full', '        anchor: top', '        level: top, overlay while nd_kind == 7 or nd_studio',
+         '        size: full, full', '        anchor: top',
+         '        open: not nd_hpick', '        level: top, overlay while nd_kind == 7 or nd_studio',
          '        // -1: over every other bar\'s strip, not pushed below it (it sat on the windows\' line, D245)',
          '        reserve: -1', '        keyboard: exclusive while nd_kb', '        // D252: at rest only a slow breath moves, twelve frames a second is plenty (each repaints the whole surface)',
          '        rate: 60, 12 while nd_kind == 0 and nd_grow > 0.99 and not nd_studio and not nd_cap']

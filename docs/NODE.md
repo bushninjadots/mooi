@@ -274,7 +274,8 @@ pointer resting on it or Super will not dismiss it, and if several things
 finish, they wait their turn, oldest first. If a time tool finishes under a fullscreen window, where
 you cannot see the node, a desktop notification says so too.
 
-The panel never takes the keyboard. Super, or a press on an empty part of the panel, folds it away.
+The panel takes the keyboard only on the pages you type into: Notes, the shortcut filter, and Home while
+the profile editor is open. Super, or a press on an empty part of the panel, folds it away.
 Everything is kept in `node-time.json` against the wall clock, so a timer survives a restart.
 
 ### The player
