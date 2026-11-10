@@ -7685,3 +7685,20 @@ shows whether the limit is offered and where charging stops now. `mooi battery l
 
 **Verified.** Unit 933 / 0; the Settings scene compiles; CI's shellcheck in a container is clean; live:
 `mooi battery status` saw an MSI with no limit yet. The setup itself was not run: it needs the owner's password.
+
+## D294 · 2026-11-10 · The workspaces' galaxy shows its windows, live
+
+The owner: "workspace galaxy overview doesn't show live preview, please make that". The node's orbit of workspaces
+(Super+Tab) drew each tile with its number and the names of its apps. Each tile now holds live pictures of its
+windows — one fills the tile, two sit side by side, three or four share a 2 × 2 grid — under a small number and the
+apps' names; an empty workspace says so. The tiles grow to 280 × 176 while there are pictures.
+
+The pictures are Pleamar's `thumbnails` service, asked for live only while the galaxy is open
+(`thumbnails.live "all"` on the way in, nothing after), so nothing is copied the rest of the time; Hyprland keeps a
+hidden workspace's windows at their last frame. The service knows windows, not workspaces, so `lib/node/galaxy`
+matches each picture to Hyprland's clients by app and title, then by app. The pictures are drawn in one flat loop
+placed at their tile by the same orbit and ordered with it by depth (`z`), which keeps the scene at a third of the
+size a picture loop inside every tile made it.
+
+**Verified.** Unit 936 / 0; the scene compiles; live after `mooi refresh`: the galaxy opened with workspace 2's
+kitty as a live picture in its tile, and closed.

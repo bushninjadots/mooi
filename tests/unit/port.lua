@@ -710,3 +710,29 @@ do
         assert(read("tools/gen-settings.py"):find('"power.charge_limit", 50, 100', 1, true))
     end)
 end
+
+section("the workspaces' galaxy shows its windows live (D294)")
+do
+    local GX = require("lib/node/galaxy")
+    test("cells: one fills, two side by side, three or four in a grid", function()
+        eq(#GX.cells(0), 0); eq(GX.cells(1)[1].fw, 1); eq(#GX.cells(2), 2); eq(#GX.cells(7), 4)
+        local c = GX.cells(4); assert(c[4].fx > 0.5 and c[4].fy > 0.5)
+    end)
+    test("pictures go to the workspace whose window matches: title and app first, then the app", function()
+        local list = { { id = 1 }, { id = 2 } }
+        local clients = { { class = "kitty", title = "a", workspace = { id = 2 } }, { class = "kitty", title = "b", workspace = { id = 1 } },
+                          { class = "zen", title = "web", workspace = { id = 2 } } }
+        local thumbs = { { app = "kitty", title = "b", picture = "t:1" }, { app = "kitty", title = "x", picture = "t:2" },
+                         { app = "zen", title = "web", picture = "t:3" }, { app = "pleamar", title = "bar", picture = "t:4" },
+                         { app = "zen", title = "none", picture = "" } }
+        local p = GX.pictures(list, thumbs, clients)
+        eq(#p, 3); eq(p[1].tile, 0); eq(p[1].img, "t:1")
+        eq(p[2].tile, 1); eq(p[3].tile, 1); eq(p[2].fw < 0.5, true, "two share their tile")
+    end)
+    test("the node asks for them live only while the galaxy is open, and draws them flat at their tile", function()
+        local l, p = read("shell/mooi-node.luau"), read("shell/mooi-node.plm")
+        assert(l:find('pcall(sys.call, "thumbnails.live", "all")', 1, true) and l:find('pcall(sys.call, "thumbnails.live")', 1, true))
+        assert(p:find("for p in up {", 1, true) and p:find("z: pdp * 10 + 0.05", 1, true))
+        assert(p:find('"thumbnails", "thumbnails.*"', 1, true))
+    end)
+end

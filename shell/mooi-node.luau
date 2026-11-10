@@ -39,6 +39,7 @@ local KS = require("lib/node/keysheet")
 local SSH = require("lib/node/ssh")
 local PK = require("lib/node/pkgs")
 local SX = require("lib/node/sysextra")
+local GX = require("lib/node/galaxy")
 local HM = require("lib/node/home")
 local WEEK = require("lib/node/week")
 local SETTINGS = require("lib/settingsfile")
@@ -269,9 +270,13 @@ local function show_universe()
         for _, c in ipairs(N.clients) do
             if type(c.workspace) == "table" and c.workspace.id == w.id and #apps < 4 then apps[#apps + 1] = tostring(c.class or "") end
         end
-        rows[i] = { i = i - 1, n = tostring(w.id), apps = table.concat(apps, " · "), id = w.id }
+        rows[i] = { i = i - 1, n = tostring(w.id), apps = table.concat(apps, " · "), id = w.id, empty = #apps == 0 }
     end
     model.un = rows
+    -- D294: each workspace's windows, live, in its tile
+    local pics = GX.pictures(list, N.thumbs, N.clients, 36)
+    model.up = pics
+    fact.nd_upic = #pics > 0
     fact.nd_un_n = math.max(1, #list)
     fact.nd_rott = N.rot or 0
 end
@@ -452,6 +457,15 @@ render = function()
         end
     end
     fact.nd_kind = KIND[kind] or 0
+    -- D294: the galaxy's windows are copied live only while it is open: asked for on the way in, let go after
+    if kind == "universe" and not N.gal_live then
+        N.gal_live = true
+        pcall(sys.call, "thumbnails.live", "all")
+    elseif kind ~= "universe" and N.gal_live then
+        N.gal_live = false
+        pcall(sys.call, "thumbnails.live")
+        pcall(sys.call, "thumbnails.want")
+    end
     -- the spectrum is needed now (a music form, the seed's bars): the bar is asked for its feed at once
     if changed and N.wants_bands and N.wants_bands() then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
     -- the keyboard only for what is opened to be typed into: the time panel, the player and a finish card never
@@ -850,6 +864,12 @@ on("text:nd_q", function(v)
 end)
 
 -- ── the universe ──
+-- D294: the windows' pictures, kept while they come (nothing is copied until the galaxy asks)
+N.thumbs = {}
+pcall(sys.watch, "thumbnails", function(t)
+    N.thumbs = type(t) == "table" and type(t.list) == "table" and t.list or {}
+    if N.kind == "universe" then show_universe() end
+end)
 local function open_universe()
     for _, k in ipairs(HELD) do ST.release(N.st, k) end
     N.uni_at = N.ws.active
