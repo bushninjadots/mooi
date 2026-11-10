@@ -58,6 +58,7 @@ M.SCHEMA = {
         choice("cover", "Cover", "The album art's shape", { "square", "round" }, { "Square", "Round" }),
     },
     Parts = {
+        choice("sys_style", "System as", "How the machine's readings show: spokes, rings, or a short history each", { "spokes", "rings", "graphs" }, { "Spokes", "Rings", "Graphs" }),
         range("cards", "Notices", "How many notice cards branch from it", 1, 5, ""),
         range("satellites", "Satellites", "How many small marks may orbit the seed", 0, 6, ""),
         choice("sat_style", "Satellite style", "What those marks look like", { "pill", "dot", "tick" }, { "Pills", "Dots", "Ticks" }),
@@ -71,7 +72,7 @@ local BASE = {
     texture = "solid", fill = 95, outline = 10, glow = 70, accent = "phos", glow_colour = "phos",
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
     viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse",
-    rest = "seed", m_clock = "on", m_window = "on", m_spaces = "on", m_battery = "off", m_music = "on", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
+    sys_style = "spokes", rest = "seed", m_clock = "on", m_window = "on", m_spaces = "on", m_battery = "off", m_music = "on", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
 }
 local PRESET = {
     organic = {},
@@ -252,6 +253,7 @@ function M.facts(t)
         nd_viz = ix({ "bars", "wave", "dots", "off" }, t.viz), nd_cov = ix({ "square", "round" }, t.cover),
         nd_sst = ix({ "pill", "dot", "tick" }, t.sat_style), nd_ldm = t.dim / 100, nd_ur = t.orbit,
         nd_long = t.rest == "long" and 1 or 0,
+        nd_sys = ix({ "spokes", "rings", "graphs" }, t.sys_style),
         nd_mf = ix({ "capsule", "visualiser", "vinyl" }, t.music_form), nd_smu = ix({ "still", "pulse", "bars" }, t.seed_music),
     }
 end

@@ -6874,3 +6874,19 @@ the focus is asked every 1.5 s, and the clock checked every 5 s, only while the 
 studio's tabs are narrower so seven fit.
 
 **Verified.** Unit 760 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.
+
+## D249 · 2026-11-10 · The clipboard branch; the system three ways; btop
+
+**Clipboard** (on the shelf): cliphist's seven newest, text as it reads and pictures by their size
+(`lib/node/cliphist`, opencode's, reviewed: its previews are now cut between characters, never inside one). A
+press puts one back. Copying goes through `wl-copy`'s input, never its command line, as the bar's clipboard
+does, since an argument is visible to every process. The calculator's and the notes' copies were changed to
+match.
+
+**System as** (studio → Parts): the readings as spokes (as before), **rings** (a gauge each, in a row under the
+node), or **graphs** (a card each with its last twenty readings as bars, from `lib/node/history`, opencode's,
+sampled with the bar's feed). A press on the processor, the memory or the heat opens **btop** in the owner's
+terminal. The terminal is found once by asking each of the usual ones for its version (no shell; first kitty),
+and started through Hyprland's `exec` so it is a window like any other (`lib/node/terminal`, opencode's).
+
+**Verified.** Unit 788 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.

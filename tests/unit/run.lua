@@ -6564,7 +6564,7 @@ do
     test("D235: a sum comes first and is copied; letters in order find a command; nothing typed is ever run", function()
         local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()
         assert(l:find('table.insert(apps, 1, { kind = "calc", name = "= " .. shown, value = shown })', 1, true))
-        assert(l:find('run("wl-copy", { tostring(a.value) }', 1, true))
+        assert(l:find('        copy(a.value)', 1, true) and l:find('run("wl-copy", {}, nil, { input = tostring(text or ""), output = false })', 1, true), "D249: on its input, never its command line")
         eq(CMD.score("wpp", "Wallpaper picker", ""), 1)
         local K = require("lib/node/calc")
         eq(K.eval("os.exit()"), nil); eq(K.eval('load("return 1")()'), nil)
@@ -6723,6 +6723,25 @@ do
         local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()
         assert(l:find("shape.seed_w, shape.seed_h = w, 26", 1, true))
         assert(l:find('if N.kind ~= "rest" or N.look.rest ~= "long" or N.look.m_window ~= "on" or N.studio.open then return end', 1, true))
+    end)
+end
+
+section("the clipboard branch, the system as rings or graphs, btop (D249)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local l = read("shell/mooi-node.luau")
+    test("the clipboard: cliphist's newest; a press puts one back on wl-copy's input, never its command line", function()
+        assert(l:find('local SHOW = { show_calendar, show_notes, show_clipboard, show_stash, show_walls }', 1, true))
+        assert(l:find('if code == 0 and out then run("wl-copy", {}, nil, { input = out, output = false }) end', 1, true))
+        assert(not l:find('run("wl-copy", { ', 1, true), "nothing copied through an argument")
+    end)
+    test("the system as spokes, rings or graphs (a history each); a deeper reading opens btop through Hyprland", function()
+        local LK = require("lib/node/look")
+        eq(LK.preset("organic").sys_style, "spokes"); eq(LK.facts(LK.normalise({ sys_style = "graphs" })).nd_sys, 2)
+        assert(l:find('run("hyprctl", { "dispatch", HY.exec(table.concat(argv, " ")) }', 1, true))
+        assert(l:find('run(t, { "--version" }', 1, true), "the terminal found by asking, no shell")
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("on press syz1 { emit nd_sys(p.index) }", 1, true) and p:find("p.h19 * 32", 1, true))
     end)
 end
 

@@ -10,7 +10,12 @@ end
 -- a text preview: one line, no runs of space, cut to 80 characters with an ellipsis
 local function text_preview(body)
     local s = trim((body:gsub("%s+", " ")))
-    if #s > 80 then s = s:sub(1, 77) .. "…" end
+    if #s > 80 then
+        -- cut on a character's first byte, never inside one (an accent or an emoji split in two shows as garbage)
+        local cut = 77
+        while cut > 1 and (s:byte(cut + 1) or 0) >= 0x80 and (s:byte(cut + 1) or 0) < 0xC0 do cut = cut - 1 end
+        s = s:sub(1, cut) .. "…"
+    end
     return s
 end
 

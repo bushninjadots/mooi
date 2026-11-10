@@ -25,6 +25,9 @@ local LY = require("lib/node/lyrics")
 local CAL = require("lib/calendar")
 local NOTES = require("lib/notes")
 local STASH = require("lib/stash")
+local CH = require("lib/node/cliphist")
+local HI = require("lib/node/history")
+local TM = require("lib/node/terminal")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
@@ -180,18 +183,24 @@ local function show_system(b)
     -- the bar's feed gives the processor and the memory as fractions (0 … 1), the temperature in degrees
     local function pct(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v * 100 or v end
     local cpu, mem = pct(f.cpu), pct(f.mem)
+    -- label, value, hot, how full (0 … 1), whether a press opens btop, its history
     local items = {
-        { "CPU", cpu and (math.floor(cpu + 0.5) .. "%") or "—", (cpu or 0) > 85 },
-        { "RAM", mem and (math.floor(mem + 0.5) .. "%") or "—", (mem or 0) > 90 },
-        { "TEMP", f.temp and (math.floor(f.temp) .. "°") or "—", (tonumber(f.temp) or 0) > 85 },
-        { "NET", N.online and "ON" or "OFF", not N.online },
+        { "CPU", cpu and (math.floor(cpu + 0.5) .. "%") or "—", (cpu or 0) > 85, (cpu or 0) / 100, true, N.hist.cpu },
+        { "RAM", mem and (math.floor(mem + 0.5) .. "%") or "—", (mem or 0) > 90, (mem or 0) / 100, true, N.hist.mem },
+        { "TEMP", f.temp and (math.floor(f.temp) .. "°") or "—", (tonumber(f.temp) or 0) > 85, math.min(1, (tonumber(f.temp) or 0) / 100), true, N.hist.temp },
+        { "NET", N.online and "ON" or "OFF", not N.online, N.online and 1 or 0, false },
     }
     if N.bat then
-        items[#items + 1] = { "BAT", math.floor(N.bat + 0.5) .. "%" .. (N.charging and "+" or ""), DV.band(N.bat) == "critical" and not N.charging }
+        items[#items + 1] = { "BAT", math.floor(N.bat + 0.5) .. "%" .. (N.charging and "+" or ""), DV.band(N.bat) == "critical" and not N.charging, N.bat / 100, false }
     end
     local sp = G.spokes(b, #items)
     local rows = {}
-    for i, it in ipairs(items) do rows[i] = { x = sp[i].x, y = sp[i].y, label = it[1], value = it[2], hot = it[3] } end
+    for i, it in ipairs(items) do
+        local r = { x = sp[i].x, y = sp[i].y, label = it[1], value = it[2], hot = it[3], frac = math.max(0, math.min(1, it[4] or 0)), deep = it[5] == true }
+        local bars = it[6] and HI.bars(it[6], 20) or {}
+        for k = 0, 19 do r["h" .. k] = bars[k + 1] or 0 end
+        rows[i] = r
+    end
     model.sy = rows
 end
 
@@ -518,9 +527,16 @@ local function notices_now()
 end
 pcall(sys.watch, "files:nexus-feed.json", notices_now)
 -- the bar's feed: the system's numbers, recording
+-- D249: a short history of each reading, for the graphs
+N.hist = { cpu = HI.new(40), mem = HI.new(40), temp = HI.new(40) }
 local function feed_now()
     local f = read("sigil-feed.json", "json")
     N.feed = type(f) == "table" and f or {}
+    local r = type(N.feed.resources) == "table" and N.feed.resources or {}
+    local function frac(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v or v / 100 end
+    if frac(r.cpu) then HI.push(N.hist.cpu, frac(r.cpu)) end
+    if frac(r.mem) then HI.push(N.hist.mem, frac(r.mem)) end
+    if tonumber(r.temp) then HI.push(N.hist.temp, math.min(1, tonumber(r.temp) / 100)) end
     render()
 end
 pcall(sys.watch, "files:sigil-feed.json", feed_now)
@@ -637,6 +653,10 @@ local function search()
     N.results = apps
     N.sel = math.max(0, math.min(N.sel, #N.results - 1))
 end
+-- copied on wl-copy's input, never its command line: an argument is visible to every process and has a length
+-- limit; `output = false`, since wl-copy stays to serve it (as the bar's clipboard does)
+local function copy(text) run("wl-copy", {}, nil, { input = tostring(text or ""), output = false }) end
+N.copy = copy
 -- what a chosen row does: an app starts, a window comes forward, a command of mooi's runs, a sum is copied
 local function choose(a)
     if not a then return end
@@ -646,7 +666,7 @@ local function choose(a)
     elseif a.kind == "command" then
         run("mooi", a.args, function() end)
     elseif a.kind == "calc" then
-        run("wl-copy", { tostring(a.value) }, function() end)
+        copy(a.value)
     else
         pcall(sys.call, "apps.launch", a.exec)
     end
@@ -1147,7 +1167,29 @@ local function show_walls()
     model.wl = rows
     text.nd_brs = (#N.walls > 0) and (N.wl_at .. "–" .. math.min(#N.walls, N.wl_at + 6) .. " OF " .. #N.walls) or "NO PICTURES INDEXED YET"
 end
-local SHOW = { show_calendar, show_notes, nil, show_stash, show_walls }
+-- the clipboard: cliphist's newest, text shown as it reads, pictures by their size; a press puts one back
+local function show_clipboard()
+    N.branch_items = {}
+    run("cliphist", { "list" }, function(out, code)
+        if N.branch ~= 3 then return end
+        local list = code == 0 and CH.parse(out, 7) or {}
+        local rows = {}
+        for i, e in ipairs(list) do
+            rows[i] = { label = e.label, detail = e.kind == "text" and "" or string.upper(e.kind), pinned = false }
+            N.branch_items[i] = e.id
+        end
+        model.br = rows
+        text.nd_brs = code ~= 0 and "CLIPHIST IS NOT RUNNING" or (#list == 0 and "NOTHING COPIED YET" or "A PRESS PUTS ONE BACK")
+    end)
+end
+N.clip_choose = function(i)
+    local argv = CH.decode_args(N.branch_items[i])
+    if not argv then return end
+    run(argv[1], { table.unpack(argv, 2) }, function(out, code)
+        if code == 0 and out then run("wl-copy", {}, nil, { input = out, output = false }) end
+    end)
+end
+local SHOW = { show_calendar, show_notes, show_clipboard, show_stash, show_walls }
 local function show_branch()
     text.nd_brt = BRANCH_TITLE[N.branch] or ""
     fact.nd_bk = N.branch
@@ -1189,7 +1231,7 @@ on("nd_br", function(v)
         end
     elseif v >= 10 and v < 30 then
         local i = v - 9
-        if k == 2 and N.branch_items[i] then run("wl-copy", { N.branch_items[i] }, function() end)
+        if k == 2 and N.branch_items[i] then N.copy(N.branch_items[i])
         elseif k == 3 and N.clip_choose then N.clip_choose(i)
         elseif k == 4 and N.branch_items[i] then run("xdg-open", { N.branch_items[i] }, function() end)
         elseif k == 5 then
@@ -1198,6 +1240,33 @@ on("nd_br", function(v)
         end
     end
     show_branch()
+end)
+
+-- ── a reading pressed (D249): btop, in the owner's terminal — the first of the usual ones that answers, found
+-- once by asking each its version (no shell), and started through Hyprland so it is a window like any other ──
+local TERMS = { "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm" }
+local function with_terminal(go)
+    if N.term ~= nil then go(N.term or nil); return end
+    local i = 0
+    local function try()
+        i = i + 1
+        local t = TERMS[i]
+        if not t then N.term = false; go(nil); return end
+        run(t, { "--version" }, function(_, code) if code == 0 then N.term = t; go(t) else try() end end)
+    end
+    try()
+end
+on("nd_sys", function(v)
+    -- the first three are the processor, the memory and the heat; the network and the battery open nothing
+    local row = math.floor(tonumber(v) or -1) + 1
+    if row < 1 or row > 3 then return end
+    with_terminal(function(t)
+        local argv = t and TM.argv(t, { "btop" })
+        if not argv then return end
+        run("hyprctl", { "dispatch", HY.exec(table.concat(argv, " ")) }, function() end)
+        for _, h in ipairs(HELD) do ST.release(N.st, h) end
+        render()
+    end)
 end)
 
 -- ── the time tools (D231) ──

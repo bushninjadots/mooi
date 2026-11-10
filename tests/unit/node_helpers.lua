@@ -1327,3 +1327,14 @@ do
         eq(#C.parse("1\tone", "many"), 1)
     end)
 end
+
+section("the node's helpers (D249): the clipboard's preview never splits a character")
+do
+    local CH = require("lib/node/cliphist")
+    test("a long line of accents is cut between characters", function()
+        local line = "1\t" .. string.rep("é", 60)
+        local p = CH.parse(line)[1].preview
+        local body = p:sub(1, #p - #"…")
+        eq(#body % 2, 0, "whole two-byte characters only")
+    end)
+end
