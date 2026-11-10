@@ -7586,3 +7586,33 @@ Seen on review: with no notices, Home left some 180 px of empty panel under "No 
 follows them: the rows start at 493 px and take 58 each, the icon row 66 under them, and with none one line says
 so — 583 px with none, 732 with three (the most it shows). Other pages keep their heights. The panel re-renders when
 a notice arrives, so it grows on its springs as the body does. `lib/node/geometry`; unit-tested.
+
+## D289 · 2026-11-10 · Senda, the arcade's autobattler (opencode's)
+
+Senda is the arcade's fourth game, on page 5. A road of eight stages; a team of up to four creatures; battles that
+fight themselves in rounds. The owner asked for k4's Senda without copying its code, text or art, so the creatures,
+names and writing here are mooi's own, drawn with shapes, text and Nerd Font glyphs.
+
+Each creature has one of five elements — fire, water, leaf, stone, spark — on a five-step wheel: fire beats leaf,
+leaf beats stone, stone beats spark, spark beats water, water beats fire, for ×1.5; the reverse is ×0.67. It also
+carries one passive: **mend** heals its side a little at the end of each round, **first** strikes once before round
+one, and **thorns** hurts whoever hits it. The built-in pool is 30 creatures, six per element.
+
+A run starts with two creatures (so the first stage can be fought) and stage 1. Enemy counts grow from two to four;
+every fourth stage is a medal boss, first in the line, with half again the health and two more attack. Rounds are
+ordered by speed, team first on a tie; every action hits the first living foe. Damage is `max(1, floor(atk ×
+advantage + 0.5))`. A lost team ends the run; stage 8 cleared wins it.
+
+Between stages the road offers three things: two creatures to recruit, and either rest (when anyone is hurt) or
+training for the lowest-level creature (when the team is whole). Recruiting stops at four and is marked `TEAM
+FULL`. Each choice advances the stage. Best is stages cleared, kept as `senda` in `arcade.json`'s best table.
+
+`shell/lib/arcade/senda.luau` is pure and seeded: `new(seed)`, `offers(st)`, `choose(st, i)`, `battle_step(st)`,
+plus `advantage(a, b)`. `new` draws two distinct starters and the stage's foes from the seed; offers use a local
+stream derived from the seed and stage, so the same run offers the same three things. The scene gained the `sdteam`,
+`sdf`, `sdoffers`, `sdpath`, and `sdlog` models, its facts and texts, and the page; the picker now shows four cards
+across. ← → choose, Return confirms, Space or Return speeds a battle, Esc goes back.
+
+**Verified.** Unit 928 / 0, including the wheel both ways, a seeded battle's exact ending, recruiting at four,
+training the lowest, rest filling the team, offers with and without a hurt creature, and a fallen team ending the
+run. The scene compiles (121 properties, 18 zones); `luau-ops`, the gate and the arcade's globals check pass.

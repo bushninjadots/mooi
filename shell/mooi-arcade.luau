@@ -7,6 +7,7 @@ local config = require("lib/config")
 local SNAKE = require("lib/arcade/snake")
 local GRIETA = require("lib/arcade/grieta")
 local MAZMORRA = require("lib/arcade/mazmorra")
+local SENDA = require("lib/arcade/senda")
 
 local function read(name, kind)
     local ok, v
@@ -45,6 +46,7 @@ local GAMES = {
     { id = "snake", name = "Snake", glyph = "󰉚", line = "Eat, grow, never bite yourself. Faster as you grow.", page = 2, ready = true },
     { id = "grieta", name = "La Grieta", glyph = "󰌌", line = "Type the words to seal what crawls out of the crack.", page = 3, ready = true },
     { id = "mazmorra", name = "Mazmorra", glyph = "󰞇", line = "An idle dungeon that fights on while you work.", page = 4, ready = true },
+    { id = "senda", name = "Senda", glyph = "󰕦", line = "Eight stages, a team of four, and the road decides.", page = 5, ready = true },
 }
 local function picker()
     local rows = {}
@@ -283,6 +285,119 @@ local function mz_boost()
     end
 end
 
+-- ── Senda ──
+local sd = nil
+local sd_gen = 0
+local sd_fast = false
+local SD_STATE = { battle = 0, choose = 1, over = 2, won = 3 }
+
+local function sd_row(c)
+    return {
+        name = c.name, glyph = c.glyph, level = "LV " .. c.level,
+        hp = tostring(c.hp), maxhp = tostring(c.max_hp),
+        hpn = math.max(0, math.min(1, c.hp / math.max(1, c.max_hp))),
+        passive = SENDA.PASSIVES[c.passive] or "", element = string.upper(c.element),
+        boss = c.boss or false,
+    }
+end
+
+local function sd_draw()
+    if not sd then return end
+    local team = {}
+    for i, c in ipairs(sd.team) do team[i] = sd_row(c) end
+    model.sdteam = team
+    local foes = {}
+    for i, c in ipairs(sd.foes) do foes[i] = sd_row(c) end
+    model.sdf = foes
+    local offers = {}
+    if sd.state == "choose" and sd.offers then
+        for i, o in ipairs(sd.offers) do
+            offers[i] = { kind = o.kind, title = o.title, line = o.line, glyph = o.glyph, full = o.full or false }
+        end
+    end
+    model.sdoffers = offers
+    local path = {}
+    local now = 0
+    if sd.state == "battle" then now = sd.stage elseif sd.state == "choose" then now = sd.stage + 1 end
+    for i = 1, SENDA.STAGES do
+        path[i] = { n = tostring(i), done = i <= sd.cleared, now = i == now, boss = i % 4 == 0 }
+    end
+    model.sdpath = path
+    local log = {}
+    for i, line in ipairs(sd.log) do log[i] = { line = line } end
+    model.sdlog = log
+    fact.sd_state = SD_STATE[sd.state] or 0
+    fact.sd_stage = sd.stage
+    fact.sd_cleared = sd.cleared
+    fact.sd_best = math.max(tonumber(A.scores.senda) or 0, sd.best)
+    fact.sd_round = sd.round
+    fact.sd_boss = sd.state == "battle" and sd.stage % 4 == 0 or false
+    fact.sd_sel = sd.pick or 0
+    if sd.state == "choose" then
+        text.sd_line = "STAGE " .. sd.stage .. " CLEARED · CAMP"
+    elseif sd.state == "over" then
+        text.sd_line = "THE ROAD ENDS AT STAGE " .. sd.stage
+    elseif sd.state == "won" then
+        text.sd_line = "THE ROAD IS WALKED"
+    else
+        text.sd_line = "STAGE " .. sd.stage .. " / " .. SENDA.STAGES .. " · ROUND " .. sd.round
+    end
+    text.sd_best_text = "BEST " .. math.max(tonumber(A.scores.senda) or 0, sd.best)
+end
+
+local function sd_remember()
+    if sd and sd.best > (tonumber(A.scores.senda) or 0) then A.scores.senda = sd.best; save() end
+end
+
+local function sd_tick(gen)
+    if gen ~= sd_gen or A.page ~= 5 or not sd or sd.state ~= "battle" then return end
+    local events = SENDA.battle_step(sd)
+    for _, e in ipairs(events) do
+        if e.kind == "hit" then
+            pcall(sound.tone, { wave = "square", freq = 170, ms = 35, volume = 0.1, release = 25 })
+        elseif e.kind == "fall" then
+            pcall(sound.tone, { wave = "square", freq = 110, ms = 80, volume = 0.16, release = 60 })
+        elseif e.kind == "mend" then
+            pcall(sound.tone, { wave = "sine", freq = 520, ms = 50, volume = 0.1, release = 40 })
+        elseif e.kind == "win" then
+            pcall(sound.tone, { wave = "triangle", freq = 760, ms = 220, volume = 0.22, release = 160 })
+        elseif e.kind == "lose" then
+            pcall(sound.tone, { wave = "sawtooth", freq = 140, ms = 300, volume = 0.24, release = 220 })
+        end
+    end
+    sd_remember()
+    sd_draw()
+    if sd.state == "battle" then
+        after(sd_fast and 70 or 600, function() sd_tick(gen) end)
+    else
+        sd_fast = false
+    end
+end
+
+local function sd_run()
+    sd_gen = sd_gen + 1
+    local gen = sd_gen
+    after(sd_fast and 70 or 600, function() sd_tick(gen) end)
+end
+
+local function sd_start()
+    if not sd then return end
+    sd_draw()
+    if sd.state == "battle" then sd_run() end
+end
+
+local function sd_choose(i)
+    if not sd or sd.state ~= "choose" then return end
+    if SENDA.choose(sd, i) then
+        sd_remember()
+        sd_draw()
+        pcall(sound.tone, { wave = "triangle", freq = 620, ms = 120, volume = 0.18, release = 90 })
+        if sd.state == "battle" then sd_run() end
+    else
+        pcall(sound.tone, { wave = "square", freq = 150, ms = 60, volume = 0.14, release = 50 })
+    end
+end
+
 -- ── pages ──
 local function show(page)
     A.page = page
@@ -295,6 +410,13 @@ local function show(page)
         gz_draw()
     end
     if page == 4 then mz_enter() end
+    if page == 5 then
+        sd = SENDA.new(os.time())
+        sd_gen = sd_gen + 1
+        sd_fast = false
+        sd_remember()
+        sd_start()
+    end
 end
 local function play(i)
     local g = GAMES[i + 1]
@@ -307,6 +429,7 @@ on("ac_cmd", function(v)
         if sn then sn.state = sn.state == 1 and 2 or sn.state end
         if A.page == 3 then gz_gen = gz_gen + 1 end
         if A.page == 4 and mz then mz.last = os.time(); mz_persist() end
+        if A.page == 5 then sd_gen = sd_gen + 1; sd_fast = false; sd_remember() end
         show(0)
     else
         show(1)
@@ -365,6 +488,49 @@ on("ac_key", function(v)
             local which = v - 49
             if v == 90 then which = 0 elseif v == 88 then which = 1 elseif v == 67 then which = 2 elseif v == 86 then which = 3 end
             mz_buy(which)
+        end
+    elseif A.page == 5 then
+        if v == 27 then
+            sd_gen = sd_gen + 1
+            sd_fast = false
+            sd_remember()
+            show(1)
+        elseif not sd then
+            return
+        elseif sd.state == "battle" then
+            if (v == 32 or v == 13) and not sd_fast then
+                sd_fast = true
+                sd_gen = sd_gen + 1
+                local gen = sd_gen
+                after(10, function() sd_tick(gen) end)
+            end
+        elseif sd.state == "choose" then
+            local n = sd.offers and #sd.offers or 0
+            if n > 0 and (v == 37 or v == 65) then
+                sd.pick = (sd.pick - 1) % n
+                sd_draw()
+            elseif n > 0 and (v == 39 or v == 68) then
+                sd.pick = (sd.pick + 1) % n
+                sd_draw()
+            elseif v == 13 then
+                sd_choose(sd.pick)
+            elseif v >= 49 and v <= 51 then
+                sd_choose(v - 49)
+            elseif v == 90 then
+                sd_choose(0)
+            elseif v == 88 then
+                sd_choose(1)
+            elseif v == 67 then
+                sd_choose(2)
+            end
+        elseif sd.state == "over" or sd.state == "won" then
+            if v == 13 or v == 32 then
+                sd = SENDA.new(os.time())
+                sd_gen = sd_gen + 1
+                sd_fast = false
+                sd_remember()
+                sd_start()
+            end
         end
     end
 end)
