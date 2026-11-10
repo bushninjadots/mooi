@@ -362,7 +362,11 @@ render = function()
     local data = { n = #N.ws.list }
     -- at rest with something running, the seed is the time capsule
     local cap = (not studio and kind == "rest") and TK.capsule(N.time, wall()) or nil
-    local b = G.body(cap and "capsule" or kind, N.scr, anchor, shape, data)
+    -- the music in the form the look chose (D246): a capsule, a visualiser strip, or a record (always round)
+    local bkind = cap and "capsule" or kind
+    if kind == "media" and look.music_form ~= "capsule" then bkind = "media_" .. look.music_form end
+    local b = G.body(bkind, N.scr, anchor, shape, data)
+    if bkind == "media_vinyl" then b.r = b.w / 2; b.y = b.y + 6 end
     show_capsule(cap)
     -- leaning toward where the pointer came in from
     if N.near and not studio and kind ~= "rest" and kind ~= "universe" then b.x = math.max(0, math.min(N.scr.w - b.w, b.x + (N.lean or 0) * 24)) end
@@ -387,6 +391,8 @@ render = function()
         end
     end
     fact.nd_kind = KIND[kind] or 0
+    -- the spectrum is needed now (a music form, the seed's bars): the bar is asked for its feed at once
+    if changed and N.wants_bands and N.wants_bands() then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
     -- the keyboard only for what is opened to be typed into: the time panel, the player and a finish card never
     -- take it, so a timer that ends while you type steals no keys
     fact.nd_kb = studio or kind == "launcher" or kind == "universe"
@@ -852,8 +858,18 @@ every(1000, function()
 end)
 -- the bands: the bar's 32, the lower 16 mirrored round the middle; a fact written only when it moves enough to see
 local sp_last, viz_seq = {}, nil
+-- whether anything shown now draws the spectrum: the player, the music as a visualiser or a record, the seed's bars
+local function wants_bands()
+    if N.kind == "player" then return true end
+    if N.kind == "media" and N.look.music_form ~= "capsule" then return true end
+    return N.kind == "rest" and N.look.seed_music == "bars" and N.media.playing
+end
+N.wants_bands = wants_bands
+every(3000, function()
+    if N.kind ~= "player" and wants_bands() then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
+end)
 every(50, function()
-    if N.kind ~= "player" then return end
+    if not wants_bands() then return end
     local ok, raw = pcall(sys.ask, "files.read", VF.FILE)
     local t = ok and type(raw) == "string" and VF.decode(raw) or nil
     if t and VF.newer(viz_seq, t.seq) then viz_seq = t.seq else t = nil end

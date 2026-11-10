@@ -35,10 +35,11 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_stg", 0.5, "stagger, 0 all at once … 1 one after another"), ("nd_bd", 0.35, "how deeply it breathes"),
         ("nd_mu", 0.6, "how much it moves with the music"), ("nd_viz", 0, "the media's music: 0 bars · 1 wave · 2 dots · 3 off"),
         ("nd_cov", 0, "the cover: 0 square · 1 round"), ("nd_sst", 0, "satellites: 0 pills · 1 dots · 2 ticks"),
-        ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width")]
+        ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width"),
+        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "System", "Search", "Tour"]
-TABS = ["Presets", "Shape", "Surface", "Motion", "Parts"]
+TABS = ["Presets", "Shape", "Surface", "Motion", "Music", "Parts"]
 MONO = '"Share Tech Mono"'
 SANS = '"Exo 2"'
 
@@ -93,6 +94,8 @@ def scene():
           '    text nd_title = ""', '    text nd_artist = ""', '    text nd_art = ""', '    image nd_cover = from nd_art, 96, 96',
           '    fact nd_playing = false', '    fact nd_prog = 0', '    fact nd_arted = false',
           '    prop nd_vph = 0', '    spin nd_vph by if(nd_kind == 1 and nd_playing, 240, 0)',
+          '    // the record (D246): 33⅓ turns a minute while it plays',
+          '    prop nd_vrot = 0', '    spin nd_vrot by if(nd_kind == 1 and nd_mf == 2 and nd_playing, 200, 0)',
           '    // notices',
           '    model nc max 5 { x: number; y: number; w: number; h: number; app: text; title: text; body: text; open: bool; act: text; hasact: bool }',
           '    fact nd_ncn = 0       // how many cards are shown', '    fact nd_more = 0      // how many more wait',
@@ -233,10 +236,10 @@ def studio_deck():
          f'{d}    box {{ from: st_x, st_dy; size: 940, 470; corner: 18; color: fl.hull; opacity: 0.97 }} }}',
          f'{d}box {{ from: st_x, st_dy; size: 940, 470; corner: 18; stroke: 1; color: fl.trace_dim }}']
     for i, t in enumerate(TABS):
-        x = f"st_x + {24 + i * 112}"
-        L += [f'{d}text "{t}" {{ at: {x} + 52, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == {i}, 700, 500); family: {SANS}; color: if(nd_tab == {i}, fl.engrave, fl.muted) }}',
-              f'{d}box {{ from: {x} + 16, st_dy + 52; size: 72, 2; corner: 1; color: nd_acc; show: nd_tab == {i} }}',
-              f'{d}zone box stt{i} {{ from: {x}, st_dy + 18; size: 104, 38; cursor: pointer; role: tab; label: "{t}"; selected: nd_tab == {i}; show: nd_studio }}',
+        x = f"st_x + {24 + i * 92}"
+        L += [f'{d}text "{t}" {{ at: {x} + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == {i}, 700, 500); family: {SANS}; color: if(nd_tab == {i}, fl.engrave, fl.muted) }}',
+              f'{d}box {{ from: {x} + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == {i} }}',
+              f'{d}zone box stt{i} {{ from: {x}, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "{t}"; selected: nd_tab == {i}; show: nd_studio }}',
               f'{d}on press stt{i} {{ emit nd_tab({i}) }}']
     L += button(d, "stc3", "st_x + 940 - 24 - 336", "st_dy + 22", 100, 30, "RESET", "nd_stc(3)")
     L += button(d, "stc1", "st_x + 940 - 24 - 224", "st_dy + 22", 108, 30, "SHUFFLE", "nd_stc(1)")
@@ -403,15 +406,34 @@ def player_parts(c, acc, ink, dim, hull):
          f'{c}    on press pkz {{ emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }}',
          f'{c}    on drag pkz {{ emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }}']
     L += [f'{c}    group {{ show: not nd_mix']
-    for i, (glyph, code, lit, label) in enumerate((("⤮", 1, "nd_shuf", "Shuffle"), ("⏮", 2, "false", "Back"), ("⏯", 3, "false", "Play or pause"),
-                                                   ("⏭", 4, "false", "Next"), ("⟲", 5, "nd_loop > 0", "Repeat"))):
-        x = f"nb_x + 164 + {i * 46}"
-        big = code == 3
-        L += [f'{c}        box {{ from: {x}, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: {acc}; opacity: if({"true" if big else "false"}, 0.9, if({lit}, 0.22, if(pbz{code}.hover, 0.12, 0))) }}',
-              f'{c}        text "{glyph}" {{ at: {x} + 19, nb_y + 127; anchor: center; align: center; size: {17 if big else 15}; family: {SANS}; color: if({"true" if big else "false"}, fl.ground, if({lit}, {acc}, {ink})) }}',
-              f'{c}        zone box pbz{code} {{ from: {x}, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "{label}"; show: nd_kind == 11 }}',
-              f'{c}        on press pbz{code} {{ emit nd_pl({code}) }}']
-    L += [f'{c}        text "1" {{ at: nb_x + 164 + 4 * 46 + 30, nb_y + 116; anchor: center; size: 8; weight: 700; family: {MONO}; color: {acc}; show: nd_loop == 2 }}',
+    # the transport, drawn (D246): shuffle · back · play/pause (larger, the song's progress a ring round it) · next ·
+    # repeat; each lifts a little under the pointer
+    T = c + "        "
+    def btn(code, cx, r, lit, label, inner):
+        out = [f'{T}group {{ pivot: {cx}, nb_y + 127; scale: if(pbz{code}.hover, 1.1, 1)',
+               f'{T}    ellipse {{ at: {cx}, nb_y + 127; radius: {r}; color: {acc}; opacity: {"0.92" if code == 3 else f"if({lit}, 0.22, if(pbz{code}.hover, 0.12, 0))"} }}']
+        out += [f'{T}    {x}' for x in inner]
+        out += [f'{T}}}',
+                f'{T}zone box pbz{code} {{ from: {cx} - {r}, nb_y + 127 - {r}; size: {2 * r}, {2 * r}; corner: {r}; cursor: pointer; role: button; label: "{label}"; show: nd_kind == 11 }}',
+                f'{T}on press pbz{code} {{ emit nd_pl({code}) }}']
+        return out
+    X = "nb_x + 164"
+    L += btn(1, f"{X} + 18", 17, "nd_shuf", "Shuffle", [f'text "⤮" {{ at: {X} + 18, nb_y + 127; anchor: center; align: center; size: 15; family: {SANS}; color: if(nd_shuf, {acc}, {ink}) }}'])
+    L += btn(2, f"{X} + 62", 17, "false", "Back", [
+        f'box {{ from: {X} + 54, nb_y + 120; size: 2.5, 14; corner: 1; color: {ink} }}',
+        f'path {{ at: {X} + 64, nb_y + 127; move 5, -7; line -5, 0; line 5, 7; close; color: {ink} }}'])
+    L += [f'{T}// play: the song\'s progress a ring round it',
+          f'{T}arc {{ at: {X} + 116, nb_y + 127; radius: 26; span: nd_prog * 360deg; rotate: nd_prog * 180deg; width: 2.5; color: {acc}; opacity: 0.9 }}',
+          f'{T}arc {{ at: {X} + 116, nb_y + 127; radius: 26; span: 360deg; width: 1; color: fl.trace_dim; opacity: 0.6 }}']
+    L += btn(3, f"{X} + 116", 22, "true", "Play or pause", [
+        f'path {{ at: {X} + 118, nb_y + 127; move -6, -9; line 9, 0; line -6, 9; close; color: fl.ground; show: not nd_playing }}',
+        f'box {{ from: {X} + 109.5, nb_y + 119; size: 4.5, 16; corner: 1; color: fl.ground; show: nd_playing }}',
+        f'box {{ from: {X} + 118, nb_y + 119; size: 4.5, 16; corner: 1; color: fl.ground; show: nd_playing }}'])
+    L += btn(4, f"{X} + 170", 17, "false", "Next", [
+        f'path {{ at: {X} + 168, nb_y + 127; move -5, -7; line 5, 0; line -5, 7; close; color: {ink} }}',
+        f'box {{ from: {X} + 175.5, nb_y + 120; size: 2.5, 14; corner: 1; color: {ink} }}'])
+    L += btn(5, f"{X} + 214", 17, "nd_loop > 0", "Repeat", [f'text "⟲" {{ at: {X} + 214, nb_y + 127; anchor: center; align: center; size: 15; family: {SANS}; color: if(nd_loop > 0, {acc}, {ink}) }}'])
+    L += [f'{c}        text "1" {{ at: nb_x + 164 + 226, nb_y + 116; anchor: center; size: 8; weight: 700; family: {MONO}; color: {acc}; show: nd_loop == 2 }}',
           f'{c}        // the music, mirrored: the low bands meet in the middle']
     L += [f'{c}        group {{ show: not nd_lyon']
     for k in range(32):
@@ -461,6 +483,44 @@ def player_parts(c, acc, ink, dim, hull):
     return L
 
 
+def music_forms(c, acc, ink, dim, hull):
+    """D246: the music as a visualiser (the node is its spectrum) or as a turning record."""
+    L = [f'{c}// the music as a visualiser: the node is nothing but its spectrum, mirrored round its middle, glowing',
+         f'{c}group {{ show: nd_kind == 1 and nd_mf == 1; opacity: nd_cf',
+         f'{c}    group {{ glow: 12, 0.5 + 0.5 * nd_gw, nd_glc']
+    for k in range(32):
+        L += [f'{c}        box {{ from: nb_x + 6 + {k} * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp{k} * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp{k} * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: {acc}; opacity: 0.55 + 0.45 * nd_sp{k} }}']
+    L += [f'{c}    }}',
+          f'{c}}}',
+          f'{c}// the music as a record: grooves, the cover for its label, a glint that turns with it, the tonearm resting on',
+          f'{c}// it, and the spectrum standing out round its rim',
+          f'{c}group {{ show: nd_kind == 1 and nd_mf == 2; opacity: nd_cf',
+          f'{c}    let vx = nb_x + nb_w / 2',
+          f'{c}    let vy = nb_y + nb_h / 2',
+          f'{c}    let vr = min(nb_w, nb_h) / 2']
+    for k in range(32):
+        a = f"({k} * 11.25 - 90)"
+        L += [f'{c}    line {{ from: vx + cos({a}) * (vr + 3), vy + sin({a}) * (vr + 3); to: vx + cos({a}) * (vr + 4 + nd_sp{k} * 26), vy + sin({a}) * (vr + 4 + nd_sp{k} * 26); width: 3; color: {acc}; opacity: 0.35 + 0.6 * nd_sp{k} }}']
+    L += [f'{c}    group {{ glow: 16, 0.35 * nd_gw, nd_glc',
+          f'{c}        ellipse {{ at: vx, vy; radius: vr; color: #0b0b0d }} }}']
+    for gr in range(7):
+        L += [f'{c}    ellipse {{ at: vx, vy; radius: vr * {0.92 - gr * 0.075:.3f}; stroke: 0.8; color: fl.trace_lit; opacity: {0.10 + 0.03 * (gr % 2):.2f} }}']
+    L += [f'{c}    group {{ pivot: vx, vy; rotate: nd_vrot',
+          f'{c}        arc {{ at: vx, vy; radius: vr * 0.7; span: 50deg; rotate: -40deg; width: vr * 0.45; color: #ffffff; opacity: 0.05 }}',
+          f'{c}        arc {{ at: vx, vy; radius: vr * 0.7; span: 50deg; rotate: 140deg; width: vr * 0.45; color: #ffffff; opacity: 0.035 }}',
+          f'{c}        group {{ clip box {{ from: vx - vr * 0.34, vy - vr * 0.34; size: vr * 0.68, vr * 0.68; corner: vr * 0.34 }}',
+          f'{c}            ellipse {{ at: vx, vy; radius: vr * 0.34; color: {acc} }}',
+          f'{c}            image nd_cover {{ at: vx - vr * 0.34, vy - vr * 0.34; size: vr * 0.68, vr * 0.68; fit: cover; show: nd_arted }} }}',
+          f'{c}    }}',
+          f'{c}    ellipse {{ at: vx, vy; radius: 3; color: fl.ground }}',
+          f'{c}    // the tonearm, from its pivot beside the record to the grooves',
+          f'{c}    ellipse {{ at: vx + vr * 0.95, vy - vr * 0.8; radius: 6; color: fl.hull_raised }}',
+          f'{c}    line {{ from: vx + vr * 0.95, vy - vr * 0.8; to: vx + vr * 0.35, vy + vr * 0.25; width: 3; color: fl.trace_lit }}',
+          f'{c}    box {{ from: vx + vr * 0.35 - 4, vy + vr * 0.25 - 3; size: 9, 7; corner: 2; color: {acc} }}',
+          f'{c}}}']
+    return L
+
+
 def surface():
     c = "        "
     ink, dim, hull = "fl.engrave", "fl.muted", "fl.hull"
@@ -507,7 +567,7 @@ def surface():
     L += [f'{c}// the body: one shape that is the seed, a capsule, a rail, a search line — its glow by the look, swelling',
           f'{c}// a little with the music as far as the look lets it',
           f'{c}let nd_glow = nd_gw * (1 + 0.4 * lv.level * nd_mu)',
-          f'{c}let nd_sw = nb_w + if(nd_kind == 0 and nd_playing, lv.level * 16 * nd_mu, 0)',
+          f'{c}let nd_sw = nb_w + if(nd_kind == 0 and nd_playing and nd_smu == 1, lv.level * 16 * nd_mu, 0)',
           f'{c}let nd_sx = nb_x - (nd_sw - nb_w) / 2',
           f'{c}let nd_sh = nb_h * if(nd_kind == 0, 1 + 0.35 * nd_br * nd_bd, 1)',
           f'{c}let nd_sy = nb_y - (nd_sh - nb_h) / 2',
@@ -519,6 +579,11 @@ def surface():
           f'{c}    box {{ from: nd_sx, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: {acc}; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 3 }}',
           f'{c}    box {{ from: nd_sx + nd_sw * 0.55, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: {acc}; opacity: (0.55 + 0.35 * (1 - nd_br)) * nd_fill; show: nd_seed == 3 }}',
           f'{c}}}',
+          f'{c}// the seed with music as bars (D246): five little bars over it while something plays',
+          f'{c}group {{ show: nd_kind == 0 and nd_smu == 2 and nd_playing and not nd_cap and nd_seed != 5']
+    for k in range(5):
+        L += [f'{c}    box {{ from: nb_x + nb_w / 2 - 14 + {k} * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp{13 + k} * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp{13 + k} * 9 * nd_mu); corner: 1.5; color: {acc}; opacity: 0.95 }}']
+    L += [f'{c}}}',
           f'{c}// the clock seed: the time in mooi\'s 5×7 matrix, two pixels a cell, on a small capsule',
           f'{c}group {{ show: nd_kind == 0 and nd_seed == 5 and not nd_cap',
           f'{c}    group {{ glow: 8, 0.4 * nd_gw, nd_glc',
@@ -562,7 +627,7 @@ def surface():
           f'{c}on press nd_bz {{ emit nd_press }}']
     # media
     L += [f'{c}// media: a lateral capsule — revealed by the body as it grows (its own clip), the music woven into it',
-          f'{c}group {{ show: nd_kind == 1; opacity: nd_cf',
+          f'{c}group {{ show: nd_kind == 1 and nd_mf == 0; opacity: nd_cf',
           f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
           f'{c}    // the music, by the look: bars from the floor, a wave through the middle, or dots that swell',
           f'{c}    repeat vb in 0..40 {{ box {{ from: nb_x + 8 + vb * (nb_w - 16) / 40, nb_y + nb_h - (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7; size: (nb_w - 16) / 40 * 0.55, (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7 + 1; color: {acc}; opacity: 0.16; show: nd_viz == 0 }} }}',
@@ -578,9 +643,10 @@ def surface():
     for i, (glyph, code) in enumerate((("⏮", 1), ("⏯", 2), ("⏭", 3))):
         x = f"nb_x + nb_w - 118 + {i * 36}"
         L += [f'{c}    text "{glyph}" {{ at: {x} + 14, nb_y + nb_h / 2; anchor: center; align: center; size: 15; family: {SANS}; color: if(nmc{code}.hover, {acc}, {ink}) }}',
-              f'{c}    zone box nmc{code} {{ from: {x}, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "{["Back", "Play or pause", "Next"][i]}"; show: nd_kind == 1 }}',
+              f'{c}    zone box nmc{code} {{ from: {x}, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "{["Back", "Play or pause", "Next"][i]}"; show: nd_kind == 1 and nd_mf == 0 }}',
               f'{c}    on press nmc{code} {{ emit nd_media({code}) }}']
     L += [f'{c}}}']
+    L += music_forms(c, acc, ink, dim, hull)
     # notices
     L += [f'{c}// notices: a stem drops from the node, and the cards branch from it one after another (each grows out of',
           f'{c}// the stem\'s foot: it slides down from it, opening as it comes)',

@@ -6663,6 +6663,33 @@ do
     end)
 end
 
+section("the music as a capsule, a visualiser or a record; the player's controls drawn (D246)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local LK = require("lib/node/look")
+    test("the look's Music page: how music shows and what the seed does with it; old files keep the capsule", function()
+        eq(LK.preset("organic").music_form, "capsule"); eq(LK.preset("organic").seed_music, "pulse")
+        local t = LK.normalise({ music_form = "vinyl", seed_music = "bars" })
+        eq(LK.facts(t).nd_mf, 2); eq(LK.facts(t).nd_smu, 2)
+        eq(LK.normalise({ music_form = "cassette" }).music_form, "capsule")
+        for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab .. ": the deck shows seven rows") end
+    end)
+    test("the record turns while it plays, its spectrum round its rim; the visualiser is only its spectrum", function()
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("spin nd_vrot by if(nd_kind == 1 and nd_mf == 2 and nd_playing, 200, 0)", 1, true))
+        assert(p:find("group { show: nd_kind == 1 and nd_mf == 1; opacity: nd_cf", 1, true))
+        assert(p:find("group { pivot: vx, vy; rotate: nd_vrot", 1, true))
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('if kind == "media" and look.music_form ~= "capsule" then bkind = "media_" .. look.music_form end', 1, true))
+        assert(l:find('if N.kind == "media" and N.look.music_form ~= "capsule" then return true end', 1, true), "the bands read only while drawn")
+    end)
+    test("the transport is drawn, play the larger with the song's progress a ring round it", function()
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("span: nd_prog * 360deg; rotate: nd_prog * 180deg", 1, true))
+        assert(p:find("show: not nd_playing }", 1, true) and p:find("show: nd_playing }", 1, true), "play, or pause")
+    end)
+end
+
 section("the node: what a review of its logic found (D244)")
 do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end

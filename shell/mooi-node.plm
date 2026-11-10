@@ -261,6 +261,8 @@ scene Node {
     fact nd_sst = 0     // satellites: 0 pills · 1 dots · 2 ticks
     fact nd_ldm = 0.28     // the search's dim
     fact nd_ur = 520     // the orbit's width
+    fact nd_mf = 0     // music as: 0 a capsule · 1 a visualiser · 2 a record
+    fact nd_smu = 1     // the seed with music: 0 still · 1 a pulse · 2 bars
     fact nd_tx = 949
     fact nd_ty = 8
     fact nd_tw = 22
@@ -388,6 +390,9 @@ scene Node {
     fact nd_arted = false
     prop nd_vph = 0
     spin nd_vph by if(nd_kind == 1 and nd_playing, 240, 0)
+    // the record (D246): 33⅓ turns a minute while it plays
+    prop nd_vrot = 0
+    spin nd_vrot by if(nd_kind == 1 and nd_mf == 2 and nd_playing, 200, 0)
     // notices
     model nc max 5 { x: number; y: number; w: number; h: number; app: text; title: text; body: text; open: bool; act: text; hasact: bool }
     fact nd_ncn = 0       // how many cards are shown
@@ -413,7 +418,7 @@ scene Node {
     fact nd_studio = false
     prop nd_stf = 0 ~nd.aux
     follow nd_stf = if(nd_studio, 1, 0)
-    fact nd_tab = 0       // 0 Presets · 1 Shape · 2 Surface · 3 Motion · 4 Parts
+    fact nd_tab = 0       // 0 Presets · 1 Shape · 2 Surface · 3 Motion · 4 Music · 5 Parts
     fact nd_kr = 0        // the row the keyboard is on
     fact nd_pv = 0        // the preview: 0 Rest · 1 Music · 2 Notice · 3 Volume · 4 Rail · 5 System · 6 Search · 7 Tour
     text nd_lookname = "Organic"
@@ -649,7 +654,7 @@ scene Node {
         // the body: one shape that is the seed, a capsule, a rail, a search line — its glow by the look, swelling
         // a little with the music as far as the look lets it
         let nd_glow = nd_gw * (1 + 0.4 * lv.level * nd_mu)
-        let nd_sw = nb_w + if(nd_kind == 0 and nd_playing, lv.level * 16 * nd_mu, 0)
+        let nd_sw = nb_w + if(nd_kind == 0 and nd_playing and nd_smu == 1, lv.level * 16 * nd_mu, 0)
         let nd_sx = nb_x - (nd_sw - nb_w) / 2
         let nd_sh = nb_h * if(nd_kind == 0, 1 + 0.35 * nd_br * nd_bd, 1)
         let nd_sy = nb_y - (nd_sh - nb_h) / 2
@@ -660,6 +665,14 @@ scene Node {
             box { from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; stroke: 1.5; color: nd_acc; opacity: 0.6 + 0.35 * nd_br; show: nd_seed == 2 }
             box { from: nd_sx, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 3 }
             box { from: nd_sx + nd_sw * 0.55, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * (1 - nd_br)) * nd_fill; show: nd_seed == 3 }
+        }
+        // the seed with music as bars (D246): five little bars over it while something plays
+        group { show: nd_kind == 0 and nd_smu == 2 and nd_playing and not nd_cap and nd_seed != 5
+            box { from: nb_x + nb_w / 2 - 14 + 0 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp13 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp13 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
+            box { from: nb_x + nb_w / 2 - 14 + 1 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp14 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp14 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
+            box { from: nb_x + nb_w / 2 - 14 + 2 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp15 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp15 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
+            box { from: nb_x + nb_w / 2 - 14 + 3 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp16 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp16 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
+            box { from: nb_x + nb_w / 2 - 14 + 4 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp17 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp17 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
         }
         // the clock seed: the time in mooi's 5×7 matrix, two pixels a cell, on a small capsule
         group { show: nd_kind == 0 and nd_seed == 5 and not nd_cap
@@ -703,7 +716,7 @@ scene Node {
         on change nd_hv { emit nd_hover(if(nd_hv, 1 + round(pointer.x), 0)) }
         on press nd_bz { emit nd_press }
         // media: a lateral capsule — revealed by the body as it grows (its own clip), the music woven into it
-        group { show: nd_kind == 1; opacity: nd_cf
+        group { show: nd_kind == 1 and nd_mf == 0; opacity: nd_cf
             clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
             // the music, by the look: bars from the floor, a wave through the middle, or dots that swell
             repeat vb in 0..40 { box { from: nb_x + 8 + vb * (nb_w - 16) / 40, nb_y + nb_h - (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7; size: (nb_w - 16) / 40 * 0.55, (0.25 + 0.75 * abs(sin(vb * 47 + nd_vph))) * lv.level * nb_h * 0.7 + 1; color: nd_acc; opacity: 0.16; show: nd_viz == 0 } }
@@ -717,14 +730,111 @@ scene Node {
             box { from: nb_x + 68, nb_y + nb_h - 12; size: nb_w - 200, 2; corner: 1; color: fl.trace_dim }
             box { from: nb_x + 68, nb_y + nb_h - 12; size: (nb_w - 200) * nd_prog, 2; corner: 1; color: nd_acc }
             text "⏮" { at: nb_x + nb_w - 118 + 0 + 14, nb_y + nb_h / 2; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(nmc1.hover, nd_acc, fl.engrave) }
-            zone box nmc1 { from: nb_x + nb_w - 118 + 0, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Back"; show: nd_kind == 1 }
+            zone box nmc1 { from: nb_x + nb_w - 118 + 0, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Back"; show: nd_kind == 1 and nd_mf == 0 }
             on press nmc1 { emit nd_media(1) }
             text "⏯" { at: nb_x + nb_w - 118 + 36 + 14, nb_y + nb_h / 2; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(nmc2.hover, nd_acc, fl.engrave) }
-            zone box nmc2 { from: nb_x + nb_w - 118 + 36, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 1 }
+            zone box nmc2 { from: nb_x + nb_w - 118 + 36, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 1 and nd_mf == 0 }
             on press nmc2 { emit nd_media(2) }
             text "⏭" { at: nb_x + nb_w - 118 + 72 + 14, nb_y + nb_h / 2; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(nmc3.hover, nd_acc, fl.engrave) }
-            zone box nmc3 { from: nb_x + nb_w - 118 + 72, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next"; show: nd_kind == 1 }
+            zone box nmc3 { from: nb_x + nb_w - 118 + 72, nb_y + nb_h / 2 - 14; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Next"; show: nd_kind == 1 and nd_mf == 0 }
             on press nmc3 { emit nd_media(3) }
+        }
+        // the music as a visualiser: the node is nothing but its spectrum, mirrored round its middle, glowing
+        group { show: nd_kind == 1 and nd_mf == 1; opacity: nd_cf
+            group { glow: 12, 0.5 + 0.5 * nd_gw, nd_glc
+                box { from: nb_x + 6 + 0 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp0 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp0 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp0 }
+                box { from: nb_x + 6 + 1 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp1 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp1 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp1 }
+                box { from: nb_x + 6 + 2 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp2 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp2 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp2 }
+                box { from: nb_x + 6 + 3 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp3 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp3 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp3 }
+                box { from: nb_x + 6 + 4 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp4 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp4 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp4 }
+                box { from: nb_x + 6 + 5 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp5 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp5 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp5 }
+                box { from: nb_x + 6 + 6 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp6 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp6 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp6 }
+                box { from: nb_x + 6 + 7 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp7 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp7 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp7 }
+                box { from: nb_x + 6 + 8 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp8 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp8 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp8 }
+                box { from: nb_x + 6 + 9 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp9 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp9 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp9 }
+                box { from: nb_x + 6 + 10 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp10 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp10 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp10 }
+                box { from: nb_x + 6 + 11 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp11 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp11 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp11 }
+                box { from: nb_x + 6 + 12 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp12 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp12 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp12 }
+                box { from: nb_x + 6 + 13 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp13 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp13 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp13 }
+                box { from: nb_x + 6 + 14 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp14 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp14 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp14 }
+                box { from: nb_x + 6 + 15 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp15 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp15 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp15 }
+                box { from: nb_x + 6 + 16 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp16 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp16 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp16 }
+                box { from: nb_x + 6 + 17 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp17 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp17 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp17 }
+                box { from: nb_x + 6 + 18 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp18 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp18 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp18 }
+                box { from: nb_x + 6 + 19 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp19 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp19 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp19 }
+                box { from: nb_x + 6 + 20 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp20 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp20 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp20 }
+                box { from: nb_x + 6 + 21 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp21 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp21 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp21 }
+                box { from: nb_x + 6 + 22 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp22 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp22 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp22 }
+                box { from: nb_x + 6 + 23 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp23 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp23 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp23 }
+                box { from: nb_x + 6 + 24 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp24 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp24 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp24 }
+                box { from: nb_x + 6 + 25 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp25 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp25 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp25 }
+                box { from: nb_x + 6 + 26 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp26 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp26 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp26 }
+                box { from: nb_x + 6 + 27 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp27 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp27 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp27 }
+                box { from: nb_x + 6 + 28 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp28 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp28 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp28 }
+                box { from: nb_x + 6 + 29 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp29 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp29 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp29 }
+                box { from: nb_x + 6 + 30 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp30 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp30 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp30 }
+                box { from: nb_x + 6 + 31 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp31 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp31 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp31 }
+            }
+        }
+        // the music as a record: grooves, the cover for its label, a glint that turns with it, the tonearm resting on
+        // it, and the spectrum standing out round its rim
+        group { show: nd_kind == 1 and nd_mf == 2; opacity: nd_cf
+            let vx = nb_x + nb_w / 2
+            let vy = nb_y + nb_h / 2
+            let vr = min(nb_w, nb_h) / 2
+            line { from: vx + cos((0 * 11.25 - 90)) * (vr + 3), vy + sin((0 * 11.25 - 90)) * (vr + 3); to: vx + cos((0 * 11.25 - 90)) * (vr + 4 + nd_sp0 * 26), vy + sin((0 * 11.25 - 90)) * (vr + 4 + nd_sp0 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp0 }
+            line { from: vx + cos((1 * 11.25 - 90)) * (vr + 3), vy + sin((1 * 11.25 - 90)) * (vr + 3); to: vx + cos((1 * 11.25 - 90)) * (vr + 4 + nd_sp1 * 26), vy + sin((1 * 11.25 - 90)) * (vr + 4 + nd_sp1 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp1 }
+            line { from: vx + cos((2 * 11.25 - 90)) * (vr + 3), vy + sin((2 * 11.25 - 90)) * (vr + 3); to: vx + cos((2 * 11.25 - 90)) * (vr + 4 + nd_sp2 * 26), vy + sin((2 * 11.25 - 90)) * (vr + 4 + nd_sp2 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp2 }
+            line { from: vx + cos((3 * 11.25 - 90)) * (vr + 3), vy + sin((3 * 11.25 - 90)) * (vr + 3); to: vx + cos((3 * 11.25 - 90)) * (vr + 4 + nd_sp3 * 26), vy + sin((3 * 11.25 - 90)) * (vr + 4 + nd_sp3 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp3 }
+            line { from: vx + cos((4 * 11.25 - 90)) * (vr + 3), vy + sin((4 * 11.25 - 90)) * (vr + 3); to: vx + cos((4 * 11.25 - 90)) * (vr + 4 + nd_sp4 * 26), vy + sin((4 * 11.25 - 90)) * (vr + 4 + nd_sp4 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp4 }
+            line { from: vx + cos((5 * 11.25 - 90)) * (vr + 3), vy + sin((5 * 11.25 - 90)) * (vr + 3); to: vx + cos((5 * 11.25 - 90)) * (vr + 4 + nd_sp5 * 26), vy + sin((5 * 11.25 - 90)) * (vr + 4 + nd_sp5 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp5 }
+            line { from: vx + cos((6 * 11.25 - 90)) * (vr + 3), vy + sin((6 * 11.25 - 90)) * (vr + 3); to: vx + cos((6 * 11.25 - 90)) * (vr + 4 + nd_sp6 * 26), vy + sin((6 * 11.25 - 90)) * (vr + 4 + nd_sp6 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp6 }
+            line { from: vx + cos((7 * 11.25 - 90)) * (vr + 3), vy + sin((7 * 11.25 - 90)) * (vr + 3); to: vx + cos((7 * 11.25 - 90)) * (vr + 4 + nd_sp7 * 26), vy + sin((7 * 11.25 - 90)) * (vr + 4 + nd_sp7 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp7 }
+            line { from: vx + cos((8 * 11.25 - 90)) * (vr + 3), vy + sin((8 * 11.25 - 90)) * (vr + 3); to: vx + cos((8 * 11.25 - 90)) * (vr + 4 + nd_sp8 * 26), vy + sin((8 * 11.25 - 90)) * (vr + 4 + nd_sp8 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp8 }
+            line { from: vx + cos((9 * 11.25 - 90)) * (vr + 3), vy + sin((9 * 11.25 - 90)) * (vr + 3); to: vx + cos((9 * 11.25 - 90)) * (vr + 4 + nd_sp9 * 26), vy + sin((9 * 11.25 - 90)) * (vr + 4 + nd_sp9 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp9 }
+            line { from: vx + cos((10 * 11.25 - 90)) * (vr + 3), vy + sin((10 * 11.25 - 90)) * (vr + 3); to: vx + cos((10 * 11.25 - 90)) * (vr + 4 + nd_sp10 * 26), vy + sin((10 * 11.25 - 90)) * (vr + 4 + nd_sp10 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp10 }
+            line { from: vx + cos((11 * 11.25 - 90)) * (vr + 3), vy + sin((11 * 11.25 - 90)) * (vr + 3); to: vx + cos((11 * 11.25 - 90)) * (vr + 4 + nd_sp11 * 26), vy + sin((11 * 11.25 - 90)) * (vr + 4 + nd_sp11 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp11 }
+            line { from: vx + cos((12 * 11.25 - 90)) * (vr + 3), vy + sin((12 * 11.25 - 90)) * (vr + 3); to: vx + cos((12 * 11.25 - 90)) * (vr + 4 + nd_sp12 * 26), vy + sin((12 * 11.25 - 90)) * (vr + 4 + nd_sp12 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp12 }
+            line { from: vx + cos((13 * 11.25 - 90)) * (vr + 3), vy + sin((13 * 11.25 - 90)) * (vr + 3); to: vx + cos((13 * 11.25 - 90)) * (vr + 4 + nd_sp13 * 26), vy + sin((13 * 11.25 - 90)) * (vr + 4 + nd_sp13 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp13 }
+            line { from: vx + cos((14 * 11.25 - 90)) * (vr + 3), vy + sin((14 * 11.25 - 90)) * (vr + 3); to: vx + cos((14 * 11.25 - 90)) * (vr + 4 + nd_sp14 * 26), vy + sin((14 * 11.25 - 90)) * (vr + 4 + nd_sp14 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp14 }
+            line { from: vx + cos((15 * 11.25 - 90)) * (vr + 3), vy + sin((15 * 11.25 - 90)) * (vr + 3); to: vx + cos((15 * 11.25 - 90)) * (vr + 4 + nd_sp15 * 26), vy + sin((15 * 11.25 - 90)) * (vr + 4 + nd_sp15 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp15 }
+            line { from: vx + cos((16 * 11.25 - 90)) * (vr + 3), vy + sin((16 * 11.25 - 90)) * (vr + 3); to: vx + cos((16 * 11.25 - 90)) * (vr + 4 + nd_sp16 * 26), vy + sin((16 * 11.25 - 90)) * (vr + 4 + nd_sp16 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp16 }
+            line { from: vx + cos((17 * 11.25 - 90)) * (vr + 3), vy + sin((17 * 11.25 - 90)) * (vr + 3); to: vx + cos((17 * 11.25 - 90)) * (vr + 4 + nd_sp17 * 26), vy + sin((17 * 11.25 - 90)) * (vr + 4 + nd_sp17 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp17 }
+            line { from: vx + cos((18 * 11.25 - 90)) * (vr + 3), vy + sin((18 * 11.25 - 90)) * (vr + 3); to: vx + cos((18 * 11.25 - 90)) * (vr + 4 + nd_sp18 * 26), vy + sin((18 * 11.25 - 90)) * (vr + 4 + nd_sp18 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp18 }
+            line { from: vx + cos((19 * 11.25 - 90)) * (vr + 3), vy + sin((19 * 11.25 - 90)) * (vr + 3); to: vx + cos((19 * 11.25 - 90)) * (vr + 4 + nd_sp19 * 26), vy + sin((19 * 11.25 - 90)) * (vr + 4 + nd_sp19 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp19 }
+            line { from: vx + cos((20 * 11.25 - 90)) * (vr + 3), vy + sin((20 * 11.25 - 90)) * (vr + 3); to: vx + cos((20 * 11.25 - 90)) * (vr + 4 + nd_sp20 * 26), vy + sin((20 * 11.25 - 90)) * (vr + 4 + nd_sp20 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp20 }
+            line { from: vx + cos((21 * 11.25 - 90)) * (vr + 3), vy + sin((21 * 11.25 - 90)) * (vr + 3); to: vx + cos((21 * 11.25 - 90)) * (vr + 4 + nd_sp21 * 26), vy + sin((21 * 11.25 - 90)) * (vr + 4 + nd_sp21 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp21 }
+            line { from: vx + cos((22 * 11.25 - 90)) * (vr + 3), vy + sin((22 * 11.25 - 90)) * (vr + 3); to: vx + cos((22 * 11.25 - 90)) * (vr + 4 + nd_sp22 * 26), vy + sin((22 * 11.25 - 90)) * (vr + 4 + nd_sp22 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp22 }
+            line { from: vx + cos((23 * 11.25 - 90)) * (vr + 3), vy + sin((23 * 11.25 - 90)) * (vr + 3); to: vx + cos((23 * 11.25 - 90)) * (vr + 4 + nd_sp23 * 26), vy + sin((23 * 11.25 - 90)) * (vr + 4 + nd_sp23 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp23 }
+            line { from: vx + cos((24 * 11.25 - 90)) * (vr + 3), vy + sin((24 * 11.25 - 90)) * (vr + 3); to: vx + cos((24 * 11.25 - 90)) * (vr + 4 + nd_sp24 * 26), vy + sin((24 * 11.25 - 90)) * (vr + 4 + nd_sp24 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp24 }
+            line { from: vx + cos((25 * 11.25 - 90)) * (vr + 3), vy + sin((25 * 11.25 - 90)) * (vr + 3); to: vx + cos((25 * 11.25 - 90)) * (vr + 4 + nd_sp25 * 26), vy + sin((25 * 11.25 - 90)) * (vr + 4 + nd_sp25 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp25 }
+            line { from: vx + cos((26 * 11.25 - 90)) * (vr + 3), vy + sin((26 * 11.25 - 90)) * (vr + 3); to: vx + cos((26 * 11.25 - 90)) * (vr + 4 + nd_sp26 * 26), vy + sin((26 * 11.25 - 90)) * (vr + 4 + nd_sp26 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp26 }
+            line { from: vx + cos((27 * 11.25 - 90)) * (vr + 3), vy + sin((27 * 11.25 - 90)) * (vr + 3); to: vx + cos((27 * 11.25 - 90)) * (vr + 4 + nd_sp27 * 26), vy + sin((27 * 11.25 - 90)) * (vr + 4 + nd_sp27 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp27 }
+            line { from: vx + cos((28 * 11.25 - 90)) * (vr + 3), vy + sin((28 * 11.25 - 90)) * (vr + 3); to: vx + cos((28 * 11.25 - 90)) * (vr + 4 + nd_sp28 * 26), vy + sin((28 * 11.25 - 90)) * (vr + 4 + nd_sp28 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp28 }
+            line { from: vx + cos((29 * 11.25 - 90)) * (vr + 3), vy + sin((29 * 11.25 - 90)) * (vr + 3); to: vx + cos((29 * 11.25 - 90)) * (vr + 4 + nd_sp29 * 26), vy + sin((29 * 11.25 - 90)) * (vr + 4 + nd_sp29 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp29 }
+            line { from: vx + cos((30 * 11.25 - 90)) * (vr + 3), vy + sin((30 * 11.25 - 90)) * (vr + 3); to: vx + cos((30 * 11.25 - 90)) * (vr + 4 + nd_sp30 * 26), vy + sin((30 * 11.25 - 90)) * (vr + 4 + nd_sp30 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp30 }
+            line { from: vx + cos((31 * 11.25 - 90)) * (vr + 3), vy + sin((31 * 11.25 - 90)) * (vr + 3); to: vx + cos((31 * 11.25 - 90)) * (vr + 4 + nd_sp31 * 26), vy + sin((31 * 11.25 - 90)) * (vr + 4 + nd_sp31 * 26); width: 3; color: nd_acc; opacity: 0.35 + 0.6 * nd_sp31 }
+            group { glow: 16, 0.35 * nd_gw, nd_glc
+                ellipse { at: vx, vy; radius: vr; color: #0b0b0d } }
+            ellipse { at: vx, vy; radius: vr * 0.920; stroke: 0.8; color: fl.trace_lit; opacity: 0.10 }
+            ellipse { at: vx, vy; radius: vr * 0.845; stroke: 0.8; color: fl.trace_lit; opacity: 0.13 }
+            ellipse { at: vx, vy; radius: vr * 0.770; stroke: 0.8; color: fl.trace_lit; opacity: 0.10 }
+            ellipse { at: vx, vy; radius: vr * 0.695; stroke: 0.8; color: fl.trace_lit; opacity: 0.13 }
+            ellipse { at: vx, vy; radius: vr * 0.620; stroke: 0.8; color: fl.trace_lit; opacity: 0.10 }
+            ellipse { at: vx, vy; radius: vr * 0.545; stroke: 0.8; color: fl.trace_lit; opacity: 0.13 }
+            ellipse { at: vx, vy; radius: vr * 0.470; stroke: 0.8; color: fl.trace_lit; opacity: 0.10 }
+            group { pivot: vx, vy; rotate: nd_vrot
+                arc { at: vx, vy; radius: vr * 0.7; span: 50deg; rotate: -40deg; width: vr * 0.45; color: #ffffff; opacity: 0.05 }
+                arc { at: vx, vy; radius: vr * 0.7; span: 50deg; rotate: 140deg; width: vr * 0.45; color: #ffffff; opacity: 0.035 }
+                group { clip box { from: vx - vr * 0.34, vy - vr * 0.34; size: vr * 0.68, vr * 0.68; corner: vr * 0.34 }
+                    ellipse { at: vx, vy; radius: vr * 0.34; color: nd_acc }
+                    image nd_cover { at: vx - vr * 0.34, vy - vr * 0.34; size: vr * 0.68, vr * 0.68; fit: cover; show: nd_arted } }
+            }
+            ellipse { at: vx, vy; radius: 3; color: fl.ground }
+            // the tonearm, from its pivot beside the record to the grooves
+            ellipse { at: vx + vr * 0.95, vy - vr * 0.8; radius: 6; color: fl.hull_raised }
+            line { from: vx + vr * 0.95, vy - vr * 0.8; to: vx + vr * 0.35, vy + vr * 0.25; width: 3; color: fl.trace_lit }
+            box { from: vx + vr * 0.35 - 4, vy + vr * 0.25 - 3; size: 9, 7; corner: 2; color: nd_acc }
         }
         // notices: a stem drops from the node, and the cards branch from it one after another (each grows out of
         // the stem's foot: it slides down from it, opening as it comes)
@@ -917,27 +1027,44 @@ scene Node {
             on press pkz { emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }
             on drag pkz { emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }
             group { show: not nd_mix
-                box { from: nb_x + 164 + 0, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(false, 0.9, if(nd_shuf, 0.22, if(pbz1.hover, 0.12, 0))) }
-                text "⤮" { at: nb_x + 164 + 0 + 19, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(false, fl.ground, if(nd_shuf, nd_acc, fl.engrave)) }
-                zone box pbz1 { from: nb_x + 164 + 0, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Shuffle"; show: nd_kind == 11 }
+                group { pivot: nb_x + 164 + 18, nb_y + 127; scale: if(pbz1.hover, 1.1, 1)
+                    ellipse { at: nb_x + 164 + 18, nb_y + 127; radius: 17; color: nd_acc; opacity: if(nd_shuf, 0.22, if(pbz1.hover, 0.12, 0)) }
+                    text "⤮" { at: nb_x + 164 + 18, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(nd_shuf, nd_acc, fl.engrave) }
+                }
+                zone box pbz1 { from: nb_x + 164 + 18 - 17, nb_y + 127 - 17; size: 34, 34; corner: 17; cursor: pointer; role: button; label: "Shuffle"; show: nd_kind == 11 }
                 on press pbz1 { emit nd_pl(1) }
-                box { from: nb_x + 164 + 46, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(false, 0.9, if(false, 0.22, if(pbz2.hover, 0.12, 0))) }
-                text "⏮" { at: nb_x + 164 + 46 + 19, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(false, fl.ground, if(false, nd_acc, fl.engrave)) }
-                zone box pbz2 { from: nb_x + 164 + 46, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Back"; show: nd_kind == 11 }
+                group { pivot: nb_x + 164 + 62, nb_y + 127; scale: if(pbz2.hover, 1.1, 1)
+                    ellipse { at: nb_x + 164 + 62, nb_y + 127; radius: 17; color: nd_acc; opacity: if(false, 0.22, if(pbz2.hover, 0.12, 0)) }
+                    box { from: nb_x + 164 + 54, nb_y + 120; size: 2.5, 14; corner: 1; color: fl.engrave }
+                    path { at: nb_x + 164 + 64, nb_y + 127; move 5, -7; line -5, 0; line 5, 7; close; color: fl.engrave }
+                }
+                zone box pbz2 { from: nb_x + 164 + 62 - 17, nb_y + 127 - 17; size: 34, 34; corner: 17; cursor: pointer; role: button; label: "Back"; show: nd_kind == 11 }
                 on press pbz2 { emit nd_pl(2) }
-                box { from: nb_x + 164 + 92, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(true, 0.9, if(false, 0.22, if(pbz3.hover, 0.12, 0))) }
-                text "⏯" { at: nb_x + 164 + 92 + 19, nb_y + 127; anchor: center; align: center; size: 17; family: "Exo 2"; color: if(true, fl.ground, if(false, nd_acc, fl.engrave)) }
-                zone box pbz3 { from: nb_x + 164 + 92, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 11 }
+                // play: the song's progress a ring round it
+                arc { at: nb_x + 164 + 116, nb_y + 127; radius: 26; span: nd_prog * 360deg; rotate: nd_prog * 180deg; width: 2.5; color: nd_acc; opacity: 0.9 }
+                arc { at: nb_x + 164 + 116, nb_y + 127; radius: 26; span: 360deg; width: 1; color: fl.trace_dim; opacity: 0.6 }
+                group { pivot: nb_x + 164 + 116, nb_y + 127; scale: if(pbz3.hover, 1.1, 1)
+                    ellipse { at: nb_x + 164 + 116, nb_y + 127; radius: 22; color: nd_acc; opacity: 0.92 }
+                    path { at: nb_x + 164 + 118, nb_y + 127; move -6, -9; line 9, 0; line -6, 9; close; color: fl.ground; show: not nd_playing }
+                    box { from: nb_x + 164 + 109.5, nb_y + 119; size: 4.5, 16; corner: 1; color: fl.ground; show: nd_playing }
+                    box { from: nb_x + 164 + 118, nb_y + 119; size: 4.5, 16; corner: 1; color: fl.ground; show: nd_playing }
+                }
+                zone box pbz3 { from: nb_x + 164 + 116 - 22, nb_y + 127 - 22; size: 44, 44; corner: 22; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 11 }
                 on press pbz3 { emit nd_pl(3) }
-                box { from: nb_x + 164 + 138, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(false, 0.9, if(false, 0.22, if(pbz4.hover, 0.12, 0))) }
-                text "⏭" { at: nb_x + 164 + 138 + 19, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(false, fl.ground, if(false, nd_acc, fl.engrave)) }
-                zone box pbz4 { from: nb_x + 164 + 138, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Next"; show: nd_kind == 11 }
+                group { pivot: nb_x + 164 + 170, nb_y + 127; scale: if(pbz4.hover, 1.1, 1)
+                    ellipse { at: nb_x + 164 + 170, nb_y + 127; radius: 17; color: nd_acc; opacity: if(false, 0.22, if(pbz4.hover, 0.12, 0)) }
+                    path { at: nb_x + 164 + 168, nb_y + 127; move -5, -7; line 5, 0; line -5, 7; close; color: fl.engrave }
+                    box { from: nb_x + 164 + 175.5, nb_y + 120; size: 2.5, 14; corner: 1; color: fl.engrave }
+                }
+                zone box pbz4 { from: nb_x + 164 + 170 - 17, nb_y + 127 - 17; size: 34, 34; corner: 17; cursor: pointer; role: button; label: "Next"; show: nd_kind == 11 }
                 on press pbz4 { emit nd_pl(4) }
-                box { from: nb_x + 164 + 184, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(false, 0.9, if(nd_loop > 0, 0.22, if(pbz5.hover, 0.12, 0))) }
-                text "⟲" { at: nb_x + 164 + 184 + 19, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(false, fl.ground, if(nd_loop > 0, nd_acc, fl.engrave)) }
-                zone box pbz5 { from: nb_x + 164 + 184, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Repeat"; show: nd_kind == 11 }
+                group { pivot: nb_x + 164 + 214, nb_y + 127; scale: if(pbz5.hover, 1.1, 1)
+                    ellipse { at: nb_x + 164 + 214, nb_y + 127; radius: 17; color: nd_acc; opacity: if(nd_loop > 0, 0.22, if(pbz5.hover, 0.12, 0)) }
+                    text "⟲" { at: nb_x + 164 + 214, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(nd_loop > 0, nd_acc, fl.engrave) }
+                }
+                zone box pbz5 { from: nb_x + 164 + 214 - 17, nb_y + 127 - 17; size: 34, 34; corner: 17; cursor: pointer; role: button; label: "Repeat"; show: nd_kind == 11 }
                 on press pbz5 { emit nd_pl(5) }
-                text "1" { at: nb_x + 164 + 4 * 46 + 30, nb_y + 116; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_loop == 2 }
+                text "1" { at: nb_x + 164 + 226, nb_y + 116; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_loop == 2 }
                 // the music, mirrored: the low bands meet in the middle
                 group { show: not nd_lyon
                     box { from: nb_x + 164 + 0 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp0 * 34; size: pw / 32 - 2, nd_sp0 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp0 }
@@ -1089,26 +1216,30 @@ scene Node {
             group { glow: 24, 0.4, #000000
                 box { from: st_x, st_dy; size: 940, 470; corner: 18; color: fl.hull; opacity: 0.97 } }
             box { from: st_x, st_dy; size: 940, 470; corner: 18; stroke: 1; color: fl.trace_dim }
-            text "Presets" { at: st_x + 24 + 52, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 0, 700, 500); family: "Exo 2"; color: if(nd_tab == 0, fl.engrave, fl.muted) }
-            box { from: st_x + 24 + 16, st_dy + 52; size: 72, 2; corner: 1; color: nd_acc; show: nd_tab == 0 }
-            zone box stt0 { from: st_x + 24, st_dy + 18; size: 104, 38; cursor: pointer; role: tab; label: "Presets"; selected: nd_tab == 0; show: nd_studio }
+            text "Presets" { at: st_x + 24 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 0, 700, 500); family: "Exo 2"; color: if(nd_tab == 0, fl.engrave, fl.muted) }
+            box { from: st_x + 24 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 0 }
+            zone box stt0 { from: st_x + 24, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Presets"; selected: nd_tab == 0; show: nd_studio }
             on press stt0 { emit nd_tab(0) }
-            text "Shape" { at: st_x + 136 + 52, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
-            box { from: st_x + 136 + 16, st_dy + 52; size: 72, 2; corner: 1; color: nd_acc; show: nd_tab == 1 }
-            zone box stt1 { from: st_x + 136, st_dy + 18; size: 104, 38; cursor: pointer; role: tab; label: "Shape"; selected: nd_tab == 1; show: nd_studio }
+            text "Shape" { at: st_x + 116 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
+            box { from: st_x + 116 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 1 }
+            zone box stt1 { from: st_x + 116, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Shape"; selected: nd_tab == 1; show: nd_studio }
             on press stt1 { emit nd_tab(1) }
-            text "Surface" { at: st_x + 248 + 52, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
-            box { from: st_x + 248 + 16, st_dy + 52; size: 72, 2; corner: 1; color: nd_acc; show: nd_tab == 2 }
-            zone box stt2 { from: st_x + 248, st_dy + 18; size: 104, 38; cursor: pointer; role: tab; label: "Surface"; selected: nd_tab == 2; show: nd_studio }
+            text "Surface" { at: st_x + 208 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
+            box { from: st_x + 208 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 2 }
+            zone box stt2 { from: st_x + 208, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Surface"; selected: nd_tab == 2; show: nd_studio }
             on press stt2 { emit nd_tab(2) }
-            text "Motion" { at: st_x + 360 + 52, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 3, 700, 500); family: "Exo 2"; color: if(nd_tab == 3, fl.engrave, fl.muted) }
-            box { from: st_x + 360 + 16, st_dy + 52; size: 72, 2; corner: 1; color: nd_acc; show: nd_tab == 3 }
-            zone box stt3 { from: st_x + 360, st_dy + 18; size: 104, 38; cursor: pointer; role: tab; label: "Motion"; selected: nd_tab == 3; show: nd_studio }
+            text "Motion" { at: st_x + 300 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 3, 700, 500); family: "Exo 2"; color: if(nd_tab == 3, fl.engrave, fl.muted) }
+            box { from: st_x + 300 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 3 }
+            zone box stt3 { from: st_x + 300, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Motion"; selected: nd_tab == 3; show: nd_studio }
             on press stt3 { emit nd_tab(3) }
-            text "Parts" { at: st_x + 472 + 52, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 4, 700, 500); family: "Exo 2"; color: if(nd_tab == 4, fl.engrave, fl.muted) }
-            box { from: st_x + 472 + 16, st_dy + 52; size: 72, 2; corner: 1; color: nd_acc; show: nd_tab == 4 }
-            zone box stt4 { from: st_x + 472, st_dy + 18; size: 104, 38; cursor: pointer; role: tab; label: "Parts"; selected: nd_tab == 4; show: nd_studio }
+            text "Music" { at: st_x + 392 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 4, 700, 500); family: "Exo 2"; color: if(nd_tab == 4, fl.engrave, fl.muted) }
+            box { from: st_x + 392 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 4 }
+            zone box stt4 { from: st_x + 392, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Music"; selected: nd_tab == 4; show: nd_studio }
             on press stt4 { emit nd_tab(4) }
+            text "Parts" { at: st_x + 484 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 5, 700, 500); family: "Exo 2"; color: if(nd_tab == 5, fl.engrave, fl.muted) }
+            box { from: st_x + 484 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 5 }
+            zone box stt5 { from: st_x + 484, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Parts"; selected: nd_tab == 5; show: nd_studio }
+            on press stt5 { emit nd_tab(5) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; color: nd_acc; opacity: if(false, 0.9, if(stc3.hover, 0.18, 0)) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; stroke: 1; color: if(false, nd_acc, fl.trace_lit) }
             text "RESET" { at: st_x + 940 - 24 - 336 + 100 / 2, st_dy + 22 + 30 / 2; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(false, fl.ground, fl.engrave) }

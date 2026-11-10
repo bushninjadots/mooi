@@ -6829,3 +6829,19 @@ title and the cards below move down. Leaving waits 160 ms, so moving from one ca
 An open card holds the notices' time, like the pointer on the node.
 
 **Verified.** Unit 753 / 0; scenes compile; `bin/mooi check` green.
+
+## D246 · 2026-11-10 · The music as a visualiser or a record; the player's controls drawn
+
+The studio gains a **Music** page. **Music as** decides what the node becomes when music starts: the capsule
+(as before), a **spectrum** (nothing but the bar's 32 bands, mirrored round its middle and glowing), or a
+**vinyl** record. The record is round whatever the roundness, with grooves, a glint that turns with it at 33⅓
+rpm while it plays, the cover as its label, a tonearm, and the spectrum standing out round its rim. Pressing
+either opens the player, as the capsule does. **Seed with music** decides what the resting seed does while
+something plays: still, a pulse (as before), or five small bars. The spectrum is read from the bar's feed only
+while something drawn needs it, and the bar is asked for the feed the moment one appears.
+
+The player's transport is now drawn rather than typed: back, play/pause and next as shapes, with play larger,
+solid, and the song's progress as a ring around it. Each button lifts a little under the pointer. The studio's
+tabs are narrower so six fit.
+
+**Verified.** Unit 756 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.

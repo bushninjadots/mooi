@@ -12,7 +12,7 @@ M.PRESETS = { "organic", "minimal", "technical", "cyber" }
 M.SLOTS = 3
 
 -- the studio's tabs; the first is the presets' own page (no rows)
-M.TABS = { "Presets", "Shape", "Surface", "Motion", "Parts" }
+M.TABS = { "Presets", "Shape", "Surface", "Motion", "Music", "Parts" }
 
 -- each row: key, label, description, and either a range (lo, hi, unit) or a choice (values, names)
 local function range(key, label, desc, lo, hi, unit) return { key = key, label = label, desc = desc, lo = lo, hi = hi, unit = unit or "" } end
@@ -43,9 +43,13 @@ M.SCHEMA = {
         range("breath", "Breathing", "How deeply the seed breathes at rest (0: still)", 0, 100, "%"),
         range("music", "Music", "How much it moves with what plays", 0, 100, "%"),
     },
-    Parts = {
+    Music = {
+        choice("music_form", "Music as", "When music starts: the capsule with its song, a visualiser, or a turning record", { "capsule", "visualiser", "vinyl" }, { "Capsule", "Spectrum", "Vinyl" }),
+        choice("seed_music", "Seed with music", "What the resting seed does while music plays", { "still", "pulse", "bars" }, { "Still", "Pulse", "Bars" }),
         choice("viz", "Visualiser", "The music inside the media capsule", { "bars", "wave", "dots", "off" }, { "Bars", "Wave", "Dots", "Off" }),
         choice("cover", "Cover", "The album art's shape", { "square", "round" }, { "Square", "Round" }),
+    },
+    Parts = {
         range("cards", "Notices", "How many notice cards branch from it", 1, 5, ""),
         range("satellites", "Satellites", "How many small marks may orbit the seed", 0, 6, ""),
         choice("sat_style", "Satellite style", "What those marks look like", { "pill", "dot", "tick" }, { "Pills", "Dots", "Ticks" }),
@@ -58,7 +62,7 @@ local BASE = {
     seed = "line", seed_w = 22, seed_h = 6, round = 100, style = "organic", top = 8,
     texture = "solid", fill = 95, outline = 10, glow = 70, accent = "phos", glow_colour = "phos",
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
-    viz = "bars", cover = "square", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
+    viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
 }
 local PRESET = {
     organic = {},
@@ -238,6 +242,7 @@ function M.facts(t)
         nd_stg = t.stagger / 100, nd_bd = t.breath / 100, nd_mu = t.music / 100,
         nd_viz = ix({ "bars", "wave", "dots", "off" }, t.viz), nd_cov = ix({ "square", "round" }, t.cover),
         nd_sst = ix({ "pill", "dot", "tick" }, t.sat_style), nd_ldm = t.dim / 100, nd_ur = t.orbit,
+        nd_mf = ix({ "capsule", "visualiser", "vinyl" }, t.music_form), nd_smu = ix({ "still", "pulse", "bars" }, t.seed_music),
     }
 end
 
