@@ -60,4 +60,38 @@ function M.next_due(board, today)
     return { title = best.title, label = label, due = best.due }
 end
 
+-- D301: the dot-matrix clock. Each digit is three columns by five rows; a row is a three-bit mask,
+-- read left to right as 4, 2, 1.
+M.DOT_ROWS = {
+    ["0"] = { 7, 5, 5, 5, 7 },
+    ["1"] = { 2, 6, 2, 2, 7 },
+    ["2"] = { 7, 1, 7, 4, 7 },
+    ["3"] = { 7, 1, 7, 1, 7 },
+    ["4"] = { 5, 5, 7, 1, 1 },
+    ["5"] = { 7, 4, 7, 1, 7 },
+    ["6"] = { 7, 4, 7, 5, 7 },
+    ["7"] = { 7, 1, 2, 2, 2 },
+    ["8"] = { 7, 5, 7, 5, 7 },
+    ["9"] = { 7, 5, 7, 1, 7 },
+    [" "] = { 0, 0, 0, 0, 0 },
+}
+
+function M.dotrows(h, m, h24)
+    local text
+    if h24 then
+        text = string.format("%02d%02d", h % 24, m % 60)
+    else
+        local n = h % 12
+        if n == 0 then n = 12 end
+        text = string.format("%2d%02d", n, m % 60)
+    end
+    local out = {}
+    for i = 1, 4 do
+        local d = string.sub(text, i, i)
+        local rows = M.DOT_ROWS[d] or M.DOT_ROWS[" "]
+        out[i] = { d = d, r0 = rows[1], r1 = rows[2], r2 = rows[3], r3 = rows[4], r4 = rows[5] }
+    end
+    return out
+end
+
 return M

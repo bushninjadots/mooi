@@ -812,3 +812,71 @@ do
         assert(found, "eleven transition choices")
     end)
 end
+
+section("the widgets' more layouts (D301)")
+do
+    local W = require("lib/widgets")
+    local CF = require("lib/clockface")
+    local DD = require("lib/deskdata")
+    local widgets, extra, plm, luau = read("shell/ui/widgets.plm"), read("shell/ui/wextra.plm"), read("shell/mooi-widgets.plm"), read("shell/mooi-widgets.luau")
+
+    test("every new layout has sane sizes and sits after the old ones", function()
+        local news = {
+            { "flip", 240, 120, 1200, 540 }, { "minimal", 240, 80, 1200, 390 }, { "dots", 240, 120, 1200, 540 },
+            { "glance", 220, 160, 600, 600 }, { "week", 420, 150, 1200, 500 },
+            { "bars", 300, 150, 1100, 560 }, { "rings", 220, 220, 600, 600 },
+            { "agenda", 260, 240, 800, 800 }, { "sticky", 220, 200, 600, 600 },
+            { "bar", 300, 80, 1200, 220 }, { "circle", 180, 180, 600, 600 },
+        }
+        for _, n in ipairs(news) do
+            local l = W.LAYOUTS[n[1]]
+            assert(l, n[1] .. " is missing")
+            eq(l.min[1], n[2], n[1] .. " min width"); eq(l.min[2], n[3], n[1] .. " min height")
+            eq(l.max[1], n[4], n[1] .. " max width"); eq(l.max[2], n[5], n[1] .. " max height")
+            assert(l.min[1] <= l.def[1] and l.def[1] <= l.max[1], n[1] .. " width order")
+            assert(l.min[2] <= l.def[2] and l.def[2] <= l.max[2], n[1] .. " height order")
+        end
+        eq(W.LAYOUT_INDEX.digital, 0); eq(W.LAYOUT_INDEX.info, 3); eq(W.LAYOUT_INDEX.flip, 4); eq(W.LAYOUT_INDEX.dots, 6)
+        eq(W.LAYOUT_INDEX.days, 1); eq(W.LAYOUT_INDEX.week, 3); eq(W.LAYOUT_INDEX.gauges, 1); eq(W.LAYOUT_INDEX.rings, 3)
+        eq(W.LAYOUT_INDEX.list, 0); eq(W.LAYOUT_INDEX.sticky, 1); eq(W.LAYOUT_INDEX.month, 0); eq(W.LAYOUT_INDEX.agenda, 1)
+        eq(W.LAYOUT_INDEX.slab, 1); eq(W.LAYOUT_INDEX.bar, 2); eq(W.LAYOUT_INDEX.polaroid, 1); eq(W.LAYOUT_INDEX.circle, 2)
+    end)
+
+    test("the scene has each new clock, note and calendar branch", function()
+        assert(widgets:find("component ClockFlip", 1, true) and widgets:find("component ClockMinimal", 1, true) and widgets:find("component ClockDots", 1, true))
+        assert(widgets:find("component NotesSticky", 1, true) and widgets:find("rotate: -2deg", 1, true))
+        assert(plm:find("wg.ClockFlip(", 1, true) and plm:find("wg.ClockMinimal(", 1, true) and plm:find("wg.ClockDots(", 1, true))
+        assert(plm:find("wg.NotesSticky(", 1, true) and plm:find("cd_lay, cd_plate", 1, true))
+        for _, chip in ipairs({ "FLIP", "MINIMAL", "DOTS", "GLANCE", "WEEK", "BARS", "RINGS", "AGENDA", "STICKY", "BAR", "CIRCLE" }) do
+            assert(widgets:find('"' .. chip .. '"', 1, true), "the editor offers " .. chip)
+        end
+    end)
+
+    test("the weather, system, timer and photo components have their new branches", function()
+        for _, s in ipairs({ "show: lay > 1.5 and lay < 2.5", "show: lay > 2.5", "for d in wxw", "for a in calag", "repeat bi in 0..3", "sp_dtx", "TimerKeys(x + pad, y + h * 0.78" }) do
+            assert(extra:find(s, 1, true), s)
+        end
+        assert(luau:find('run("df", { "-P", "/" }', 1, true) and luau:find("model.wxw = DD.week7(c)", 1, true) and luau:find("model.calag = DD.agenda", 1, true))
+        assert(plm:find("fact sp_d", 1, true) and plm:find("model wxw max 7", 1, true) and plm:find("model calag max 6", 1, true))
+        assert(plm:find('run: "pleamar"', 1, true) and plm:find('"df"', 1, true))
+    end)
+
+    test("the dot matrix and the week and agenda helpers keep their maths", function()
+        local rows = CF.dotrows(1, 5, true)
+        eq(#rows, 4); eq(rows[1].d, "0"); eq(rows[2].d, "1"); eq(rows[3].d, "0"); eq(rows[4].d, "5")
+        eq(rows[2].r1, 6, "one's top bar")
+        eq(CF.DOT_ROWS["8"][3], 7)
+        local late = CF.dotrows(13, 5, false)
+        eq(late[1].d, " "); eq(late[2].d, "1"); eq(late[3].d, "0"); eq(late[4].d, "5")
+        local doc = { answer = { daily = {
+            time = { "2026-11-10", "2026-11-11", "2026-11-12" },
+            weather_code = { 0, 61, 2 },
+            temperature_2m_max = { 20, 15, 18 },
+            temperature_2m_min = { 10, 8, 6 },
+        } } }
+        local wk = DD.week7(doc)
+        eq(#wk, 3); eq(wk[1].lab, "TODAY"); eq(wk[3].lo, "6°"); eq(wk[1].b, 1); eq(wk[3].a, 0)
+        local ag = DD.agenda(0, { cards = { { due = 1, col = "todo" } }, columns = { { id = "todo" }, { id = "done" } } }, 6)
+        eq(#ag, 6); eq(ag[1].dow, "FRI"); eq(ag[1].d, "2"); eq(ag[1].due, true); eq(ag[2].due, false)
+    end)
+end

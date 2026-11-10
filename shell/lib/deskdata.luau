@@ -83,6 +83,34 @@ function M.week(days)
     return out
 end
 
+-- D301: the next seven days straight from the weather answer, for the week layout. The first is
+-- TODAY, the rest are the weekdays; a and b place each low and high on the week's shared range.
+local WEEKDAY = { "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN" }
+function M.week7(doc)
+    if type(doc) ~= "table" or type(doc.answer) ~= "table" then return nil end
+    local d = type(doc.answer.daily) == "table" and doc.answer.daily or {}
+    local times = type(d.time) == "table" and d.time or {}
+    local codes = type(d.weather_code) == "table" and d.weather_code or {}
+    local maxs = type(d.temperature_2m_max) == "table" and d.temperature_2m_max or {}
+    local mins = type(d.temperature_2m_min) == "table" and d.temperature_2m_min or {}
+    local rows, lo, hi = {}, math.huge, -math.huge
+    for i = 1, math.min(7, #times) do
+        local high, low = tonumber(maxs[i]), tonumber(mins[i])
+        if high and low then
+            local y, m, day = tostring(times[i]):match("^(%d+)%-(%d+)%-(%d+)")
+            local label = (i == 1 and "TODAY") or (y and WEEKDAY[calendar.weekday(tonumber(y), tonumber(m), tonumber(day)) + 1] or "")
+            lo, hi = math.min(lo, low), math.max(hi, high)
+            rows[#rows + 1] = { lab = label, kind = M.icon_kind(codes[i], 1),
+                                hi = string.format("%d°", math.floor(high + 0.5)), lo = string.format("%d°", math.floor(low + 0.5)),
+                                high = high, low = low }
+        end
+    end
+    if #rows == 0 then return nil end
+    local span = hi > lo and (hi - lo) or 1
+    for _, r in ipairs(rows) do r.a, r.b = (r.low - lo) / span, (r.high - lo) / span end
+    return rows
+end
+
 -- ── Calendar ──
 -- A month as 42 cells (Monday first): { d, inm (in the month), today, due (cards due that day, not
 -- done), key (the day as days since 1970: the board's due numbers) }. `today` is such a number.
@@ -124,6 +152,42 @@ function M.month_grid(y, m, today, board)
         cells[#cells + 1] = { d = tostring(d), inm = off >= 0 and off < calendar.days_in(y, m), today = key == today, due = due[key] or 0, key = key }
     end
     return cells
+end
+
+-- D301: the civil date of a day number, for the agenda's next days.
+local function civil_from_days(z)
+    z = z + 719468
+    local era = math.floor(z / 146097)
+    local doe = z - era * 146097
+    local yoe = math.floor((doe - math.floor(doe / 1460) + math.floor(doe / 36524) - math.floor(doe / 146096)) / 365)
+    local y = yoe + era * 400
+    local doy = doe - (365 * yoe + math.floor(yoe / 4) - math.floor(yoe / 100))
+    local mp = math.floor((5 * doy + 2) / 153)
+    local d = doy - math.floor((153 * mp + 2) / 5) + 1
+    local m = mp + (mp < 10 and 3 or -9)
+    if m <= 2 then y = y + 1 end
+    return y, m, d
+end
+
+-- D301: the next `count` days after today, for the agenda layout: { dow, d, due }.
+function M.agenda(today, board, count)
+    count = count or 6
+    local due = {}
+    if type(board) == "table" and type(board.cards) == "table" then
+        local cols = type(board.columns) == "table" and board.columns or {}
+        local done = #cols > 0 and cols[#cols].id or nil
+        for _, c in ipairs(board.cards) do
+            local d = tonumber(c.due)
+            if d and c.col ~= done then due[d] = (due[d] or 0) + 1 end
+        end
+    end
+    local out = {}
+    for i = 1, count do
+        local key = today + i
+        local y, m, d = civil_from_days(key)
+        out[i] = { dow = WEEKDAY[calendar.weekday(y, m, d) + 1], d = tostring(d), due = (due[key] or 0) > 0 }
+    end
+    return out
 end
 
 -- ── Focus timer ──

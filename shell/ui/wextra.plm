@@ -19,7 +19,7 @@ library WExtra {
         wg.Ground(x, y, w, h, u, plate, hzv, tnv)
         text "NO WEATHER YET · IT COMES WITH THE NEXUS'S" { at: x + pad, y + h / 2; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); show: not wx_on }
         group {
-            show: wx_on
+            show: wx_on and (lay < 1.5 or lay > 2.5)
             wg.WxIcon(x + pad + 22 * u, y + pad + 20 * u, 46 * u, wx_kind, ink, acc)
             text wx_now { at: x + pad + 54 * u, y + pad + 12 * u; anchor: left center; size: 30 * u; weight: 600; family: "Exo 2"; color: ink }
             text wx_word { at: x + pad + 54 * u, y + pad + 36 * u; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: w * 0.42; lines: 1 }
@@ -49,7 +49,7 @@ library WExtra {
             }
 
             group {
-                show: lay > 0.5
+                show: lay > 0.5 and lay < 1.5
                 let cw = (w - 2 * pad) / 5
                 for d in wxd {
                     let cx = x + pad + d.index * cw + cw / 2
@@ -59,6 +59,30 @@ library WExtra {
                     text d.lo { at: cx, y + 148 * u; anchor: center; align: center; size: 10 * u; family: "Share Tech Mono"; color: ink; opacity: 0.55 }
                     box { from: cx - cw * 0.34, y + h - 14 * u; size: cw * 0.68, 3 * u; corner: 1.5 * u; color: ink; opacity: 0.15 }
                     box { from: cx - cw * 0.34 + cw * 0.68 * d.a, y + h - 14 * u; size: max(3 * u, cw * 0.68 * (d.b - d.a)), 3 * u; corner: 1.5 * u; color: acc }
+                }
+            }
+
+            // D301: glance — one big glyph, the temperature large, the word and the day's high and low under it.
+            group {
+                show: lay > 1.5 and lay < 2.5
+                wg.WxIcon(x + w / 2, y + h * 0.3, min(w, h) * 0.3, wx_kind, ink, acc)
+                text wx_now { at: x + w / 2, y + h * 0.58; anchor: center; align: center; size: min(h * 0.32, w * 0.22); weight: 300; family: "Exo 2"; color: ink }
+                text wx_word { at: x + w / 2, y + h * 0.76; anchor: center; align: center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: w - 2 * pad; lines: 1 }
+                text wx_hl { at: x + w / 2, y + h * 0.88; anchor: center; align: center; size: 12 * u; weight: 600; family: "Share Tech Mono"; color: acc }
+            }
+
+            // D301: week — seven narrow columns, each day's glyph and a vertical bar from low to high.
+            group {
+                show: lay > 2.5
+                let cw = (w - 2 * pad) / 7
+                for d in wxw {
+                    let cx = x + pad + d.index * cw + cw / 2
+                    text d.lab { at: cx, y + 18 * u; anchor: center; align: center; size: 8 * u; weight: 700; family: "Share Tech Mono"; color: if(d.index == 0, acc, mix(ink, acc, 0.4)) }
+                    wg.WxIcon(cx, y + 44 * u, 22 * u, d.kind, ink, acc)
+                    text d.hi { at: cx, y + h - 34 * u; anchor: center; align: center; size: 10 * u; weight: 600; family: "Exo 2"; color: ink }
+                    text d.lo { at: cx, y + h - 20 * u; anchor: center; align: center; size: 9 * u; family: "Share Tech Mono"; color: ink; opacity: 0.55 }
+                    box { from: cx - 2 * u, y + 62 * u; size: 4 * u, h - 108 * u; corner: 2 * u; color: ink; opacity: 0.12 }
+                    box { from: cx - 2 * u, y + 62 * u + (h - 108 * u) * (1 - d.b); size: 4 * u, max(3 * u, (h - 108 * u) * (d.b - d.a)); corner: 2 * u; color: acc }
                 }
             }
         }
@@ -96,7 +120,7 @@ library WExtra {
             box { from: sx, sy; size: sw, sh; corner: 4 * u; stroke: 1; color: acc; opacity: 0.35 }
         }
         group {
-            show: lay > 0.5
+            show: lay > 0.5 and lay < 1.5
             let r = max(12 * u, min(w / 6 - 10 * u, h * 0.36))
             repeat gi in 0..3 {
                 let cx = x + w * (gi * 2 + 1) / 6
@@ -112,12 +136,52 @@ library WExtra {
                 text pick(gi, "CPU", "MEMORY", "TEMP") { at: cx, cy + r + 4 * u; anchor: center; align: center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, col, 0.5) }
             }
         }
+
+        // D301: bars — CPU, RAM, temperature and disk as four horizontal bars with their values.
+        group {
+            show: lay > 1.5 and lay < 2.5
+            let top = y + 34 * u
+            let row = (h - 44 * u) / 4
+            let tw = w - 2 * pad - 82 * u
+            repeat bi in 0..3 {
+                let v = clamp(pick(bi, sp_c, sp_m, sp_t, sp_d), 0, 1)
+                let col = pick(bi, acc, fl.flare, fl.ember, ink)
+                let ry = top + bi * row
+                text pick(bi, "CPU", "RAM", "TEMP", "DISK") { at: x + pad, ry; anchor: left center; size: 9 * u; weight: 700; family: "Share Tech Mono"; color: col }
+                text pick(bi, sp_ctx, sp_mtx, sp_ttx, sp_dtx) { at: x + w - pad, ry; anchor: right center; size: 10 * u; weight: 600; family: "Share Tech Mono"; color: ink }
+                box { from: x + pad, ry + 10 * u; size: tw, 4 * u; corner: 2 * u; color: ink; opacity: 0.12 }
+                box { from: x + pad, ry + 10 * u; size: tw * v, 4 * u; corner: 2 * u; color: col; opacity: 0.9 }
+            }
+        }
+
+        // D301: rings — four concentric arcs, the four readings in the middle.
+        group {
+            show: lay > 2.5
+            let cx = x + w / 2
+            let cy = y + h / 2
+            let base = min(w, h) / 2 - 14 * u
+            repeat gi in 0..3 {
+                let v = clamp(pick(gi, sp_c, sp_m, sp_t, sp_d), 0, 1)
+                let col = pick(gi, acc, fl.flare, fl.ember, ink)
+                let r = base - gi * 11 * u
+                arc { at: cx, cy; radius: r; width: 4 * u; span: 270deg; color: ink; opacity: 0.1 }
+                group {
+                    glow: 4 * u, 0.45, col
+                    arc { at: cx, cy; radius: r; width: 4 * u; span: max(0.01, v) * 270deg; rotate: (v * 135 - 135) * 1deg; color: col }
+                }
+            }
+            repeat gi in 0..3 {
+                let ox = if(mod(gi, 2) == 0, -24 * u, 24 * u)
+                let oy = if(gi < 2, -12 * u, 12 * u)
+                text pick(gi, sp_ctx, sp_mtx, sp_ttx, sp_dtx) { at: cx + ox, cy + oy; anchor: center; align: center; size: 11 * u; weight: 600; family: "Share Tech Mono"; color: pick(gi, acc, fl.flare, fl.ember, ink) }
+            }
+        }
     }
 
     // ── Calendar ────────────────────────────────────────────
     // The month, Monday first; today ringed; days with board cards due lit, a press opens the board
     // filtered to that day.
-    component CalMonth(x: number, y: number, w: number, h: number, u: number, plate: bool,
+    component CalMonth(x: number, y: number, w: number, h: number, u: number, lay: number, plate: bool,
                        ink: color, acc: color, hzv: number, tnv: number) {
         size: w, h
         let pad = 14 * u
@@ -125,6 +189,8 @@ library WExtra {
         let gy = y + 62 * u
         let ch = (h - 62 * u - pad) / 6
         wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+        group {
+            show: lay < 0.5
         text cal_title { at: x + pad, y + 20 * u; anchor: left center; size: 13 * u; weight: 700; family: "Exo 2"; color: ink }
         zone box cprv { from: x + w - pad - 52 * u, y + 8 * u; size: 24 * u, 24 * u; cursor: pointer; role: button; label: "The month before"; show: not editing }
         zone box cnxt { from: x + w - pad - 24 * u, y + 8 * u; size: 24 * u, 24 * u; cursor: pointer; role: button; label: "The month after"; show: not editing }
@@ -144,6 +210,23 @@ library WExtra {
             text c.d { at: cx, cy; anchor: center; align: center; size: 11 * u; weight: if(c.today, 700, 400); family: "Exo 2"; color: if(c.today, acc, ink); opacity: if(c.inm, 1, 0.28) }
             ellipse { at: cx, cy + ch * 0.3; radius: 1.8 * u; color: acc; show: c.due > 0 }
             on press cdz { emit cal_day(c.key) }
+        }
+        }
+
+        // D301: agenda — today large, then the next six days.
+        group {
+            show: lay > 0.5
+            text cal_bigw { at: x + pad, y + 26 * u; anchor: left center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: acc }
+            text cal_big { at: x + pad, y + 66 * u; anchor: left center; size: 42 * u; weight: 200; family: "Exo 2"; color: ink }
+            box { from: x + pad, y + 96 * u; size: w - 2 * pad, u; color: ink; opacity: 0.18 }
+            let row = (h - 106 * u) / 6
+            for a in calag {
+                let ry = y + 106 * u + a.index * row + row / 2
+                text a.dow { at: x + pad, ry; anchor: left center; size: 9 * u; weight: 700; family: "Share Tech Mono"; color: mix(ink, acc, 0.45) }
+                text a.d { at: x + pad + 46 * u, ry; anchor: left center; size: 15 * u; weight: 600; family: "Exo 2"; color: ink }
+                ellipse { at: x + w - pad - 4 * u, ry; radius: 2.5 * u; color: acc; show: a.due }
+                box { from: x + pad, y + 106 * u + (a.index + 1) * row; size: w - 2 * pad, 1; color: ink; opacity: 0.08 }
+            }
         }
     }
 
@@ -181,7 +264,7 @@ library WExtra {
             TimerKeys(cx - 46 * u, cy + r * 0.48, u, ink, col)
         }
         group {
-            show: lay > 0.5
+            show: lay > 0.5 and lay < 1.5
             let pad = 16 * u
             wg.Ground(x, y, w, h, u, plate, hzv, tnv)
             text tm_txt { at: x + pad, y + h * 0.42; anchor: left center; size: h * 0.38; weight: 600; family: "Exo 2"; color: ink }
@@ -192,6 +275,21 @@ library WExtra {
                 box { from: x + pad, y + h - 12 * u; size: (w - 2 * pad) * f, 4 * u; corner: 2 * u; color: col }
             }
             TimerKeys(x + w - pad - 92 * u, y + h * 0.42 - 13 * u, u, ink, col)
+        }
+
+        // D301: bar — a long thin progress bar with the time left at its end.
+        group {
+            show: lay > 1.5
+            let pad = 16 * u
+            wg.Ground(x, y, w, h, u, plate, hzv, tnv)
+            text tm_word { at: x + pad, y + h * 0.36; anchor: left center; size: 9 * u; family: "Share Tech Mono"; color: col }
+            text tm_txt { at: x + w - pad, y + h * 0.36; anchor: right center; size: min(h * 0.32, 28 * u); weight: 600; family: "Exo 2"; color: ink }
+            box { from: x + pad, y + h * 0.62; size: w - 2 * pad, 5 * u; corner: 2.5 * u; color: ink; opacity: 0.12 }
+            group {
+                glow: (6 + 10 * flash) * u, 0.5 + 0.5 * flash, col
+                box { from: x + pad, y + h * 0.62; size: (w - 2 * pad) * f, 5 * u; corner: 2.5 * u; color: col }
+            }
+            TimerKeys(x + pad, y + h * 0.78, u, ink, col)
         }
     }
     // start or pause · reset · five more minutes
@@ -271,7 +369,7 @@ library WExtra {
             text pf_name { at: x + w / 2, y + h - h * 0.07; anchor: center; align: center; size: 8 * u; family: "Share Tech Mono"; color: #5b5448; width: w * 0.8; lines: 1 }
         }
         group {
-            show: lay > 0.5
+            show: lay > 0.5 and lay < 1.5
             pivot: x + w / 2, y + h / 2
             rotate: -2deg
             let fx = x + w * 0.07
@@ -284,6 +382,19 @@ library WExtra {
             }
             image pf_cutsq { at: fx - fs * 0.09, fy - fs * 0.09; size: fs * 1.18, fs * 1.18; fit: cover; show: pop and pf_cut_on }
             text pf_name { at: x + w / 2, y + fs + (h - fs) * 0.55; anchor: center; align: center; size: 13 * u; weight: 300; family: "Exo 2"; color: #3d3a35; width: w * 0.86; lines: 1 }
+        }
+
+        // D301: circle — the picture in a circle with a thin ring.
+        group {
+            show: lay > 1.5
+            let r = min(w, h) / 2 - 8 * u
+            let cx = x + w / 2
+            let cy = y + h / 2
+            group {
+                clip box { from: cx - r, cy - r; size: 2 * r, 2 * r; corner: r }
+                image pf_img { at: x, y; size: w, h; fit: cover; show: pf_on }
+            }
+            ellipse { at: cx, cy; radius: r; stroke: 1.5 * u; color: acc; opacity: 0.8 }
         }
         text pf_state { at: x + w / 2, y + h / 2; anchor: center; align: center; size: 10 * u; family: "Share Tech Mono"; color: #8a8378; width: w * 0.8; lines: 2; show: not pf_on }
     }

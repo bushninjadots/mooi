@@ -1057,6 +1057,7 @@ run("date", { "+%z" }, function(out, code)
     end
 end)
 local show_timer_tick   -- the focus timer's second (defined with the D141 feeders)
+local ckp_key, df_n = nil, 0   -- D301: when the dot clock last changed; the disk's reading count
 local function tick()
     if not fact.any_clock then return end
     if show_timer_tick then show_timer_tick() end
@@ -1070,6 +1071,13 @@ local function tick()
     text.ck_week = "WEEK " .. calendar.iso_week(t.year, t.month, t.day)
     text.ck_ampm = CF.ampm(t.hour)
     text.ck_hm24, text.ck_hm12 = CF.hhmm(t.hour, t.min, true), CF.hhmm(t.hour, t.min, false)
+    local h24 = true
+    for _, w in ipairs(doc and doc.widgets or {}) do
+        if w.kind == "clock" then h24 = (w.options or {}).h24 ~= false; break end
+    end
+    -- the dot clock's cells change once a minute: the model is rebuilt only then (D301)
+    local key = t.hour * 60 + t.min + (h24 and 0 or 10000)
+    if key ~= ckp_key then ckp_key = key; model.ckp = CF.dotrows(t.hour, t.min, h24) end
 end
 every(1000, tick)
 pcall(sys.watch, "battery", function(b)
@@ -1316,6 +1324,7 @@ local function show_weather()
     for i, o in ipairs(DD.horizon(ans, 24) or {}) do rows[i] = { r = o.r, g = o.g, b = o.b, t = o.t, wet = o.wet, lab = o.label, kind = o.kind } end
     model.wxh = rows
     model.wxd = DD.week(f.days)
+    model.wxw = DD.week7(c) or {}
 end
 pcall(sys.watch, "files:nexus-weather.json", function() show_weather(); strip_at = -60 end)
 every(600000, show_weather)
@@ -1345,6 +1354,17 @@ every(2000, function()
         fact.sp_t = math.min(1, c / 100); text.sp_ttx = string.format("%d°", rnd(c))
         model.spt = rows_of(DD.push(samples.t, math.min(1, c / 100), 48))
     end)
+    -- the disk fills slowly: asked every 30 s, not on every 2 s reading (D301)
+    df_n = (df_n or 0) + 1
+    if df_n % 15 == 1 then run("df", { "-P", "/" }, function(out)
+        local pct
+        for line in tostring(out or ""):gmatch("[^\n]+") do
+            local n = line:match("(%d+)%%%s+/$")
+            if n then pct = tonumber(n) end
+        end
+        if not pct then text.sp_dtx = "—"; return end
+        fact.sp_d = math.min(1, pct / 100); text.sp_dtx = string.format("%d%%", pct)
+    end) end
 end)
 
 -- calendar: this month (‹ › move it), the board's cards due lit
@@ -1356,6 +1376,10 @@ local function show_cal()
     local today = math.floor((os.time() + zone_off) / 86400)
     model.cal = DD.month_grid(y, m, today, read("board.json", "json"))
     text.cal_title = string.upper(calendar.MONTHS[m] .. " " .. y)
+    local wd = calendar.weekday(t.year, t.month, t.day)
+    text.cal_big = tostring(t.day)
+    text.cal_bigw = string.upper(DAYNAMES[wd + 1])
+    model.calag = DD.agenda(today, read("board.json", "json"), 6)
 end
 pcall(sys.watch, "files:board.json", function() show_cal(); strip_at = -60 end)
 on("cal_nav", function(v) cal_shift = cal_shift + math.floor(tonumber(v) or 1) - 1; show_cal() end)

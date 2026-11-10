@@ -255,3 +255,12 @@ the cover.
   refers to it.
 - **Housekeeping.** Decisions logged in `docs/DECISIONS.md` (next: D137), `setup/capture.sh` run
   before commit.
+
+## D301 — more designs and layouts (2026-11-11)
+
+Eleven alternatives were added after the original layouts: clock **flip**, **minimal**, **dots**; weather **glance**,
+**week**; system **bars**, **rings**; calendar **agenda**; notes **sticky**; timer **bar**; photo **circle**. Each
+is appended to its kind's layout list, so old layout numbers are unchanged. The scene edits in
+`shell/ui/widgets.plm` and `shell/ui/wextra.plm` branch on the layout number; the editor and Settings → Widgets pick
+up the new count from `lib/widgets`. `lib/clockface.dotrows` supplies the dot-matrix digits, and
+`lib/deskdata.week7` / `.agenda` the seven-day weather and the next six days. See D301 in `docs/DECISIONS.md`.

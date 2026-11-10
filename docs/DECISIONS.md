@@ -7820,3 +7820,29 @@ Next: the words of every row (D301) and hiding rows that cannot apply (D302).
 
 **Verified.** Gate green (unit 940 / 0); every scene compiles. Live: the window shows the six sections and the
 merged Notifications page with its pop-ups card first.
+## D301 · 2026-11-11 · More designs and layouts for the desktop widgets (opencode's)
+
+The owner asked for "more designs layouts for widgets", so every kind that can wear one gained finished alternatives.
+Each is appended to its kind's `M.KIND_LAYOUTS` after the existing names; no existing layout number moved, and every
+layout is still picked by its number in `widgets.json`, the editor and Settings → Widgets.
+
+- **Clock** — `flip` (four split cards, a lit top half and a hairline across the middle), `minimal` (one very thin
+  time with the date in small caps) and `dots` (a 3 × 5 round-cell matrix, the hour ink and the minute accent).
+- **Weather** — `glance` (one large glyph, a large temperature, the word and the day's high/low) and `week` (seven
+  narrow columns with the day's glyph and a vertical high-to-low bar).
+- **System** — `bars` (CPU/RAM/TEMP/DISK as four horizontal bars with values) and `rings` (four concentric arcs with
+  the readings in the middle). Disk use comes from `df -P /`.
+- **Calendar** — `agenda` (today large, then the next six days from the board's due dates).
+- **Notes** — `sticky` (the newest note large on a tilted paper card).
+- **Focus timer** — `bar` (a long thin progress bar with the time left at its end).
+- **Photo** — `circle` (the picture in a circle with a thin accent ring).
+
+The clock's digit cards and dot rows come from `lib/clockface` (`M.DOT_ROWS`, `M.dotrows`), the seven-day weather and
+the agenda from `lib/deskdata` (`M.week7`, `M.agenda`), both pure and unit-tested. The editor has chips for every new
+layout, above its sliders. All colours are `fl.*`, the passed ink/accent or the existing component colours; no layout
+adds a new window or a new setting.
+
+**Verified.** Unit 936 / 0, including the new sizes and their order, layout-number stability, the dot matrix, week
+ranges and agenda dates. `pleamar --check shell/mooi-widgets.plm` says ok (10,223 properties, 1,079 zones);
+`luau-ops` and the gate pass. Not checked live on the running desktop: the scene needs a separate widgets instance to
+avoid moving the owner's widgets.

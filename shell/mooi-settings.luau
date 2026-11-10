@@ -654,9 +654,11 @@ end)
 local W = require("lib/widgets")
 local WROOM = { w = 1920, h = 1046, top = 0 }
 local WNAMES = { sleeve = "SLEEVE", lyricstage = "LYRIC STAGE", record = "RECORD", digital = "DIGITAL", analogue = "ANALOGUE",
-                 words = "WORDS", info = "INFO", list = "LIST", card = "CARD", commits = "COMMITS", pulse = "PULSE", heat = "ACTIVITY",
-                 horizon = "HORIZON", days = "DAYS", scope = "SCOPE", gauges = "GAUGES", month = "MONTH", ring = "RING", slab = "SLAB",
-                 ticker = "TICKER", quote = "QUOTE", frame = "FRAME", polaroid = "POLAROID", shelf = "SHELF", column = "COLUMN" }
+                 words = "WORDS", info = "INFO", flip = "FLIP", minimal = "MINIMAL", dots = "DOTS", list = "LIST", sticky = "STICKY",
+                 card = "CARD", commits = "COMMITS", pulse = "PULSE", heat = "ACTIVITY",
+                 horizon = "HORIZON", days = "DAYS", glance = "GLANCE", week = "WEEK", scope = "SCOPE", gauges = "GAUGES", bars = "BARS", rings = "RINGS",
+                 month = "MONTH", agenda = "AGENDA", ring = "RING", slab = "SLAB", bar = "BAR",
+                 ticker = "TICKER", quote = "QUOTE", frame = "FRAME", polaroid = "POLAROID", circle = "CIRCLE", shelf = "SHELF", column = "COLUMN" }
 local KTITLE = { nowplaying = "Now Playing", visualiser = "Visualiser", clock = "Clock", notes = "Notes", github = "GitHub", weather = "Weather",
                  system = "System", calendar = "Calendar", timer = "Focus timer", claude = "Claude", photo = "Photo", launch = "Launcher" }
 local function wdoc()

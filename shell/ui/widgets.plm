@@ -345,7 +345,7 @@ library Widgets {
         let base = k * 1000
         let np = wg_sk < 0.5
         let vis = wg_sk > 0.5 and wg_sk < 1.5
-        let sy = if(vis, 186, if(np, 122, if(wg_sk == 3 or wg_sk == 7, 40, 76)))   // the sliders
+        let sy = if(vis, 186, if(np, 122, if(wg_sk == 3 or wg_sk == 7, 84, if(wg_sk == 2 or wg_sk == 5 or wg_sk == 6 or wg_sk == 8 or wg_sk == 10, 106, 76))))   // the sliders
         let ns = if(vis, 8, if(np, 3, 2))
         let ry = sy + ns * 30 + 8                 // at rest
         let wy = ry + 44                          // the switches
@@ -497,7 +497,10 @@ library Widgets {
                 Chip(x + 12, y + 52, 70, "DIGITAL", wg_sl < 0.5, base + 100)
                 Chip(x + 86, y + 52, 72, "ANALOGUE", wg_sl > 0.5 and wg_sl < 1.5, base + 101)
                 Chip(x + 162, y + 52, 70, "WORDS", wg_sl > 1.5 and wg_sl < 2.5, base + 102)
-                Chip(x + 236, y + 52, 72, "INFO", wg_sl > 2.5, base + 103)
+                Chip(x + 236, y + 52, 72, "INFO", wg_sl > 2.5 and wg_sl < 3.5, base + 103)
+                Chip(x + 12, y + 80, 96, "FLIP", wg_sl > 3.5 and wg_sl < 4.5, base + 104)
+                Chip(x + 112, y + 80, 96, "MINIMAL", wg_sl > 4.5 and wg_sl < 5.5, base + 105)
+                Chip(x + 212, y + 80, 96, "DOTS", wg_sl > 5.5, base + 106)
             }
             group {
                 show: wg_sk == 4
@@ -513,7 +516,37 @@ library Widgets {
                 let n = wg_sk - 5
                 text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
                 Chip(x + 12, y + 52, 146, pick(n, "HORIZON", "SCOPE", "", "RING", "TICKER", "FRAME", "SHELF"), wg_sl < 0.5, base + 100)
-                Chip(x + 162, y + 52, 146, pick(n, "DAYS", "GAUGES", "", "SLAB", "QUOTE", "POLAROID", "COLUMN"), wg_sl > 0.5, base + 101)
+                Chip(x + 162, y + 52, 146, pick(n, "DAYS", "GAUGES", "", "SLAB", "QUOTE", "POLAROID", "COLUMN"), wg_sl > 0.5 and wg_sl < 1.5, base + 101)
+            }
+            group {
+                show: wg_sk == 5
+                Chip(x + 12, y + 80, 146, "GLANCE", wg_sl > 1.5 and wg_sl < 2.5, base + 102)
+                Chip(x + 162, y + 80, 146, "WEEK", wg_sl > 2.5, base + 103)
+            }
+            group {
+                show: wg_sk == 6
+                Chip(x + 12, y + 80, 146, "BARS", wg_sl > 1.5 and wg_sl < 2.5, base + 102)
+                Chip(x + 162, y + 80, 146, "RINGS", wg_sl > 2.5, base + 103)
+            }
+            group {
+                show: wg_sk == 8
+                Chip(x + 12, y + 80, 146, "BAR", wg_sl > 1.5, base + 102)
+            }
+            group {
+                show: wg_sk == 10
+                Chip(x + 12, y + 80, 146, "CIRCLE", wg_sl > 1.5, base + 102)
+            }
+            group {
+                show: wg_sk == 3
+                text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                Chip(x + 12, y + 52, 146, "LIST", wg_sl < 0.5, base + 100)
+                Chip(x + 162, y + 52, 146, "STICKY", wg_sl > 0.5, base + 101)
+            }
+            group {
+                show: wg_sk == 7
+                text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                Chip(x + 12, y + 52, 146, "MONTH", wg_sl < 0.5, base + 100)
+                Chip(x + 162, y + 52, 146, "AGENDA", wg_sl > 0.5, base + 101)
             }
             // D215: the launcher's three layouts; the controls' two
             group {
@@ -757,6 +790,67 @@ library Widgets {
         text ck_due { at: x + 20 * u, y + h - 24 * u; anchor: left center; size: 11 * u; family: "Share Tech Mono"; color: acc; width: w - 40 * u; lines: 1 }
     }
 
+    // D301: flip — four split cards, the top half lit, the bottom in the plate's shade, a hairline between.
+    component ClockFlip(x: number, y: number, w: number, h: number, u: number, h24: bool, plate: bool,
+                        ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
+        size: w, h
+        Ground(x, y, w, h, u, plate, hzv, tnv)
+        let gap = 8 * u
+        let cw = (w - 32 * u - 3 * gap) / 4
+        let ch = h - 56 * u
+        let top = y + 16 * u
+        let mid = top + ch / 2
+        for p in ckp {
+            let cx = x + 16 * u + p.index * (cw + gap)
+            box { from: cx, top; size: cw, ch; corner: 8 * u; color: fl.well; opacity: 0.9 }
+            box { from: cx, top; size: cw, ch; corner: 8 * u; stroke: u; color: fl.trace_dim; opacity: 0.7 }
+            group {
+                clip box { from: cx, top; size: cw, ch / 2; corner: 8 * u }
+                box { from: cx, top; size: cw, ch / 2; corner: 8 * u; color: acc; opacity: 0.08 }
+                text p.d { at: cx + cw / 2, mid + 4 * u; anchor: center; align: center; size: ch * 0.72; weight: 600; family: "Exo 2"; color: ink }
+            }
+            group {
+                clip box { from: cx, mid; size: cw, ch / 2; corner: 8 * u }
+                text p.d { at: cx + cw / 2, mid + 4 * u; anchor: center; align: center; size: ch * 0.72; weight: 600; family: "Exo 2"; color: mix(ink, fl.well, 0.48) }
+            }
+            box { from: cx, mid - u / 2; size: cw, u; color: fl.trace_dim; opacity: 0.9 }
+        }
+        text ck_date { at: x + 18 * u, y + h - 20 * u; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45); width: w - 90 * u; lines: 1 }
+        text ck_ampm { at: x + w - 18 * u, y + h - 20 * u; anchor: right center; size: 10 * u; weight: 700; family: "Share Tech Mono"; color: acc; show: not h24 }
+    }
+
+    // D301: minimal — one very thin time, the date under it in small caps.
+    component ClockMinimal(x: number, y: number, w: number, h: number, u: number, h24: bool, plate: bool,
+                           ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
+        size: w, h
+        Ground(x, y, w, h, u, plate, hzv, tnv)
+        text pick(h24, ck_hm12, ck_hm24) { at: x + 22 * u, y + h * 0.44; anchor: left center; size: min(h * 0.62, w * 0.3); weight: 200; family: "Exo 2"; color: ink }
+        box { from: x + 24 * u, y + h - 34 * u; size: 34 * u, u; color: acc; opacity: 0.8 }
+        text ck_date { at: x + 24 * u, y + h - 20 * u; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.5); width: w - 48 * u; lines: 1 }
+    }
+
+    // D301: dots — the time in round cells; the hour is ink, the minute is the accent.
+    component ClockDots(x: number, y: number, w: number, h: number, u: number, h24: bool, plate: bool,
+                        ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
+        size: w, h
+        Ground(x, y, w, h, u, plate, hzv, tnv)
+        let cs = min((w - 44 * u) / 15, (h - 44 * u) / 5)
+        let left = x + (w - (12 * cs + 3 * 12 * u + 8 * u)) / 2
+        let top = y + (h - 5 * cs) / 2
+        for p in ckp {
+            let px = left + p.index * (3 * cs + 12 * u)
+            repeat c in 0..2 {
+                repeat r in 0..4 {
+                    let bits = pick(r, p.r0, p.r1, p.r2, p.r3, p.r4)
+                    ellipse { at: px + c * (cs + u), top + r * (cs + u); radius: cs * 0.34
+                              color: if(p.index < 2, ink, acc); opacity: if(mod(floor(bits / pick(c, 1, 2, 4)), 2) > 0, 1, 0.12) }
+                }
+            }
+        }
+        ellipse { at: left + 2 * (3 * cs + 12 * u) - 6 * u, top + 1.2 * cs; radius: cs * 0.25; color: acc; opacity: 0.85 }
+        ellipse { at: left + 2 * (3 * cs + 12 * u) - 6 * u, top + 3.2 * cs; radius: cs * 0.25; color: acc; opacity: 0.85 }
+    }
+
     // ── Notes (D140): mooi's quick notes; a row pressed is changed where it is ──
     component NotesList(x: number, y: number, w: number, h: number, u: number, plate: bool,
                         ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
@@ -806,6 +900,29 @@ library Widgets {
         }
         text "+{nt_count - n} MORE" { at: x + 16 * u, y + h - 14 * u; anchor: left center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.4); show: nt_count > n }
         text "NO NOTES YET · + NOTE TO WRITE ONE" { at: x + 16 * u, y + 60 * u; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.4); show: nt_count == 0 and nt_ed < -1.5 }
+    }
+
+    // D301: sticky — the newest note large on a tilted paper card.
+    component NotesSticky(x: number, y: number, w: number, h: number, u: number, plate: bool,
+                          ink: color = #e6eaee, acc: color = #8fd3c0, hzv: number = 0.32, tnv: number = 0) {
+        size: w, h
+        Ground(x, y, w, h, u, plate, hzv, tnv)
+        group {
+            pivot: x + w / 2, y + h / 2
+            rotate: -2deg
+            box { from: x + 10 * u, y + 8 * u; size: w - 20 * u, h - 18 * u; corner: 6 * u; color: fl.well; opacity: 0.96 }
+            box { from: x + 10 * u, y + 8 * u; size: w - 20 * u, h - 18 * u; corner: 6 * u; stroke: u; color: fl.trace_dim; opacity: 0.7 }
+            box { from: x + 10 * u, y + 8 * u; size: 5 * u, h - 18 * u; corner: 2 * u; color: acc; opacity: 0.75 }
+            for t in nt {
+                group {
+                    show: t.index == 0
+                    text "󰐃" { at: x + w - 28 * u, y + 26 * u; anchor: center; align: center; size: 14 * u; family: "CaskaydiaCove Nerd Font"; color: acc; opacity: if(t.pinned, 1, 0.18) }
+                    text t.text { at: x + 28 * u, y + 54 * u; anchor: left top; size: 21 * u; weight: 600; family: "Exo 2"; color: ink; width: w - 56 * u; lines: 5 }
+                    text t.ago { at: x + 28 * u, y + h - 30 * u; anchor: left center; size: 9 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.45) }
+                }
+            }
+        }
+        text "NO NOTES YET · + NOTE TO WRITE ONE" { at: x + 18 * u, y + h / 2; anchor: left center; size: 10 * u; family: "Share Tech Mono"; color: mix(ink, acc, 0.4); show: nt_count == 0 }
     }
 
     // The visualiser: one of the twelve (lib/widgets MODES), in the palette's two signal colours,
