@@ -1487,3 +1487,84 @@ do
         eq(C.next_change_ms("nope", 30, 250), 29750)
     end)
 end
+
+section("the node's helpers (D250): workspace switches")
+do
+    local W = require("lib/node/wsfx")
+
+    test("the styles and the studio's names line up", function()
+        eq(#W.STYLES, 5); eq(#W.NAMES, 5)
+        for i, want in ipairs({ "Bead", "Slide", "Flip", "Pulse", "Number" }) do
+            eq(W.NAMES[i], want, "name " .. i)
+        end
+    end)
+
+    test("direction: the step next door, either way", function()
+        eq(W.direction(1, 2, 5), 1)
+        eq(W.direction(2, 1, 5), -1)
+        eq(W.direction(3, 3, 5), 0)
+        eq(W.direction(5, 5, 5), 0)
+    end)
+
+    test("direction: the shortest way round, not the numbered way", function()
+        eq(W.direction(1, 3, 5), 1, "two forward")
+        eq(W.direction(1, 4, 5), -1, "two back, not three forward")
+        eq(W.direction(4, 1, 5), 1, "two forward, not three back")
+        eq(W.direction(2, 5, 5), -1)
+    end)
+
+    test("direction: from the first workspace to the last wraps back when there is a ring", function()
+        eq(W.direction(1, 3, 3), -1, "three workspaces: one step back")
+        eq(W.direction(1, 4, 4), -1)
+        eq(W.direction(1, 2, 2), 1, "two workspaces have no shorter way: forward")
+    end)
+
+    test("direction: a tie halfway round goes forward", function()
+        eq(W.direction(1, 4, 6), 1)
+        eq(W.direction(4, 1, 6), 1, "three each way: forward")
+    end)
+
+    test("direction: one workspace or none has nowhere to go, and numbers wrap onto the ring", function()
+        eq(W.direction(1, 2, 1), 0)
+        eq(W.direction(1, 2, 0), 0)
+        eq(W.direction(1, 2, nil), 0)
+        eq(W.direction(7, 2, 5), 0, "7 is 2 on a ring of 5")
+        eq(W.direction(0, 5, 5), 0, "0 is 5 on a ring of 5")
+    end)
+
+    test("plan: the bead is the plain plan, and an unknown style is a bead", function()
+        local p = W.plan("bead", 1, 3, 5)
+        eq(p.dir, 1); eq(p.offset, 0); eq(p.flip, 0); eq(p.pulse, 0); eq(p.label, "3")
+        local u = W.plan("nope", 1, 3, 5)
+        eq(u.dir, 1); eq(u.offset, 0); eq(u.flip, 0); eq(u.pulse, 0); eq(u.label, "3")
+        eq(W.plan(nil, 1, 2, 5).offset, 0, "no style is a bead too")
+    end)
+
+    test("plan: the slide brings the content in from the way it came", function()
+        local f = W.plan("slide", 1, 3, 5)
+        eq(f.dir, 1); eq(f.offset, 24); eq(f.flip, 0); eq(f.pulse, 0); eq(f.label, "3")
+        local b = W.plan("slide", 4, 1, 5)
+        eq(b.dir, 1); eq(b.offset, 24)
+        local back = W.plan("slide", 3, 1, 5)
+        eq(back.dir, -1); eq(back.offset, -24, "back slides in from the right")
+    end)
+
+    test("plan: staying put slides nothing and points nowhere", function()
+        local p = W.plan("slide", 2, 2, 5)
+        eq(p.dir, 0); eq(p.offset, 0); eq(p.label, "2")
+    end)
+
+    test("plan: flip and pulse raise only their own flag", function()
+        local f = W.plan("flip", 1, 2, 5)
+        eq(f.flip, 1); eq(f.pulse, 0); eq(f.offset, 0)
+        local p = W.plan("pulse", 1, 2, 5)
+        eq(p.pulse, 1); eq(p.flip, 0); eq(p.offset, 0)
+        local c = W.plan("count", 1, 2, 5)
+        eq(c.flip, 0); eq(c.pulse, 0); eq(c.offset, 0); eq(c.dir, 1)
+    end)
+
+    test("plan: the label is the workspace carried as a string", function()
+        eq(W.plan("count", 1, 4, 9).label, "4")
+        eq(type(W.plan("count", 1, 4, 9).label), "string")
+    end)
+end
