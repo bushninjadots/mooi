@@ -57,15 +57,23 @@ every page and as tall as the page needs. Super again, Esc, or a press on an emp
 
 - **Home** — the music (cover, song, transport, a seek bar; press the cover for the player), four buttons
   for Wi-Fi, Silent, Timer and Bluetooth, volume and brightness sliders, the three newest notices with
-  `Clear all`, and the page icons.
+  `Clear all`, and the page icons. A button's icon does what it says; its name opens the radio's page.
 - **Calendar**, **Notes**, **Clipboard**, **Stash**, **Wallpaper** and **Power** — what the shelf's
   branches held, now pages of the same panel.
+- **Wi-Fi** — the network in use, its strength and whether it is locked, then the networks in reach,
+  strongest first: bars, a lock, and `known` for one used before. Press a known or open network to join
+  it; a locked new one asks for its password in a secret line. `×` forgets a known one. The refresh
+  icon scans.
+- **Bluetooth** — the adapter and the device in use, with its battery when it says. The devices follow,
+  connected first then paired then the rest; press one to connect or disconnect it. The refresh icon
+  looks for more. Without an adapter the page says so.
 - **System** — CPU, memory, temperature, network and battery as cards, each with its last twenty samples.
   Press the processor, memory or heat card for btop.
 
-Every page ends in the same row of icons: home, calendar, notes, clipboard, stash, wallpaper, system, time,
-studio, settings and power. The current page is lit. Time, studio and settings leave the panel for their
-own places.
+Every page ends in the same row of icons: home, calendar, notes, clipboard, stash, wallpaper, system,
+Wi-Fi, Bluetooth, settings, Control Nexus and power. The current page is lit. Wi-Fi and Bluetooth are
+pages here; time is the Timer button's page, studio is Settings' own, and Control Nexus leaves the panel
+for `mooi nexus`, as Settings does.
 
 ### The time capsule
 
