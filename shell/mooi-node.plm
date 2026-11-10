@@ -245,7 +245,7 @@ scene Node {
     fact nd_np = 0     // the character: 0 organic · 1 minimal · 2 technical · 3 cyber
     fact nd_sp = 2     // the body's spring (speed × bounce)
     fact nd_gs = 1     // growth: 0 slow · 1 normal · 2 fast
-    fact nd_seed = 0     // 0 line · 1 dot · 2 ring · 3 twin · 4 bar
+    fact nd_seed = 0     // 0 line · 1 dot · 2 ring · 3 twin · 4 bar · 5 clock
     fact nd_rnd = 1     // roundness, 0 … 1
     fact nd_tex = 0     // 0 solid · 1 hollow · 2 segmented · 3 scan · 4 dotted
     fact nd_fill = 0.95     // how solid
@@ -460,6 +460,7 @@ scene Node {
     model tc max 4 { label: text; code: number }
     model px max 400 { x: number; y: number }   // the readout's lit cells (lib/node/clockfont)
     fact nd_pxw = 29      // its width, in cells
+    model ck max 120 { x: number; y: number }   // the clock seed's lit cells (D241)
     model tr max 3 { label: text; value: text; on: bool; m: number }
     fact nd_cap = false
     text nd_capt = ""
@@ -652,11 +653,18 @@ scene Node {
         let nd_sy = nb_y - (nd_sh - nb_h) / 2
         let nd_sr = min(nb_r, nd_sh / 2)
         // the seed: a line, a bar or a dot (filled), a ring (an outline), twins (two halves breathing in turn)
-        group { show: nd_kind == 0 and not nd_cap; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc
+        group { show: nd_kind == 0 and not nd_cap and nd_seed != 5; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc
             box { from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 0 or nd_seed == 1 or nd_seed == 4 }
             box { from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; stroke: 1.5; color: nd_acc; opacity: 0.6 + 0.35 * nd_br; show: nd_seed == 2 }
             box { from: nd_sx, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 3 }
             box { from: nd_sx + nd_sw * 0.55, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * (1 - nd_br)) * nd_fill; show: nd_seed == 3 }
+        }
+        // the clock seed: the time in mooi's 5×7 matrix, two pixels a cell, on a small capsule
+        group { show: nd_kind == 0 and nd_seed == 5 and not nd_cap
+            group { glow: 8, 0.4 * nd_gw, nd_glc
+                box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: fl.hull; opacity: nd_fill } }
+            box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: nd_acc; opacity: 0.45; show: nd_ol > 0.05 }
+            for q in ck { box { from: nb_x + 8 + q.x * 2, nb_y + 4 + q.y * 2; size: 1.6, 1.6; color: nd_acc; opacity: (0.75 + 0.25 * nd_br) * nd_cf } }
         }
         // grown: the body, of the look's fill (hollow: barely), its texture, its outline
         group { show: nd_kind > 0; glow: 14, nd_glow, nd_glc

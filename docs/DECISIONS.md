@@ -6748,3 +6748,12 @@ key is the one the player uses, so the two never ask twice. Lines are read and f
 (opencode's, D230).
 
 **Verified.** Unit 724 / 0; scenes compile; `bin/mooi check` green.
+
+## D241 · 2026-11-10 · A clock for a seed
+
+A sixth seed in the studio (Shape → Seed → Clock): at rest the node is a small capsule with the time in mooi's
+own 5×7 matrix (lib/node/clockfont), two pixels a cell, breathing with the look. Its cells are written only when
+the minute turns (checked every five seconds), so a clock at rest costs nothing between minutes. A timer's
+capsule still takes its place while one runs.
+
+**Verified.** Unit 724 / 0; scenes compile; `bin/mooi check` green.

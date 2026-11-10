@@ -59,6 +59,7 @@ local function look_now() return LK.normalise(read(LK.FILE, "json"), cfg().perso
 N.look = look_now()
 local function apply_look()
     for k, v in pairs(LK.facts(N.look)) do fact[k] = v end
+    if N.clock_now then N.clock_now() end
 end
 apply_look()
 -- written a moment after the last change (a slider dragged writes once, when it rests)
@@ -238,6 +239,15 @@ local CONTROLS = {
     focus = { { "SKIP", 12 } },
     alarm = { { "H+", 31 }, { "H-", 32 }, { "M+", 33 }, { "M-", 34 } },
 }
+-- the clock seed (D241): the time's lit cells, written when the minute turns (looked at every five seconds)
+local clock_str
+every(5000, function()
+    if N.look.seed ~= "clock" then clock_str = nil; return end
+    local s = os.date("%H:%M")
+    if s ~= clock_str then clock_str = s; model.ck = CF.cells(s) end
+end)
+N.clock_now = function() clock_str = nil; if N.look.seed == "clock" then clock_str = os.date("%H:%M"); model.ck = CF.cells(clock_str) end end
+N.clock_now()
 -- the readout as the matrix's lit cells, written only when what it says changes
 local px_str
 local function pixels(str)
