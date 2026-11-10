@@ -308,6 +308,8 @@ M.SETTERS = {
     "dock.on", "dock.empty", "keys.dock",
     -- D281. Appended.
     "keys.ask",
+    -- D289. Appended.
+    "keys.term",
 }
 
 local function row_of(path)

@@ -42,6 +42,7 @@
 #   mooi arcade            mooi's games: Snake, La Grieta, Mazmorra (Super+G)
 #   mooi dock              hold the dock up, or let it hide again (Super+Shift+D)
 #   mooi drawer [dashboard|notices|close]  the side drawers out of the frame (Super+D, Super+N)
+#   mooi term [out]        a terminal that drops from the top and stays alive (Super+Shift+T); `out` makes it a window
 #   mooi ask               choose a region: its words start a question to Claude in the side notch (Super+Shift+G)
 #   mooi capture text      choose a region of the screen: its words (tesseract) go to the clipboard
 #   mooi pkg search WORDS | install NAME [repo|aur] | update   packages: search, and install or update in a terminal
@@ -1619,6 +1620,31 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     game-mode) game_mode "$@"; exit $? ;;
+    term) # D289 (k4's island terminal): a terminal that drops from the top and stays alive between presses — one kitty
+        # (class mooi-dropterm) kept on the special workspace mooi-term. `mooi term` shows or hides it; `mooi term out`
+        # moves it onto the workspace you are on as an ordinary window, and the next `mooi term` starts a fresh one
+        if ! command -v kitty >/dev/null 2>&1; then notify-send -a mooi "Drop-down terminal" "Needs kitty" 2>/dev/null; exit 1; fi
+        # only the one still on its own workspace is the drop-down: one taken `out` is an ordinary window now
+        addr=$(hyprctl -j clients 2>/dev/null | jq -r '[.[] | select(.class == "mooi-dropterm" and .workspace.name == "special:mooi-term")][0].address // empty')
+        case "${1:-}" in
+            out)
+                [ -n "$addr" ] || exit 0
+                ws=$(hyprctl -j activeworkspace | jq -r '.id')
+                hyprctl eval "hl.dispatch(hl.dsp.window.move({ workspace = $ws, window = \"address:$addr\" }))" >/dev/null
+                hyprctl eval "hl.dispatch(hl.dsp.window.float({ action = \"disable\", window = \"address:$addr\" }))" >/dev/null 2>&1
+                exit 0 ;;
+        esac
+        if [ -z "$addr" ]; then
+            # in pixels from the focused monitor: this Hyprland takes no percentages here
+            read -r mw mh <<EOF
+$(hyprctl -j monitors | jq -r '[.[] | select(.focused)][0] | "\((.width / .scale) | floor) \((.height / .scale) | floor)"')
+EOF
+            w=$((mw * 70 / 100)); h=$((mh * 46 / 100)); x=$(((mw - w) / 2)); y=$((mh * 7 / 100))
+            hyprctl eval "hl.dispatch(hl.dsp.exec_cmd(\"[float; size $w $h; move $x $y; workspace special:mooi-term] kitty --class mooi-dropterm\"))" >/dev/null
+        else
+            hyprctl eval 'hl.dispatch(hl.dsp.workspace.toggle_special("mooi-term"))' >/dev/null
+        fi
+        exit 0 ;;
     ask) # D281 (k4's "ask about the screen"): a region's words, read by tesseract, become the start of a question in
         # the notch's Claude chat; you add what to ask and press Return. The words go through a file in mooi's own
         # folder (ask-region.txt), never a command line; the notch reads it once and removes it

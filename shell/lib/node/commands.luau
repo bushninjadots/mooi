@@ -26,6 +26,9 @@ M.LIST = {
     { name = "Keyboard shortcuts", args = { "node", "keys" }, words = "keys keybinds keybindings shortcuts hotkeys cheat sheet bindings" },
     -- D268: the system's packages brought up to date, in the owner's terminal (`term`: never in the background)
     { name = "Update the system", args = { "pkg", "update" }, term = true, words = "update upgrade packages pacman paru yay syu" },
+    -- D289: k4's island terminal
+    { name = "Drop-down terminal", args = { "term" }, words = "terminal shell console kitty dropdown quake" },
+    { name = "Drop-down terminal as a window", args = { "term", "out" }, words = "terminal window pop out detach" },
     -- D281: k4's ask about the screen
     { name = "Ask Claude about the screen", args = { "ask" }, words = "ask claude explain screen region question ai" },
     -- D276: the arcade

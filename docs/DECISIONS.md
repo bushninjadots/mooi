@@ -7586,3 +7586,17 @@ Seen on review: with no notices, Home left some 180 px of empty panel under "No 
 follows them: the rows start at 493 px and take 58 each, the icon row 66 under them, and with none one line says
 so — 583 px with none, 732 with three (the most it shows). Other pages keep their heights. The panel re-renders when
 a notice arrives, so it grows on its springs as the body does. `lib/node/geometry`; unit-tested.
+
+## D289 · 2026-11-10 · The drop-down terminal (k4's island terminal)
+
+k4 shows a terminal session inside its island (Super+Shift+T) and moves it out to a window (Super+Alt+T); its
+terminal is its own, k4term. mooi's is the owner's kitty, dropped from the top: `mooi term` (Super+Shift+T,
+`keys.term`, and **Drop-down terminal** in the search line) starts one kitty (`--class mooi-dropterm`) floating on
+the special workspace `mooi-term`, 70 % of the screen wide and 46 % tall, near the top; pressed again it hides, and
+its session stays alive for the next press. `mooi term out` (**Drop-down terminal as a window**) moves it onto the
+workspace you are on as an ordinary tiled window; the next press starts a fresh one, since only a terminal still on
+`mooi-term` counts as the drop-down. Sizes are worked out in pixels from the focused monitor: this Hyprland ignores
+percentages in exec rules. Super+Alt+T stays mooi's light-or-dark key.
+
+**Verified.** Unit 923 / 0; live: the terminal dropped in at 1344 × 496, hid on the second press, and `out` put it
+on workspace 2 tiled (then closed by hand).

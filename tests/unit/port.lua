@@ -548,3 +548,14 @@ do
         eq(G.body("panel", scr, "center", nil, { page = "notes", notices = 0 }).h, 450, "other pages keep theirs")
     end)
 end
+
+section("the drop-down terminal (D289; k4's island terminal)")
+do
+    test("Super+Shift+T shows or hides one kitty kept on its own workspace; `out` makes it a window", function()
+        local b = read("bin/mooi")
+        assert(b:find('.workspace.name == "special:mooi-term"', 1, true), "only the one still dropped is reused")
+        assert(b:find("toggle_special(\"mooi-term\")", 1, true) and b:find("kitty --class mooi-dropterm", 1, true))
+        eq(require("lib/config").defaults().keys.term, "SUPER + SHIFT + T")
+        eq(require("lib/node/commands").match("terminal")[1].args[1], "term")
+    end)
+end
