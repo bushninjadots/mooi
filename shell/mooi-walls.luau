@@ -50,9 +50,9 @@ kept = type(kept) == "table" and kept or {}
 local cfg = walls.normalize(settings.walls, HOME)
 -- the settings' defaults (Settings → Wallpaper, D147), then what was chosen last time
 local W = type(settings.walls) == "table" and settings.walls or {}
-local SRC_INDEX = { all = 0, pictures = 1, live = 2, wallhaven = 3 }
+local SRC_INDEX = { all = 0, pictures = 1, live = 2, wallhaven = 3, favourites = 4 }
 local view = walls.VIEW_INDEX[kept.view] or walls.VIEW_INDEX[W.view] or 0
-local src = math.max(0, math.min(3, math.floor(tonumber(kept.src) or SRC_INDEX[W.source] or 0)))
+local src = math.max(0, math.min(4, math.floor(tonumber(kept.src) or SRC_INDEX[W.source] or 0)))
 fact.veil = math.max(50, math.min(100, tonumber(W.veil) or 93)) / 100
 fact.slant = math.max(0, math.min(40, tonumber(W.slant) or 22)) / 100
 fact.csz = ({ small = 0.8, medium = 1, large = 1.2 })[W.cards] or 1
@@ -83,6 +83,8 @@ local place_of = {}            -- each picture's place on the orbit, as walls-or
 
 local show_dots, wh_thumbs     -- (below, with Wallhaven)
 local refilter                 -- (below, with the list)
+-- D307: the favourites every switcher shares (lib/walls FAVS)
+local favs = walls.favs(read(walls.FAVS, "json"))
 local show_circuit, show_orbit -- (below)
 local wear, wh_fetch           -- (below)
 local want_pal                 -- (below, with the orbit) the palette of the picture in view
@@ -101,8 +103,8 @@ local function describe(it, i)
             string.upper(it.purity or "sfw"), walls.band_name(it.hue), i, #list)
         return
     end
-    text.wl_kind = string.format("%s · %s · %d OF %d%s", kind_word(it), walls.band_name(it.hue), i, #list,
-        it.path == on_path and " · ON THE DESK NOW" or "")
+    text.wl_kind = string.format("%s · %s · %d OF %d%s%s", kind_word(it), walls.band_name(it.hue), i, #list,
+        it.path == on_path and " · ON THE DESK NOW" or "", favs[it.path] and " · ♥ FAVOURITE · F TAKES IT OFF" or " · F MAKES IT A FAVOURITE")
 end
 
 -- The picture to show over the whole screen (Space): a still or an animated one as it is, a video
@@ -115,7 +117,7 @@ local function preview(it)
 end
 
 local function say_line()
-    local words = { "ALL", "PICTURES", "LIVE", "WALLHAVEN" }
+    local words = { "ALL", "PICTURES", "LIVE", "WALLHAVEN", "FAVOURITES" }
     local s = string.format("%d %s", #list, src == 0 and "WALLPAPERS" or words[src + 1])
     if src == 3 then
         s = string.format("WALLHAVEN · %s · PAGE %d OF %d", string.upper(walls.WH_SORTS[(tonumber(fact.wh_sort) or 0) + 1]):gsub("_", " "), wh.page, wh.last)
@@ -136,7 +138,7 @@ local function show_strip()
     local rows = {}
     for k = first, last do
         local it = list[k]
-        rows[#rows + 1] = { pic = it.thumb, k = k - 1, live = walls.is_live(it.kind), on = it.path == on_path }
+        rows[#rows + 1] = { pic = it.thumb, k = k - 1, live = walls.is_live(it.kind), on = it.path == on_path, fav = favs[it.path] == true }
     end
     model.strip = rows
     fact.at = math.max(0, at - 1)
@@ -446,7 +448,7 @@ refilter = function()
         say_line(); show_strip(); show_orbit(); show_dots(); show_circuit(); wh_thumbs()
         return
     end
-    list = walls.filter(all, walls.SOURCES[src + 1], query, chip, light)
+    list = walls.filter(all, walls.SOURCES[src + 1], query, chip, light, favs)
     -- the places are the whole index's (the dots drawn are), so a filtered list keeps them
     places = {}
     for i, it in ipairs(list) do places[i] = place_of[it.path] or { x = 9, y = 9 } end
@@ -496,6 +498,25 @@ on("wl_wear", function(v)
     else wear(list[at]) end
 end)
 
+-- D307: F (or the heart) makes the picture in hand a favourite, or takes it off; the file is shared, so the notch
+-- and the Pill follow, and their own changes come back here
+local function in_hand()
+    if view == 1 then return list[near[osel] or 0] elseif view == 2 then return list[chip_at[csel] or 0] end
+    return list[at]
+end
+on("wl_fav", function()
+    local it = in_hand()
+    if not it or it.remote then return end
+    local doc = walls.toggle(read(walls.FAVS, "json"), it.path)
+    pcall(sys.call, "files.write", walls.FAVS, json.encode(doc))
+    favs = walls.favs(doc)
+    if src == 4 then refilter() else show_strip() end
+end)
+pcall(sys.watch, "files:" .. walls.FAVS, function()
+    favs = walls.favs(read(walls.FAVS, "json"))
+    if src == 4 then refilter() else show_strip() end
+end)
+
 on("wl_view", function(v)
     view = math.max(0, math.min(2, math.floor(tonumber(v) or 0)))
     fact.view = view
@@ -503,7 +524,7 @@ on("wl_view", function(v)
     if view == 0 then show_strip() elseif view == 1 then show_orbit() else show_circuit() end
 end)
 on("wl_src", function(v)
-    src = math.max(0, math.min(3, math.floor(tonumber(v) or 0)))
+    src = math.max(0, math.min(4, math.floor(tonumber(v) or 0)))
     fact.src = src
     keep()
     if src == 3 and #wh.items == 0 then wh_restart() else refilter() end

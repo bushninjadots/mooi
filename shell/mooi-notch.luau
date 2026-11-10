@@ -553,11 +553,14 @@ local wh                     -- Wallhaven, the second source (below, after `wear
 -- can be reached while only forty are ever drawn (D118; before, a random forty were all it had).
 local WIN = 40
 local base = 0               -- the list's index of the window's first row
+-- D307: the favourites every switcher shares (lib/walls FAVS); the third source shows only them, newest first
+local fav_set, fav_list = walls.favs(read(walls.FAVS, "json"))
 local function view()
     local b = band()
-    if b < 0 then return pictures, #pictures end
+    local from = math.floor(tonumber(fact.wp_src) or 0) == 2 and fav_list or pictures
+    if b < 0 then return from, #from end
     local out = {}
-    for _, p in ipairs(pictures) do
+    for _, p in ipairs(from) do
         local h = hues[p]
         if type(h) == "number" and N.band(h, BAND_N) == b then out[#out + 1] = p end
     end
@@ -586,7 +589,7 @@ local function show_pictures(recenter)
         local name = N.thumb_name(p)
         local label = p:match("([^/]+)$") or p
         if N.is_live(p) then label = "LIVE · " .. label end
-        rows[i] = { pic = made[name] and (data_folder .. "/" .. name) or "", name = label, on = p == on }
+        rows[i] = { pic = made[name] and (data_folder .. "/" .. name) or "", name = label, on = p == on, fav = fav_set[p] == true }
     end
     model.pics = rows
     local b = band()
@@ -900,8 +903,21 @@ wh = (function()
     end
     return self
 end)()
+on("nt_fav", function(v)
+    local p = (view())[base + (tonumber(v) or -1) + 1]
+    if not p then return end
+    local doc = walls.toggle(read(walls.FAVS, "json"), p)
+    pcall(sys.call, "files.write", walls.FAVS, json.encode(doc))
+    fav_set, fav_list = walls.favs(doc)
+    show_pictures(false)
+end)
+pcall(sys.watch, "files:" .. walls.FAVS, function()
+    fav_set, fav_list = walls.favs(read(walls.FAVS, "json"))
+    if fact.nt_open and math.floor(tonumber(fact.nt_tab) or -1) == 3 and not (wh and wh.on()) then show_pictures(false) end
+end)
 on("nt_src", function(v)
-    local k = math.floor(tonumber(v) or 0) == 1 and 1 or 0
+    v = math.floor(tonumber(v) or 0)
+    local k = (v == 1 or v == 2) and v or 0
     if k == math.floor(tonumber(fact.wp_src) or 0) then return end
     fact.wp_src, fact.wp_c, fact.wp_hue = k, 0, -1
     base = 0

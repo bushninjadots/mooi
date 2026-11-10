@@ -66,6 +66,12 @@ function M.game(on)
 end
 
 -- `nd_osd`'s code from `mooi osd`: tens say which, the unit whether it is on (11 caps on, 20 num off, 31 game on)
+-- D306: files thrown onto the Pill went into the stash
+function M.stashed(n)
+    n = math.max(1, math.floor(tonumber(n) or 1))
+    return { icon = "", label = n == 1 and "STASHED" or ("STASHED " .. n), level = 1 }
+end
+
 function M.decode(v)
     v = math.floor(tonumber(v) or 0)
     local which, on = v // 10, v % 10 == 1

@@ -1550,6 +1550,20 @@ local function show_stash()
     model.stz = rows
     N.panel_sub = #items == 0 and "NOTHING KEPT YET" or (#items .. " KEPT")
 end
+-- D307: the favourites every switcher shares (lib/walls FAVS); "♥ Favs" shows only them
+local WALLS = require("lib/walls")
+N.wl_favs = WALLS.favs(read(WALLS.FAVS, "json"))
+local function wl_list()
+    if not N.wl_favonly then return N.walls or {} end
+    local out = {}
+    for _, it in ipairs(N.walls or {}) do if N.wl_favs[it.path] then out[#out + 1] = it end end
+    return out
+end
+N.wl_list = wl_list
+pcall(sys.watch, "files:" .. WALLS.FAVS, function()
+    N.wl_favs = WALLS.favs(read(WALLS.FAVS, "json"))
+    if N.panel == "wallpaper" then N.panel_shown = nil; render() end
+end)
 local function show_walls()
     if not N.walls then
         local idx = read("walls-index.json", "json")
@@ -1564,17 +1578,22 @@ local function show_walls()
         for i, it in ipairs(N.walls) do if it.path == src then N.wl_at = ((i - 1) // 9) * 9 + 1 end end
         N.wl_worn = src
     end
+    local list = wl_list()
+    if N.wl_at > #list then N.wl_at = 1 end
     local rows = {}
     for k = 0, 8 do
-        local it = N.walls[N.wl_at + k]
+        local it = list[N.wl_at + k]
         if it then
             local name = tostring(it.path):match("([^/]+)$") or ""
-            rows[#rows + 1] = { img = it.thumb, on = it.path == N.wl_worn, name = (name:gsub("%.[%w]+$", "")) }
+            rows[#rows + 1] = { img = it.thumb, on = it.path == N.wl_worn, name = (name:gsub("%.[%w]+$", "")), fav = N.wl_favs[it.path] == true }
         end
     end
     model.wl = rows
-    local pages = math.max(1, math.ceil(#N.walls / 9))
-    N.panel_sub = (#N.walls > 0) and ("PAGE " .. ((N.wl_at - 1) // 9 + 1) .. " OF " .. pages .. "  ·  " .. #N.walls .. " PICTURES") or "NO PICTURES INDEXED YET"
+    fact.nd_wlfav = N.wl_favonly == true
+    local pages = math.max(1, math.ceil(#list / 9))
+    local what = N.wl_favonly and " FAVOURITES" or " PICTURES"
+    N.panel_sub = (#list > 0) and ("PAGE " .. ((N.wl_at - 1) // 9 + 1) .. " OF " .. pages .. "  ·  " .. #list .. what)
+        or (N.wl_favonly and "NO FAVOURITES YET · THE ♥ ON A PICTURE ADDS IT" or "NO PICTURES INDEXED YET")
 end
 local function show_clipboard()
     N.panel_items = {}
@@ -2172,6 +2191,27 @@ on("nd_out", function()
     render()
 end)
 
+-- D306: anything thrown onto the Pill — whatever it is showing — goes into the stash (the bar's, through its
+-- inbox, which copies files as a drop on the stash itself does). Pleamar gives a drop to the zone under the
+-- pointer, so every zone the Pill draws listens.
+local function thrown(data)
+    local got = {}
+    if type(data) == "table" then
+        for _, v in ipairs(data) do if type(v) == "string" and v ~= "" then got[#got + 1] = v end end
+    elseif type(data) == "string" then
+        for line in string.gmatch(data, "[^\r\n]+") do
+            line = string.gsub(string.gsub(line, "^%s+", ""), "%s+$", "")
+            if line ~= "" and string.sub(line, 1, 1) ~= "#" then got[#got + 1] = line end
+        end
+    end
+    if #got == 0 then return end
+    for _, raw in ipairs(got) do inbox_add("stash-inbox.json", raw) end
+    if N.panel == "stash" then inbox_refresh("stash") end
+    gauge(GA.stashed(#got))
+    render()
+end
+for _, z in ipairs(require("lib/node/zones")) do on("drop:" .. z, thrown) end
+
 -- D287: Home's weather, pressed, opens the week's page in the same panel
 on("nd_hweather", function() open_panel("weather") end)
 -- ── the panel's own input (D260): its pages, its four toggles, its notices and the way home ──
@@ -2277,11 +2317,22 @@ on("nd_br", function(v)
     if v == 1 or v == 2 then
         local d = v == 1 and -1 or 1
         if page == "calendar" and N.cal then N.cal.y, N.cal.m = CAL.shift(N.cal.y, N.cal.m, d); N.panel_shown = nil
-        elseif page == "wallpaper" and N.walls and #N.walls > 0 then
+        elseif page == "wallpaper" and #N.wl_list() > 0 then
             -- (D273) a page of nine at a time, round from the last back to the first
-            local pages = math.ceil(#N.walls / 9)
+            local pages = math.ceil(#N.wl_list() / 9)
             local pg = ((N.wl_at - 1) // 9 + d) % pages
             N.wl_at = pg * 9 + 1
+            N.panel_shown = nil
+        end
+    elseif v == 93 and page == "wallpaper" then
+        N.wl_favonly = not N.wl_favonly
+        N.wl_at, N.panel_shown = 1, nil
+    elseif v >= 30 and v < 39 and page == "wallpaper" then
+        local it = N.wl_list()[N.wl_at + v - 30]
+        if it then
+            local doc = WALLS.toggle(read(WALLS.FAVS, "json"), it.path)
+            pcall(sys.call, "files.write", WALLS.FAVS, json.encode(doc))
+            N.wl_favs = WALLS.favs(doc)
             N.panel_shown = nil
         end
     elseif (v == 91 or v == 92) and page == "wallpaper" then
@@ -2312,7 +2363,7 @@ on("nd_br", function(v)
         elseif page == "stash" and N.panel_items[i] then run("xdg-open", { N.panel_items[i] }, function() end)
         elseif page == "power" then N.power_choose(i)
         elseif page == "wallpaper" then
-            local it = N.walls and N.walls[N.wl_at + i - 1]
+            local it = N.wl_list()[N.wl_at + i - 1]
             if it then N.wl_worn = it.path; run("mooi", { "wall", "apply", it.path }, function() end); N.panel_shown = nil end
         end
     end

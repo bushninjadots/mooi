@@ -326,7 +326,7 @@ scene Notch {
     model warc max 12 { id: number; label: text; n: text; active: bool }
     model wbox max 60 { k: number; nx: number; ny: number; nw: number; nh: number; focused: bool; pic: image 320, 180; pictured: bool }
     fact sp_c = 0                // the workspace in the middle
-    model pics max 40 { pic: image 320, 180; name: text; on: bool }
+    model pics max 40 { pic: image 320, 180; name: text; on: bool; fav: bool }
     fact wp_c = 0                // the picture in the middle: its row in the window
     fact wp_base = 0             // where the window starts in the whole list (the logic slides it)
     fact wp_hue = -1             // the colour along the arc's inside: -1 all of them, else its band
@@ -388,7 +388,8 @@ scene Notch {
     event nt_wall ->             // to the logic: wear picture n
     event nt_hue ->              // to the logic: the colour band along the arc pressed (again: all of them)
     event nt_studio ->           // to the logic: open the wallpaper picker (mooi-walls, D145)
-    event nt_src ->              // to the logic: the pictures from 0 the folder · 1 Wallhaven
+    event nt_src ->              // to the logic: the pictures from 0 the folder · 1 Wallhaven · 2 favourites (D307)
+    event nt_fav ->              // D307: that picture a favourite, or not
     event nt_gh ->               // to the logic: open GitHub — 0 your profile · 1 + n a pull request · 10 notifications
     event nt_gsrc ->             // to the logic: which games the list shows (0 all · 1 Steam's · 2 the desktop's)
     event nt_gscroll ->          // to the logic: the list scrolled by `wheel`
@@ -718,12 +719,15 @@ scene Notch {
                 zone box wpsh { from: wl0 + 100, nt_acy - 290; size: 112, 24; cursor: pointer; role: tab; selected: wp_src == 1; label: "Pictures from Wallhaven: the month's top list" }
                 Act(wl0, nt_acy - 290, 96, "Folder", wp_src == 0, false, wpsf.hover)
                 Act(wl0 + 100, nt_acy - 290, 112, "Wallhaven", wp_src == 1, false, wpsh.hover)
+                zone box wpsv { from: wl0 + 216, nt_acy - 290; size: 76, 24; cursor: pointer; role: tab; selected: wp_src == 2; label: "Your favourite pictures" }
+                Act(wl0 + 216, nt_acy - 290, 76, "♥ Favs", wp_src == 2, false, wpsv.hover)
+                on press wpsv { emit nt_src(2) }
                 on press wpsf { emit nt_src(0) }
                 on press wpsh { emit nt_src(1) }
                 // the full picker, a step apart from the two sources: it opens a program of its own
-                line { from: wl0 + 226, nt_acy - 284; to: wl0 + 226, nt_acy - 272; width: 1; color: dk.line; opacity: 0.7 }
-                zone box wpst { from: wl0 + 240, nt_acy - 290; size: 140, 24; cursor: pointer; role: button; label: "Open the wallpaper picker: the strip and the colour orbit" }
-                Act(wl0 + 240, nt_acy - 290, 140, "All of them  ↗", false, false, wpst.hover)
+                line { from: wl0 + 302, nt_acy - 284; to: wl0 + 302, nt_acy - 272; width: 1; color: dk.line; opacity: 0.7 }
+                zone box wpst { from: wl0 + 312, nt_acy - 290; size: 140, 24; cursor: pointer; role: button; label: "Open the wallpaper picker: the strip and the colour orbit" }
+                Act(wl0 + 312, nt_acy - 290, 140, "All of them  ↗", false, false, wpst.hover)
                 on press wpst { emit nt_studio }
                 // the colours along the arc's inside: narrow it to the reds, the blues…
                 group {
@@ -773,6 +777,14 @@ scene Notch {
                         }
                         text "WEARING" { at: px + 280 * ps - 8, py + 12; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"; color: dk.acc; show: p.on }
                         on press pz { emit nt_wall(p.index) }
+                        // D307: the heart — shown on a favourite, and a button on the one in the middle
+                        group {
+                            show: p.fav or abs(pa) < 6
+                            ellipse { at: px + 18 * ps, py + 18 * ps; radius: 12 * ps; color: dk.well; opacity: 0.85 }
+                            text "♥" { at: px + 18 * ps, py + 18 * ps; anchor: center; size: 13 * ps; family: "Exo 2"; color: if(p.fav, dk.acc, if(pfz.hover, dk.ink, dk.mute)) }
+                            zone box pfz { from: px + 4 * ps, py + 4 * ps; size: 28 * ps, 28 * ps; corner: 14; cursor: pointer; role: toggle; checked: p.fav; label: "Favourite"; show: abs(pa) < 6 }
+                            on press pfz { emit nt_fav(p.index) }
+                        }
                     }
                 }
             }

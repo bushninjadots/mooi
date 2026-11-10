@@ -880,3 +880,45 @@ do
         eq(#ag, 6); eq(ag[1].dow, "FRI"); eq(ag[1].d, "2"); eq(ag[1].due, true); eq(ag[2].due, false)
     end)
 end
+
+section("throw anything onto the Pill, in any state (D306)")
+do
+    test("every zone the Pill draws hears a drop, and the gauge says how many went into the stash", function()
+        local Z = require("lib/node/zones")
+        local have = {}
+        for _, z in ipairs(Z) do have[z] = true end
+        assert(have.nd_bz and have.pcz, "the body at rest and the open panel")
+        assert(#Z > 50, "every state's zones")
+        local GA = require("lib/node/gauge")
+        eq(GA.stashed(1).label, "STASHED"); eq(GA.stashed(3).label, "STASHED 3")
+        local lu = read("shell/mooi-node.luau")
+        assert(lu:find('on("drop:" .. z, thrown)', 1, true) and lu:find('inbox_add("stash-inbox.json", raw)', 1, true))
+    end)
+end
+
+
+section("favourite wallpapers in every switcher (D307)")
+do
+    local WL = require("lib/walls")
+    test("one shared list: toggled on goes first, toggled off goes, nonsense is ignored", function()
+        local doc, on = WL.toggle({ "/a.jpg" }, "/b.jpg")
+        eq(on, true); eq(doc[1], "/b.jpg"); eq(doc[2], "/a.jpg")
+        doc, on = WL.toggle(doc, "/a.jpg"); eq(on, false); eq(#doc, 1)
+        local set, list = WL.favs({ "/x", "/x", 3, "" }); eq(set["/x"], true); eq(#list, 1)
+        eq(#WL.toggle(nil, ""), 0)
+    end)
+    test("the picker's Favourites source keeps only them", function()
+        local items = { { path = "/a", name = "a", kind = "still" }, { path = "/b", name = "b", kind = "video" } }
+        local f = WL.filter(items, "favourites", "", -1, 0, { ["/b"] = true })
+        eq(#f, 1); eq(f[1].path, "/b")
+        eq(#WL.filter(items, "all", "", -1, 0, nil), 2)
+        eq(WL.SOURCES[5], "favourites")
+    end)
+    test("the picker, the notch and the Pill all read and write the same file", function()
+        for _, f in ipairs({ "shell/mooi-walls.luau", "shell/mooi-notch.luau", "shell/mooi-node.luau" }) do
+            local t = read(f)
+            assert(t:find("walls.toggle", 1, true) or t:find("WALLS.toggle", 1, true), f)
+            assert(t:find('"files:" .. walls.FAVS', 1, true) or t:find('"files:" .. WALLS.FAVS', 1, true), f .. " follows the others")
+        end
+    end)
+end

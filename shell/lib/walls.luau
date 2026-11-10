@@ -10,7 +10,7 @@ local M = {}
 
 M.VIEWS = { "strip", "orbit", "circuit" }
 M.VIEW_INDEX = { strip = 0, orbit = 1, circuit = 2 }
-M.SOURCES = { "all", "pictures", "live" }   -- the picker's source row, in its order
+M.SOURCES = { "all", "pictures", "live", "wallhaven", "favourites" }   -- the picker's source row, in its order (D307: favourites)
 M.DEFAULT_FOLDERS = { "~/Pictures/wallpapers", "~/Pictures/livewalls" }
 
 -- What a file is drawn as, by its extension: a `still` and an `animated` picture are the desk's
@@ -106,17 +106,41 @@ end
 -- The picker's list: the source (all · pictures · live), the search (a plain substring of the file
 -- name, any case) and the colour filter. Kept in the index's order (by hue, then name), so a filter
 -- never reshuffles.
-function M.filter(items, source, query, chip, light)
+function M.filter(items, source, query, chip, light, favs)
     local out = {}
     local q = string.lower(tostring(query or ""))
     for _, it in ipairs(items or {}) do
         local live = M.is_live(it.kind)
-        local keep = source == "live" and live or source == "pictures" and not live or (source ~= "live" and source ~= "pictures")
+        local keep
+        if source == "favourites" then keep = type(favs) == "table" and favs[it.path] == true
+        else keep = source == "live" and live or source == "pictures" and not live or (source ~= "live" and source ~= "pictures") end
         if keep and q ~= "" then keep = string.find(string.lower(it.name), q, 1, true) ~= nil end
         if keep then keep = M.colour_ok(it, chip, light) end
         if keep then out[#out + 1] = it end
     end
     return out
+end
+
+-- D307: favourite pictures, shared by every switcher (the picker, the notch, the Pill): wall-favs.json is a list
+-- of paths, newest first. `favs(doc)` is the set and the list; `toggle` gives the new list and whether it is one now.
+M.FAVS = "wall-favs.json"
+function M.favs(doc)
+    local set, list = {}, {}
+    for _, p in ipairs(type(doc) == "table" and doc or {}) do
+        if type(p) == "string" and p ~= "" and not set[p] then set[p] = true; list[#list + 1] = p end
+    end
+    return set, list
+end
+function M.toggle(doc, path)
+    local set, list = M.favs(doc)
+    if type(path) ~= "string" or path == "" then return list, false end
+    if set[path] then
+        local out = {}
+        for _, p in ipairs(list) do if p ~= path then out[#out + 1] = p end end
+        return out, false
+    end
+    table.insert(list, 1, path)
+    return list, true
 end
 
 -- Where a picture is in a list (1-based), or nil.

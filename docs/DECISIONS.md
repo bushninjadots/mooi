@@ -7876,3 +7876,30 @@ every other program under 1 %. Two causes found and removed:
 
 **Verified.** Gate green; scenes compile. Not re-measured live: reloading the bar would have interrupted the owner,
 who was at the machine; the next `mooi refresh` takes it.
+
+## D306 · 2026-11-11 · Throw anything onto the Pill, in whatever state it is in
+
+The owner: "the pill and its stash — I want to be able to throw whatever files into it in whichever state it's
+in." The Pill took no drops at all. Pleamar gives a drop only to the topmost zone under the pointer, so the Pill's
+generator now also writes `lib/node/zones.luau`, every zone of its scene by name (137 of them), and the logic
+listens for a drop on each: at rest, with music, a notice, the open panel on any page, the launcher. What is thrown
+goes into the stash through the bar's stash inbox (`stash-inbox.json`), which takes it exactly as a drop on the
+stash itself does (files copied in, links and text written down), and the gauge says "STASHED" or "STASHED n".
+
+**Verified.** Unit tests (every state's zones listed; the gauge's words); the Pill compiles. Not tried with a real
+drag: that needs the pointer, which is the owner's.
+
+## D307 · 2026-11-11 · Favourite wallpapers, in the picker, the notch and the Pill
+
+The owner: "in wallpaper switchers, all of them — the notch, the Pill and the main wallpaper switcher — I need to
+be able to favourite pics." One shared list, `wall-favs.json` (paths, newest first; lib/walls `favs`, `toggle`),
+which each switcher watches, so a heart given in one shows in the others at once.
+- **The picker (Super+W):** a fifth source, **♥ FAVS**; a heart on every favourite card, and a heart button on the
+  middle card; **F** gives or takes the heart of the picture in hand (strip, orbit or circuit); its line says so.
+- **The notch:** a third source beside Folder and Wallhaven, **♥ Favs**; a heart on favourites, a button on the
+  picture in the middle of the arc.
+- **The Pill's wallpaper page:** a **♥ Favs** button that shows only the favourites (its line counts them, or says
+  how to add one); a heart on each favourite and on any picture under the pointer, which toggles it.
+
+**Verified.** Gate green; unit tests for the list, the filter and that all three read and write the same file;
+every scene compiles. Not opened live: the owner was at the machine.

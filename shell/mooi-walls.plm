@@ -325,7 +325,7 @@ scene Walls {
     image orbit = from orbit_path, 1024, 1024
     image pv = from prev_path, 1920, 1080
     // the strip's window: 32 cards round the middle (`k` is the card's place in the whole list)
-    model strip max 32 { pic: image 320, 180; k: number; live: bool; on: bool }
+    model strip max 32 { pic: image 320, 180; k: number; live: bool; on: bool; fav: bool }
     // the orbit's swollen ones: the nearest to the pointer, where they sit on the wheel (unit radius,
     // before the turn), and how near (`r`, 1 the nearest)
     // the orbit's results: the pictures nearest the dial's point, a grid to pick from
@@ -338,7 +338,8 @@ scene Walls {
 
     event wl_close ->
     event wl_view ->             // the strip or the orbit
-    event wl_src ->              // all · pictures · live
+    event wl_src ->              // all · pictures · live · Wallhaven · favourites (D307)
+    event wl_fav ->              // D307: the picture in hand a favourite, or not
     event wl_tr ->               // the next transition
     event wl_step ->             // the strip moved by this many cards
     event wl_go ->               // the strip's card `k` to the middle
@@ -433,17 +434,20 @@ scene Walls {
             Tab(tx + 474, ty, 86, "PICTURES", src == 1, ts1.hover)
             Tab(tx + 564, ty, 56, "LIVE", src == 2, ts2.hover)
             Tab(tx + 624, ty, 104, "WALLHAVEN", src == 3, ts3.hover)
+            zone box ts4 { from: tx + 732, ty; size: 66, 26; cursor: pointer; role: tab; selected: src == 4; label: "Favourites" }
+            Tab(tx + 732, ty, 66, "♥ FAVS", src == 4, ts4.hover)
+            on press ts4 { emit wl_src(4) }
             on press ts0 { emit wl_src(0) }
             on press ts1 { emit wl_src(1) }
             on press ts2 { emit wl_src(2) }
             on press ts3 { emit wl_src(3) }
-            line { from: tx + 740, ty + 5; to: tx + 740, ty + 21; width: 1; color: fl.trace_dim }
+            line { from: tx + 806, ty + 5; to: tx + 806, ty + 21; width: 1; color: fl.trace_dim }
             // the search: `/` or a press, Esc or Enter leaves it (with Wallhaven, Enter searches it)
-            zone box tq { from: tx + 752, ty; size: 240, 26; cursor: text; role: button; label: "Search the file names" }
-            box { from: tx + 752, ty; size: 240, 26; corner: 3; color: fl.well; opacity: if(typing, 0.9, 0.4) }
-            box { from: tx + 752, ty; size: 240, 26; corner: 3; stroke: 1; color: if(typing, fl.phos, mix(fl.trace_dim, fl.trace_lit, tq.hover)) }
-            text pick(if(src == 3, 1, 0), "/  SEARCH NAMES", "/  SEARCH WALLHAVEN") { at: tx + 764, ty + 13; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: not typing and not has_query }
-            input wl_query { at: tx + 764, ty + 6; width: 216; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
+            zone box tq { from: tx + 816, ty; size: 180, 26; cursor: text; role: button; label: "Search the file names" }
+            box { from: tx + 816, ty; size: 180, 26; corner: 3; color: fl.well; opacity: if(typing, 0.9, 0.4) }
+            box { from: tx + 816, ty; size: 180, 26; corner: 3; stroke: 1; color: if(typing, fl.phos, mix(fl.trace_dim, fl.trace_lit, tq.hover)) }
+            text pick(if(src == 3, 1, 0), "/  SEARCH NAMES", "/  SEARCH WALLHAVEN") { at: tx + 828, ty + 13; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; show: not typing and not has_query }
+            input wl_query { at: tx + 828, ty + 6; width: 156; size: 12; family: "Exo 2"; color: fl.phos; selection: fl.well }
             on press tq { typing = true; focus wl_query }
             line { from: tx + 1004, ty + 5; to: tx + 1004, ty + 21; width: 1; color: fl.trace_dim }
             zone box ttr { from: tx + 1016, ty; size: 124, 26; cursor: pointer; role: button; label: "The transition: press for the next" }
@@ -524,6 +528,14 @@ scene Walls {
                         }
                         path { move x - w / 2 + s, top; line x + w / 2 + s, top; line x + w / 2 - s, top + h; line x - w / 2 - s, top + h; close
                                stroke: if(ad < 0.5, 1.6, 1); color: if(c.on, fl.ember, if(ad < 0.5, fl.phos, fl.trace_dim)) }
+                        // D307: a favourite wears a heart in its top corner; the middle card's is a button
+                        group {
+                            show: c.fav or ad < 0.5
+                            ellipse { at: x - w / 2 + s + 18, top + 18; radius: 12; color: fl.ground; opacity: if(c.fav, 0.85, 0.5) }
+                            text "♥" { at: x - w / 2 + s + 18, top + 18; anchor: center; size: 13; family: "Exo 2"; color: if(c.fav, fl.ember, if(sfz.hover, fl.phos, fl.muted)) }
+                            zone box sfz { from: x - w / 2 + s + 4, top + 4; size: 28, 28; corner: 14; cursor: pointer; role: toggle; checked: c.fav; label: "Favourite"; show: ad < 0.5 }
+                            on press sfz { emit wl_fav }
+                        }
                         group {
                             show: c.live
                             box { from: x + w / 2 - s - 52, top + h - 24; size: 40, 16; corner: 2; color: fl.ember_fill; opacity: 0.9 }
@@ -754,5 +766,6 @@ scene Walls {
     on key Return while not typing { emit wl_wear(-1) }
     on key space while not typing { emit wl_prev }
     on key t while not typing { emit wl_tr }
+    on key f while not typing { emit wl_fav }
     on key r while not typing { emit wl_step(0.5) }
 }

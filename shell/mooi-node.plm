@@ -632,7 +632,8 @@ scene Node {
     text nd_wwind = ""
     text nd_wcity = ""
     text nd_wsum = ""
-    model wl max 9 { img: image 152, 86; on: bool; name: text }
+    model wl max 9 { img: image 152, 86; on: bool; name: text; fav: bool }
+    fact nd_wlfav = false   // D307: the wallpaper page shows only the favourites
     text nd_nq = ""
     // the shortcut sheet (D267): ten rows of what Hyprland has bound, a filter, how many more below
     model kb max 10 { keys: text; what: text }
@@ -1610,6 +1611,12 @@ scene Node {
                         text w.name { at: wx + 2, wy + ww * 0.5625 + 11; anchor: left center; size: 9; family: "Share Tech Mono"; color: if(w.on, nd_acc, fl.muted); width: ww - 4; lines: 1 }
                         zone box pwlz { from: wx, wy; size: ww, ww * 0.5625; corner: 10; cursor: pointer; role: item; label: "Wear {w.name}"; show: nd_kind == 13 and nd_pgp == 5 }
                         on press pwlz { emit nd_br(10 + w.index) }
+                        // D307: the heart, on a favourite always and on any picture under the pointer
+                        group { show: w.fav or pwlz.hover or pwfz.hover
+                            ellipse { at: wx + 14, wy + 14; radius: 10; color: fl.ground; opacity: 0.8 }
+                            text "♥" { at: wx + 14, wy + 14; anchor: center; size: 11; family: "Exo 2"; color: if(w.fav, nd_acc, if(pwfz.hover, fl.engrave, fl.muted)) } }
+                        zone box pwfz { from: wx + 2, wy + 2; size: 24, 24; corner: 12; cursor: pointer; role: toggle; checked: w.fav; label: "Favourite"; show: nd_kind == 13 and nd_pgp == 5 }
+                        on press pwfz { emit nd_br(30 + w.index) }
                         on scroll pwlz { emit nd_br(if(wheel > 0, 1, 2)) }
                     }
                     text "No pictures indexed yet — open the picker once (Super+W)" { at: nb_x + nb_w / 2, nb_y + 140; anchor: center; align: center; size: 11; family: "Exo 2"; color: fl.muted; show: wl.count == 0 }
@@ -1623,6 +1630,11 @@ scene Node {
                     text "󰁔  On" { at: nb_x + 92 + 70 / 2, nb_y + 418; anchor: center; align: center; size: 10; weight: 700; family: "CaskaydiaCove Nerd Font"; color: if(pwb2.hover, nd_acc, fl.engrave) }
                     zone box pwb2 { from: nb_x + 92, nb_y + 402; size: 70, 32; corner: 10; cursor: pointer; role: button; label: "On"; show: nd_kind == 13 and nd_pgp == 5 }
                     on press pwb2 { emit nd_br(2) }
+                    box { from: nb_x + 170, nb_y + 402; size: 84, 32; corner: 10; color: nd_acc; opacity: if(pwb5.hover, 0.16, if(nd_wlfav, 0.22, 0.06)) }
+                    box { from: nb_x + 170, nb_y + 402; size: 84, 32; corner: 10; stroke: 1; color: if(pwb5.hover, nd_acc, fl.trace_dim) }
+                    text "♥  Favs" { at: nb_x + 170 + 84 / 2, nb_y + 418; anchor: center; align: center; size: 10; weight: 700; family: "CaskaydiaCove Nerd Font"; color: if(pwb5.hover, nd_acc, fl.engrave) }
+                    zone box pwb5 { from: nb_x + 170, nb_y + 402; size: 84, 32; corner: 10; cursor: pointer; role: button; label: "Favs"; show: nd_kind == 13 and nd_pgp == 5 }
+                    on press pwb5 { emit nd_br(93) }
                     box { from: nb_x + nb_w - 232, nb_y + 402; size: 100, 32; corner: 10; color: nd_acc; opacity: if(pwb3.hover, 0.16, 0.06) }
                     box { from: nb_x + nb_w - 232, nb_y + 402; size: 100, 32; corner: 10; stroke: 1; color: if(pwb3.hover, nd_acc, fl.trace_dim) }
                     text "󰒝  Random" { at: nb_x + nb_w - 232 + 100 / 2, nb_y + 418; anchor: center; align: center; size: 10; weight: 700; family: "CaskaydiaCove Nerd Font"; color: if(pwb3.hover, nd_acc, fl.engrave) }
