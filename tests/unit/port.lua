@@ -922,3 +922,26 @@ do
         end
     end)
 end
+
+section("the clock face as a module, and meters for the readings (D308)")
+do
+    local LK = require("lib/node/look")
+    test("the clock seed's face can stand in the pill's list or either corner, in any form", function()
+        local found = false
+        for _, k in ipairs(LK.MODULES) do if k == "face" then found = true end end
+        assert(found, "a module"); eq(LK.MODULE_NAMES.face, "Clock face")
+        local t = LK.normalise({ modules = { "spaces", "face" }, seed = "orb" })
+        eq(LK.modules(t.modules)[2], "face")
+        local ok = LK.applicable(t, { key = "clock_style", desc = "x" })
+        eq(ok, true, "its style matters once a face is placed")
+        local t2 = LK.normalise({ modules = { "spaces" }, seed = "orb" })
+        eq((LK.applicable(t2, { key = "clock_style", desc = "x" })), false)
+    end)
+    test("the scene draws the face in the pill and both corners, and the meters", function()
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("show: nd_fxc >= 0", 1, true) and p:find("show: nd_fxl >= 0", 1, true) and p:find("show: nd_fxr >= 0", 1, true))
+        assert(p:find("model lm max 6 { kind: number; x: number; w: number; label: text; lv: number }", 1, true))
+        local lu = read("shell/mooi-node.luau")
+        assert(lu:find("lv = c / 100", 1, true) and lu:find("N.has_face", 1, true))
+    end)
+end

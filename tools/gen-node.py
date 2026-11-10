@@ -131,7 +131,7 @@ def scene():
           '    model ps max 6 { name: text; desc: text; on: bool; sw: number; sh: number; sr: number; seed: number }',
           '    model sl max 3 { label: text; full: bool }',
           '    model md max 6 { label: text }     // D257: the modules in the pill, in order',
-          '    model ma max 11 { label: text }    // …and those that can be added',
+          '    model ma max 12 { label: text }    // …and those that can be added (D308: twelve with the clock face)',
           '    prop nd_ld = 0 ~nd.aux', '    follow nd_ld = if(nd_kind == 6 and not nd_studio, 1, 0)',
           '    // universe',
           '    model un max 12 { i: number; n: text; apps: text; id: number; empty: bool }',
@@ -236,10 +236,11 @@ def scene():
           '    prop pb_open = 1', '    blink pb_open every 2.2s..7s for 170ms',
           '    prop pk_flow2 = 0', '    spin pk_flow2 by if(pb_asleep and nd_kind == 0 and nd_seed == 6, 8, 0)',
           '    // the long pill (D248): what it holds at rest, each a module laid out by the logic',
-          '    model lm max 5 { kind: number; x: number; w: number; label: text }',
+          '    model lm max 6 { kind: number; x: number; w: number; label: text; lv: number }',
+          '    fact nd_fxc = -1   // D308: where the clock face starts in the pill\'s modules, or -1', '    fact nd_fxl = -1', '    fact nd_fxr = -1',
           '    // the frame\'s corner notches (D295): the modules each holds, and how wide (0: none there)',
-          '    model lml max 6 { kind: number; x: number; w: number; label: text }',
-          '    model lmr max 6 { kind: number; x: number; w: number; label: text }',
+          '    model lml max 6 { kind: number; x: number; w: number; label: text; lv: number }',
+          '    model lmr max 6 { kind: number; x: number; w: number; label: text; lv: number }',
           '    fact nd_lw = 0', '    fact nd_rw = 0', '    fact nd_mside = 0',
           '    prop nd_lwk = 0 ~nd.aux', '    follow nd_lwk = nd_lw', '    prop nd_rwk = 0 ~nd.aux', '    follow nd_rwk = nd_rw',
           '    fact nd_lmws = 0', '    fact nd_lmwa = 0   // the workspaces: how many, which one is on (0-based)',
@@ -1166,6 +1167,25 @@ def panel_parts(c, acc, ink, dim, hull):
     return L
 
 
+def clock_face(c, ox, oy, show, ink, acc):
+    """D308: the clock seed's face — in the look's style — drawn with its top left at (ox, oy), 22 tall, so it can
+    stand among the modules of the pill or of a corner notch. Its width per style: lib's FACE_W."""
+    ws = "pick(nd_cks, 74, 62, 30, 170, 56, 86)"
+    L = [f'{c}group {{ show: {show}',
+         f'{c}    for q in ck {{ box {{ from: {ox} + 8 + q.x * 2, {oy} + 4 + q.y * 2; size: 1.6, 1.6; color: {acc}; opacity: 0.75 + 0.25 * nd_br; show: nd_cks == 0 }} }}',
+         f'{c}    text nd_ckd {{ at: {ox} + {ws} / 2, {oy} + 11; anchor: center; align: center; size: 13; weight: 700; family: {MONO}; color: {acc}; show: nd_cks == 1 }}',
+         f'{c}    group {{ show: nd_cks == 2',
+         f'{c}        ellipse {{ at: {ox} + 15, {oy} + 11; radius: 10; stroke: 1; color: {acc}; opacity: 0.5 }}',
+         f'{c}        line {{ from: {ox} + 15, {oy} + 11; to: {ox} + 15 + sin(nd_ckh) * 5, {oy} + 11 - cos(nd_ckh) * 5; width: 2; color: {ink} }}',
+         f'{c}        line {{ from: {ox} + 15, {oy} + 11; to: {ox} + 15 + sin(nd_ckm) * 8, {oy} + 11 - cos(nd_ckm) * 8; width: 1.4; color: {acc} }} }}',
+         f'{c}    text nd_ckw {{ at: {ox} + 85, {oy} + 11; anchor: center; align: center; size: 10; family: {SANS}; color: {ink}; width: 160; lines: 1; show: nd_cks == 3 }}']
+    L += [f'{c}    ellipse {{ at: {ox} + 9 + {i % 6} * 7.6, {oy} + 7 + {i // 6} * 8; radius: 2.2; color: if(nd_cb{i}, {acc}, fl.trace_dim); show: nd_cks == 4 }}' for i in range(12)]
+    L += [f'{c}    repeat dh in 0..12 {{ ellipse {{ at: {ox} + 8 + dh * 6.4, {oy} + 7; radius: 1.8; color: if(dh < nd_ckdh, {acc}, fl.trace_dim); show: nd_cks == 5 }} }}',
+          f'{c}    repeat dm in 0..12 {{ ellipse {{ at: {ox} + 8 + dm * 6.4, {oy} + 15; radius: 1.8; color: if(dm < nd_ckdm, {ink}, fl.trace_dim); show: nd_cks == 5 }} }}',
+          f'{c}}}']
+    return L
+
+
 def corner_notch(c, side, ink, dim, acc):
     """The frame's corner notch (D295; Minflair's Convex corners): flush in the screen's top-left or top-right
     corner, concave where it leaves each band, holding the modules the look gave that corner."""
@@ -1191,7 +1211,11 @@ def corner_notch(c, side, ink, dim, acc):
           f"{c}        repeat wsd in 0..10 {{ ellipse {{ at: mx + 4 + wsd * 12, 14; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, {acc}, {dim}); show: m.kind == 3 and wsd < nd_lmws }} }}",
           f"{c}        box {{ from: mx + m.w - 3, 9; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, {acc}); show: m.kind == 4 }}",
           f"{c}        ellipse {{ at: mx + 3, 14; radius: 2 + 2 * lv.level; color: {acc}; show: m.kind == 5 }}",
+          f"{c}        // D308: CPU, memory and volume carry a meter under their words",
+          f"{c}        box {{ from: mx, 21; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }}",
+          f"{c}        box {{ from: mx, 21; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, {acc}); show: m.lv >= 0 }}",
           f"{c}    }}",
+          ] + clock_face(c + "    ", f"({base} + nd_fx{side[0]})", "3", f"nd_fx{side[0]} >= 0", ink, acc) + [
           f'{c}    zone box {z} {{ from: {base}, 0; size: {W}, {H}; cursor: pointer; role: button; label: "Open the panel"; show: nd_kind == 0 and {W} > 1 }}',
           f"{c}    on press {z} {{ emit nd_cmd(1) }}",
           f"{c}}}"]
@@ -1335,7 +1359,11 @@ def surface():
           f'{c}            repeat wsd in 0..10 {{ ellipse {{ at: mx + 4 + wsd * 12, nb_y + nb_h / 2; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, {acc}, {dim}); show: m.kind == 3 and wsd < nd_lmws }} }}',
           f'{c}            box {{ from: mx + m.w - 3, nb_y + nb_h / 2 - 5; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, {acc}); show: m.kind == 4 }}',
           f'{c}            ellipse {{ at: mx + 3, nb_y + nb_h / 2; radius: 2 + 2 * lv.level; color: {acc}; show: m.kind == 5 }}',
+          f'{c}            // D308: CPU, memory and volume carry a meter under their words',
+          f'{c}            box {{ from: mx, nb_y + nb_h / 2 + 8; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }}',
+          f'{c}            box {{ from: mx, nb_y + nb_h / 2 + 8; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, {acc}); show: m.lv >= 0 }}',
           f'{c}        }}',
+          ] + clock_face(c + "        ", "(nb_x + nd_fxc)", "(nb_y + nb_h / 2 - 11)", "nd_fxc >= 0", ink, acc) + [
           f'{c}    }}',
           f'{c}}}',
           f'{c}// BMO as the seed (D253): his face on a small screen, quiet — no lines, only his expression; he sings to music',

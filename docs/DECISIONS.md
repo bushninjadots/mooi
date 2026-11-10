@@ -7903,3 +7903,19 @@ which each switcher watches, so a heart given in one shows in the others at once
 
 **Verified.** Gate green; unit tests for the list, the filter and that all three read and write the same file;
 every scene compiles. Not opened live: the owner was at the machine.
+
+## D308 · 2026-11-11 · The clock seed as a module, anywhere; meters on the Pill's readings
+
+The owner: "the clock seed should be able to be on [the Pill] with modules, in any form of the Pill, with any other
+modules — even the modules that split off from the Pill." The clock seed (D241/D255) was the seed itself, so it
+showed only when the Pill was a seed with no modules. It is now also a module, **Clock face**, the twelfth: added in
+the studio's module editor to the Pill's own list or to either corner notch (the modules that split off, D295), it
+draws the clock in the look's style (pixel, digits, hands, words, binary, dots) at its place among the others, in
+the long pill, the notch and the corners. The studio's Clock style row applies whenever a face is placed. The clock
+is kept current whenever a face is placed, not only with the clock seed.
+
+The owner also asked for "the visuals in the Pill for resources": CPU, Memory and Volume modules carry a thin meter
+under their words, in the accent, turning ember above 85 %.
+
+**Verified.** Unit 950 / 0 (the module, its style's applicability, the scene's three faces and the meters); the
+Pill compiles. Not seen live: the owner was at the machine.

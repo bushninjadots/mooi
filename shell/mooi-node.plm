@@ -455,7 +455,7 @@ scene Node {
     model ps max 6 { name: text; desc: text; on: bool; sw: number; sh: number; sr: number; seed: number }
     model sl max 3 { label: text; full: bool }
     model md max 6 { label: text }     // D257: the modules in the pill, in order
-    model ma max 11 { label: text }    // …and those that can be added
+    model ma max 12 { label: text }    // …and those that can be added (D308: twelve with the clock face)
     prop nd_ld = 0 ~nd.aux
     follow nd_ld = if(nd_kind == 6 and not nd_studio, 1, 0)
     // universe
@@ -723,10 +723,13 @@ scene Node {
     prop pk_flow2 = 0
     spin pk_flow2 by if(pb_asleep and nd_kind == 0 and nd_seed == 6, 8, 0)
     // the long pill (D248): what it holds at rest, each a module laid out by the logic
-    model lm max 5 { kind: number; x: number; w: number; label: text }
+    model lm max 6 { kind: number; x: number; w: number; label: text; lv: number }
+    fact nd_fxc = -1   // D308: where the clock face starts in the pill's modules, or -1
+    fact nd_fxl = -1
+    fact nd_fxr = -1
     // the frame's corner notches (D295): the modules each holds, and how wide (0: none there)
-    model lml max 6 { kind: number; x: number; w: number; label: text }
-    model lmr max 6 { kind: number; x: number; w: number; label: text }
+    model lml max 6 { kind: number; x: number; w: number; label: text; lv: number }
+    model lmr max 6 { kind: number; x: number; w: number; label: text; lv: number }
     fact nd_lw = 0
     fact nd_rw = 0
     fact nd_mside = 0
@@ -958,6 +961,32 @@ scene Node {
                 repeat wsd in 0..10 { ellipse { at: mx + 4 + wsd * 12, 14; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, nd_acc, fl.muted); show: m.kind == 3 and wsd < nd_lmws } }
                 box { from: mx + m.w - 3, 9; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, nd_acc); show: m.kind == 4 }
                 ellipse { at: mx + 3, 14; radius: 2 + 2 * lv.level; color: nd_acc; show: m.kind == 5 }
+                // D308: CPU, memory and volume carry a meter under their words
+                box { from: mx, 21; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }
+                box { from: mx, 21; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, nd_acc); show: m.lv >= 0 }
+            }
+            group { show: nd_fxl >= 0
+                for q in ck { box { from: (0 + nd_fxl) + 8 + q.x * 2, 3 + 4 + q.y * 2; size: 1.6, 1.6; color: nd_acc; opacity: 0.75 + 0.25 * nd_br; show: nd_cks == 0 } }
+                text nd_ckd { at: (0 + nd_fxl) + pick(nd_cks, 74, 62, 30, 170, 56, 86) / 2, 3 + 11; anchor: center; align: center; size: 13; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_cks == 1 }
+                group { show: nd_cks == 2
+                    ellipse { at: (0 + nd_fxl) + 15, 3 + 11; radius: 10; stroke: 1; color: nd_acc; opacity: 0.5 }
+                    line { from: (0 + nd_fxl) + 15, 3 + 11; to: (0 + nd_fxl) + 15 + sin(nd_ckh) * 5, 3 + 11 - cos(nd_ckh) * 5; width: 2; color: fl.engrave }
+                    line { from: (0 + nd_fxl) + 15, 3 + 11; to: (0 + nd_fxl) + 15 + sin(nd_ckm) * 8, 3 + 11 - cos(nd_ckm) * 8; width: 1.4; color: nd_acc } }
+                text nd_ckw { at: (0 + nd_fxl) + 85, 3 + 11; anchor: center; align: center; size: 10; family: "Exo 2"; color: fl.engrave; width: 160; lines: 1; show: nd_cks == 3 }
+                ellipse { at: (0 + nd_fxl) + 9 + 0 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb0, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 1 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb1, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 2 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb2, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 3 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb3, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 4 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb4, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 5 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb5, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 0 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb6, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 1 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb7, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 2 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb8, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 3 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb9, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 4 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb10, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (0 + nd_fxl) + 9 + 5 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb11, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                repeat dh in 0..12 { ellipse { at: (0 + nd_fxl) + 8 + dh * 6.4, 3 + 7; radius: 1.8; color: if(dh < nd_ckdh, nd_acc, fl.trace_dim); show: nd_cks == 5 } }
+                repeat dm in 0..12 { ellipse { at: (0 + nd_fxl) + 8 + dm * 6.4, 3 + 15; radius: 1.8; color: if(dm < nd_ckdm, fl.engrave, fl.trace_dim); show: nd_cks == 5 } }
             }
             zone box ndz_lc { from: 0, 0; size: nd_lwk, 28; cursor: pointer; role: button; label: "Open the panel"; show: nd_kind == 0 and nd_lwk > 1 }
             on press ndz_lc { emit nd_cmd(1) }
@@ -990,6 +1019,32 @@ scene Node {
                 repeat wsd in 0..10 { ellipse { at: mx + 4 + wsd * 12, 14; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, nd_acc, fl.muted); show: m.kind == 3 and wsd < nd_lmws } }
                 box { from: mx + m.w - 3, 9; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, nd_acc); show: m.kind == 4 }
                 ellipse { at: mx + 3, 14; radius: 2 + 2 * lv.level; color: nd_acc; show: m.kind == 5 }
+                // D308: CPU, memory and volume carry a meter under their words
+                box { from: mx, 21; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }
+                box { from: mx, 21; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, nd_acc); show: m.lv >= 0 }
+            }
+            group { show: nd_fxr >= 0
+                for q in ck { box { from: (node.width - nd_rwk + nd_fxr) + 8 + q.x * 2, 3 + 4 + q.y * 2; size: 1.6, 1.6; color: nd_acc; opacity: 0.75 + 0.25 * nd_br; show: nd_cks == 0 } }
+                text nd_ckd { at: (node.width - nd_rwk + nd_fxr) + pick(nd_cks, 74, 62, 30, 170, 56, 86) / 2, 3 + 11; anchor: center; align: center; size: 13; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_cks == 1 }
+                group { show: nd_cks == 2
+                    ellipse { at: (node.width - nd_rwk + nd_fxr) + 15, 3 + 11; radius: 10; stroke: 1; color: nd_acc; opacity: 0.5 }
+                    line { from: (node.width - nd_rwk + nd_fxr) + 15, 3 + 11; to: (node.width - nd_rwk + nd_fxr) + 15 + sin(nd_ckh) * 5, 3 + 11 - cos(nd_ckh) * 5; width: 2; color: fl.engrave }
+                    line { from: (node.width - nd_rwk + nd_fxr) + 15, 3 + 11; to: (node.width - nd_rwk + nd_fxr) + 15 + sin(nd_ckm) * 8, 3 + 11 - cos(nd_ckm) * 8; width: 1.4; color: nd_acc } }
+                text nd_ckw { at: (node.width - nd_rwk + nd_fxr) + 85, 3 + 11; anchor: center; align: center; size: 10; family: "Exo 2"; color: fl.engrave; width: 160; lines: 1; show: nd_cks == 3 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 0 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb0, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 1 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb1, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 2 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb2, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 3 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb3, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 4 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb4, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 5 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb5, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 0 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb6, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 1 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb7, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 2 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb8, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 3 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb9, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 4 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb10, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 5 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb11, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                repeat dh in 0..12 { ellipse { at: (node.width - nd_rwk + nd_fxr) + 8 + dh * 6.4, 3 + 7; radius: 1.8; color: if(dh < nd_ckdh, nd_acc, fl.trace_dim); show: nd_cks == 5 } }
+                repeat dm in 0..12 { ellipse { at: (node.width - nd_rwk + nd_fxr) + 8 + dm * 6.4, 3 + 15; radius: 1.8; color: if(dm < nd_ckdm, fl.engrave, fl.trace_dim); show: nd_cks == 5 } }
             }
             zone box ndz_rc { from: node.width - nd_rwk, 0; size: nd_rwk, 28; cursor: pointer; role: button; label: "Open the panel"; show: nd_kind == 0 and nd_rwk > 1 }
             on press ndz_rc { emit nd_cmd(1) }
@@ -1056,6 +1111,32 @@ scene Node {
                     repeat wsd in 0..10 { ellipse { at: mx + 4 + wsd * 12, nb_y + nb_h / 2; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, nd_acc, fl.muted); show: m.kind == 3 and wsd < nd_lmws } }
                     box { from: mx + m.w - 3, nb_y + nb_h / 2 - 5; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, nd_acc); show: m.kind == 4 }
                     ellipse { at: mx + 3, nb_y + nb_h / 2; radius: 2 + 2 * lv.level; color: nd_acc; show: m.kind == 5 }
+                    // D308: CPU, memory and volume carry a meter under their words
+                    box { from: mx, nb_y + nb_h / 2 + 8; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }
+                    box { from: mx, nb_y + nb_h / 2 + 8; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, nd_acc); show: m.lv >= 0 }
+                }
+                group { show: nd_fxc >= 0
+                    for q in ck { box { from: (nb_x + nd_fxc) + 8 + q.x * 2, (nb_y + nb_h / 2 - 11) + 4 + q.y * 2; size: 1.6, 1.6; color: nd_acc; opacity: 0.75 + 0.25 * nd_br; show: nd_cks == 0 } }
+                    text nd_ckd { at: (nb_x + nd_fxc) + pick(nd_cks, 74, 62, 30, 170, 56, 86) / 2, (nb_y + nb_h / 2 - 11) + 11; anchor: center; align: center; size: 13; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_cks == 1 }
+                    group { show: nd_cks == 2
+                        ellipse { at: (nb_x + nd_fxc) + 15, (nb_y + nb_h / 2 - 11) + 11; radius: 10; stroke: 1; color: nd_acc; opacity: 0.5 }
+                        line { from: (nb_x + nd_fxc) + 15, (nb_y + nb_h / 2 - 11) + 11; to: (nb_x + nd_fxc) + 15 + sin(nd_ckh) * 5, (nb_y + nb_h / 2 - 11) + 11 - cos(nd_ckh) * 5; width: 2; color: fl.engrave }
+                        line { from: (nb_x + nd_fxc) + 15, (nb_y + nb_h / 2 - 11) + 11; to: (nb_x + nd_fxc) + 15 + sin(nd_ckm) * 8, (nb_y + nb_h / 2 - 11) + 11 - cos(nd_ckm) * 8; width: 1.4; color: nd_acc } }
+                    text nd_ckw { at: (nb_x + nd_fxc) + 85, (nb_y + nb_h / 2 - 11) + 11; anchor: center; align: center; size: 10; family: "Exo 2"; color: fl.engrave; width: 160; lines: 1; show: nd_cks == 3 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 0 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb0, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 1 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb1, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 2 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb2, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 3 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb3, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 4 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb4, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 5 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb5, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 0 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb6, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 1 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb7, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 2 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb8, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 3 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb9, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 4 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb10, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    ellipse { at: (nb_x + nd_fxc) + 9 + 5 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb11, nd_acc, fl.trace_dim); show: nd_cks == 4 }
+                    repeat dh in 0..12 { ellipse { at: (nb_x + nd_fxc) + 8 + dh * 6.4, (nb_y + nb_h / 2 - 11) + 7; radius: 1.8; color: if(dh < nd_ckdh, nd_acc, fl.trace_dim); show: nd_cks == 5 } }
+                    repeat dm in 0..12 { ellipse { at: (nb_x + nd_fxc) + 8 + dm * 6.4, (nb_y + nb_h / 2 - 11) + 15; radius: 1.8; color: if(dm < nd_ckdm, fl.engrave, fl.trace_dim); show: nd_cks == 5 } }
                 }
             }
         }

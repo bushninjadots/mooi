@@ -6360,7 +6360,7 @@ do
         eq(row(seed, "Shape", "seed_w").off, false, "…and sized")
         eq(row(seed, "Motion", "breath").off, false, "…and breathe")
         eq(row(seed, "Pill", "clock_style").off, true, "only the clock seed tells the time")
-        eq(row(seed, "Pill", "clock_style").why, "Only the clock seed tells the time.")
+        eq(row(seed, "Pill", "clock_style").why, "Only the clock seed or a Clock face module tells the time.")
         eq(row(seed, "Music", "viz").off, false, "the capsule's visualiser")
         eq(row(seed, "Music", "cover").off, false, "its cover")
         local clock = LK.preset("organic"); clock.seed = "clock"

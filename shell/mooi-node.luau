@@ -318,12 +318,12 @@ local function clock_draw()
     elseif style == "dots" then local d = CS.dots(t.hour, t.min); fact.nd_ckdh, fact.nd_ckdm = d.hours, d.minutes end
 end
 every(5000, function()
-    if N.look.seed ~= "clock" then clock_str = nil; return end
+    if N.look.seed ~= "clock" and not (N.has_face and N.has_face()) then clock_str = nil; return end
     -- words turn at the half minute; the others on the minute
     local key = N.look.clock_style == "words" and os.date("%H:%M") .. (tonumber(os.date("%S")) >= 30 and "+" or "") or os.date("%H:%M")
     if key ~= clock_str then clock_draw(); clock_str = key end
 end)
-N.clock_now = function() clock_str = nil; if N.look.seed == "clock" then clock_draw() end end
+N.clock_now = function() clock_str = nil; if N.look.seed == "clock" or (N.has_face and N.has_face()) then clock_draw() end end
 N.clock_now()
 -- the readout as the matrix's lit cells, written only when what it says changes
 local px_str
@@ -1216,7 +1216,9 @@ end)
 -- ── the long pill (D248): the modules the look chose, laid out left to right, the pill as wide as they are ──
 N.awin = ""
 local MOD_KIND = { clock = 1, window = 2, spaces = 3, battery = 4, music = 5, date = 6, cpu = 7, ram = 8,
-                   volume = 9, weather = 10, notices = 11 }
+                   volume = 9, weather = 10, notices = 11, face = 12 }
+-- D308: the clock face (the clock seed as a module) is as wide as its style draws it
+local FACE_W = { pixel = 74, digital = 62, analog = 30, words = 170, binary = 56, dots = 86 }
 -- the weather the Nexus last read (nexus-weather.json), for the weather module
 local function weather_word()
     local w = read("nexus-weather.json", "json")
@@ -1224,15 +1226,17 @@ local function weather_word()
     local t = type(cur) == "table" and tonumber(cur.temperature_2m)
     return t and (math.floor(t + 0.5) .. "°") or ""
 end
--- the modules of one list laid out left to right from x = 14 (D295: the pill's own, or a corner notch's)
+-- the modules of one list laid out left to right from x = 14 (D295: the pill's own, or a corner notch's); the
+-- second answer is where the clock face starts in it, or -1 (D308); `lv` is a meter's level (D308)
 local function lay_modules(list)
-    local x, rows = 14, {}
+    local x, rows, face = 14, {}, -1
     local f = type(N.feed.resources) == "table" and N.feed.resources or {}
     local function pct(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v * 100 or v end
     for _, name in ipairs(LK.modules(list)) do
         local kind = MOD_KIND[name]
-        local w, label = 0, ""
+        local w, label, lv = 0, "", -1
         if kind == 1 then w, label = 40, os.date("%H:%M")
+        elseif kind == 12 then w = FACE_W[N.look.clock_style or "pixel"] or 74; face = x - 8
         elseif kind == 2 then label = N.awin ~= "" and N.awin or "Desktop"; w = math.min(190, #label * 6 + 6)
         elseif kind == 3 then
             local n = math.min(10, #N.ws.list)
@@ -1246,26 +1250,36 @@ local function lay_modules(list)
         elseif kind == 5 then
             if N.media.playing and N.media.title ~= "" then label = N.media.title; w = math.min(160, #label * 6 + 16) end
         elseif kind == 6 then label = string.upper(os.date("%a %d")); w = 50
-        elseif kind == 7 then local c = pct(f.cpu); if c then label = "CPU " .. math.floor(c + 0.5) .. "%"; w = 62 end
-        elseif kind == 8 then local m = pct(f.mem); if m then label = "RAM " .. math.floor(m + 0.5) .. "%"; w = 62 end
-        elseif kind == 9 then if N.vol then label = "VOL " .. math.floor(N.vol * 100 + 0.5) .. "%"; w = 62 end
+        elseif kind == 7 then local c = pct(f.cpu); if c then label = "CPU " .. math.floor(c + 0.5) .. "%"; w = 62; lv = c / 100 end
+        elseif kind == 8 then local m = pct(f.mem); if m then label = "RAM " .. math.floor(m + 0.5) .. "%"; w = 62; lv = m / 100 end
+        elseif kind == 9 then if N.vol then label = "VOL " .. math.floor(N.vol * 100 + 0.5) .. "%"; w = 62; lv = N.vol end
         elseif kind == 10 then label = weather_word(); if label ~= "" then w = 34 end
         elseif kind == 11 then if #N.notices > 0 then label = #N.notices .. " NEW"; w = 46 end
         end
-        if w > 0 then rows[#rows + 1] = { kind = kind, x = x, w = w, label = label }; x = x + w + 12 end
+        if w > 0 then rows[#rows + 1] = { kind = kind, x = x, w = w, label = label, lv = math.max(-1, math.min(1, lv)) }; x = x + w + 12 end
     end
-    return rows, x
+    return rows, x, face
 end
+-- whether any list holds the clock face (so the clock is kept up to date without the clock seed)
+local function has_face()
+    for _, side in ipairs({ "modules", "left", "right" }) do
+        for _, k in ipairs(LK.modules(N.look[side])) do if k == "face" then return true end end
+    end
+    return false
+end
+N.has_face = has_face
 N.long_layout = function()
-    local rows, x = lay_modules(N.look.modules)
+    local rows, x, face = lay_modules(N.look.modules)
     model.lm = rows
+    fact.nd_fxc = face
     return math.max(40, x + 2)
 end
 -- D295: the corner notches, each as wide as what it holds (none, none); laid out on every render
 N.corner_layout = function()
-    local lr, lx = lay_modules(N.look.left)
-    local rr, rx = lay_modules(N.look.right)
+    local lr, lx, lf = lay_modules(N.look.left)
+    local rr, rx, rf = lay_modules(N.look.right)
     model.lml, model.lmr = lr, rr
+    fact.nd_fxl, fact.nd_fxr = lf, rf
     fact.nd_lw = #lr > 0 and lx + 4 or 0
     fact.nd_rw = #rr > 0 and rx + 4 or 0
 end

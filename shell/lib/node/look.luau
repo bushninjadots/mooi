@@ -232,8 +232,15 @@ local function applicable(t, row)
         if form ~= "seed" then return false, seedless end
     end
     if row.key == "clock_style" then
-        if form ~= "seed" then return false, seedless end
-        if t.seed ~= "clock" then return false, "Only the clock seed tells the time." end
+        -- D308: a clock face placed in any list (the pill's or a corner's) wears this style too
+        local faced = false
+        for _, side in ipairs({ "modules", "left", "right" }) do
+            for _, k in ipairs(type(t[side]) == "table" and t[side] or {}) do if k == "face" then faced = true end end
+        end
+        if not faced then
+            if form ~= "seed" then return false, "Add the Clock face module, or use the clock seed." end
+            if t.seed ~= "clock" then return false, "Only the clock seed or a Clock face module tells the time." end
+        end
     end
     if row.key == "top" and t.place == "attached" then return false, "Attached, its top is the frame's." end
     if row.key == "round" and form == "notch" then return false, "A notch takes its corners from the frame." end
@@ -258,10 +265,10 @@ function M.rows(t, tab)
 end
 
 -- the modules a long pill or a notch can hold (D257), and the word each wears in the studio
-M.MODULES = { "spaces", "window", "music", "clock", "date", "battery", "cpu", "ram", "volume", "weather", "notices" }
+M.MODULES = { "spaces", "window", "music", "clock", "date", "battery", "cpu", "ram", "volume", "weather", "notices", "face" }
 M.MODULE_NAMES = { spaces = "Workspaces", window = "Window", music = "Music", clock = "Clock", date = "Date",
                    battery = "Battery", cpu = "CPU", ram = "Memory", volume = "Volume", weather = "Weather",
-                   notices = "Notices" }
+                   notices = "Notices", face = "Clock face" }   -- D308: the clock seed as a module, in any list
 M.MODULES_MAX = 6
 M.MODULES_DEFAULT = { "spaces", "window", "music", "clock" }
 -- a list made sane: known names, each once, at most MODULES_MAX, in the order given (none is none: a seed)
