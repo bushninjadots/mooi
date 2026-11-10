@@ -7738,3 +7738,22 @@ new at rest. The studio's chips narrow when a choice has more than seven (Seed h
 
 **Verified.** Unit 938 / 0; the scene compiles; live in the studio: Liquid's glass capsule with its shimmer, and
 Neon's tube growing its notice cards; the owner's look was put back afterwards.
+
+## D297 · 2026-11-10 · More effects in the shell: four window pairs, four workspace transitions
+
+The owner asked for "more effects in shell". Settings → Windows → **Open and close** (HyprWindowShade's one-shot
+shaders) gains four pairs beside Phosphor, Glitch and Iris: **Liquid** (the window rises through a ripple that
+settles, and melts away downwards in drips), **Pixel** (it comes into focus out of big blocks, and breaks back into
+them), **Fold** (it unfolds from its top edge like paper, and folds back up) and **Dust** (it gathers out of drifting
+grains, and blows away into them from the left). As the plugin requires, every closing shader reaches alpha 0 at the
+end and every opening one ends on the window's own pixels.
+
+Settings → Overview → **Transition shader** (the screen shader over a workspace switch) gains **Ripple** (rings of
+water from the middle, the swap under the crest), **Portal** (the picture swirls into a lit eye and out),
+**Shatter** (shards slide apart, edges lit, and close) and **Blocks** (the screen coarsens into lit blocks that hold
+the swap, then sharpens). Each is invisible at its start and end. Choices of more than eight draw their chips
+narrower so the row keeps its words.
+
+**Verified.** Unit 939 / 0; every window shader (14) and transition (10) compiles under `glslangValidator`, now a
+unit test where it is installed; the Settings scene compiles. Not seen live: wearing one changes the owner's own
+window and workspace effects, which are theirs to choose.

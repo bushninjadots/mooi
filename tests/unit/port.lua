@@ -770,3 +770,30 @@ do
         assert(p:find("model ps max 6", 1, true) and p:find("zone box sko8", 1, true))
     end)
 end
+
+section("more effects in the shell: four window pairs and four workspace transitions (D297)")
+do
+    local WF, WS = require("lib/wfx"), require("lib/wsfx")
+    test("every window pair and every transition is offered, and compiles (where glslangValidator is installed)", function()
+        eq(#WF.PAIRS, 7); for _, k in ipairs({ "liquid", "pixel", "fold", "dust" }) do assert(WF.pair(k), k) end
+        for _, k in ipairs({ "ripple", "portal", "shatter", "blocks" }) do assert(WS.glsl(k, {}), k) end
+        local cfg = require("lib/config")
+        local ok = io.popen("command -v glslangValidator 2>/dev/null"); local have = ok:read("a"); ok:close()
+        if have == "" then return end
+        local dir = os.tmpname(); os.remove(dir); os.execute("mkdir -p " .. dir)
+        local files = {}
+        for _, k in ipairs(WF.PAIRS) do
+            local p = WF.pair(k, {})
+            files[#files + 1] = { dir .. "/w-" .. k .. "-o.frag", p.open }; files[#files + 1] = { dir .. "/w-" .. k .. "-c.frag", p.close }
+        end
+        for k in pairs(WS.KINDS) do files[#files + 1] = { dir .. "/s-" .. k .. ".frag", WS.glsl(k, {}) } end
+        for _, f in ipairs(files) do
+            local h = io.open(f[1], "w"); h:write(f[2]); h:close()
+            assert(os.execute("glslangValidator -S frag " .. f[1] .. " >/dev/null 2>&1"), f[1] .. " compiles")
+        end
+        os.execute("rm -rf " .. dir)
+        local found = false
+        for _, row in ipairs(cfg.SCHEMA) do if row.path == "desktop.ws_fx" then found = #row.values == 11 end end
+        assert(found, "eleven transition choices")
+    end)
+end

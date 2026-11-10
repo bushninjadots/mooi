@@ -286,7 +286,7 @@ M.SCHEMA = {
     -- switch, and naming a kind is what turns it on. Hyprland's screen shader (lib/wsfx writes it,
     -- bin/mooi ws-fx applies it at each workspace change) runs for the length of that move and is
     -- put back after; a screen shader of your own — hyprshade's and the like — is never replaced.
-    { path = "desktop.ws_fx", kind = "enum", values = { "off", "channel", "circuit", "stretch", "halftone", "board", "sigil" }, default = "off" },
+    { path = "desktop.ws_fx", kind = "enum", values = { "off", "channel", "circuit", "stretch", "halftone", "board", "sigil", "ripple", "portal", "shatter", "blocks" }, default = "off" },
     -- how long that transition runs, as a share of its own length (100 is as designed); both the
     -- shader's clock and the length `mooi ws-fx` holds it for are stretched, so they cannot drift
     { path = "desktop.ws_fx_speed", kind = "integer", default = 100, min = 50, max = 200 },
@@ -295,7 +295,7 @@ M.SCHEMA = {
     -- (in the palette) plus the two window rules in front of them. It plays only where the
     -- HyprWindowShade plugin is loaded — without it the rules are names nothing reads, and the
     -- windows animate exactly as Hyprland says.
-    { path = "desktop.window_fx", kind = "enum", values = { "off", "phosphor", "glitch", "iris" }, default = "off" },
+    { path = "desktop.window_fx", kind = "enum", values = { "off", "phosphor", "glitch", "iris", "liquid", "pixel", "fold", "dust" }, default = "off" },
     -- how long that pair runs, as a share of its own lengths (100 is as designed)
     { path = "desktop.window_fx_speed", kind = "integer", default = 100, min = 50, max = 200 },
     -- and whether a terminal and a browser keep a pair of their own (lib/wfx `APPS`)

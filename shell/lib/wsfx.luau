@@ -25,6 +25,11 @@ M.KINDS = {
     halftone = { dur = 0.78 },  -- the picture goes to print in dots, a wave from the left, and comes back whole
     board = { dur = 0.85 },     -- the picture becomes a circuit cell by cell: copper rows and columns, pads, signals running the wires
     sigil = { dur = 0.90 },     -- the picture winds round the middle and folds into six, and a turning seal of dashes holds the swap
+    -- D297: four more
+    ripple = { dur = 0.80 },    -- a ring of water runs out from the middle, the swap under its crest, and the water stills
+    portal = { dur = 0.85 },    -- the picture swirls into the middle and out again, a lit ring at the eye
+    shatter = { dur = 0.75 },   -- the screen breaks into shards that slide and light at their edges, and close again
+    blocks = { dur = 0.60 },    -- the screen coarsens into lit blocks that hold the swap, then sharpens back
 }
 
 local function rgb(hex, fallback)
@@ -255,9 +260,79 @@ void main() {
 }
 ]]
 
+
+-- D297: ripple — rings out of the middle bend the picture; the swap happens under the tallest crest.
+local RIPPLE = [[
+void main() {
+    float t = clamp(time / DUR, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float k = sin(3.14159 * t);
+    vec2 d = (uv - 0.5) * vec2(screen_size.x / screen_size.y, 1.0);
+    float r = length(d);
+    float wave = sin(r * 42.0 - t * 30.0) * exp(-r * 2.2) * k;
+    vec2 q = uv + normalize(d + 1e-5) * wave * 0.035;
+    vec3 c = texture(tex, clamp(q, 0.0, 1.0)).rgb;
+    c += PHOS * max(0.0, wave) * 0.45;
+    c = mix(c, c * 0.6 + PHOS * 0.25, smoothstep(0.35, 0.5, k) * smoothstep(0.65, 0.5, abs(t - 0.5) + 0.5) * 0.4);
+    fragColor = vec4(c, 1.0);
+}
+]]
+
+-- D297: portal — the picture turns into the middle, darkening to a lit eye at the half, and turns back out.
+local PORTAL = [[
+void main() {
+    float t = clamp(time / DUR, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float k = sin(3.14159 * t);
+    vec2 d = (uv - 0.5) * vec2(screen_size.x / screen_size.y, 1.0);
+    float r = length(d);
+    float a = atan(d.y, d.x) + k * 5.0 * exp(-r * 1.6);
+    float rr = r * (1.0 + k * 1.4);
+    vec2 q = vec2(cos(a), sin(a)) * rr / vec2(screen_size.x / screen_size.y, 1.0) + 0.5;
+    vec3 c = texture(tex, clamp(q, 0.0, 1.0)).rgb * (1.0 - k * smoothstep(0.0, 0.9, r) * 0.9);
+    c += PHOS * exp(-pow((r - 0.12 * k) * 30.0, 2.0)) * k * 1.2;
+    fragColor = vec4(c, 1.0);
+}
+]]
+
+-- D297: shatter — cells of a jittered grid slide apart along their own way, edges lit, and close back.
+local SHATTER = [[
+void main() {
+    float t = clamp(time / DUR, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float k = sin(3.14159 * t);
+    vec2 g = uv * vec2(9.0, 9.0 * screen_size.y / screen_size.x);
+    vec2 cell = floor(g + 0.15 * vec2(sin(g.y * 3.1), cos(g.x * 2.7)));
+    vec2 dir = vec2(hash(cell) - 0.5, hash(cell + 3.3) - 0.5);
+    vec2 q = uv - dir * 0.12 * k;
+    vec3 c = texture(tex, clamp(q, 0.0, 1.0)).rgb * (1.0 - 0.45 * k);
+    vec2 f = fract(g + 0.15 * vec2(sin(g.y * 3.1), cos(g.x * 2.7)));
+    float edge = 1.0 - smoothstep(0.0, 0.05, min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y)));
+    c += mix(PHOS, EMBER, hash(cell + 7.0)) * edge * k * 0.9;
+    fragColor = vec4(c, 1.0);
+}
+]]
+
+-- D297: blocks — the screen coarsens into blocks lit by their own colour, holds, then sharpens again.
+local BLOCKS = [[
+void main() {
+    float t = clamp(time / DUR, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float k = sin(3.14159 * t);
+    float cells = mix(screen_size.x, 24.0, pow(k, 0.6));
+    vec2 grid = vec2(cells, cells * screen_size.y / screen_size.x);
+    vec2 q = k > 0.01 ? (floor(uv * grid) + 0.5) / grid : uv;
+    vec3 c = texture(tex, q).rgb;
+    vec2 f = fract(uv * grid);
+    float edge = step(0.92, max(f.x, f.y)) * smoothstep(0.3, 0.8, k);
+    c = mix(c, c * 0.7 + PHOS * 0.2, smoothstep(0.4, 1.0, k) * 0.5) + PHOS * edge * 0.35;
+    fragColor = vec4(c, 1.0);
+}
+]]
+
 local BODY = {
     channel = CHANNEL, circuit = CIRCUIT, stretch = STRETCH, halftone = HALFTONE,
-    board = BOARD, sigil = SIGIL,
+    board = BOARD, sigil = SIGIL, ripple = RIPPLE, portal = PORTAL, shatter = SHATTER, blocks = BLOCKS,
 }
 
 -- The shader for `kind` in the palette `pal` ({ phos, ember, trace } as #rrggbb); nil for a kind

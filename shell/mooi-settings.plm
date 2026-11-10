@@ -4003,13 +4003,17 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_4_39 - 2452
-                    SRow(2452, "Open and close", "A window's arrival and exit as a shader, in the bar's colours. Off is Hyprland's own animation; a pair plays where the HyprWindowShade plugin is loaded", true, "", 374, false)
-                    STrack(698, 2468, 440)
-                    SChoice(698, 2468, 110, "Off", sv_desktop_window_fx == 0, set_value, 411000)
-                    SChoice(808, 2468, 110, "Phosphor", sv_desktop_window_fx == 1, set_value, 411001)
-                    SChoice(918, 2468, 110, "Glitch", sv_desktop_window_fx == 2, set_value, 411002)
-                    SChoice(1028, 2468, 110, "Iris", sv_desktop_window_fx == 3, set_value, 411003)
-                    SRevert(668, 2482, sv_desktop_window_fx != df_desktop_window_fx, set_value, 411000 + df_desktop_window_fx)
+                    SRow(2452, "Open and close", "A window's arrival and exit as a shader, in the bar's colours. Off is Hyprland's own animation; a pair plays where the HyprWindowShade plugin is loaded", true, "", 254, false)
+                    STrack(578, 2468, 560)
+                    SChoice(578, 2468, 70, "Off", sv_desktop_window_fx == 0, set_value, 411000)
+                    SChoice(648, 2468, 70, "Phosphor", sv_desktop_window_fx == 1, set_value, 411001)
+                    SChoice(718, 2468, 70, "Glitch", sv_desktop_window_fx == 2, set_value, 411002)
+                    SChoice(788, 2468, 70, "Iris", sv_desktop_window_fx == 3, set_value, 411003)
+                    SChoice(858, 2468, 70, "Liquid", sv_desktop_window_fx == 4, set_value, 411004)
+                    SChoice(928, 2468, 70, "Pixel", sv_desktop_window_fx == 5, set_value, 411005)
+                    SChoice(998, 2468, 70, "Fold", sv_desktop_window_fx == 6, set_value, 411006)
+                    SChoice(1068, 2468, 70, "Dust", sv_desktop_window_fx == 7, set_value, 411007)
+                    SRevert(548, 2482, sv_desktop_window_fx != df_desktop_window_fx, set_value, 411000 + df_desktop_window_fx)
                 }
                 group {
                     show: sv_desktop_window_fx != 0
@@ -4033,16 +4037,20 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_4_43 - 2698
-                    SRow(2698, "Transition shader", "mooi's own, laid over the switch itself for the length of the move; Off is the switch. It runs while mooi's theme watch does", true, "", 324, false)
-                    STrack(648, 2714, 490)
-                    SChoice(648, 2714, 70, "Off", sv_desktop_ws_fx == 0, set_value, 410000)
-                    SChoice(718, 2714, 70, "Channel", sv_desktop_ws_fx == 1, set_value, 410001)
-                    SChoice(788, 2714, 70, "Circuit", sv_desktop_ws_fx == 2, set_value, 410002)
-                    SChoice(858, 2714, 70, "Stretch", sv_desktop_ws_fx == 3, set_value, 410003)
-                    SChoice(928, 2714, 70, "Halftone", sv_desktop_ws_fx == 4, set_value, 410004)
-                    SChoice(998, 2714, 70, "Board", sv_desktop_ws_fx == 5, set_value, 410005)
-                    SChoice(1068, 2714, 70, "Sigil", sv_desktop_ws_fx == 6, set_value, 410006)
-                    SRevert(618, 2728, sv_desktop_ws_fx != df_desktop_ws_fx, set_value, 410000 + df_desktop_ws_fx)
+                    SRow(2698, "Transition shader", "mooi's own, laid over the switch itself for the length of the move; Off is the switch. It runs while mooi's theme watch does", true, "", 160, false)
+                    STrack(456, 2714, 682)
+                    SChoice(456, 2714, 62, "Off", sv_desktop_ws_fx == 0, set_value, 410000)
+                    SChoice(518, 2714, 62, "Channel", sv_desktop_ws_fx == 1, set_value, 410001)
+                    SChoice(580, 2714, 62, "Circuit", sv_desktop_ws_fx == 2, set_value, 410002)
+                    SChoice(642, 2714, 62, "Stretch", sv_desktop_ws_fx == 3, set_value, 410003)
+                    SChoice(704, 2714, 62, "Halftone", sv_desktop_ws_fx == 4, set_value, 410004)
+                    SChoice(766, 2714, 62, "Board", sv_desktop_ws_fx == 5, set_value, 410005)
+                    SChoice(828, 2714, 62, "Sigil", sv_desktop_ws_fx == 6, set_value, 410006)
+                    SChoice(890, 2714, 62, "Ripple", sv_desktop_ws_fx == 7, set_value, 410007)
+                    SChoice(952, 2714, 62, "Portal", sv_desktop_ws_fx == 8, set_value, 410008)
+                    SChoice(1014, 2714, 62, "Shatter", sv_desktop_ws_fx == 9, set_value, 410009)
+                    SChoice(1076, 2714, 62, "Blocks", sv_desktop_ws_fx == 10, set_value, 410010)
+                    SRevert(426, 2728, sv_desktop_ws_fx != df_desktop_ws_fx, set_value, 410000 + df_desktop_ws_fx)
                 }
                 group {
                     show: sv_desktop_ws_fx != 0

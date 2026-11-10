@@ -20,8 +20,13 @@ M.KINDS = {
     phosphor = { open = 0.34, close = 0.36 },   -- the window wakes out of a lit line, and goes out into one
     glitch = { open = 0.38, close = 0.34 },     -- it arrives in tearing slices and leaves the same way
     iris = { open = 0.42, close = 0.40 },       -- it opens out of the middle like a lens, and closes to a point
+    -- D297: four more
+    liquid = { open = 0.46, close = 0.42 },     -- it rises through rippling water that settles, and melts away downwards
+    pixel = { open = 0.36, close = 0.34 },      -- it comes into focus out of big blocks, and breaks back into them
+    fold = { open = 0.40, close = 0.36 },       -- it unfolds from its top edge like paper, and folds back up into it
+    dust = { open = 0.48, close = 0.52 },       -- it gathers out of drifting grains, and blows away into them from the left
 }
-M.PAIRS = { "phosphor", "glitch", "iris" }
+M.PAIRS = { "phosphor", "glitch", "iris", "liquid", "pixel", "fold", "dust" }
 
 -- Two classes that keep a pair of their own, so the desktop does not do the same thing everywhere:
 -- a terminal leaves harder than the rest (the glitch, whatever the pair is), a browser arrives
@@ -187,8 +192,132 @@ void main() {
 }
 ]]
 
-local OPEN = { phosphor = PHOSPHOR_OPEN, glitch = GLITCH_OPEN, iris = IRIS_OPEN }
-local CLOSE = { phosphor = PHOSPHOR_CLOSE, glitch = GLITCH_CLOSE, iris = IRIS_CLOSE }
+
+-- D297: liquid, opening: the window rises up out of the bottom through a ripple that settles as it
+-- arrives; at progress 1 the ripple is gone and the window is its own pixels.
+local LIQUID_OPEN = [[
+void main() {
+    float p = clamp(progress, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float e = 1.0 - pow(1.0 - p, 3.0);
+    float amp = 0.035 * (1.0 - e);
+    vec2 q = uv + vec2(sin(uv.y * 26.0 + p * 18.0) * amp, (1.0 - e) * 0.22);
+    float inside = step(0.0, q.y) * step(q.y, 1.0);
+    vec3 c = texture(tex, clamp(q, 0.0, 1.0)).rgb;
+    float a = inside * smoothstep(0.0, 0.35, p);
+    c = mix(c, c + PHOS * 0.25, (1.0 - e) * 0.6);
+    fragColor = vec4(c * a, a);
+}
+]]
+
+-- D297: liquid, closing: it melts downwards in uneven drips, warming as it goes; alpha 0 at the end.
+local LIQUID_CLOSE = [[
+void main() {
+    float p = clamp(progress, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float drip = p * (0.6 + 0.8 * hash(vec2(floor(uv.x * 40.0), 7.0)));
+    vec2 q = vec2(uv.x + sin(uv.y * 20.0 + p * 10.0) * 0.02 * p, uv.y - drip);
+    float inside = step(0.0, q.y);
+    vec3 c = texture(tex, clamp(q, 0.0, 1.0)).rgb + EMBER * 0.2 * p;
+    float a = inside * (1.0 - p);
+    fragColor = vec4(c * a, a);
+}
+]]
+
+-- D297: pixel, opening: big blocks that halve and halve again until they are the window's pixels.
+local PIXEL_OPEN = [[
+void main() {
+    float p = clamp(progress, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float cells = mix(8.0, max(surface_size.x, surface_size.y), pow(p, 3.0));
+    vec2 grid = vec2(cells, cells * surface_size.y / max(1.0, surface_size.x));
+    vec2 q = p < 0.999 ? (floor(uv * grid) + 0.5) / grid : uv;
+    vec3 c = texture(tex, q).rgb;
+    float a = smoothstep(0.0, 0.25, p);
+    fragColor = vec4(c * a, a);
+}
+]]
+
+-- D297: pixel, closing: the window breaks into ever bigger blocks that go out one by one.
+local PIXEL_CLOSE = [[
+void main() {
+    float p = clamp(progress, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float cells = mix(max(surface_size.x, surface_size.y), 10.0, pow(p, 0.5));
+    vec2 grid = vec2(cells, cells * surface_size.y / max(1.0, surface_size.x));
+    vec2 cell = floor(uv * grid);
+    vec3 c = texture(tex, (cell + 0.5) / grid).rgb;
+    float gone = step(hash(cell), p * 1.15);
+    float a = (1.0 - gone) * (1.0 - p);
+    fragColor = vec4(c * a, a);
+}
+]]
+
+-- D297: fold, opening: it unfolds downwards from its top edge, shaded along the fold, ending flat.
+local FOLD_OPEN = [[
+void main() {
+    float p = clamp(progress, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float e = 1.0 - pow(1.0 - p, 2.0);
+    float reach = max(0.001, e);
+    float inside = step(uv.y, reach);
+    vec2 q = vec2(uv.x, uv.y / reach);
+    vec3 c = texture(tex, clamp(q, 0.0, 1.0)).rgb;
+    float shade = mix(0.55, 1.0, e) + 0.35 * (1.0 - e) * (1.0 - abs(q.y * 2.0 - 1.0));
+    float a = inside * smoothstep(0.0, 0.2, p);
+    fragColor = vec4(c * shade * a, a);
+}
+]]
+
+-- D297: fold, closing: it folds back up into its top edge, darkening as it goes.
+local FOLD_CLOSE = [[
+void main() {
+    float p = clamp(progress, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    float reach = max(0.001, 1.0 - pow(p, 0.8));
+    float inside = step(uv.y, reach);
+    vec2 q = vec2(uv.x, uv.y / reach);
+    vec3 c = texture(tex, clamp(q, 0.0, 1.0)).rgb * mix(1.0, 0.45, p);
+    float a = inside * (1.0 - p);
+    fragColor = vec4(c * a, a);
+}
+]]
+
+-- D297: dust, opening: grains drift in and settle into the window, the last of them lit.
+local DUST_OPEN = [[
+void main() {
+    float p = clamp(progress, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    vec2 grain = floor(uv * surface_size / 3.0);
+    float h = hash(grain);
+    float arrive = smoothstep(h * 0.7, h * 0.7 + 0.3, p);
+    vec2 off = (vec2(hash(grain + 1.7), hash(grain + 4.1)) - 0.5) * 0.25 * (1.0 - arrive);
+    vec3 c = texture(tex, clamp(uv + off, 0.0, 1.0)).rgb;
+    c += PHOS * 0.4 * arrive * (1.0 - arrive) * 4.0;
+    float a = p >= 0.999 ? 1.0 : arrive;
+    fragColor = vec4(c * a, a);
+}
+]]
+
+-- D297: dust, closing: from the left, the window comes apart into grains that blow away; alpha 0 at the end.
+local DUST_CLOSE = [[
+void main() {
+    float p = clamp(progress, 0.0, 1.0);
+    vec2 uv = v_texcoord;
+    vec2 grain = floor(uv * surface_size / 3.0);
+    float h = hash(grain);
+    float leave = smoothstep(uv.x * 0.6 + h * 0.3, uv.x * 0.6 + h * 0.3 + 0.25, p * 1.2);
+    vec2 drift = vec2(0.35, -0.12 - 0.2 * h) * leave;
+    vec3 c = texture(tex, clamp(uv - drift, 0.0, 1.0)).rgb + EMBER * 0.35 * leave;
+    float a = (1.0 - leave) * (1.0 - p * p);
+    fragColor = vec4(c * a, a);
+}
+]]
+
+local OPEN = { phosphor = PHOSPHOR_OPEN, glitch = GLITCH_OPEN, iris = IRIS_OPEN, liquid = LIQUID_OPEN, pixel = PIXEL_OPEN,
+               fold = FOLD_OPEN, dust = DUST_OPEN }
+local CLOSE = { phosphor = PHOSPHOR_CLOSE, glitch = GLITCH_CLOSE, iris = IRIS_CLOSE, liquid = LIQUID_CLOSE, pixel = PIXEL_CLOSE,
+                fold = FOLD_CLOSE, dust = DUST_CLOSE }
 
 -- One file's text: the header with the palette and the length, then the body.
 local function shader(body, what, dur, pal)

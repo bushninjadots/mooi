@@ -446,7 +446,7 @@ SECTIONS = [
         # only where the plugin is loaded
         ("card", "Windows waking"),
         ("choice", "Open and close", "A window's arrival and exit as a shader, in the bar's colours. Off is Hyprland's own animation; a pair plays where the HyprWindowShade plugin is loaded", "desktop.window_fx", "sv_desktop_window_fx",
-         ["Off", "Phosphor", "Glitch", "Iris"]),
+         ["Off", "Phosphor", "Glitch", "Iris", "Liquid", "Pixel", "Fold", "Dust"]),
         ("slider", "How long", "Both halves, against the pair's own timing (a quick flick of the eye either way)", "desktop.window_fx_speed", 50, 200,
          "{sv_desktop_window_fx_speed + 50, 0}%", "sv_desktop_window_fx != 0"),
         ("toggle", "Terminals and browsers differ", "A terminal leaves with the Glitch and a browser arrives with the Iris, whatever the pair above is", "desktop.window_fx_apps", "sv_desktop_window_fx_apps", None,
@@ -455,7 +455,7 @@ SECTIONS = [
         # has a card of its own and works with mooi styling the windows or not
         ("card", "Shader over the switch"),
         ("choice", "Transition shader", "mooi's own, laid over the switch itself for the length of the move; Off is the switch. It runs while mooi's theme watch does", "desktop.ws_fx", "sv_desktop_ws_fx",
-         ["Off", "Channel", "Circuit", "Stretch", "Halftone", "Board", "Sigil"]),
+         ["Off", "Channel", "Circuit", "Stretch", "Halftone", "Board", "Sigil", "Ripple", "Portal", "Shatter", "Blocks"]),
         ("slider", "How long", "The shader's own length, against the kind's timing; the move itself has its Duration above", "desktop.ws_fx_speed", 50, 200,
          "{sv_desktop_ws_fx_speed + 50, 0}%", "sv_desktop_ws_fx != 0"),
         # D159: kitty's own custom shaders. A card of its own, because the conf file mooi writes is
@@ -849,7 +849,8 @@ def controls(kind, path, expr, opts, y):
         return out, XR - 46
     opts = [(o, i) if isinstance(o, str) else o for i, o in enumerate(opts)]
     total = 470 if len(opts) >= 5 else 440
-    w = max(70, min(132, total // len(opts)))
+    # (D297) a choice of more than eight draws its chips narrower, so eleven still leave the row its words
+    w = max(62 if len(opts) > 8 else 70, min(132, total // len(opts)))
     x = XR - w * len(opts)
     left = x
     out.append(f'STrack({x}, {y + 16}, {w * len(opts)})')
