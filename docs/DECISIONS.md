@@ -6845,3 +6845,21 @@ solid, and the song's progress as a ring around it. Each button lifts a little u
 tabs are narrower so six fit.
 
 **Verified.** Unit 756 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.
+
+## D247 · 2026-11-10 · The shelf, and the branches that grow from it
+
+The owner: "everything needs to come from the pill". **Super** at rest now grows the **shelf**. The node widens
+to hold what has the focus (`FIREFOX · Mail`) and the time, and side pills grow out of its two ends, one after
+another: Calendar, Notes, Clipboard and Stash on one side; Music (while something plays), Time, Wallpaper,
+System, Nexus and Settings on the other. Super again, Esc, or a press on the node folds it away. The music and
+the system cluster, which Super used to show, are pills on it now. Each pill grows its **branch** under the node:
+- **Calendar:** a month of six weeks, today lit, ‹ › for the months either side (lib/calendar).
+- **Notes:** a line to write one (Return keeps it, through `mooi note`, so the bar's own file is never written
+  over), with the newest under it, pinned first. A press copies one.
+- **Stash:** what the bar's stash keeps, newest first. A press opens one.
+- **Wallpaper:** a strip of seven pictures round the one worn, from the picker's index. The wheel or ‹ › walks
+  it, and a press wears one (`mooi wall apply`).
+- **Nexus** and **Settings** open those programs; Music, Time and System open the node's own.
+- **Clipboard** follows with opencode's cliphist helper.
+
+**Verified.** Unit 758 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.

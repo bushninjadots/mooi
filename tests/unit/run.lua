@@ -6505,7 +6505,7 @@ do
         assert(p:find("spin nd_swp by if(nd_cap and nd_kind == 0, if(nd_capu, 300, 120), 0)", 1, true), "the sweep doubles in the last minute")
         assert(p:find('"sound"', 1, true), "the chime may sound")
         assert(p:find("on key space while nd_kb { emit nd_key(32) }", 1, true))
-        assert(l:find('fact.nd_kb = studio or kind == "launcher" or kind == "universe"\n', 1, true), "a finish card never takes the keyboard")
+        assert(l:find('fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "branch" and N.branch == 2)\n', 1, true), "a finish card never takes the keyboard (D247: only the notes branch, to be written in)")
     end)
     test("a file is made sane: odd values, missing parts, too many laps", function()
         local s = TK.normalise({ mode = "focus", timer = { set = -5 }, stopwatch = { laps = { 1, "x" } }, focus = { phase = "nap", round = 40 }, alarm = { h = 99, m = -3, on = "yes" } })
@@ -6584,7 +6584,7 @@ do
     test("the music capsule pressed grows into the player; Esc, Super or another opening lets it go", function()
         local l = read("shell/mooi-node.luau")
         assert(l:find('if k == "media" then if N.open_player then N.open_player() end; return end', 1, true))
-        assert(l:find('local HELD = { "system", "launcher", "universe", "time", "player" }', 1, true))
+        assert(l:find('local HELD = { "system", "launcher", "universe", "time", "player", "shelf", "branch" }', 1, true))
         local ST = require("lib/node/state")
         local st = ST.new(); ST.hold(st, "player"); ST.push(st, "notice", 0)
         eq(ST.current(st, 10, {}), "player", "held over an event")
@@ -6687,6 +6687,26 @@ do
         local p = read("shell/mooi-node.plm")
         assert(p:find("span: nd_prog * 360deg; rotate: nd_prog * 180deg", 1, true))
         assert(p:find("show: not nd_playing }", 1, true) and p:find("show: nd_playing }", 1, true), "play, or pause")
+    end)
+end
+
+section("the shelf and its branches (D247)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local l = read("shell/mooi-node.luau")
+    test("Super at rest grows the shelf; open, it folds away; the music and the system are pills on it", function()
+        assert(l:find("if N.kind ~= \"rest\" then for _, k in ipairs(HELD) do ST.release(N.st, k) end; render()\n        else open_shelf() end", 1, true))
+        assert(l:find('{ code = 9, label = "MUSIC", side = 1, music = true }', 1, true))
+        local ST = require("lib/node/state")
+        local st = ST.new(); ST.hold(st, "shelf"); eq(ST.current(st, 0, {}), "shelf")
+    end)
+    test("the branches: a month, notes (written through `mooi note`), the stash, the wallpaper (worn through `mooi wall apply`)", function()
+        assert(l:find('run("mooi", { "note", t }', 1, true), "never written over the bar's own file")
+        assert(l:find('run("mooi", { "wall", "apply", it.path }', 1, true))
+        assert(l:find('run("xdg-open", { N.branch_items[i] }', 1, true))
+        local CAL = require("lib/calendar"); eq(#CAL.month(2026, 11, { y = 2026, m = 11, d = 10 }).cells, 42)
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("model cal max 42 {", 1, true) and p:find("model wl max 7 { img: image 112, 63; on: bool }", 1, true))
     end)
 end
 

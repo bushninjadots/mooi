@@ -24,7 +24,7 @@ SPRINGS = [(f"{s}_{b}", k, int(2 * math.sqrt(k) * f + 0.5)) for s, k in SPEED fo
 GROWTH = [("slow", 90, 15), ("normal", 170, 19), ("fast", 320, 30)]
 FIELDS = [("x", 949), ("y", 8), ("w", 22), ("h", 6), ("r", 3)]
 # the kinds, as the logic numbers them (lib/node/state)
-K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "system": 5, "launcher": 6, "universe": 7, "time": 8, "done": 9, "privacy": 10, "player": 11}
+K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "system": 5, "launcher": 6, "universe": 7, "time": 8, "done": 9, "privacy": 10, "player": 11, "shelf": 12, "branch": 13}
 KEYS = [("Escape", 27), ("Return", 13), ("Up", 38), ("Down", 40), ("Left", 37), ("Right", 39), ("Tab", 9), ("space", 32)]
 # the look's facts and their defaults (the organic preset; lib/node/look's M.facts names them)
 LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 cyber"), ("nd_sp", 2, "the body's spring (speed × bounce)"),
@@ -62,7 +62,7 @@ def scene():
          '// this springs and draws.', '',
          'scene Node {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl", "curl", "cat"',
+         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl", "curl", "cat", "xdg-open", "cliphist"',
          '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
@@ -158,6 +158,15 @@ def scene():
           '    model mx max 4 { name: text; vol: number; muted: bool }',
           '    fact nd_lyon = false  // synced words for this song (D240)', '    text nd_lyc = ""', '    text nd_lyn = ""',
           ] + [f'    fact nd_sp{i} = 0' for i in range(32)] + [
+          '    // the shelf and its branches (D247): Super grows side pills out of the node; each grows its own panel',
+          '    text nd_awin = ""     // the active window\'s title', '    text nd_shclk = ""',
+          '    model sh max 10 { x: number; y: number; w: number; label: text; code: number; side: number }',
+          '    fact nd_bk = 0        // the branch open: 1 calendar · 2 notes · 3 clipboard · 4 stash · 5 wallpaper',
+          '    text nd_brt = ""      // its title', '    text nd_brs = ""      // a line under it',
+          '    model cal max 42 { d: text; muted: bool; today: bool; weekend: bool }',
+          '    model br max 7 { label: text; detail: text; pinned: bool }',
+          '    model wl max 7 { img: image 112, 63; on: bool }',
+          '    text nd_nq = ""',
           '    // privacy (D232): the microphone or the camera started or stopped',
           '    text nd_pvt = ""', '    text nd_pvd = ""', '    fact nd_pvon = false',
           '    // satellites',
@@ -184,6 +193,8 @@ def scene():
           '    event nd_stc ->       // the studio: 1 shuffle · 2 done · 3 reset',
           '    event nd_tm ->        // the time tools: 0-3 a mode · 10 go · 11 reset · 12 lap or skip · 2x timer · 3x alarm',
           '    event nd_dn ->        // the finish card answered',
+          '    event nd_sh ->        // a side pill pressed: its code',
+          '    event nd_br ->        // in a branch: 1 back a month / step · 2 on a month / step · 10 + row a row · 30 + row its second press',
           '    event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted',
           '    event nd_seek ->      // the player: where along the song (0 … 1000)',
           '    event nd_mx ->        // the mixer: row * 2000 + its level (0 … 1000)',
@@ -521,6 +532,84 @@ def music_forms(c, acc, ink, dim, hull):
     return L
 
 
+def shelf_parts(c, acc, ink, dim, hull):
+    """D247: the shelf — the active window and the time in the node, side pills either side that grow out of it —
+    and the branch each pill grows into, under the node."""
+    L = [f'{c}// the shelf: the node holds what has the focus and the time; the side pills grow out of its ends',
+         f'{c}group {{ show: nd_kind == 12; opacity: nd_cf',
+         f'{c}    text nd_awin {{ at: nb_x + 16, nb_y + nb_h / 2; anchor: left center; size: 12; weight: 600; family: {SANS}; color: {ink}; width: nb_w - 90; lines: 1 }}',
+         f'{c}    text nd_shclk {{ at: nb_x + nb_w - 14, nb_y + nb_h / 2; anchor: right center; align: right; size: 11; weight: 700; family: {MONO}; color: {acc} }}',
+         f'{c}}}',
+         f'{c}for p in sh {{',
+         f'{c}    let g = clamp(nd_grow * nd_gk - p.index * 0.09 * nd_stg, 0, 1)',
+         f'{c}    let edge = if(p.side < 0, nb_x, nb_x + nb_w)',
+         f'{c}    group {{ show: nd_kind == 12; opacity: g',
+         f'{c}        let sx = if(p.side < 0, edge - (edge - p.x) * g, edge + (p.x - edge) * g)',
+         f'{c}        box {{ from: sx, p.y; size: p.w * max(0.2, g), 26; corner: 13 * max(0.3, nd_rnd); color: if(shz.hover, fl.hull_raised, {hull}); opacity: 0.95 }}',
+         f'{c}        box {{ from: sx, p.y; size: p.w * max(0.2, g), 26; corner: 13 * max(0.3, nd_rnd); stroke: 1; color: if(shz.hover, {acc}, fl.trace_lit); opacity: 0.8 }}',
+         f'{c}        text p.label {{ at: sx + p.w * g / 2, p.y + 13; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(shz.hover, {acc}, {ink}); opacity: g }}',
+         f'{c}    }}',
+         f'{c}    zone box shz {{ from: p.x, p.y; size: p.w, 26; corner: 13; cursor: pointer; role: button; label: "{{p.label}}"; show: nd_kind == 12 and g > 0.9 }}',
+         f'{c}    on press shz {{ emit nd_sh(p.code) }}',
+         f'{c}}}',
+         f'{c}// a branch: its title, and what it holds',
+         f'{c}group {{ show: nd_kind == 13; opacity: nd_cf',
+         f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
+         f'{c}    text nd_brt {{ at: nb_x + 20, nb_y + 22; anchor: left center; size: 10; weight: 700; family: {MONO}; color: {acc} }}',
+         f'{c}    text nd_brs {{ at: nb_x + nb_w - 20, nb_y + 22; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 300; lines: 1 }}',
+         f'{c}    line {{ from: nb_x + 16, nb_y + 38; to: nb_x + nb_w - 16, nb_y + 38; width: 1; color: fl.trace_dim }}',
+         f'{c}    // the calendar: a month of six weeks, today lit; ‹ › for the months either side',
+         f'{c}    group {{ show: nd_bk == 1']
+    for i, d in enumerate("MTWTFSS"):
+        L += [f'{c}        text "{d}" {{ at: nb_x + 34 + {i} * 66, nb_y + 54; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: {dim} }}']
+    L += [f'{c}        for d in cal {{',
+          f'{c}            let col = d.index - floor(d.index / 7) * 7',
+          f'{c}            let rw = floor(d.index / 7)',
+          f'{c}            ellipse {{ at: nb_x + 34 + col * 66, nb_y + 76 + rw * 26; radius: 11; color: {acc}; show: d.today }}',
+          f'{c}            text d.d {{ at: nb_x + 34 + col * 66, nb_y + 76 + rw * 26; anchor: center; align: center; size: 11; weight: if(d.today, 700, 500); family: {MONO}; color: if(d.today, fl.ground, if(d.muted, fl.trace_lit, if(d.weekend, {acc}, {ink}))) }}',
+          f'{c}        }}',
+          f'{c}    }}']
+    for code, glyph, x in ((1, "‹", "nb_x + nb_w - 70"), (2, "›", "nb_x + nb_w - 40")):
+        L += [f'{c}    text "{glyph}" {{ at: {x}, nb_y + 22; anchor: center; size: 16; family: {SANS}; color: if(brz{code}.hover, {acc}, {ink}); show: nd_bk == 1 or nd_bk == 5 }}',
+              f'{c}    zone box brz{code} {{ from: {x} - 12, nb_y + 8; size: 24, 28; cursor: pointer; role: button; label: "{"Back" if code == 1 else "On"}"; show: nd_kind == 13 and (nd_bk == 1 or nd_bk == 5) }}',
+              f'{c}    on press brz{code} {{ emit nd_br({code}) }}']
+    L += [f'{c}    // notes: a line to write one, the newest under it (pinned first); a press copies one',
+          f'{c}    group {{ show: nd_bk == 2',
+          f'{c}        box {{ from: nb_x + 16, nb_y + 48; size: nb_w - 32, 30; corner: 15 * max(0.3, nd_rnd); color: fl.well }}',
+          f'{c}        text "+" {{ at: nb_x + 32, nb_y + 63; anchor: center; size: 14; family: {SANS}; color: {acc} }}',
+          f'{c}        input nd_nq {{ at: nb_x + 46, nb_y + 54; width: nb_w - 80; size: 12; family: {SANS}; color: {ink}; selection: fl.hull_raised; placeholder: "write a note, Return keeps it" }}',
+          f'{c}    }}',
+          f'{c}    // a list: notes, the clipboard, the stash — a row each',
+          f'{c}    group {{ show: nd_bk >= 2 and nd_bk <= 4',
+          f'{c}        for r in br {{',
+          f'{c}            let ry = nb_y + if(nd_bk == 2, 86, 48) + r.index * 30',
+          f'{c}            box {{ from: nb_x + 12, ry; size: nb_w - 24, 27; corner: 8 * nd_rnd; color: fl.well; opacity: if(brr.hover, 0.9, 0.35) }}',
+          f'{c}            ellipse {{ at: nb_x + 24, ry + 13.5; radius: 2.5; color: {acc}; show: r.pinned }}',
+          f'{c}            text r.label {{ at: nb_x + 34, ry + 13.5; anchor: left center; size: 11; family: {SANS}; color: {ink}; width: nb_w - 170; lines: 1 }}',
+          f'{c}            text r.detail {{ at: nb_x + nb_w - 22, ry + 13.5; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 110; lines: 1 }}',
+          f'{c}            zone box brr {{ from: nb_x + 12, ry; size: nb_w - 24, 27; cursor: pointer; role: item; label: "{{r.label}}"; show: nd_kind == 13 and nd_bk >= 2 and nd_bk <= 4 }}',
+          f'{c}            on press brr {{ emit nd_br(10 + r.index) }}',
+          f'{c}        }}',
+          f'{c}    }}',
+          f'{c}    // the wallpaper: a strip of pictures round the one worn; the wheel or ‹ › walk it, a press wears one',
+          f'{c}    group {{ show: nd_bk == 5',
+          f'{c}        for w in wl {{',
+          f'{c}            let wx = nb_x + 16 + w.index * ((nb_w - 32) / 7)',
+          f'{c}            let ww = (nb_w - 32) / 7 - 6',
+          f'{c}            group {{ clip box {{ from: wx, nb_y + 58; size: ww, ww * 0.5625; corner: 6 * nd_rnd }}',
+          f'{c}                image w.img {{ at: wx, nb_y + 58; size: ww, ww * 0.5625; fit: cover }} }}',
+          f'{c}            box {{ from: wx, nb_y + 58; size: ww, ww * 0.5625; corner: 6 * nd_rnd; stroke: if(w.on, 2, 1); color: if(w.on, {acc}, if(wlz.hover, fl.trace_lit, fl.trace_dim)) }}',
+          f'{c}            zone box wlz {{ from: wx, nb_y + 58; size: ww, ww * 0.5625; cursor: pointer; role: item; label: "Wear this picture"; show: nd_kind == 13 and nd_bk == 5 }}',
+          f'{c}            on press wlz {{ emit nd_br(10 + w.index) }}',
+          f'{c}            on scroll wlz {{ emit nd_br(if(wheel > 0, 1, 2)) }}',
+          f'{c}        }}',
+          f'{c}    }}',
+          f'{c}}}',
+          f'{c}on submit nd_nq {{ emit nd_br(90) }}',
+          f'{c}on change nd_kb while nd_kb and nd_kind == 13 and nd_bk == 2 {{ focus nd_nq }}']
+    return L
+
+
 def surface():
     c = "        "
     ink, dim, hull = "fl.engrave", "fl.muted", "fl.hull"
@@ -647,6 +736,7 @@ def surface():
               f'{c}    on press nmc{code} {{ emit nd_media({code}) }}']
     L += [f'{c}}}']
     L += music_forms(c, acc, ink, dim, hull)
+    L += shelf_parts(c, acc, ink, dim, hull)
     # notices
     L += [f'{c}// notices: a stem drops from the node, and the cards branch from it one after another (each grows out of',
           f'{c}// the stem\'s foot: it slides down from it, opening as it comes)',

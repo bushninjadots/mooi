@@ -22,14 +22,17 @@ local CALC = require("lib/node/calc")
 local UN = require("lib/node/units")
 local MX = require("lib/node/mixer")
 local LY = require("lib/node/lyrics")
+local CAL = require("lib/calendar")
+local NOTES = require("lib/notes")
+local STASH = require("lib/stash")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
 
-local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11 }
+local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, shelf = 12, branch = 13 }
 -- what a press, Super or another opening lets go of (`done` is never among them: it waits to be answered)
-local HELD = { "system", "launcher", "universe", "time", "player" }
+local HELD = { "system", "launcher", "universe", "time", "player", "shelf", "branch" }
 local SAT_KIND = { music = 1, rec = 2, battery = 3, network = 4, music_rec = 5, notice = 6, mic = 7, cam = 9 }   -- 8 was the timer's mark: a running timer is the seed's capsule (D231)
 
 local function read(name, kind)
@@ -395,7 +398,7 @@ render = function()
     if changed and N.wants_bands and N.wants_bands() then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
     -- the keyboard only for what is opened to be typed into: the time panel, the player and a finish card never
     -- take it, so a timer that ends while you type steals no keys
-    fact.nd_kb = studio or kind == "launcher" or kind == "universe"
+    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "branch" and N.branch == 2)
     set_body(b, changed and LK.overshoot(look) or 0)
     if kind == "media" then show_media(b) end
     if kind == "notice" then
@@ -407,6 +410,7 @@ render = function()
     if kind == "launcher" then show_launcher(b) end
     if kind == "universe" then show_universe() end
     if kind == "time" then show_time() end
+    if kind == "shelf" and N.shelf_show then N.shelf_show(b) end
     if kind == "player" then show_media(b); if N.player_show then N.player_show() end end
     if kind == "done" then show_done() end
     if kind == "volume" then
@@ -556,7 +560,7 @@ on("nd_press", function()
     local k = N.kind
     if k == "launcher" or k == "universe" or k == "done" then return end
     -- a press on the panel's own body (not one of its controls) folds the time panel or the player away
-    if k == "time" or k == "player" then ST.release(N.st, k); render(); return end
+    if k == "time" or k == "player" or k == "shelf" or k == "branch" then ST.release(N.st, k); render(); return end
     -- the music capsule pressed: it grows into the player (D236)
     if k == "media" then if N.open_player then N.open_player() end; return end
     if k == "rest" and fact.nd_cap then if N.open_time then N.open_time() end; return end
@@ -686,6 +690,10 @@ on("nd_key", function(v)
     if N.studio.open then if N.studio_key then N.studio_key(v) end; return end
     if N.kind == "done" then
         if v == 27 or v == 13 or v == 32 then N.answer_done() end
+        return
+    end
+    if N.kind == "branch" then
+        if v == 27 then ST.release(N.st, "branch"); render() end
         return
     end
     if N.kind == "player" then
@@ -990,6 +998,157 @@ every(250, function()
     fact.nd_ncl = math.max(0, math.min(1, (ev.till - now()) / ST.LIFE.notice))
 end)
 
+-- ── the shelf and its branches (D247): Super grows side pills out of the node — what you reach often — and each
+-- grows its own panel under it. The node holds what has the focus and the time ──
+local SHELF = {
+    { code = 1, label = "CALENDAR", side = -1 }, { code = 2, label = "NOTES", side = -1 },
+    { code = 3, label = "CLIPBOARD", side = -1 }, { code = 4, label = "STASH", side = -1 },
+    { code = 9, label = "MUSIC", side = 1, music = true }, { code = 10, label = "TIME", side = 1 },
+    { code = 5, label = "WALLPAPER", side = 1 }, { code = 6, label = "SYSTEM", side = 1 },
+    { code = 7, label = "NEXUS", side = 1 }, { code = 8, label = "SETTINGS", side = 1 },
+}
+N.shelf_show = function(b)
+    local rows, lx, rx = {}, b.x - 8, b.x + b.w + 8
+    for _, p in ipairs(SHELF) do
+        if not p.music or N.media.playing then
+            local w = #p.label * 7 + 22
+            local x
+            if p.side < 0 then x = lx - w; lx = x - 6 else x = rx; rx = x + w + 6 end
+            rows[#rows + 1] = { x = x, y = b.y + b.h / 2 - 13, w = w, label = p.label, code = p.code, side = p.side }
+        end
+    end
+    model.sh = rows
+    text.nd_shclk = os.date("%H:%M")
+end
+local function open_shelf()
+    for _, k in ipairs(HELD) do ST.release(N.st, k) end
+    ST.hold(N.st, "shelf")
+    text.nd_awin = ""
+    render()
+    run("hyprctl", { "-j", "activewindow" }, function(out)
+        local ok, w = pcall(json.decode, out or "")
+        if ok and type(w) == "table" and type(w.class) == "string" and w.class ~= "" then
+            local t = tostring(w.title or "")
+            text.nd_awin = string.upper(w.class) .. (t ~= "" and t ~= w.class and ("  ·  " .. t) or "")
+        else text.nd_awin = "THE DESKTOP" end
+    end)
+end
+N.open_shelf = open_shelf
+
+-- the branches' contents
+N.branch, N.cal, N.branch_items = 0, nil, {}
+local BRANCH_TITLE = { "CALENDAR", "NOTES", "CLIPBOARD", "STASH", "WALLPAPER" }
+local function ago(t) local s = os.time() - (tonumber(t) or 0); if s < 3600 then return math.max(1, s // 60) .. " min" elseif s < 86400 then return (s // 3600) .. " h" end; return (s // 86400) .. " d" end
+local function show_calendar()
+    local now = os.date("*t")
+    N.cal = N.cal or { y = now.year, m = now.month }
+    local mo = CAL.month(N.cal.y, N.cal.m, { y = now.year, m = now.month, d = now.day })
+    local rows = {}
+    for i, c in ipairs(mo.cells) do rows[i] = { d = tostring(c.day), muted = not c.cur, today = c.today, weekend = c.weekend } end
+    model.cal = rows
+    text.nd_brs = string.upper(mo.title)
+end
+local function show_notes()
+    local list = NOTES.decode(read("notes.json", "json"))
+    table.sort(list, function(a, b) if a.pinned ~= b.pinned then return a.pinned end; return a.time > b.time end)
+    local rows = {}
+    N.branch_items = {}
+    for i, n in ipairs(list) do
+        if i > 6 then break end
+        rows[i] = { label = NOTES.one_line(n.text, 80), detail = ago(n.time), pinned = n.pinned }
+        N.branch_items[i] = n.text
+    end
+    model.br = rows
+    text.nd_brs = #list .. " NOTES  ·  A PRESS COPIES ONE"
+end
+local function show_stash()
+    local items = STASH.decode(read("stash.json", "json"))
+    table.sort(items, function(a, b) return (a.time or 0) > (b.time or 0) end)
+    local rows = {}
+    N.branch_items = {}
+    for i, it in ipairs(items) do
+        if i > 7 then break end
+        rows[i] = { label = it.name, detail = it.detail ~= "" and it.detail or ago(it.time), pinned = false }
+        N.branch_items[i] = it.url
+    end
+    model.br = rows
+    text.nd_brs = #items == 0 and "EMPTY  ·  DROP THINGS ON THE BAR'S STASH" or (#items .. " KEPT  ·  A PRESS OPENS ONE")
+end
+-- the wallpaper: the index the picker keeps; the strip starts round the one worn
+local function show_walls()
+    if not N.walls then
+        local idx = read("walls-index.json", "json")
+        N.walls = {}
+        for _, it in ipairs(type(idx) == "table" and type(idx.items) == "table" and idx.items or {}) do
+            if type(it.path) == "string" and type(it.thumb) == "string" then N.walls[#N.walls + 1] = it end
+        end
+        local cur = read("wall.json", "json")
+        local src = type(cur) == "table" and cur.source or ""
+        N.wl_at = 1
+        for i, it in ipairs(N.walls) do if it.path == src then N.wl_at = math.max(1, i - 3) end end
+        N.wl_worn = src
+    end
+    local rows = {}
+    for k = 0, 6 do
+        local it = N.walls[N.wl_at + k]
+        if it then rows[#rows + 1] = { img = it.thumb, on = it.path == N.wl_worn } end
+    end
+    model.wl = rows
+    text.nd_brs = (#N.walls > 0) and (N.wl_at .. "–" .. math.min(#N.walls, N.wl_at + 6) .. " OF " .. #N.walls) or "NO PICTURES INDEXED YET"
+end
+local SHOW = { show_calendar, show_notes, nil, show_stash, show_walls }
+local function show_branch()
+    text.nd_brt = BRANCH_TITLE[N.branch] or ""
+    fact.nd_bk = N.branch
+    local f = SHOW[N.branch]
+    if f then f() elseif N.show_clipboard then N.show_clipboard() end
+end
+local function open_branch(k)
+    for _, h in ipairs(HELD) do ST.release(N.st, h) end
+    N.branch = k
+    if k == 2 then text.nd_nq = "" end
+    show_branch()
+    ST.hold(N.st, "branch")
+    render()
+end
+on("nd_sh", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if v >= 1 and v <= 5 then open_branch(v)
+    elseif v == 6 then for _, h in ipairs(HELD) do ST.release(N.st, h) end; ST.hold(N.st, "system"); render()
+    elseif v == 7 or v == 8 then
+        for _, h in ipairs(HELD) do ST.release(N.st, h) end
+        run("mooi", { v == 7 and "nexus" or "settings" }, function() end)
+        render()
+    elseif v == 9 and N.open_player then N.open_player()
+    elseif v == 10 and N.open_time then N.open_time() end
+end)
+on("text:nd_nq", function(v) N.nq = tostring(v or "") end)
+on("nd_br", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local k = N.branch
+    if v == 1 or v == 2 then
+        local d = v == 1 and -1 or 1
+        if k == 1 and N.cal then N.cal.y, N.cal.m = CAL.shift(N.cal.y, N.cal.m, d)
+        elseif k == 5 and N.walls then N.wl_at = math.max(1, math.min(math.max(1, #N.walls - 6), N.wl_at + d * 7)) end
+    elseif v == 90 and k == 2 then
+        local t = (N.nq or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if t ~= "" then
+            run("mooi", { "note", t }, function() after(200, function() if N.branch == 2 then show_notes() end end) end)
+            N.nq, text.nd_nq = "", ""
+        end
+    elseif v >= 10 and v < 30 then
+        local i = v - 9
+        if k == 2 and N.branch_items[i] then run("wl-copy", { N.branch_items[i] }, function() end)
+        elseif k == 3 and N.clip_choose then N.clip_choose(i)
+        elseif k == 4 and N.branch_items[i] then run("xdg-open", { N.branch_items[i] }, function() end)
+        elseif k == 5 then
+            local it = N.walls and N.walls[N.wl_at + i - 1]
+            if it then N.wl_worn = it.path; run("mooi", { "wall", "apply", it.path }, function() end) end
+        end
+    end
+    show_branch()
+end)
+
 -- ── the time tools (D231) ──
 local function chime()
     -- three rising notes of mooi's own, soft: it says so without startling
@@ -1257,11 +1416,9 @@ on("nd_cmd", function(v)
     v = math.floor(tonumber(v) or 0)
     if N.studio.open and v ~= 4 then close_studio(); return end
     if v == 1 then
-        -- Super: the music if it plays, else what you last held, else the system for a moment
-        if N.kind ~= "rest" then for _, k in ipairs(HELD) do ST.release(N.st, k) end
-        elseif N.media.playing and on_for("media") then ST.push(N.st, "media", now())
-        elseif on_for("system") then ST.push(N.st, "system", now()) end
-        render()
+        -- Super: what is open folds away; at rest, the shelf grows (D247: the music and the system are pills on it)
+        if N.kind ~= "rest" then for _, k in ipairs(HELD) do ST.release(N.st, k) end; render()
+        else open_shelf() end
     elseif v == 2 then
         if ST.held(N.st, "launcher") then ST.release(N.st, "launcher"); render() else open_launcher() end
     elseif v == 3 then
