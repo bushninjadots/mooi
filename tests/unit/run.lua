@@ -6740,6 +6740,7 @@ do
             eq(b.w, G.PANEL_W, page); eq(b.h, h, page)
         end
         assert(G.PANEL_H.home > G.PANEL_H.calendar and G.PANEL_H.system > G.PANEL_H.wallpaper, "a page is as tall as what it holds")
+        eq(G.PANEL_H.home, 718, "Home makes room for the profile")
     end)
     test("home: media, four toggles, two sliders, three notices, and the way to every page", function()
         local p = read("shell/mooi-node.plm")

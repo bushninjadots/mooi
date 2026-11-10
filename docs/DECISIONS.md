@@ -7390,3 +7390,16 @@ globals are still only the runtime's.
 and the guide were merged, and its own number moved from D272 (taken by Home) to D279. One change: a note of a
 single line now wraps onto two lines of its card instead of being cut after a few words. Checked live after
 `mooi refresh`: six cards with their ages and pins, and the Stash page's three buttons over its empty state.
+
+## D280 · 2026-11-10 · Home says whose it is (opencode's)
+
+The owner: "when clicking the pill the homepage part. add a part ontop where obvios and relevant for profile
+picture with system name", and for the name, "yes hostname". Home now opens with a 58 px inset card above its
+clock: a 40 px round picture with an accent ring, the Nexus identity's display name in bold beside it, and the
+hostname in small mono below. Without a picture the circle carries the name's first letter in the accent; without
+a name the card says "mooi". Every row below the card moved down 58 px and Home is 718 px tall. `lib/node/home.
+identity` trims the words and works out the initial; the logic reads `settings.nexus.identity` and the data folder,
+asks `hostname`, and refreshes the card when `settings.json` changes.
+
+**Verified.** Unit 888 / 0 (the new identity tests and the scene's card); the scene compiles; the node's globals
+are still only the runtime's.

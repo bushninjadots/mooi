@@ -634,6 +634,7 @@ pcall(sys.watch, "files:sigil-feed.json", feed_now)
 pcall(sys.watch, "files:settings.json", function()
     N.settings = config.parse(read("settings.json"), json.decode)
     paint()
+    if N.show_identity then N.show_identity() end
     render()
 end)
 
@@ -1298,6 +1299,24 @@ local function panel_state()
     N.bt_on = type(N.bts) == "table" and N.bts.powered == true or false
     if N.kind == "panel" then render() end
 end
+
+-- D280: who this machine is. The Nexus's own identity, and the hostname, on the card above Home's clock.
+local HOME_FOLDER = tostring(sys.ask("files.folder") or "")
+N.host = ""
+N.show_identity = function()
+    local nx = type(N.settings.nexus) == "table" and N.settings.nexus or {}
+    local id = type(nx.identity) == "table" and nx.identity or {}
+    local who = HM.identity(id.name, N.host, id.avatar)
+    text.nd_hname, text.nd_hwho, text.nd_hinit = who.name, who.host, who.initial
+    text.nd_face = who.avatar ~= "" and (HOME_FOLDER .. "/" .. who.avatar) or ""
+    fact.nd_face_on = text.nd_face ~= ""
+end
+N.show_identity()
+run("hostname", {}, function(out)
+    N.host = (tostring(out or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+    N.show_identity()
+    render()
+end)
 
 local function show_panel_home(b)
     show_media(b)

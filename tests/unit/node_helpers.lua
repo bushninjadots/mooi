@@ -1731,3 +1731,70 @@ do
         end
     end)
 end
+
+section("the panel's Home profile (D280): who it is")
+do
+    local HM = require("lib/node/home")
+
+    test("identity: trims the words and takes the first letter upper-case", function()
+        local id = HM.identity("  Ada Lovelace  ", "  argon  ", "ada.png")
+        eq(id.name, "Ada Lovelace")
+        eq(id.host, "argon")
+        eq(id.avatar, "ada.png")
+        eq(id.initial, "A")
+    end)
+
+    test("identity: no name is mooi; no picture stays empty", function()
+        local id = HM.identity(nil, "", nil)
+        eq(id.name, "mooi")
+        eq(id.host, "")
+        eq(id.avatar, "")
+        eq(id.initial, "M")
+        local blank = HM.identity("   ", "   ", "   ")
+        eq(blank.name, "mooi"); eq(blank.initial, "M")
+        eq(blank.host, ""); eq(blank.avatar, "")
+    end)
+end
+
+section("the panel's Home profile (D280): the scene")
+do
+    local function read(path)
+        local f = io.open(path, "r")
+        if not f then return "" end
+        local s = f:read("*a")
+        f:close()
+        return s
+    end
+    local plm = read("shell/mooi-node.plm")
+    local luau = read("shell/mooi-node.luau")
+
+    local function has(what, where, why)
+        assert(where:find(what, 1, true), (why or what) .. " is missing")
+    end
+
+    test("the card is 58 px of inset at the top, with a 40 px picture and two lines", function()
+        has("text nd_hname", plm, "the display name")
+        has("text nd_hwho", plm, "the hostname")
+        has("text nd_hinit", plm, "the initial")
+        has("image nd_face_img", plm, "the picture")
+        has("fact nd_face_on", plm, "whether there is a picture")
+        has("from: nb_x + 14, nb_y + 14; size: nb_w - 28, 58; corner: 14", plm, "the card")
+        has("show: nd_face_on", plm, "the picture's show")
+        has("show: not nd_face_on", plm, "the initial's show")
+    end)
+
+    test("Home's rows moved below the card and the height made room", function()
+        has("nb_y + 182", plm, "the media card")
+        has("nb_y + 306", plm, "the toggles")
+        has("nb_y + 358", plm, "the volume")
+        has("eq(G.PANEL_H.home, 718", read("tests/unit/run.lua"), "Home's height")
+    end)
+
+    test("the logic takes the Nexus's identity and the hostname, and asks again when settings change", function()
+        has("N.show_identity = function()", luau, "the updater")
+        has("HM.identity(id.name, N.host, id.avatar)", luau, "the helper's call")
+        has('run("hostname", {}, function(out)', luau, "the hostname")
+        has("if N.show_identity then N.show_identity() end", luau, "the settings watch")
+        has("text.nd_face = who.avatar ~= \"\" and (HOME_FOLDER .. \"/\" .. who.avatar) or \"\"", luau, "the picture's path")
+    end)
+end
