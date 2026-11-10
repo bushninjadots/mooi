@@ -630,11 +630,23 @@ library FerrolumeParts {
         SSlider(728, y + 12, 330, a.vol, 100, press, a.index + 1, "Volume of {a.name}", "{a.vol, 0}%", true)
     }
     // A monitor, as Hyprland reports it.
-    component SDisplay(m: record, y0: number) {
-        size: 864, 56
-        let y = y0 + m.index * 60
-        box { from: 274, y; size: 864, 52; corner: 5; color: fl.ground; opacity: 0.6 }
-        box { from: 274, y; size: 864, 52; corner: 5; stroke: 1; color: if(m.focused, fl.trace_lit, fl.steel_700) }
+    // (D290) and its changes under it: resolution, scale and place step through, each tried at once and put back
+    // by itself in 15 s unless Keep is pressed
+    component SDisplay(m: record, y0: number, act: event) {
+        size: 864, 100
+        let y = y0 + m.index * 104
+        box { from: 274, y; size: 864, 96; corner: 5; color: fl.ground; opacity: 0.6 }
+        box { from: 274, y; size: 864, 96; corner: 5; stroke: 1; color: if(m.pending, fl.ember, if(m.focused, fl.trace_lit, fl.steel_700)) }
+        SButton(292, y + 58, 30, "‹", act, m.index * 10 + 1)
+        text "RESOLUTION" { at: 382, y + 66; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+        text m.res { at: 382, y + 80; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+        SButton(442, y + 58, 30, "›", act, m.index * 10 + 2)
+        SButton(492, y + 58, 30, "−", act, m.index * 10 + 3)
+        text "SCALE" { at: 552, y + 66; anchor: center; size: 8; family: "Share Tech Mono"; color: fl.muted }
+        text m.sc { at: 552, y + 80; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+        SButton(582, y + 58, 30, "+", act, m.index * 10 + 4)
+        SButton(632, y + 58, 150, m.placel, act, m.index * 10 + 5, false, m.multi)
+        SButton(968, y + 58, 152, m.keepl, act, m.index * 10 + 9, true, m.pending)
         text m.name { at: 292, y + 18; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: fl.phos }
         text m.model { at: 292, y + 37; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: 380; lines: 1 }
         text m.mode { at: 1120, y + 18; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.engrave }

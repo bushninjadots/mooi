@@ -9,6 +9,13 @@ local state = home .. "/.local/share/pleamar/mooi/hypr.lua"
 local ok, cfg = pcall(dofile, state)
 if not ok or type(cfg) ~= "table" then cfg = {} end
 
+-- mooi's monitors (D290): the rules kept in Settings → Displays (bin/mooi display keep), each after the fallback in
+-- config/monitor.lua so a kept one wins. Missing or broken, nothing changes.
+local mon_ok, mons = pcall(dofile, home .. "/.local/share/pleamar/mooi/monitors.lua")
+if mon_ok and type(mons) == "table" then
+    for _, m in ipairs(mons) do if type(m) == "table" then pcall(hl.monitor, m) end end
+end
+
 local mooi = cfg.mooi or (home .. "/Projects/mooi/bin/mooi")
 local keys = cfg.keys or {
     { "SUPER + ALT + Space", "toggle" },

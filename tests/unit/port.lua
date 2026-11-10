@@ -559,3 +559,25 @@ do
         eq(require("lib/node/commands").match("terminal")[1].args[1], "term")
     end)
 end
+
+section("your monitors (D290; k4's Pantallas, Minflair's display settings)")
+do
+    local DP = require("lib/displays")
+    local m = { name = "eDP-1", width = 1920, height = 1080, refreshRate = 60.001, scale = 1, x = 0, y = 0,
+                availableModes = { "1920x1080@60.00Hz", "1680x1050@60.00Hz", "1280x720@60.00Hz", "1920x1080@59.94Hz" } }
+    test("resolution steps round its list, scale within its own, place round its five", function()
+        eq(DP.current(m), "1920x1080@60"); eq(DP.next_mode(m, 1), "1680x1050@60"); eq(DP.next_mode(m, -1), "1280x720@60")
+        eq(DP.next_scale(m, 1), 1.25); eq(DP.next_scale(m, -1), 1, "never below the first")
+        eq(DP.next_scale({ scale = 2 }, 1), 2, "never round from 2 to 1")
+        eq(DP.next_place("auto"), "left"); eq(DP.next_place("below"), "auto")
+    end)
+    test("a place beside the other monitor, and only safe words go to bin/mooi", function()
+        local a = { name = "HDMI-A-1", width = 2560, height = 1440, scale = 1, x = 0, y = 0 }
+        eq(DP.position("right", m, { a, m }), "2560x0"); eq(DP.position("left", m, { a, m }), "-1920x0")
+        eq(DP.position("below", m, { a, m }), "0x1440"); eq(DP.position("left", m, { m }), "auto", "alone, nowhere to go")
+        eq(DP.safe("eDP-1", "1920x1080@60", "auto", 1.25), true); eq(DP.safe("x\"y", "1920x1080@60", "auto", 1), false)
+        local s = read("shell/mooi-settings.luau")
+        assert(s:find('run("mooi", { "display", "try", m.name, mode, pos, tostring(scale) }', 1, true))
+        assert(read("bin/mooi"):find('sleep "${MOOI_DISPLAY_WAIT:-15}"', 1, true))
+    end)
+end

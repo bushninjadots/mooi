@@ -7436,7 +7436,7 @@ The old side notch opens from the same left edge as the Dashboard drawer, and on
 Dashboard now asks the notch to fold away (`nt_close`).
 
 Wave 2 of the k4 / Minflair port is built except four, each for a reason the owner can overrule:
-- **Monitors** (k4's Pantallas, Minflair's display settings): this machine has one screen, so an arrangement
+- **Monitors** — built after all in D290, with the trial-and-revert this asked for. Was: this machine has one screen, so an arrangement
   cannot be tested, and a wrong mode or scale on the only display could leave it unusable; it wants a keep-or-revert
   timer and the owner's word.
 - **The battery charge limit**: this laptop's battery has no `charge_control_end_threshold` (D278).
@@ -7600,3 +7600,23 @@ percentages in exec rules. Super+Alt+T stays mooi's light-or-dark key.
 
 **Verified.** Unit 923 / 0; live: the terminal dropped in at 1344 × 496, hid on the second press, and `out` put it
 on workspace 2 tiled (then closed by hand).
+
+## D290 · 2026-11-10 · Your monitors, tried and kept (k4's Pantallas, Minflair's display settings)
+
+The owner asked to carry on with the next stage, so the monitors page D282 held back is built with the safeguard it
+needed. Settings → Displays keeps each monitor's card and gains its changes under it: **Resolution** ‹ ›, which
+steps through the modes the monitor offers; **Scale** − +, through 1, 1.25, 1.5, 1.75 and 2 (never round from 2 to
+1); and **Place**, round auto, left, right, above and below the other monitor (dimmed with one screen).
+
+Every change is a trial. `mooi display try NAME MODE POS SCALE` applies it at once (`hl.monitor`) and puts the old
+one back by itself 15 s later; the card turns ember and **Keep · 12 s** counts down. Keep (`mooi display keep`)
+stops the revert and writes the rule to `monitors.json` and `monitors.lua`, which `custom/mooi.lua` now applies at
+Hyprland's start after the fallback rule, so a kept change lasts. A trial on a trial goes back to what was last kept.
+The revert runs in `bin/mooi`, not in Settings, so closing Settings mid-trial still puts it back, and a mode the
+screen cannot show undoes itself with nobody able to see. Every word is checked before it reaches Hyprland's Lua.
+`lib/displays` holds the stepping; `tests/displays.sh` the trial, the revert, Keep and the refusals.
+
+**Verified.** Unit 925 / 0, `tests/displays.sh` 14 / 0; scenes compile; live: a no-change trial, Keep and the
+start-up file on this screen (then removed again, so nothing of yours changed), `hyprctl reload` with no errors,
+and the Displays page with its new row. The revert was proven against the stand-in, not by changing this screen's
+mode.

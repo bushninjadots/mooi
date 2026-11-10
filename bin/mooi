@@ -42,6 +42,7 @@
 #   mooi arcade            mooi's games: Snake, La Grieta, Mazmorra (Super+G)
 #   mooi dock              hold the dock up, or let it hide again (Super+Shift+D)
 #   mooi drawer [dashboard|notices|close]  the side drawers out of the frame (Super+D, Super+N)
+#   mooi display try NAME MODE POS SCALE | keep | revert   a monitor change, undone in 15 s unless kept
 #   mooi term [out]        a terminal that drops from the top and stays alive (Super+Shift+T); `out` makes it a window
 #   mooi ask               choose a region: its words start a question to Claude in the side notch (Super+Shift+G)
 #   mooi capture text      choose a region of the screen: its words (tesseract) go to the clipboard
@@ -1041,6 +1042,61 @@ capture_text() {
     printf '%s\n' "$words"
 }
 
+# Your monitors (D290): a change is a trial. `display try NAME MODE POS SCALE` applies it at once and reverts it 15 s
+# later unless `display keep` comes first, so a mode the screen cannot show undoes itself with nobody able to see.
+# Kept rules live in monitors.json beside the settings and are written for Hyprland's start as monitors.lua, which
+# ~/.config/hypr/config/custom/mooi.lua reads. The rule is built here from checked words, never passed through.
+display_rule() { # NAME MODE POS SCALE → the hl.monitor call
+    printf 'hl.monitor({ output = "%s", mode = "%s", position = "%s", scale = %s })' "$1" "$2" "$3" "$4"
+}
+display_cmd() {
+    local dir; dir="$(dirname "$settings")"
+    local pend="$dir/display-pending.json" kept="$dir/monitors.json"
+    case "${1:-}" in
+        try)
+            local name="${2:-}" mode="${3:-}" pos="${4:-}" scale="${5:-}"
+            printf '%s' "$name" | grep -Eq '^[A-Za-z0-9.-]+$' || { echo "display: not a monitor name" >&2; return 2; }
+            printf '%s' "$mode" | grep -Eq '^[0-9]+x[0-9]+@[0-9]+$' || { echo "display: not a mode" >&2; return 2; }
+            printf '%s' "$pos" | grep -Eq '^(auto|-?[0-9]+x-?[0-9]+)$' || { echo "display: not a place" >&2; return 2; }
+            printf '%s' "$scale" | grep -Eq '^[0-9]+(\.[0-9]+)?$' || { echo "display: not a scale" >&2; return 2; }
+            local prev
+            if [ -f "$pend" ] && [ "$(jq -r .name "$pend" 2>/dev/null)" = "$name" ]; then
+                prev=$(jq -c .prev "$pend")          # a trial on a trial goes back to what was last kept
+            else
+                [ -f "$pend" ] && display_cmd revert
+                prev=$(hyprctl -j monitors | jq -c --arg n "$name" '[.[] | select(.name == $n)][0] |
+                    { mode: "\(.width)x\(.height)@\(.refreshRate | round)", pos: "\(.x)x\(.y)", scale: (.scale | tostring) }')
+                [ "$prev" != null ] && [ -n "$prev" ] || { echo "display: no monitor $name" >&2; return 1; }
+            fi
+            local token; token="$(date +%s%N)"
+            jq -n --arg n "$name" --argjson p "$prev" --arg m "$mode" --arg o "$pos" --arg s "$scale" --arg t "$token" \
+                --argjson d "$(( $(date +%s) + 15 ))" \
+                '{ name: $n, prev: $p, next: { mode: $m, pos: $o, scale: $s }, token: $t, until: $d }' > "$pend.tmp" && mv "$pend.tmp" "$pend"
+            hyprctl eval "$(display_rule "$name" "$mode" "$pos" "$scale")" >/dev/null || { display_cmd revert; return 1; }
+            # the revert, if nobody keeps it: only this trial's, never a later one's
+            ( sleep "${MOOI_DISPLAY_WAIT:-15}"; [ -f "$pend" ] && [ "$(jq -r .token "$pend" 2>/dev/null)" = "$token" ] && "$self" display revert ) >/dev/null 2>&1 &
+            echo "trying $mode at $pos ×$scale on $name: keep it within 15 s" ;;
+        keep)
+            [ -f "$pend" ] || { echo "nothing to keep"; return 0; }
+            local name; name=$(jq -r .name "$pend")
+            [ -f "$kept" ] || echo '{}' > "$kept"
+            jq --slurpfile p "$pend" '.[$p[0].name] = $p[0].next' "$kept" > "$kept.tmp" && mv "$kept.tmp" "$kept"
+            # monitors.lua for Hyprland's start: one hl.monitor a monitor, from the kept rules
+            { echo "-- written by mooi (bin/mooi display keep); read by ~/.config/hypr/config/custom/mooi.lua"
+              echo "return {"
+              jq -r 'to_entries[] | "    { output = \"\(.key)\", mode = \"\(.value.mode)\", position = \"\(.value.pos)\", scale = \(.value.scale) },"' "$kept"
+              echo "}"; } > "$dir/monitors.lua.tmp" && mv "$dir/monitors.lua.tmp" "$dir/monitors.lua"
+            rm -f "$pend"
+            echo "kept for $name" ;;
+        revert)
+            [ -f "$pend" ] || return 0
+            hyprctl eval "$(display_rule "$(jq -r .name "$pend")" "$(jq -r .prev.mode "$pend")" "$(jq -r .prev.pos "$pend")" "$(jq -r .prev.scale "$pend")")" >/dev/null
+            rm -f "$pend"
+            echo "put back" ;;
+        *) echo "usage: mooi display try NAME MODE POS SCALE | keep | revert" >&2; return 2 ;;
+    esac
+}
+
 ws_fx() {
     exec 9>"$rt/ws-fx.lock"
     flock -n 9 2>/dev/null || { echo "mooi-ws-fx: already running" >&2; exit 1; }
@@ -1620,6 +1676,7 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     game-mode) game_mode "$@"; exit $? ;;
+    display) display_cmd "${@}"; exit $? ;;
     term) # D289 (k4's island terminal): a terminal that drops from the top and stays alive between presses — one kitty
         # (class mooi-dropterm) kept on the special workspace mooi-term. `mooi term` shows or hides it; `mooi term out`
         # moves it onto the workspace you are on as an ordinary window, and the next `mooi term` starts a fresh one

@@ -80,6 +80,7 @@ sh tests/greet-theme.sh
 sh tests/setup-greeter.sh
 sh tests/game-mode.sh
 sh tests/capture-text.sh
+sh tests/displays.sh
 
 echo "test suites and docs agree"
 for t in tests/*.sh; do

@@ -830,13 +830,24 @@ on("wg_settings_edit", function()
     run("pleamar", { "--say", "mooi-settings", "quit" })
 end)
 
+-- D290: the monitors as Hyprland has them, and a change being tried (display-pending.json, bin/mooi's)
+local DP = require("lib/displays")
+local dp_mons, dp_places = {}, {}
 local function read_displays()
     run("hyprctl", { "-j", "monitors" }, function(out, code)
         local ok, list = pcall(json.decode, out or "")
         if code ~= 0 or not ok or type(list) ~= "table" then return end
+        dp_mons = list
+        local okp, pend = pcall(sys.ask, "files.read", "display-pending.json", "json")
+        pend = okp and type(pend) == "table" and pend or nil
         local rows = {}
         for _, m in ipairs(list) do
+            local mine = pend and pend.name == m.name
+            local left = mine and math.max(0, (tonumber(pend["until"]) or 0) - os.time()) or 0
             rows[#rows + 1] = {
+                res = DP.current(m), sc = "×" .. tostring(m.scale or 1),
+                placel = "Place: " .. (dp_places[m.name] or "auto"), multi = #list > 1,
+                pending = mine == true, keepl = mine and ("Keep · " .. left .. " s") or "Keep",
                 name = tostring(m.name or "?"),
                 model = string.format("%s %s", tostring(m.make or ""), tostring(m.model or "")),
                 mode = string.format("%d×%d @ %d Hz · ×%s", tonumber(m.width) or 0, tonumber(m.height) or 0,
@@ -850,6 +861,28 @@ local function read_displays()
 end
 read_displays()
 every(5000, read_displays)
+-- while a change is on trial, the countdown each second
+every(1000, function()
+    local ok, pend = pcall(sys.ask, "files.exists", "display-pending.json")
+    if ok and pend then read_displays() end
+end)
+on("dp_act", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local m = dp_mons[v // 10 + 1]
+    local what = v % 10
+    if not m then return end
+    if what == 9 then run("mooi", { "display", "keep" }, function() read_displays() end); return end
+    local mode, scale = DP.current(m), tonumber(m.scale) or 1
+    local pos = (tonumber(m.x) or 0) .. "x" .. (tonumber(m.y) or 0)
+    if what == 1 or what == 2 then mode = DP.next_mode(m, what == 1 and -1 or 1)
+    elseif what == 3 or what == 4 then scale = DP.next_scale(m, what == 3 and -1 or 1)
+    elseif what == 5 then
+        dp_places[m.name] = DP.next_place(dp_places[m.name] or "auto")
+        pos = DP.position(dp_places[m.name], m, dp_mons)
+    end
+    if not DP.safe(m.name, mode, pos, scale) then return end
+    run("mooi", { "display", "try", m.name, mode, pos, tostring(scale) }, function() read_displays() end)
+end)
 
 -- ── Power ──────────────────────────────────────────────────
 local battery_now = nil

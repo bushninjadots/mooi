@@ -537,7 +537,7 @@ SECTIONS = [
         ("choice", "Privacy", "Password managers and private browsing show no picture or title; or nothing does, for sharing the screen", "atlas.private", "sv_atlas_private",
          ["Off", "Sensitive", "Everything"]),
     ]),
-    ("Displays", "Displays", "Your monitors as Hyprland has them (set them in your Hyprland config for now)", "DESKTOP", [
+    ("Displays", "Displays", "Your monitors: resolution, scale and place. Each change is tried at once and put back in 15 s unless you press Keep", "DESKTOP", [
         ("card", "Monitors"),
         ("displays",),
     ]),
@@ -874,8 +874,8 @@ def row_lines(r, y, first, reverted):
         lines.append(f'for a in snd_apps {{ SAppVol(a, {y + 4}, snd_app) }}')
         return lines, "(8 + snd_apps.count * 52)"
     if k == "displays":
-        lines.append(f'for m in dp_list {{ SDisplay(m, {y + 6}) }}')
-        return lines, "(12 + max(1, dp_list.count) * 60)"
+        lines.append(f'for m in dp_list {{ SDisplay(m, {y + 6}, dp_act) }}')
+        return lines, "(12 + max(1, dp_list.count) * 104)"
     if k == "whkey":
         # Wallhaven's API key (D150): typed hidden, saved into mooi's data folder readable by you alone,
         # checked with Wallhaven; never shown again, never in settings.json or the repo
@@ -1487,7 +1487,7 @@ def main():
     model snd_apps max 10 { name: text; title: text; vol: number }
     event snd_pick ->         // to the logic: output n, or input 100 + n
     event snd_app ->          // to the logic: app (n + 1) · 1000 + volume %
-    model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool }
+    model dp_list max 6 { name: text; model: text; mode: text; place: text; focused: bool; res: text; sc: text; placel: text; multi: bool; pending: bool; keepl: text }
     // The wallpaper folders (walls.folders, D147): one row each, a field to add one
     model wf_list max 8 { path: text; n: text; missing: bool }
     text wf_new = ""
@@ -1496,6 +1496,7 @@ def main():
     event wh_key_save ->      // to the logic: save what wh_key_in says
     event wh_key_forget ->    // to the logic: remove the saved key
     event wf_del ->           // to the logic: remove folder n
+    event dp_act ->           // D290: a monitor's change: row * 10 + 1/2 resolution, 3/4 scale, 5 place, 9 keep
     event wf_add ->           // to the logic: add what wf_new says
     // The desktop widgets (widgets.json, lib/widgets): one row each; what a row's controls send.
     model sw_list max 12 { name: text; detail: text; mode: text; kind: number; choice: number; idle: number; opa: number; bars: number; nlay: number }
