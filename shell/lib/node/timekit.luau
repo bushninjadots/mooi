@@ -86,7 +86,8 @@ function M.format_left(ms) return M.format(math.ceil(math.max(0, ms) / 1000) * 1
 -- ── the timer ──
 function M.timer_add(s, ms)
     local t = s.timer
-    if t.ends then t.ends = t.ends + ms
+    -- running: its end moves, and so does what it was set to, so its progress never passes full
+    if t.ends then t.ends = t.ends + ms; t.set = math.max(1000, t.set + ms)
     elseif t.left then t.left = math.max(1000, t.left + ms)
     else t.set = math.max(60000, math.min(24 * 3600000, t.set + ms)) end
 end
@@ -210,7 +211,7 @@ function M.readouts(s, now)
     local f = s.focus
     return {
         timer = { value = M.format_left(M.timer_left(s, now)), on = s.timer.ends ~= nil, paused = s.timer.left ~= nil,
-                  frac = M.timer_left(s, now) / math.max(1, s.timer.set) },
+                  frac = math.min(1, M.timer_left(s, now) / math.max(1, s.timer.set)) },
         stopwatch = { value = M.format(M.stopwatch_ms(s, now), true), on = s.stopwatch.since ~= nil,
                       paused = s.stopwatch.since == nil and s.stopwatch.acc > 0, frac = 1 },
         focus = { value = M.format_left(M.focus_left(s, now)), on = f.ends ~= nil, paused = f.left ~= nil,

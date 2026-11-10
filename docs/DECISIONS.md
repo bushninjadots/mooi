@@ -6793,3 +6793,24 @@ removed: the timer satellite (nothing passed it; a running timer is the capsule)
 nothing since D229; settings.json's old value is dropped on reading).
 
 **Verified.** Unit tests green; `bin/mooi check` green.
+
+## D244 · 2026-11-10 · Fixes from opencode's review of the node's logic
+
+opencode (task 7, read-only) reviewed `shell/mooi-node.luau`. All twelve of its findings were checked against
+the code, found real, and fixed:
+- Opening the universe now lets go of every held panel, so the player or the time panel no longer comes back
+  when it closes.
+- A hand edit of `node-look.json` that leaves out the saved looks keeps them. A cleanup in D229 had dropped the
+  line that did this. This program's own writes are now recognised by their content, not by a flag that a
+  failed write could leave set.
+- The volume meter tells the audio system at most every 40 ms, not on every pointer movement.
+- A seek reaches only the song it was meant for.
+- The studio forgets the pointer when it opens, so the 10 Hz pointer loop does not run on afterwards.
+- A press on the stage cycles through every chip, the tour included.
+- The search's selection never goes below 0.
+- A new song's first lines are always written (the last line shown is forgotten with each song).
+- A battery taken out is forgotten: no stale BAT reading, and putting it back is not a "crossing".
+- A process that never answers no longer stops the privacy watch; it asks again after ten seconds.
+- Time added to a running timer moves what it was set to as well, so its progress never passes full.
+
+**Verified.** Unit 751 / 0 (six new regression tests); `bin/mooi check` green.

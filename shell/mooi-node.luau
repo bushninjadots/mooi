@@ -70,8 +70,8 @@ local function save_look()
     local g = save_gen
     after(300, function()
         if g ~= save_gen then return end
-        N.saving = true
-        pcall(sys.call, "files.write", LK.FILE, json.encode(N.look))
+        N.saved_text = json.encode(N.look)
+        pcall(sys.call, "files.write", LK.FILE, N.saved_text)
     end)
 end
 
@@ -459,7 +459,12 @@ local function battery_card(pct)
     end)
 end
 pcall(sys.watch, "battery", function(b)
-    if type(b) ~= "table" or b.present == false then N.bat = nil; return end
+    if type(b) ~= "table" or b.present == false then
+        -- no battery: nothing of the last one kept, and a battery put back is a fresh start, not a crossing
+        N.bat, N.charging, N.seen_bat = nil, false, false
+        render()
+        return
+    end
     local before = N.bat
     N.bat, N.charging = tonumber(b.percent), b.charging == true
     if N.bat and N.seen_bat and DV.crossed_critical(before, N.bat, N.charging) then battery_card(N.bat) end
@@ -633,7 +638,7 @@ on("text:nd_q", function(v) N.q = tostring(v or ""); N.sel = 0; search(); render
 
 -- ── the universe ──
 local function open_universe()
-    for _, k in ipairs({ "system", "launcher" }) do ST.release(N.st, k) end
+    for _, k in ipairs(HELD) do ST.release(N.st, k) end
     N.uni_at = N.ws.active
     N.rot = ws_index(N.ws.active)
     ST.hold(N.st, "universe")
@@ -678,7 +683,7 @@ on("nd_key", function(v)
     if N.kind == "launcher" then
         if v == 27 then ST.release(N.st, "launcher")
         elseif v == 38 then N.sel = math.max(0, N.sel - 1)
-        elseif v == 40 or v == 9 then N.sel = math.min(#N.results - 1, N.sel + 1)
+        elseif v == 40 or v == 9 then N.sel = math.max(0, math.min(#N.results - 1, N.sel + 1))
         elseif v == 13 then
             local a = N.results[N.sel + 1]
             choose(a)
@@ -710,11 +715,13 @@ local function privacy_card(what, on, who)
 end
 local pv_busy = false
 every(2000, function()
+    -- a process that never answers does not stop the watch: after ten seconds it asks again
+    if pv_busy and now() - (N.pv_since or 0) > 10000 then pv_busy = false end
     if cfg().privacy == false or pv_busy then
         if cfg().privacy == false and (N.mic_on or N.cam_on) then N.mic_on, N.cam_on = false, false; render() end
         return
     end
-    pv_busy = true
+    pv_busy, N.pv_since = true, now()
     -- which sources are monitors changes only when a device comes or goes: asked again every half minute
     local function with_monitors(go)
         if N.pv_monitors and now() - (N.pv_mon_at or 0) < 30000 then go(N.pv_monitors); return end
@@ -787,13 +794,14 @@ end
 -- the saved answer, LRCLIB once), followed at a quarter of a second
 local fetch_lyrics = require("player/lyricfetch")({ read = read })
 N.lyr, N.lyr_key = nil, nil
+local lyr_cur   -- the line last shown (forgotten with each new song, so its first lines are always written)
 local function lyrics_now()
     local m = N.media
     local on = N.settings.node and N.settings.node.lyrics == true
     if not on or m.title == "" then N.lyr, N.lyr_key = nil, nil; fact.nd_lyon = false; return end
     local key = "remote:" .. tostring(m.artist) .. "\t" .. tostring(m.title)   -- as mooi's player keys a song
     if key == N.lyr_key then return end
-    N.lyr_key, N.lyr = key, nil
+    N.lyr_key, N.lyr, lyr_cur = key, nil, nil
     fact.nd_lyon = false
     fetch_lyrics(key, m.artist, m.title, "", math.floor((m.length or 0) + 0.5), nil, function(raw)
         if N.lyr_key ~= key then return end
@@ -802,7 +810,6 @@ local function lyrics_now()
         fact.nd_lyon = N.lyr ~= nil
     end)
 end
-local lyr_cur
 every(250, function()
     if N.kind ~= "player" or not N.lyr then return end
     local pos = N.pl and N.pl.position_ms or 0
@@ -916,16 +923,20 @@ on("nd_seek", function(v)
     player_show()
     -- a drag says where many times a second: the player is told the last place, a moment after it rests
     N.seek_gen = (N.seek_gen or 0) + 1
-    local g = N.seek_gen
-    after(120, function() if g == N.seek_gen then run(argv[1], { table.unpack(argv, 2) }, function() end) end end)
+    local g, song = N.seek_gen, N.media.title
+    -- and only the song it was meant for (a track that changed meanwhile is left where it is)
+    after(120, function() if g == N.seek_gen and N.media.title == song then run(argv[1], { table.unpack(argv, 2) }, function() end) end end)
 end)
 on("nd_mt", function(v)
     v = math.floor(tonumber(v) or 0)
     -- meter * 2000 + its level 0 … 1000 (a stride of 2000, so a full meter is never the next one at zero)
     local m, f = v // 2000, math.min(1000, v % 2000) / 1000
     if m == 0 then
+        -- shown at once; the audio system told at most every 40 ms, and always the last place
         fact.nd_vol = f
-        pcall(sys.call, "audio.volume", f)
+        N.vol_gen = (N.vol_gen or 0) + 1
+        local g = N.vol_gen
+        after(40, function() if g == N.vol_gen then pcall(sys.call, "audio.volume", f) end end)
     elseif m == 1 or m == 2 then
         if m == 1 then fact.nd_bri = math.max(0.01, f); N.bri_drag = true else fact.nd_mic = f; N.mic_drag = true end
         N.mt_gen = (N.mt_gen or 0) + 1
@@ -1083,6 +1094,9 @@ end
 local function open_studio()
     for _, k in ipairs(HELD) do ST.release(N.st, k) end
     pcall(math.randomseed, os.time())
+    -- the pointer is not followed on the stage: forget where it was, so nothing waits on it after
+    N.pointer, N.near, N.lean, N.pointer_due = nil, false, 0, nil
+    N.ix = IX.new()
     N.studio.open = true
     fact.nd_studio = true
     studio_rows()
@@ -1157,7 +1171,7 @@ on("nd_stc", function(v)
 end)
 -- pressing the node on the stage: the next state
 N.studio_press = function()
-    N.studio.pv = (N.studio.pv + 1) % #PREVIEW
+    N.studio.pv = (N.studio.pv + 1) % (#PREVIEW + 1)   -- the seven states, then the tour, then rest again
     prepare_preview()
     studio_rows()
     render()
@@ -1193,9 +1207,14 @@ every(2200, function()
 end)
 -- a hand edit of node-look.json (not this program's own write) is worn at once
 pcall(sys.watch, "files:" .. LK.FILE, function()
-    if N.saving then N.saving = false; return end
+    -- this program's own write is known by what it says (a failed write leaves nothing to mistake for it)
+    local raw = read(LK.FILE)
+    if raw ~= nil and raw == N.saved_text then return end
     local slots = N.look.slots
     N.look = look_now()
+    -- a hand edit that leaves the saved looks out keeps them
+    local doc = read(LK.FILE, "json")
+    if type(doc) ~= "table" or doc.slots == nil then N.look.slots = slots end
     apply_look()
     if N.studio.open then studio_rows() end
     render()
