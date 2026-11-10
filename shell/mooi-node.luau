@@ -10,11 +10,14 @@ local ferro = require("lib/ferro")
 local ST = require("lib/node/state")
 local G = require("lib/node/geometry")
 local LK = require("lib/node/look")
+local TK = require("lib/node/timekit")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
 
-local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7 }
+local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9 }
+-- what a press, Super or another opening lets go of (`done` is never among them: it waits to be answered)
+local HELD = { "system", "launcher", "universe", "time" }
 local SAT_KIND = { music = 1, rec = 2, battery = 3, network = 4, music_rec = 5, notice = 6, mic = 7, timer = 8 }
 
 local function read(name, kind)
@@ -63,6 +66,20 @@ end
 -- something is due — the next event's end, or the pointer's next decision — so at rest nothing is done
 local MS = 0
 local function now() return MS end
+
+-- ── the time tools' clock (D231): the wall's seconds, and this program's 50 ms steps within each one, so a timer
+-- neither drifts with a late timer nor jumps a whole second ──
+local wall_s, wall_ms0 = os.time(), 0
+local function wall()
+    local sec = os.time()
+    if sec ~= wall_s then wall_s, wall_ms0 = sec, MS end
+    return sec * 1000 + math.min(999, MS - wall_ms0)
+end
+local function local_date(sec) return os.date("*t", sec) end
+local function local_time(d) return os.time(d) end
+N.time = TK.normalise(read(TK.FILE, "json"))
+local function save_time() pcall(sys.call, "files.write", TK.FILE, json.encode(N.time)) end
+N.done = {}   -- what finished and waits to be answered, oldest first
 
 -- ── the palette, as every program wearing Ferrolume paints it ──
 local palette = read("palette.json", "json")
@@ -191,6 +208,66 @@ local function turn(dir)
     N.uni_at = N.ws.list[(N.rot % n) + 1].id
 end
 
+-- the panel: the mode on stage, the others on the rail; each mode's own controls
+local MODE_NAMES = { timer = "TIMER", stopwatch = "STOPWATCH", focus = "FOCUS", alarm = "ALARM" }
+local CONTROLS = {
+    timer = { { "+1M", 21 }, { "+5M", 22 }, { "+10M", 23 }, { "-1M", 24 } },
+    stopwatch = { { "LAP", 12 } },
+    focus = { { "SKIP", 12 } },
+    alarm = { { "H+", 31 }, { "H-", 32 }, { "M+", 33 }, { "M-", 34 } },
+}
+local function show_time()
+    local t, now = N.time, wall()
+    local r = TK.readouts(t, now)
+    local mode = t.mode
+    local me = r[mode]
+    fact.nd_tmm = (LK.index_of(TK.MODES, mode) or 1) - 1
+    text.nd_tmr = me.value
+    fact.nd_tmp = me.frac
+    if mode == "timer" then
+        text.nd_tms = me.on and "RUNNING" or me.paused and "PAUSED" or ("SET " .. TK.format(t.timer.set))
+        text.nd_tmgl = me.on and "PAUSE" or me.paused and "RESUME" or "START"
+        text.nd_tm2l = "RESET"
+    elseif mode == "stopwatch" then
+        local laps = t.stopwatch.laps
+        text.nd_tms = #laps > 0 and ("LAP " .. #laps .. "  ·  " .. TK.format(laps[1] - (laps[2] or 0), true)) or (me.on and "RUNNING" or "READY")
+        text.nd_tmgl = me.on and "STOP" or me.paused and "GO ON" or "START"
+        text.nd_tm2l = "RESET"
+    elseif mode == "focus" then
+        text.nd_tms = me.phase .. "  ·  ROUND " .. me.round .. " OF " .. TK.ROUNDS .. (me.paused and "  ·  PAUSED" or "")
+        text.nd_tmgl = me.on and "PAUSE" or (me.paused and "RESUME" or "START")
+        text.nd_tm2l = "STOP"
+    else
+        text.nd_tms = me.on and ("RINGS IN " .. TK.format_left((t.alarm.next or now) - now)) or "OFF"
+        text.nd_tmgl = me.on and "TURN OFF" or "SET"
+        text.nd_tm2l = "CLOSE"
+    end
+    local tc = {}
+    for i, c in ipairs(CONTROLS[mode]) do tc[i] = { label = c[1], code = c[2] } end
+    model.tc = tc
+    local rail = {}
+    for i, m in ipairs(TK.MODES) do
+        if m ~= mode then rail[#rail + 1] = { label = MODE_NAMES[m], value = r[m].value, on = r[m].on, m = i - 1 } end
+    end
+    model.tr = rail
+end
+-- the seed's capsule while something runs (a value written only when it changes)
+local cap_text, cap_mode
+local function show_capsule(c)
+    fact.nd_cap = c ~= nil
+    if not c then cap_text, cap_mode = nil, nil; return end
+    if c.text ~= cap_text then cap_text = c.text; text.nd_capt = c.text end
+    if c.mode ~= cap_mode then cap_mode = c.mode; text.nd_capm = MODE_NAMES[c.mode] end
+    fact.nd_capf = c.frac
+    fact.nd_capu = c.urgent
+end
+local function show_done()
+    local d = N.done[1]
+    if not d then return end
+    text.nd_dnt = d.title
+    text.nd_dnd = d.detail .. (#N.done > 1 and ("  ·  +" .. (#N.done - 1) .. " MORE") or "")
+end
+
 local function show_satellites(b, kind)
     if not on_for("satellites") then model.sa = {}; return end
     local f = N.feed
@@ -236,7 +313,10 @@ render = function()
     if studio then shape.top = 96 end
     local anchor = studio and "centre" or (cfg().anchor or "centre")
     local data = { n = #N.ws.list }
-    local b = G.body(kind, N.scr, anchor, shape, data)
+    -- at rest with something running, the seed is the time capsule
+    local cap = (not studio and kind == "rest") and TK.capsule(N.time, wall()) or nil
+    local b = G.body(cap and "capsule" or kind, N.scr, anchor, shape, data)
+    show_capsule(cap)
     -- leaning toward where the pointer came in from
     if N.near and not studio and kind ~= "rest" and kind ~= "universe" then b.x = math.max(0, math.min(N.scr.w - b.w, b.x + (N.lean or 0) * 24)) end
     if kind == "universe" then
@@ -260,7 +340,7 @@ render = function()
         end
     end
     fact.nd_kind = KIND[kind] or 0
-    fact.nd_kb = studio or kind == "launcher" or kind == "universe"
+    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or kind == "time" or kind == "done"
     set_body(b, changed and LK.overshoot(look) or 0)
     if kind == "media" then show_media(b) end
     if kind == "notice" then
@@ -271,6 +351,8 @@ render = function()
     if kind == "system" then show_system(b) end
     if kind == "launcher" then show_launcher(b) end
     if kind == "universe" then show_universe() end
+    if kind == "time" then show_time() end
+    if kind == "done" then show_done() end
     if kind == "volume" then
         local v = N.vol or (studio and 0.6) or 0
         fact.nd_vol = v
@@ -388,14 +470,15 @@ end)
 -- ── presses ──
 local function toggle_hold(kind)
     if ST.held(N.st, kind) then ST.release(N.st, kind) else
-        for _, k in ipairs({ "system", "launcher", "universe" }) do ST.release(N.st, k) end
+        for _, k in ipairs(HELD) do ST.release(N.st, k) end
         ST.hold(N.st, kind)
     end
 end
 on("nd_press", function()
     if N.studio.open then if N.studio_press then N.studio_press() end; return end
     local k = N.kind
-    if k == "launcher" or k == "universe" then return end
+    if k == "launcher" or k == "universe" or k == "time" or k == "done" then return end
+    if k == "rest" and fact.nd_cap then if N.open_time then N.open_time() end; return end
     if k == "system" then ST.release(N.st, "system")
     elseif N.media.playing and k ~= "media" and on_for("media") then ST.push(N.st, "media", now())
     elseif on_for("system") then toggle_hold("system") end
@@ -466,6 +549,17 @@ end)
 on("nd_key", function(v)
     v = math.floor(tonumber(v) or 0)
     if N.studio.open then if N.studio_key then N.studio_key(v) end; return end
+    if N.kind == "done" then
+        if v == 27 or v == 13 or v == 32 then N.answer_done() end
+        return
+    end
+    if N.kind == "time" then
+        local m = LK.index_of(TK.MODES, N.time.mode) or 1
+        if v == 27 then ST.release(N.st, "time"); render()
+        elseif v == 32 or v == 13 then N.time_cmd(10)
+        elseif v == 37 or v == 39 or v == 9 then N.time.mode = TK.MODES[(m - 1 + (v == 37 and -1 or 1)) % #TK.MODES + 1]; save_time(); render() end
+        return
+    end
     if N.kind == "launcher" then
         if v == 27 then ST.release(N.st, "launcher")
         elseif v == 38 then N.sel = math.max(0, N.sel - 1)
@@ -489,6 +583,81 @@ on("nd_lr", function(v)
     ST.release(N.st, "launcher")
     render()
 end)
+
+-- ── the time tools (D231) ──
+local function chime()
+    -- three rising notes of mooi's own, soft: it says so without startling
+    for i, hz in ipairs({ 880, 1318.5, 1760 }) do
+        pcall(sound.tone, { wave = "sine", freq = hz, ms = 220, volume = 0.3, delay = (i - 1) * 170, release = 160 })
+    end
+end
+local function open_time()
+    for _, k in ipairs(HELD) do ST.release(N.st, k) end
+    ST.hold(N.st, "time")
+    render()
+end
+local was_cap = false
+local function time_tick()
+    local t = N.time
+    if not (TK.busy(t) or N.kind == "time") then return end
+    local now = wall()
+    local done = TK.tick(t, now, local_date, local_time)
+    if #done > 0 then
+        for _, d in ipairs(done) do N.done[#N.done + 1] = d end
+        save_time()
+        chime()
+        ST.hold(N.st, "done")
+        render()
+        return
+    end
+    local cap = N.kind == "rest" and not N.studio.open and TK.capsule(t, now) or nil
+    if (cap ~= nil) ~= was_cap then was_cap = cap ~= nil; render(); return end
+    if cap then show_capsule(cap) end
+    if N.kind == "time" then show_time() end
+end
+every(250, time_tick)
+-- the stopwatch's hundredths, only while it is on stage and running
+every(50, function()
+    if N.kind == "time" and N.time.mode == "stopwatch" and N.time.stopwatch.since then
+        text.nd_tmr = TK.format(TK.stopwatch_ms(N.time, wall()), true)
+    end
+end)
+N.open_time = open_time
+N.time_cmd = function(v)
+    v = math.floor(tonumber(v) or -1)
+    local t, now = N.time, wall()
+    local mode = t.mode
+    if v >= 0 and v <= 3 then t.mode = TK.MODES[v + 1]
+    elseif v == 10 then
+        if mode == "timer" then TK.timer_go(t, now)
+        elseif mode == "stopwatch" then TK.stopwatch_go(t, now)
+        elseif mode == "focus" then TK.focus_go(t, now)
+        else TK.alarm_set(t, not t.alarm.on, now, local_date, local_time) end
+    elseif v == 11 then
+        if mode == "timer" then TK.timer_reset(t)
+        elseif mode == "stopwatch" then TK.stopwatch_reset(t)
+        elseif mode == "focus" then TK.focus_reset(t)
+        else ST.release(N.st, "time") end
+    elseif v == 12 then
+        if mode == "stopwatch" then TK.lap(t, now) elseif mode == "focus" then TK.focus_skip(t, now) end
+    elseif v >= 21 and v <= 24 then
+        TK.timer_add(t, ({ [21] = 60000, [22] = 300000, [23] = 600000, [24] = -60000 })[v])
+    elseif v >= 31 and v <= 34 then
+        local dh, dm = ({ [31] = 1, [32] = -1 })[v] or 0, ({ [33] = 5, [34] = -5 })[v] or 0
+        TK.alarm_nudge(t, dh, dm, now, local_date, local_time)
+    else return end
+    save_time()
+    render()
+end
+on("nd_tm", function(v) N.time_cmd(v) end)
+-- the card answered: the next thing that finished, or back to what it was
+local function answer_done()
+    table.remove(N.done, 1)
+    if #N.done == 0 then ST.release(N.st, "done") end
+    render()
+end
+N.answer_done = answer_done
+on("nd_dn", answer_done)
 
 -- ── the studio (D229): `mooi node studio` — the node on a stage, and a deck of what it may look like ──
 local PRESET_DESC = {
@@ -542,7 +711,7 @@ local function prepare_preview()
     if studio_kind() == "launcher" then N.q, N.sel = "", 0; text.nd_q = ""; search() end
 end
 local function open_studio()
-    for _, k in ipairs({ "system", "launcher", "universe" }) do ST.release(N.st, k) end
+    for _, k in ipairs(HELD) do ST.release(N.st, k) end
     pcall(math.randomseed, os.time())
     N.studio.open = true
     fact.nd_studio = true
@@ -668,7 +837,7 @@ on("nd_cmd", function(v)
     if N.studio.open and v ~= 4 then close_studio(); return end
     if v == 1 then
         -- Super: the music if it plays, else what you last held, else the system for a moment
-        if N.kind ~= "rest" then for _, k in ipairs({ "system", "launcher", "universe" }) do ST.release(N.st, k) end
+        if N.kind ~= "rest" then for _, k in ipairs(HELD) do ST.release(N.st, k) end
         elseif N.media.playing and on_for("media") then ST.push(N.st, "media", now())
         elseif on_for("system") then ST.push(N.st, "system", now()) end
         render()
@@ -678,6 +847,8 @@ on("nd_cmd", function(v)
         if ST.held(N.st, "universe") then ST.release(N.st, "universe"); render() else open_universe() end
     elseif v == 4 then
         if N.studio.open then close_studio() else open_studio() end
+    elseif v == 5 then
+        if ST.held(N.st, "time") then ST.release(N.st, "time"); render() else open_time() end
     end
 end)
 

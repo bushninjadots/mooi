@@ -6112,7 +6112,7 @@ do
         assert(g:find('("card", "Music in the picture")', 1, true))
         for _, f in ipairs({ "on", "strength", "size", "blend", "height" }) do assert(g:find('"live.music.' .. f .. '"', 1, true), f) end
         local S = require("lib/setters").SETTERS
-        eq(S[#S], "keys.node_universe", "appended (D226's node follows it)")
+        eq(S[#S], "keys.node_time", "appended (D226's node, then D231's time key, follow it)")
     end)
 end
 
@@ -6481,6 +6481,23 @@ do
         eq(c.mode, "timer", "a countdown over a stopwatch"); eq(c.text, "00:30"); eq(c.urgent, true)
         assert(math.abs(c.frac - 0.1) < 1e-9)
         assert(TK.busy(s))
+    end)
+    test("the node: Super+T and `mooi node time` open the panel; the seed is a capsule while one runs; a finish waits", function()
+        local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+        local config = require("lib/config")
+        eq(config.defaults().keys.node_time, "SUPER + T")
+        assert(read("bin/mooi"):find("time) n=5", 1, true))
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('local cap = (not studio and kind == "rest") and TK.capsule(N.time, wall()) or nil', 1, true))
+        assert(l:find('ST.hold(N.st, "done")', 1, true) and l:find("chime()", 1, true))
+        assert(not l:find('"done" }', 1, true), "the finish card is never let go of by a press or Super")
+        local ST = require("lib/node/state")
+        local st = ST.new(); ST.hold(st, "time"); ST.hold(st, "done")
+        eq(ST.current(st, 0, {}), "done", "a finish over the panel")
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("spin nd_swp by if(nd_cap and nd_kind == 0, if(nd_capu, 300, 120), 0)", 1, true), "the sweep doubles in the last minute")
+        assert(p:find('"sound"', 1, true), "the chime may sound")
+        assert(p:find("on key space while nd_kb { emit nd_key(32) }", 1, true))
     end)
     test("a file is made sane: odd values, missing parts, too many laps", function()
         local s = TK.normalise({ mode = "focus", timer = { set = -5 }, stopwatch = { laps = { 1, "x" } }, focus = { phase = "nap", round = 40 }, alarm = { h = 99, m = -3, on = "yes" } })

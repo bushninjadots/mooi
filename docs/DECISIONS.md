@@ -6622,3 +6622,33 @@ they stop; a hand edit of the file is applied at once.
 **Removed:** `lib/node/motion` (its springs are the look's), the Settings rows Personality and Motion.
 
 **Verified.** Unit 606 / 0; scenes compile; `bin/mooi check` green.
+
+## D230 · 2026-11-10 · The node's helpers, written by opencode
+
+The owner asked for work to be handed to opencode where it is safe, with Claude reviewing everything that comes
+back. A brief went to opencode in a worktree of its own (`../mooi-oc`, branch `oc-node-helpers`; no pushing or
+merging): four pure modules with their tests, kept in `tests/unit/node_helpers.lua`, which `tests/unit/run.lua`
+loads at its end. `lib/node/clockfont` is a 5×7 pixel alphabet of mooi's own (digits, A–Z, `: . - /`).
+`lib/node/mixer` turns PipeWire's playback streams into one row per app, with the pactl calls that set or mute
+it. `lib/node/privacy` reports who is using the microphone (monitors, peak meters and mooi's own listeners left
+out) and whether the camera is open (from `fuser`). `lib/node/lyrics` reads LRC timed lines and builds the
+query; nothing is fetched yet. Reviewed: pure, defensive against odd input, no I/O, efficient enough for what
+they read; merged unchanged, four commits.
+
+## D231 · 2026-11-10 · Time, grown from the node
+
+Ported from the ideas of a QML dynamic island the owner pointed to (lunanoir21/quickshell-dynamic-island; ideas
+only, mooi's own code and look): a timer, a stopwatch with laps, focus rounds (25 / 5, a long break after four)
+and a daily alarm, together in one panel (Super+T, `mooi node time`, or a press on the capsule). The mode in use
+fills the panel: its readout large, its progress shown as a strip of cells, and its own controls. The other three
+stay on a rail along the bottom, still counting. While something runs, the resting seed becomes a **capsule**
+showing its value, a line that drains as time passes, and a sweep of light; in the last minute it turns warm and
+the sweep runs faster. When something finishes, the node becomes a **card** that pulses and chimes (three soft
+notes of its own) until it is answered: a click on it, Esc, Space, Return, or OK. Neither the pointer resting on
+it nor Super dismisses it. If several things finish, each waits its turn. A finished focus phase waits for you to
+start the break. Everything is kept in `node-time.json` against the wall clock, so a timer survives a restart.
+
+**Engine:** `lib/node/timekit` (pure, tested). The node's clock combines the wall's seconds with its own 50 ms
+steps, so it neither drifts nor jumps.
+
+**Verified.** Unit 638 / 0; scenes compile; `bin/mooi check` green. Not yet seen live.

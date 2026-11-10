@@ -5,7 +5,7 @@
 
 local M = {}
 
-M.PRIORITY = { universe = 100, launcher = 90, system = 80, notice = 70, volume = 60, workspaces = 50, media = 40, rest = 0 }
+M.PRIORITY = { universe = 100, done = 95, launcher = 90, time = 85, system = 80, notice = 70, volume = 60, workspaces = 50, media = 40, rest = 0 }
 M.LIFE = { notice = 6000, volume = 1800, workspaces = 1500, media = 4000 }
 M.REACT_MS = 140
 

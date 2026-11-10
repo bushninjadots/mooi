@@ -7,6 +7,7 @@ local M = { MARGIN = 16, TOP = 8 }
 local SIZE = {
     rest = { 22, 6 }, media = { 440, 64 }, notice = { 180, 10 }, volume = { 280, 16 },
     system = { 44, 44 }, launcher = { 600, 46 }, universe = { 64, 64 },
+    time = { 560, 170 }, done = { 440, 76 }, capsule = { 124, 22 },
 }
 -- the shape (lib/node/look's M.shape): the seed's size, how round the corners are (0 square … 1 a capsule), and how
 -- far from the top it sits; without one, the organic seed

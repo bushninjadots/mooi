@@ -62,7 +62,7 @@ def scene():
          'scene Node {',
          '    permissions {',
          '        run: "pleamar", "mooi", "hyprctl", "playerctl"',
-         '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "battery", "network", "workspaces", "apps", "apps.launch"',
+         '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
     L += palette_block()

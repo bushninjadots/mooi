@@ -322,6 +322,7 @@ M.SCHEMA = {
     -- D226: the node's keys (Super+Space was ArchEclipse's float toggle; Super+Tab the Overview's)
     { path = "keys.node_launch", kind = "key", default = "SUPER + space" },
     { path = "keys.node_universe", kind = "key", default = "SUPER + Tab" },
+    { path = "keys.node_time", kind = "key", default = "SUPER + T" },
     { path = "keys.settings", kind = "key", default = "SUPER + ALT + S" },
     -- D160: the lock screen at once. The session also locks itself after `lock.idle` minutes
     -- (hypridle, Settings → Lock); this is the key for when you are leaving now.

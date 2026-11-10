@@ -24,6 +24,7 @@ M.ACTIONS = {
     -- and the Overview answer instead (`mooi node`)
     { key = "node_launch", cmd = "node launch", name = "The Pill: search" },
     { key = "node_universe", cmd = "node universe", name = "The Pill: the workspaces round it" },
+    { key = "node_time", cmd = "node time", name = "The Pill: time" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 
