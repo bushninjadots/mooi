@@ -36,7 +36,7 @@ you have reduced motion turned on, it does not breathe at all.
 
 ### The seed shapes
 
-There are six seeds:
+There are eight seeds (and BMO):
 
 - **Line** — a short, rounded bar. This is the default.
 - **Dot** — a small round seed, at most 16 pixels across.
@@ -44,6 +44,8 @@ There are six seeds:
 - **Twin** — two short bodies side by side.
 - **Bar** — a longer, squarer bar.
 - **Clock** — a capsule with the time in it (see below).
+- **Orb** — a small sphere of light with a highlight (D296).
+- **Comet** — a bright head with a tail that sways as it breathes (D296).
 
 You can set the seed's width (6–80 px), its height (2–16 px), its roundness (0–100%), its distance
 from the top of the screen (0–40 px) and its character: Organic, Minimal, Technical or Cyber. The

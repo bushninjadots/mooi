@@ -36,7 +36,8 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_mu", 0.6, "how much it moves with the music"), ("nd_viz", 0, "the media's music: 0 bars · 1 wave · 2 dots · 3 off"),
         ("nd_cov", 0, "the cover: 0 square · 1 round"),
         ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width"),
-        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_rxl", 1, "reactions: 0 off · 1 subtle · 2 lively"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
+        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_rxl", 1, "reactions: 0 off · 1 subtle · 2 lively"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars"),
+        ("nd_shm", 0, "D296 shimmer: 0 off · 1 slow · 2 fast"), ("nd_trl", 0, "D296 trail: 0 off · 1 on")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "Panel", "Search", "Tour"]
 TABS = ["Presets", "Pill", "Shape", "Surface", "Motion", "Music", "Parts"]   # lib/node/look M.TABS, in its order (a test holds them together)
@@ -85,6 +86,10 @@ def scene():
         for i in range(len(SPRINGS)):
             L += [f"    prop nb{f}{i} = {v} ~nd.s{i}", f"    follow nb{f}{i} = nd_t{f}"]
         L += [f"    let nb_{f} = pick(nd_sp, " + ", ".join(f"nb{f}{i}" for i in range(len(SPRINGS))) + ")"]
+    # D296: the trail — the same targets on a slow spring, a ghost a beat behind the body
+    L += ['    spring nd.trail = 60, 11']
+    for f, v in FIELDS:
+        L += [f"    prop nd_tg{f} = {v} ~nd.trail", f"    follow nd_tg{f} = nd_t{f}"]
     L += ['    // what is inside appears as the body reaches its size: it grows out of the node, never pops in',
           '    let nd_cf = clamp((nb_w - 0.82 * nd_tw) / max(1, 0.18 * nd_tw), 0, 1) * clamp((nb_h - 0.82 * nd_th) / max(1, 0.18 * nd_th), 0, 1)',
           '    // the seed breathes (2 s), only at rest and only while allowed',
@@ -95,6 +100,9 @@ def scene():
           '    text nd_title = ""', '    text nd_artist = ""', '    text nd_art = ""', '    image nd_cover = from nd_art, 96, 96',
           '    fact nd_playing = false', '    fact nd_paused = false', '    fact nd_prog = 0', '    fact nd_arted = false',
           '    prop nd_vph = 0', '    spin nd_vph by if(nd_kind == 1 and nd_playing, 240, 0)',
+          '    // D296: the aurora\'s drift and the shimmer\'s turn spin only while those are worn',
+          '    prop nd_aph = 0', '    spin nd_aph by if(nd_tex == 7 and nd_kind > 0, 36, 0)',
+          '    prop nd_shp = 0', '    spin nd_shp by if(nd_shm > 0, if(nd_shm == 2, 300, 120), 0)',
           '    // the record (D246): 33⅓ turns a minute while it plays',
           '    prop nd_vrot = 0', '    spin nd_vrot by if(nd_kind == 1 and nd_mf == 2 and nd_playing, 200, 0)',
           '    // notices',
@@ -119,8 +127,8 @@ def scene():
           '    fact nd_kr = 0        // the row the keyboard is on',
           '    fact nd_pv = 0        // the preview: ' + " · ".join(f"{i} {t}" for i, t in enumerate(PREVIEW)),
           '    text nd_lookname = "Organic"',
-          '    model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; off: bool; why: text; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text; o6: text }',
-          '    model ps max 4 { name: text; desc: text; on: bool; sw: number; sh: number; sr: number; seed: number }',
+          '    model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; off: bool; why: text; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text; o6: text; o7: text; o8: text }',
+          '    model ps max 6 { name: text; desc: text; on: bool; sw: number; sh: number; sr: number; seed: number }',
           '    model sl max 3 { label: text; full: bool }',
           '    model md max 6 { label: text }     // D257: the modules in the pill, in order',
           '    model ma max 11 { label: text }    // …and those that can be added',
@@ -355,19 +363,26 @@ def studio_deck():
     L += [f'{d}// the presets: four characters to start from (each card draws its own seed, three times its size)',
           f'{d}group {{ show: nd_tab == 0',
           f'{d}    for p in ps {{',
-          f'{d}        let px = st_x + 24 + p.index * 226',
+          f'{d}        // (D296) six characters in one row: a card each, its seed drawn at twice its size',
+          f'{d}        let px = st_x + 24 + p.index * 151',
           f'{d}        let py = st_dy + 80',
-          f'{d}        let pr = min(p.sw, p.sh) * 1.5 * p.sr',
-          f'{d}        box {{ from: px, py; size: 214, 126; corner: 14; color: if(p.on, fl.hull_raised, fl.well); opacity: 0.9 }}',
-          f'{d}        box {{ from: px, py; size: 214, 126; corner: 14; stroke: if(p.on, 2, 1); color: if(p.on, nd_acc, if(psz.hover, fl.trace_lit, fl.trace_dim)) }}',
+          f'{d}        let pw2 = min(p.sw * 2, 110)',
+          f'{d}        let ph2 = min(p.sh * 2, 34)',
+          f'{d}        let pr = min(pw2, ph2) / 2 * p.sr',
+          f'{d}        box {{ from: px, py; size: 144, 126; corner: 14; color: if(p.on, fl.hull_raised, fl.well); opacity: 0.9 }}',
+          f'{d}        box {{ from: px, py; size: 144, 126; corner: 14; stroke: if(p.on, 2, 1); color: if(p.on, nd_acc, if(psz.hover, fl.trace_lit, fl.trace_dim)) }}',
           f'{d}        group {{ glow: 10, 0.5, nd_glc',
-          f'{d}            box {{ from: px + 107 - p.sw * 1.5, py + 30 - p.sh * 1.5; size: p.sw * 3, p.sh * 3; corner: pr; color: nd_acc; show: p.seed != 2 and p.seed != 3 }}',
-          f'{d}            box {{ from: px + 107 - p.sw * 1.5, py + 30 - p.sh * 1.5; size: p.sw * 1.35, p.sh * 3; corner: pr; color: nd_acc; show: p.seed == 3 }}',
-          f'{d}            box {{ from: px + 107 + p.sw * 0.15, py + 30 - p.sh * 1.5; size: p.sw * 1.35, p.sh * 3; corner: pr; color: nd_acc; show: p.seed == 3 }} }}',
-          f'{d}        box {{ from: px + 107 - p.sw * 1.5, py + 30 - p.sh * 1.5; size: p.sw * 3, p.sh * 3; corner: pr; stroke: 2; color: nd_acc; show: p.seed == 2 }}',
-          f'{d}        text p.name {{ at: px + 18, py + 66; anchor: left center; size: 15; weight: 700; family: {SANS}; color: fl.engrave }}',
-          f'{d}        text p.desc {{ at: px + 18, py + 82; anchor: left top; size: 10; family: {SANS}; color: fl.muted; width: 180; lines: 2 }}',
-          f'{d}        zone box psz {{ from: px, py; size: 214, 126; corner: 14; cursor: pointer; role: item; label: "Wear {{p.name}}"; selected: p.on; show: nd_studio and nd_tab == 0 }}',
+          f'{d}            box {{ from: px + 72 - pw2 / 2, py + 28 - ph2 / 2; size: pw2, ph2; corner: pr; color: nd_acc; show: p.seed != 2 and p.seed != 3 and p.seed != 7 and p.seed != 8 }}',
+          f'{d}            box {{ from: px + 72 - pw2 / 2, py + 28 - ph2 / 2; size: pw2 * 0.45, ph2; corner: pr; color: nd_acc; show: p.seed == 3 }}',
+          f'{d}            box {{ from: px + 72 + pw2 * 0.05, py + 28 - ph2 / 2; size: pw2 * 0.45, ph2; corner: pr; color: nd_acc; show: p.seed == 3 }}',
+          f'{d}            ellipse {{ at: px + 72, py + 28; radius: ph2 / 2; color: nd_acc; opacity: 0.8; show: p.seed == 7 }}',
+          f'{d}            ellipse {{ at: px + 72 - ph2 * 0.15, py + 28 - ph2 * 0.15; radius: ph2 * 0.13; color: #ffffff; opacity: 0.6; show: p.seed == 7 }}',
+          f'{d}            ellipse {{ at: px + 72 + pw2 / 2 - ph2 / 2, py + 28; radius: ph2 / 2; color: nd_acc; show: p.seed == 8 }}',
+          f'{d}            box {{ from: px + 72 - pw2 / 2, py + 28 - ph2 / 6; size: pw2 - ph2 / 2, ph2 / 3; corner: ph2 / 6; color: nd_acc; opacity: 0.35; show: p.seed == 8 }} }}',
+          f'{d}        box {{ from: px + 72 - pw2 / 2, py + 28 - ph2 / 2; size: pw2, ph2; corner: pr; stroke: 2; color: nd_acc; show: p.seed == 2 }}',
+          f'{d}        text p.name {{ at: px + 14, py + 62; anchor: left center; size: 14; weight: 700; family: {SANS}; color: fl.engrave }}',
+          f'{d}        text p.desc {{ at: px + 14, py + 76; anchor: left top; size: 9; family: {SANS}; color: fl.muted; width: 120; lines: 3 }}',
+          f'{d}        zone box psz {{ from: px, py; size: 144, 126; corner: 14; cursor: pointer; role: item; label: "Wear {{p.name}}"; selected: p.on; show: nd_studio and nd_tab == 0 }}',
           f'{d}        on press psz {{ emit nd_ps(p.index) }}',
           f'{d}    }}',
           f'{d}    text "YOUR LOOKS" {{ at: st_x + 24, st_dy + 232; anchor: left center; size: 9; weight: 700; family: {MONO}; color: fl.muted }}',
@@ -450,14 +465,15 @@ def studio_deck():
           f'{d}                ellipse {{ at: tx + 380 * r.frac, ry + 23; radius: if(skz.hover, 9, 7); color: nd_acc }} }}',
           f'{d}            text r.value {{ at: st_x + 916, ry + 23; anchor: right center; align: right; size: 11; weight: 700; family: {MONO}; color: fl.engrave; width: 90; lines: 1 }}',
           f'{d}        }}']
-    for j in range(7):
-        x = f"tx + {j * 69}"
+    # (D296) up to nine chips: a choice of more than seven draws them narrower
+    for j in range(9):
+        x = f"tx + {j} * if(r.n > 7, 55, 69)"
         L += [f'{d}        group {{ show: r.kind == 1 and r.n > {j}',
-              f'{d}            box {{ from: {x}, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == {j}, 0.9, if(sko{j}.hover, 0.16, 0)) }}',
-              f'{d}            box {{ from: {x}, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == {j}, nd_acc, fl.trace_lit) }}',
+              f'{d}            box {{ from: {x}, ry + 9; size: if(r.n > 7, 51, 64), 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == {j}, 0.9, if(sko{j}.hover, 0.16, 0)) }}',
+              f'{d}            box {{ from: {x}, ry + 9; size: if(r.n > 7, 51, 64), 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == {j}, nd_acc, fl.trace_lit) }}',
               f'{d}            text r.o{j} {{ at: {x} + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: {MONO}; color: if(r.sel == {j}, fl.ground, fl.engrave); width: 60; lines: 1 }}',
               f'{d}        }}',
-              f'{d}        zone box sko{j} {{ from: {x}, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{{r.label}}: {{r.o{j}}}"; selected: r.sel == {j}; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > {j} and not r.off }}',
+              f'{d}        zone box sko{j} {{ from: {x}, ry + 9; size: if(r.n > 7, 51, 64), 28; cursor: pointer; role: item; label: "{{r.label}}: {{r.o{j}}}"; selected: r.sel == {j}; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > {j} and not r.off }}',
               f'{d}        on press sko{j} {{ emit nd_so(r.index * 10 + {j}) }}']
     L += [f'{d}    }}',
           f'{d}    zone box skz {{ from: tx - 12, ry + 4; size: 404, 38; cursor: grab; role: slider; label: "{{r.label}}"; value: "{{r.value}}"; show: nd_studio and nd_tab > 0 and r.kind == 0 and not r.off }}',
@@ -1188,6 +1204,9 @@ def surface():
           f'{c}    let r0 = max(nb_w, nb_h) / 2',
           f'{c}    ellipse {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; radius: r0 + (10 + 24 * nd_rxl) * (1 - nd_rr); scale: 1, min(1, (nb_h + 30) / max(1, nb_w)); stroke: 1.5; color: rc; opacity: 0.75 * nd_rr }}',
           f'{c}    ellipse {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; radius: r0 + 40 * clamp(1.4 - nd_rr * 1.4, 0, 1); scale: 1, min(1, (nb_h + 30) / max(1, nb_w)); stroke: 1; color: rc; opacity: 0.5 * nd_rr; show: nd_rxl == 2 }}',
+          f'{c}    // (D296) sparks: a burst out of it while the reaction is fresh',
+          f'{c}    group {{ glow: 6, 0.8, rc; show: nd_rxl == 3',
+          f'{c}        particles {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; area: nb_w, nb_h; count: 90; life: 0.35s .. 0.9s; speed: 90 .. 240; spread: 360deg; gravity: 0, 140; drag: 1.3; size: 2.6, 0.4; opacity: 100%, 0%; shape: spark; emit: nd_rr > 0.72 and nd_rxl == 3 }} }}',
           f'{c}}}']
     L += [f'{c}// the launcher: what is round it steps back (the look\'s dim), the search line in focus',
           f'{c}box {{ from: 0, 0; size: node.width, node.height; color: #000000; opacity: nd_ldm * nd_ld; show: nd_ld > 0.01 }}']
@@ -1260,6 +1279,18 @@ def surface():
           f'{c}    box {{ from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; stroke: 1.5; color: {acc}; opacity: 0.6 + 0.35 * nd_br; show: nd_seed == 2 }}',
           f'{c}    box {{ from: nd_sx, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: {acc}; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 3 }}',
           f'{c}    box {{ from: nd_sx + nd_sw * 0.55, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: {acc}; opacity: (0.55 + 0.35 * (1 - nd_br)) * nd_fill; show: nd_seed == 3 }}',
+          f'{c}    // (D296) an orb: a sphere of light, its highlight up and to the left',
+          f'{c}    group {{ show: nd_seed == 7',
+          f'{c}        ellipse {{ at: nd_sx + nd_sw / 2, nd_sy + nd_sh / 2; radius: nd_sw / 2; color: {acc}; opacity: (0.45 + 0.3 * nd_br) * nd_fill }}',
+          f'{c}        ellipse {{ at: nd_sx + nd_sw / 2, nd_sy + nd_sh / 2; radius: nd_sw / 2 * 0.62; color: {acc}; opacity: 0.55 * nd_fill }}',
+          f'{c}        ellipse {{ at: nd_sx + nd_sw * 0.36, nd_sy + nd_sh * 0.34; radius: nd_sw * 0.13; color: #ffffff; opacity: 0.55 }} }}',
+          f'{c}    // (D296) a comet: a bright head, its tail thinning behind it and swaying as it breathes',
+          f'{c}    group {{ show: nd_seed == 8']
+    for k in range(8):
+        f = (k + 1) / 9
+        L += [f'{c}        ellipse {{ at: nd_sx + nd_sw - nd_sh / 2 - {f:.3f} * (nd_sw - nd_sh), nd_sy + nd_sh / 2 + sin({k * 40} + nd_br * 180) * {f:.3f} * nd_sh * 0.4; radius: nd_sh / 2 * {1 - f * 0.85:.3f}; color: {acc}; opacity: {0.7 * (1 - f):.3f} * nd_fill }}']
+    L += [f'{c}        ellipse {{ at: nd_sx + nd_sw - nd_sh / 2, nd_sy + nd_sh / 2; radius: nd_sh / 2; color: {acc}; opacity: (0.75 + 0.25 * nd_br) * nd_fill }}',
+          f'{c}        ellipse {{ at: nd_sx + nd_sw - nd_sh / 2, nd_sy + nd_sh / 2; radius: nd_sh / 4; color: #ffffff; opacity: 0.6 }} }}',
           f'{c}}}',
           f'{c}// the seed with music as bars (D246): five little bars over it while something plays',
           f'{c}group {{ show: nd_kind == 0 and nd_smu == 2 and nd_playing and not nd_cap and nd_seed != 5 and nd_long == 0']
@@ -1314,15 +1345,36 @@ def surface():
           f'{c}    repeat dh in 0..12 {{ ellipse {{ at: nb_x + 8 + dh * 6.4, nb_y + 7; radius: 1.8; color: if(dh < nd_ckdh, {acc}, fl.trace_dim); opacity: nd_cf; show: nd_cks == 5 }} }}',
           f'{c}    repeat dm in 0..12 {{ ellipse {{ at: nb_x + 8 + dm * 6.4, nb_y + 15; radius: 1.8; color: if(dm < nd_ckdm, {ink}, fl.trace_dim); opacity: nd_cf; show: nd_cks == 5 }} }}',
           f'{c}}}',
+          f'{c}// (D296) the trail: a ghost of its outline a slow spring behind it, seen only while they differ',
+          f'{c}box {{ from: nd_tgx, nd_tgy; size: nd_tgw, nd_tgh; corner: min(nb_r, nd_tgh / 2); stroke: 1; color: {acc}; opacity: 0.35 * clamp((abs(nd_tgw - nb_w) + abs(nd_tgh - nb_h) + abs(nd_tgx - nb_x)) / 60, 0, 1); show: nd_trl == 1 }}',
           f'{c}// grown: the body, of the look\'s fill (hollow: barely), its texture, its outline',
           f'{c}group {{ show: nd_kind > 0; glow: 14, nd_glow, nd_glc',
-          f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; opacity: nd_fill * if(nd_tex == 1, 0.25, 1) }} }}',
-          f'{c}group {{ show: nd_kind > 0 and nd_tex > 2',
+          f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; opacity: nd_fill * if(nd_tex == 1, 0.25, if(nd_tex == 5, 0.3, 1)) }} }}',
+          f'{c}// (D296) glass: what is behind seen through it, frosted, and a line of light along its top',
+          f'{c}box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; glass: 100%; frost: 70%; show: nd_kind > 0 and nd_tex == 5 }}',
+          f'{c}box {{ from: nb_x + nb_r * 0.6, nb_y + 1.5; size: max(0, nb_w - nb_r * 1.2), 1.2; corner: 0.6; color: #ffffff; opacity: 0.35; show: nd_kind > 0 and nd_tex == 5 }}',
+          f'{c}// (D296) neon: a tube of light round a dark body',
+          f'{c}group {{ show: nd_kind > 0 and nd_tex == 6; glow: 18, 0.9 + 0.4 * lv.level * nd_mu, {acc}',
+          f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: 2; color: {acc} }} }}',
+          f'{c}// (D296) aurora: two slow clouds of its colours drifting inside it',
+          f'{c}group {{ show: nd_kind > 0 and nd_tex == 7',
+          f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
+          f'{c}    group {{ blur: 18',
+          f'{c}        ellipse {{ at: nb_x + nb_w * (0.5 + 0.38 * sin(nd_aph)), nb_y + nb_h * (0.5 + 0.3 * cos(nd_aph * 1.3)); radius: max(nb_w, nb_h) * 0.42; color: {acc}; opacity: 0.32 }}',
+          f'{c}        ellipse {{ at: nb_x + nb_w * (0.5 + 0.38 * cos(nd_aph * 0.8)), nb_y + nb_h * (0.5 + 0.3 * sin(nd_aph * 1.1)); radius: max(nb_w, nb_h) * 0.36; color: nd_glc; opacity: 0.28 }} }}',
+          f'{c}}}',
+          f'{c}group {{ show: nd_kind > 0 and nd_tex > 2 and nd_tex < 5',
           f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
           f'{c}    repeat sl in 0..16 {{ box {{ from: nb_x, nb_y + (sl + 0.5) * nb_h / 16; size: nb_w, 1; color: {acc}; opacity: 0.08; show: nd_tex == 3 }} }}',
           f'{c}    repeat dr in 0..4 {{ repeat dc in 0..48 {{ ellipse {{ at: nb_x + (dc + 0.5) * nb_w / 48, nb_y + (dr + 0.5) * nb_h / 4; radius: 0.9; color: {acc}; opacity: 0.18; show: nd_tex == 4 }} }} }}',
           f'{c}}}',
           f'{c}box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: {acc}; opacity: if(nd_tex == 1, 0.9, 0.55); show: nd_kind > 0 and nd_ol > 0.05 }}',
+          f'{c}// (D296) shimmer: a band of light crossing it, then a rest before the next (half of each turn is off it)',
+          f'{c}group {{ show: nd_shm > 0 and nd_cf > 0.05 and not nd_cap',
+          f'{c}    clip box {{ from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr }}',
+          f'{c}    group {{ blur: 4',
+          f'{c}        box {{ from: nd_sx - 24 + (nd_sw + 48) * (mod(nd_shp, 360) / 180), nd_sy - 2; size: 14, nd_sh + 4; color: #ffffff; opacity: 0.28 * nd_cf }} }}',
+          f'{c}}}',
           f'{c}// segmented: the outline breaks in three places; and a cyber node glitches on a change (a shifted ghost and a',
           f'{c}// scan line in the counter-signal)',
           f'{c}box {{ from: nb_x + nb_w * 0.3, nb_y - 1; size: nb_w * 0.12, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 }}',

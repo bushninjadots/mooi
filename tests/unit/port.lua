@@ -753,3 +753,20 @@ do
         assert(p:find("for m in lml {", 1, true) and p:find("for m in lmr {", 1, true) and p:find("zone box mside2", 1, true))
     end)
 end
+
+section("the Pill's new designs (D296)")
+do
+    local LK = require("lib/node/look")
+    test("orb and comet seeds, glass, neon and aurora, shimmer, trail, sparks, and two presets", function()
+        local f = LK.facts(LK.normalise({ seed = "comet", texture = "aurora", shimmer = "fast", trail = "on", reactions = "sparks" }))
+        eq(f.nd_seed, 8); eq(f.nd_tex, 7); eq(f.nd_shm, 2); eq(f.nd_trl, 1); eq(f.nd_rxl, 3)
+        eq(LK.shape(LK.normalise({ seed = "orb", seed_w = 6, seed_h = 6 })).seed_w, 10, "an orb is never smaller than 10")
+        local liquid, neon = LK.preset("liquid"), LK.preset("neon")
+        eq(liquid.texture, "glass"); eq(liquid.seed, "orb"); eq(neon.texture, "neon"); eq(neon.reactions, "sparks")
+        eq(#LK.PRESETS, 6)
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("glass: 100%; frost: 70%", 1, true) and p:find("shape: spark; emit: nd_rr > 0.72", 1, true))
+        assert(p:find("spin nd_shp by if(nd_shm > 0", 1, true) and p:find("follow nd_tgx = nd_tx", 1, true))
+        assert(p:find("model ps max 6", 1, true) and p:find("zone box sko8", 1, true))
+    end)
+end

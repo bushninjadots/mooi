@@ -1928,6 +1928,8 @@ local PRESET_DESC = {
     minimal = "A point. Fast, restrained, next to no glow",
     technical = "Ruled and precise: ticks, brackets, square corners",
     cyber = "Quick and broken: segments, an ember glow, a glitch on every change",
+    liquid = "An orb of glass: it wobbles, shimmers and leaves a trail",
+    neon = "A comet in a tube of light: bright, quick, and it throws sparks",
 }
 local function title(s) s = tostring(s or ""); return (s:gsub("^%l", string.upper)) end
 local function slot_label(x)

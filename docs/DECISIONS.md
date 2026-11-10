@@ -7718,3 +7718,23 @@ Pill's own by default. They are hidden in the studio, whose stage is the Pill.
 **Verified.** Unit 937 / 0; the scene compiles; live after `mooi refresh`: with `left = spaces, window` and
 `right = battery, clock, date` written into the look by hand, both notches stood in their corners with their
 modules; the owner's look was then put back as it was.
+
+## D296 · 2026-11-10 · More design for the Pill: seeds, materials, motion, sparks, two characters
+
+The owner asked for "more effects … in the pill and design features for the pill". In the studio:
+- **Shape → Seed** gains **Orb** (a sphere of light with its highlight) and **Comet** (a head and a tail that sways
+  as it breathes).
+- **Surface → Texture** gains **Glass** (Pleamar's own glass, frosted, what is behind seen through the body, a line
+  of light along its top), **Neon** (a tube of light round a dark body, brighter with the music) and **Aurora** (two
+  slow clouds of its colours drifting inside it, blurred). **Surface → Shimmer** (Off, Slow, Fast) sends a band of
+  light across it, then rests before the next.
+- **Parts → Trail** draws a ghost of its outline a slow spring behind it, seen only while the two differ, so it
+  shows as the Pill grows and folds. **Parts → Reactions** gains **Sparks**, a burst of particles out of it.
+- **Presets** gains **Liquid** (an orb of glass that wobbles, shimmers and trails) and **Neon** (a comet in a tube
+  of light that throws sparks); the six now stand in one row.
+
+The aurora and the shimmer turn on spins that run only while they are worn, so a look without them costs nothing
+new at rest. The studio's chips narrow when a choice has more than seven (Seed has nine now).
+
+**Verified.** Unit 938 / 0; the scene compiles; live in the studio: Liquid's glass capsule with its shimmer, and
+Neon's tube growing its notice cards; the owner's look was put back afterwards.

@@ -8,7 +8,7 @@
 local M = {}
 
 M.FILE = "node-look.json"
-M.PRESETS = { "organic", "minimal", "technical", "cyber" }
+M.PRESETS = { "organic", "minimal", "technical", "cyber", "liquid", "neon" }
 M.SLOTS = 3
 
 -- the studio's tabs; the first is the presets' own page (no rows)
@@ -24,7 +24,7 @@ M.SCHEMA = {
         choice("clock_style", "Clock seed", "How the clock seed tells the time (Shape → Seed → Clock)", { "pixel", "digital", "analog", "words", "binary", "dots" }, { "Pixel", "Digits", "Hands", "Words", "Binary", "Dots" }),
     },
     Shape = {
-        choice("seed", "Seed", "What rests at the top while nothing happens", { "line", "dot", "ring", "twin", "bar", "clock", "bmo" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock", "BMO" }),
+        choice("seed", "Seed", "What rests at the top while nothing happens", { "line", "dot", "ring", "twin", "bar", "clock", "bmo", "orb", "comet" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock", "BMO", "Orb", "Comet" }),
         range("seed_w", "Seed width", "How long the resting seed is", 6, 80, " px"),
         range("seed_h", "Seed height", "How thick it is", 2, 16, " px"),
         range("round", "Roundness", "From square corners to a full capsule", 0, 100, "%"),
@@ -32,12 +32,14 @@ M.SCHEMA = {
         range("top", "From the top", "How far below the screen's edge it sits", 0, 40, " px"),
     },
     Surface = {
-        choice("texture", "Texture", "What its body is made of", { "solid", "hollow", "segmented", "scan", "dotted" }, { "Solid", "Hollow", "Segmented", "Scan", "Dotted" }),
+        choice("texture", "Texture", "What its body is made of", { "solid", "hollow", "segmented", "scan", "dotted", "glass", "neon", "aurora" }, { "Solid", "Hollow", "Segmented", "Scan", "Dotted", "Glass", "Neon", "Aurora" }),
         range("fill", "Fill", "How solid the body is", 30, 100, "%"),
         range("outline", "Outline", "The edge's weight", 0, 30, ""),
         range("glow", "Glow", "How much light it gives off", 0, 100, "%"),
         choice("accent", "Colour", "Its own colour, from the palette", { "phos", "ember", "ink", "steel" }, { "Signal", "Ember", "Ink", "Steel" }),
         choice("glow_colour", "Glow colour", "The light's colour", { "phos", "ember", "ink", "steel" }, { "Signal", "Ember", "Ink", "Steel" }),
+        -- D296: a band of light that sweeps across it now and then
+        choice("shimmer", "Shimmer", "A band of light crossing it now and then", { "off", "slow", "fast" }, { "Off", "Slow", "Fast" }),
     },
     Motion = {
         choice("speed", "Speed", "How quickly it changes shape", { "soft", "quick", "snap" }, { "Soft", "Quick", "Snap" }),
@@ -55,10 +57,12 @@ M.SCHEMA = {
         choice("cover", "Cover", "The album art's shape", { "square", "round" }, { "Square", "Round" }),
     },
     Parts = {
-        choice("reactions", "Reactions", "A ring from the node when something happens: music, a notice, the charger, the microphone", { "off", "subtle", "lively" }, { "Off", "Subtle", "Lively" }),
+        choice("reactions", "Reactions", "A ring from the node when something happens: music, a notice, the charger, the microphone", { "off", "subtle", "lively", "sparks" }, { "Off", "Subtle", "Lively", "Sparks" }),
         range("cards", "Notices", "How many notice cards branch from it", 1, 5, ""),
         range("dim", "Search dim", "How far the desktop steps back behind the search", 0, 60, "%"),
         range("orbit", "Orbit", "How wide the workspaces orbit (Super+Tab)", 300, 700, " px"),
+        -- D296: a ghost that follows it as it changes shape
+        choice("trail", "Trail", "A faint ghost of its outline following it as it grows and folds", { "off", "on" }, { "Off", "On" }),
     },
 }
 
@@ -68,6 +72,7 @@ local BASE = {
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
     viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse",
     place = "floating", clock_style = "pixel", ws_style = "bead", reactions = "subtle", cards = 3, dim = 28, orbit = 520,
+    shimmer = "off", trail = "off",
 }
 local PRESET = {
     organic = {},
@@ -77,6 +82,13 @@ local PRESET = {
                   speed = "quick", bounce = "none", stagger = 60, breath = 0, music = 35, cover = "square" },
     cyber = { seed = "twin", seed_w = 24, seed_h = 5, round = 32, style = "cyber", texture = "segmented", outline = 15, glow = 90,
               glow_colour = "ember", speed = "snap", bounce = "some", stagger = 80, breath = 20, music = 80, viz = "wave" },
+    -- D296: two more characters to start from
+    liquid = { seed = "orb", seed_w = 14, seed_h = 14, round = 100, texture = "glass", fill = 80, glow = 55, outline = 8,
+               speed = "soft", bounce = "lots", growth = "normal", stagger = 40, breath = 50, music = 70, shimmer = "slow",
+               trail = "on", reactions = "lively", viz = "wave", cover = "round" },
+    neon = { seed = "comet", seed_w = 34, seed_h = 6, round = 100, style = "cyber", texture = "neon", fill = 90, outline = 20,
+             glow = 100, accent = "phos", glow_colour = "phos", speed = "quick", bounce = "some", stagger = 60, breath = 25,
+             music = 90, shimmer = "fast", reactions = "sparks", viz = "bars" },
 }
 
 local function find(key)
@@ -239,7 +251,7 @@ function M.rows(t, tab)
         local on, why = applicable(t, row)
         local r = { kind = row.values and 1 or 0, label = row.label, desc = row.desc, value = word, frac = frac, sel = sel,
                     n = row.values and #row.values or 0, off = not on, why = why }
-        for j = 0, 6 do r["o" .. j] = row.names and row.names[j + 1] or "" end
+        for j = 0, 8 do r["o" .. j] = row.names and row.names[j + 1] or "" end
         out[i] = r
     end
     return out
@@ -329,8 +341,9 @@ function M.facts(t)
     local function ix(list, v) return (index_of(list, v) or 1) - 1 end
     return {
         nd_np = ix(M.PRESETS, t.style), nd_sp = M.spring_index(t), nd_gs = ix(M.GROWTHS, t.growth),
-        nd_seed = ix({ "line", "dot", "ring", "twin", "bar", "clock", "bmo" }, t.seed), nd_rnd = t.round / 100,
-        nd_tex = ix({ "solid", "hollow", "segmented", "scan", "dotted" }, t.texture), nd_fill = t.fill / 100,
+        nd_seed = ix({ "line", "dot", "ring", "twin", "bar", "clock", "bmo", "orb", "comet" }, t.seed), nd_rnd = t.round / 100,
+        nd_tex = ix({ "solid", "hollow", "segmented", "scan", "dotted", "glass", "neon", "aurora" }, t.texture), nd_fill = t.fill / 100,
+        nd_shm = ix({ "off", "slow", "fast" }, t.shimmer), nd_trl = ix({ "off", "on" }, t.trail),
         nd_ol = t.outline / 10, nd_gw = t.glow / 100, nd_ac = ix(COLOURS, t.accent), nd_gc = ix(COLOURS, t.glow_colour),
         nd_stg = t.stagger / 100, nd_bd = t.breath / 100, nd_mu = t.music / 100,
         nd_viz = ix({ "bars", "wave", "dots", "off" }, t.viz), nd_cov = ix({ "square", "round" }, t.cover),
@@ -338,7 +351,7 @@ function M.facts(t)
         nd_long = ({ seed = 0, long = 1, notch = 2 })[M.form(t)],
         nd_cks = ix({ "pixel", "digital", "analog", "words", "binary", "dots" }, t.clock_style),
         nd_wss = ix({ "bead", "slide", "flip", "pulse", "count" }, t.ws_style),
-        nd_rxl = ix({ "off", "subtle", "lively" }, t.reactions),
+        nd_rxl = ix({ "off", "subtle", "lively", "sparks" }, t.reactions),
         nd_mf = ix({ "capsule", "visualiser", "vinyl" }, t.music_form), nd_smu = ix({ "still", "pulse", "bars" }, t.seed_music),
     }
 end
@@ -347,6 +360,9 @@ end
 function M.shape(t)
     local w, h = t.seed_w, t.seed_h
     if t.seed == "dot" or t.seed == "ring" then w = math.max(h, math.min(w, 16)); h = w end
+    -- D296: an orb is round and a little larger; a comet is a head with its tail
+    if t.seed == "orb" then w = math.max(10, math.min(math.max(w, h), 22)); h = w end
+    if t.seed == "comet" then w = math.max(24, w); h = math.max(4, math.min(h, 10)) end
     -- the clock (D241): its matrix sets its size — 29 cells of 2 px across, 7 down, and a little air round it
     if t.seed == "clock" then
         -- (D255) each way of telling the time its own size

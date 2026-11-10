@@ -6313,7 +6313,8 @@ do
     test("look: presets are complete and sane; any file is made sane; the old Settings personality seeds it", function()
         for _, p in ipairs(LK.PRESETS) do
             local t = LK.preset(p)
-            eq(t.style, p)
+            -- the first four are characters of their own; D296's liquid and neon wear one of them
+            if LK.index_of({ "organic", "minimal", "technical", "cyber" }, p) then eq(t.style, p) else eq(LK.preset(p).preset, p) end
             local n = LK.normalise(t)
             for k, v in pairs(t) do if k ~= "slots" and k ~= "custom" then eq(n[k], v, p .. "." .. k) end end
         end
@@ -6329,9 +6330,10 @@ do
         assert(LK.set_frac(t, "orbit", 1)); eq(t.orbit, 700)
         assert(not LK.set_frac(t, "seed", 0.5), "a choice has no slider")
         assert(LK.set_choice(t, "seed", 3)); eq(t.seed, "ring")
-        assert(not LK.set_choice(t, "seed", 9))
+        assert(not LK.set_choice(t, "seed", 10))
         LK.nudge(t, "seed", 1); eq(t.seed, "twin"); LK.nudge(t, "seed", 1); LK.nudge(t, "seed", 1); eq(t.seed, "clock", "D241")
         LK.nudge(t, "seed", 1); eq(t.seed, "bmo", "D253")
+        LK.nudge(t, "seed", 1); eq(t.seed, "orb", "D296"); LK.nudge(t, "seed", 1); eq(t.seed, "comet", "D296")
         LK.nudge(t, "seed", 1); eq(t.seed, "line", "round again")
         local ck = LK.shape(LK.normalise({ seed = "clock" })); eq(ck.seed_w, 74); eq(ck.seed_h, 22)
         LK.nudge(t, "cards", 1); LK.nudge(t, "cards", 1); LK.nudge(t, "cards", 1); eq(t.cards, 5, "kept in its range")
@@ -6939,7 +6941,7 @@ do
         assert(not p:find("zone box stt" .. #LK.TABS .. " ", 1, true), "no chip more than the pages")
         for _, tab in ipairs(LK.TABS) do
             for _, row in ipairs(LK.SCHEMA[tab] or {}) do
-                if row.values then assert(#row.values <= 7, row.key .. ": seven chips at most") end
+                if row.values then assert(#row.values <= 9, row.key .. ": nine chips at most (D296)") end
             end
         end
         assert(p:find("on press sko6 {", 1, true), "a seventh chip (BMO, the seventh seed)")
