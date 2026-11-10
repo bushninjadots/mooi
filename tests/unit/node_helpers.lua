@@ -1338,3 +1338,152 @@ do
         eq(#body % 2, 0, "whole two-byte characters only")
     end)
 end
+
+section("the node's helpers (D250): clock styles")
+do
+    local C = require("lib/node/clockstyles")
+
+    -- six booleans as six marks, most significant first
+    local function lit(row)
+        local out = {}
+        for i = 1, #row do out[i] = row[i] and "1" or "0" end
+        return table.concat(out)
+    end
+
+    test("the styles are the six the node offers, in the studio's order", function()
+        eq(#C.STYLES, 6)
+        for i, want in ipairs({ "pixel", "digital", "analog", "words", "binary", "dots" }) do
+            eq(C.STYLES[i], want, "style " .. i)
+        end
+    end)
+
+    test("digital: the 24-hour clock keeps its leading zero, the 12-hour one drops it", function()
+        eq(C.digital(7, 5, true), "07:05")
+        eq(C.digital(7, 5, false), "7:05")
+        eq(C.digital(23, 59, true), "23:59")
+        eq(C.digital(13, 5, false), "1:05")
+    end)
+
+    test("digital: midnight and noon read twelve on the 12-hour clock", function()
+        eq(C.digital(0, 0, true), "00:00")
+        eq(C.digital(0, 0, false), "12:00")
+        eq(C.digital(12, 0, false), "12:00")
+        eq(C.digital(0, 5, false), "12:05")
+        eq(C.digital(12, 5, false), "12:05")
+        eq(C.digital(7, 5), "7:05", "no h24 flag means the 12-hour clock")
+    end)
+
+    test("analog: twelve o'clock is zero, three is a right angle, and the hands go clockwise", function()
+        local n = C.analog(12, 0, 0)
+        eq(n.hour, 0, "hour"); eq(n.minute, 0, "minute"); eq(n.second, 0, "second")
+        local three = C.analog(3, 0, 0)
+        eq(three.hour, 90, "hour at three")
+        eq(C.analog(15, 0, 0).hour, 90, "three in the afternoon is the same face")
+        eq(C.analog(6, 0, 0).hour, 180, "six")
+        eq(C.analog(9, 0, 0).hour, 270, "nine")
+    end)
+
+    test("analog: the hour hand creeps with the minutes, so 7:30 is 225 degrees", function()
+        local a = C.analog(7, 30, 0)
+        eq(a.hour, 225); eq(a.minute, 180); eq(a.second, 0)
+        eq(C.analog(6, 15, 0).hour, 187.5, "a quarter past six")
+        eq(C.analog(12, 59, 30).minute, 354, "the minute hand")
+        eq(C.analog(12, 59, 30).second, 180, "the second hand")
+    end)
+
+    test("words: the two the day turns on", function()
+        eq(C.words(0, 0), "midnight")
+        eq(C.words(12, 0), "noon")
+        eq(C.words(0, 2), "midnight", "two minutes rounds back to midnight")
+        eq(C.words(23, 58), "midnight", "and so does the end of the day")
+    end)
+
+    test("words: the five-minute marks before and after the half hour", function()
+        eq(C.words(7, 0), "seven o'clock")
+        eq(C.words(7, 5), "five past seven")
+        eq(C.words(7, 10), "ten past seven")
+        eq(C.words(7, 15), "quarter past seven")
+        eq(C.words(7, 20), "twenty past seven")
+        eq(C.words(7, 25), "twenty-five past seven")
+        eq(C.words(7, 30), "half past seven")
+    end)
+
+    test("words: the minutes to the next hour", function()
+        eq(C.words(7, 35), "twenty-five to eight")
+        eq(C.words(7, 40), "twenty to eight")
+        eq(C.words(7, 45), "quarter to eight")
+        eq(C.words(7, 50), "ten to eight")
+        eq(C.words(7, 55), "five to eight")
+        eq(C.words(11, 55), "five to twelve", "the hour wraps")
+        eq(C.words(23, 55), "five to twelve")
+    end)
+
+    test("words: rounded to the nearest five minutes, and half up", function()
+        eq(C.words(6, 58), "seven o'clock", "the end of the hour rounds on")
+        eq(C.words(7, 2), "seven o'clock", "and the beginning rounds back")
+        eq(C.words(7, 33), "twenty-five to eight", "33 is nearer 35 than 30")
+        eq(C.words(7, 57), "five to eight")
+        eq(C.words(7, 58), "eight o'clock")
+        eq(C.words(12, 58), "one o'clock")
+    end)
+
+    test("binary: 23:59 is 010111 and 111011, most significant first", function()
+        local b = C.binary(23, 59)
+        eq(#b.h, 6, "six hour bits"); eq(#b.m, 6, "six minute bits")
+        eq(lit(b.h), "010111")
+        eq(lit(b.m), "111011")
+        for i = 1, 6 do
+            eq(type(b.h[i]), "boolean", "hour bit " .. i)
+            eq(type(b.m[i]), "boolean", "minute bit " .. i)
+        end
+    end)
+
+    test("binary: midnight is dark and noon is one light in each row", function()
+        eq(lit(C.binary(0, 0).h), "000000")
+        eq(lit(C.binary(0, 0).m), "000000")
+        eq(lit(C.binary(12, 30).h), "001100")
+        eq(lit(C.binary(12, 30).m), "011110")
+    end)
+
+    test("dots: twelve hour dots, twelve five-minute dots, and the four between", function()
+        local d = C.dots(12, 59)
+        eq(d.hours, 0, "twelve is the top of the ring")
+        eq(d.minutes, 11, "59 is the last five-minute step")
+        eq(d.sub, 4, "and four minutes past it")
+        eq(C.dots(13, 5).hours, 1)
+        eq(C.dots(13, 5).minutes, 1)
+        eq(C.dots(13, 5).sub, 0)
+        eq(C.dots(23, 59).hours, 11)
+        eq(C.dots(11, 7).hours, 11)
+        eq(C.dots(11, 7).minutes, 1)
+        eq(C.dots(11, 7).sub, 2)
+        local z = C.dots(0, 0)
+        eq(z.hours, 0); eq(z.minutes, 0); eq(z.sub, 0)
+    end)
+
+    test("next_change_ms: the minute styles wait for the next minute", function()
+        eq(C.next_change_ms("digital", 0, 0), 60000)
+        eq(C.next_change_ms("digital", 42, 250), 17750)
+        eq(C.next_change_ms("pixel", 59, 999), 1)
+        eq(C.next_change_ms("binary", 30, 0), 30000)
+        eq(C.next_change_ms("dots", 0, 999), 59001)
+    end)
+
+    test("next_change_ms: the seconds hand waits for the next second", function()
+        eq(C.next_change_ms("analog", 1, 0), 1000)
+        eq(C.next_change_ms("analog", 1, 500), 500)
+        eq(C.next_change_ms("analog", 59, 999), 1)
+    end)
+
+    test("next_change_ms: the words turn over half a step before the five-minute marks", function()
+        eq(C.next_change_ms("words", 6 * 3600 + 56 * 60, 0), 90000, "6:56 to 6:57:30")
+        eq(C.next_change_ms("words", 6 * 3600 + 57 * 60, 0), 30000, "6:57 to 6:57:30")
+        eq(C.next_change_ms("words", 6 * 3600 + 57 * 60 + 29, 500), 500, "half a second before the turn")
+        eq(C.next_change_ms("words", 6 * 3600 + 57 * 60 + 30, 0), 300000, "on the turn, the next one is a full step on")
+        eq(C.next_change_ms("words", 6 * 3600 + 58 * 60, 0), 270000, "6:58 to 7:02:30")
+    end)
+
+    test("next_change_ms: an unknown style behaves like a minute", function()
+        eq(C.next_change_ms("nope", 30, 250), 29750)
+    end)
+end
