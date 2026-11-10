@@ -6,10 +6,15 @@ local M = { MARGIN = 16, TOP = 8 }
 
 local SIZE = {
     rest = { 22, 6 }, media = { 440, 64 }, notice = { 180, 10 }, volume = { 280, 16 },
-    system = { 44, 44 }, launcher = { 600, 46 }, universe = { 64, 64 },
-    time = { 560, 170 }, done = { 440, 76 }, capsule = { 124, 22 }, privacy = { 360, 44 }, battery = { 360, 44 }, player = { 620, 200 },
-    media_visualiser = { 420, 46 }, shelf = { 380, 34 }, branch = { 560, 270 }, media_vinyl = { 176, 176 },
+    launcher = { 600, 46 }, universe = { 64, 64 },
+    time = { 560, 170 }, done = { 440, 76 }, capsule = { 124, 22 }, privacy = { 360, 44 }, battery = { 360, 44 }, player = { 660, 236 },
+    media_visualiser = { 420, 46 }, media_vinyl = { 176, 176 },
 }
+
+-- D260: the panel is one width; its height is the page's own. Home carries the media, the toggles, the two
+-- sliders, the notices and the icon row; the others carry a header and one branch's contents.
+M.PANEL_W = 500
+M.PANEL_H = { home = 548, calendar = 340, notes = 370, clipboard = 370, stash = 380, wallpaper = 330, system = 420, power = 360 }
 -- the shape (lib/node/look's M.shape): the seed's size, how round the corners are (0 square … 1 a capsule), and how
 -- far from the top it sits; without one, the organic seed
 local PLAIN = { seed_w = 22, seed_h = 6, round = 1, top = 8 }
@@ -26,6 +31,8 @@ function M.body(kind, scr, anchor, shape, data)
         w, h = n * 56 + 28, 30
     elseif kind == "rest" then
         w, h = tonumber(shape.seed_w) or 22, tonumber(shape.seed_h) or 6
+    elseif kind == "panel" then
+        w, h = M.PANEL_W, M.PANEL_H[data.page] or M.PANEL_H.home
     else
         local s = SIZE[kind] or SIZE.rest
         w, h = s[1], s[2]
@@ -62,17 +69,6 @@ function M.cards(body, n, scr, heights)
         local h = (type(heights) == "table" and tonumber(heights[i])) or chh
         out[i] = { x = x, y = y, w = cw, h = h }
         y = y + h + 8
-    end
-    return out
-end
-
--- the system's spokes: points round the node (below it, left to right)
-function M.spokes(body, n)
-    local out = {}
-    local cx, cy = body.x + body.w / 2, body.y + body.h / 2
-    for i = 1, n do
-        local a = math.rad(180 - (i - 0.5) * 180 / n)
-        out[i] = { x = cx + math.cos(a) * 120, y = cy + math.sin(a) * 70 + 30 }
     end
     return out
 end

@@ -24,7 +24,7 @@ SPRINGS = [(f"{s}_{b}", k, int(2 * math.sqrt(k) * f + 0.5)) for s, k in SPEED fo
 GROWTH = [("slow", 90, 15), ("normal", 170, 19), ("fast", 320, 30)]
 FIELDS = [("x", 949), ("y", 8), ("w", 22), ("h", 6), ("r", 3)]
 # the kinds, as the logic numbers them (lib/node/state)
-K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "system": 5, "launcher": 6, "universe": 7, "time": 8, "done": 9, "privacy": 10, "player": 11, "shelf": 12, "branch": 13}
+K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "launcher": 6, "universe": 7, "time": 8, "done": 9, "privacy": 10, "player": 11, "panel": 13}
 KEYS = [("Escape", 27), ("Return", 13), ("Up", 38), ("Down", 40), ("Left", 37), ("Right", 39), ("Tab", 9), ("space", 32)]
 # the look's facts and their defaults (the organic preset; lib/node/look's M.facts names them)
 LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 cyber"), ("nd_sp", 2, "the body's spring (speed × bounce)"),
@@ -34,9 +34,9 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_ac", 0, "its colour: 0 signal · 1 ember · 2 ink · 3 steel"), ("nd_gc", 0, "the glow's colour, the same"),
         ("nd_stg", 0.5, "stagger, 0 all at once … 1 one after another"), ("nd_bd", 0.35, "how deeply it breathes"),
         ("nd_mu", 0.6, "how much it moves with the music"), ("nd_viz", 0, "the media's music: 0 bars · 1 wave · 2 dots · 3 off"),
-        ("nd_cov", 0, "the cover: 0 square · 1 round"), ("nd_sst", 0, "satellites: 0 pills · 1 dots · 2 ticks"),
+        ("nd_cov", 0, "the cover: 0 square · 1 round"),
         ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width"),
-        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_sys", 0, "the system as: 0 spokes · 1 rings · 2 graphs"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_rxl", 1, "reactions: 0 off · 1 subtle · 2 lively"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
+        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_rxl", 1, "reactions: 0 off · 1 subtle · 2 lively"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "System", "Search", "Tour"]
 TABS = ["Presets", "Pill", "Shape", "Surface", "Motion", "Music", "Parts"]   # lib/node/look M.TABS, in its order (a test holds them together)
@@ -62,14 +62,14 @@ def scene():
          '// this springs and draws.', '',
          'scene Node {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm"',
+         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm", "nmcli", "bluetoothctl"',
          '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
     L += palette_block()
     L += ['',
           '    // ── what the node is (the logic, lib/node/state): 0 rest · 1 media · 2 notice · 3 volume · 4 workspaces ·',
-          '    //    5 system · 6 launcher · 7 universe · 8 time · 9 something finished ──',
+          '    //    6 launcher · 7 universe · 8 time · 9 something finished · 10 privacy · 11 player · 13 the panel ──',
           '    fact nd_kind = 0', '    fact nd_breath = true', '    fact nd_kb = false',
           '    fact nd_lean = 0       // where the pointer came in: -1 left · 1 right (expansion leans that way)',
           '    // ── its look (lib/node/look, node-look.json; the studio sets it) ──']
@@ -93,7 +93,7 @@ def scene():
           '    let nd_br = 0.5 + 0.5 * sin(nd_ph)',
           '    // media',
           '    text nd_title = ""', '    text nd_artist = ""', '    text nd_art = ""', '    image nd_cover = from nd_art, 96, 96',
-          '    fact nd_playing = false', '    fact nd_prog = 0', '    fact nd_arted = false',
+          '    fact nd_playing = false', '    fact nd_paused = false', '    fact nd_prog = 0', '    fact nd_arted = false',
           '    prop nd_vph = 0', '    spin nd_vph by if(nd_kind == 1 and nd_playing, 240, 0)',
           '    // the record (D246): 33⅓ turns a minute while it plays',
           '    prop nd_vrot = 0', '    spin nd_vrot by if(nd_kind == 1 and nd_mf == 2 and nd_playing, 200, 0)',
@@ -117,7 +117,7 @@ def scene():
           '    fact nd_kr = 0        // the row the keyboard is on',
           '    fact nd_pv = 0        // the preview: ' + " · ".join(f"{i} {t}" for i, t in enumerate(PREVIEW)),
           '    text nd_lookname = "Organic"',
-          '    model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text; o6: text }',
+          '    model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; off: bool; why: text; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text; o6: text }',
           '    model ps max 4 { name: text; desc: text; on: bool; sw: number; sh: number; sr: number; seed: number }',
           '    model sl max 3 { label: text; full: bool }',
           '    model md max 6 { label: text }     // D257: the modules in the pill, in order',
@@ -168,11 +168,14 @@ def scene():
           '    model mx max 4 { name: text; vol: number; muted: bool }',
           '    fact nd_lyon = false  // synced words for this song (D240)', '    text nd_lyc = ""', '    text nd_lyn = ""',
           ] + [f'    fact nd_sp{i} = 0' for i in range(32)] + [
-          '    // the shelf and its branches (D247): Super grows side pills out of the node; each grows its own panel',
-          '    text nd_awin = ""     // the active window\'s title', '    text nd_shclk = ""',
-          '    model sh max 10 { x: number; y: number; w: number; label: text; code: number; side: number }',
-          '    fact nd_bk = 0        // the branch open: 1 calendar · 2 notes · 3 clipboard · 4 stash · 5 wallpaper',
-          '    text nd_brt = ""      // its title', '    text nd_brs = ""      // a line under it',
+          '    // the panel (D260): one body grows straight down out of the pill; every page shares its width and the',
+          '    // icon row under it. 0 home · 1 calendar · 2 notes · 3 clipboard · 4 stash · 5 wallpaper · 6 system · 7 power',
+          '    fact nd_pgp = 0',
+          '    text nd_pgt = ""', '    text nd_pgs = ""',
+          '    text nd_hompos = "0:00"', '    text nd_homlen = "0:00"',
+          '    model pn max 3 { icon: text; app: text; title: text; age: text }',
+          '    fact nd_wifi = false', '    text nd_wifin = "Off"', '    fact nd_bt = false',
+          '    fact nd_dnd_on = false', '    fact nd_tmr_on = false',
           '    model cal max 42 { d: text; muted: bool; today: bool; weekend: bool }',
           '    model br max 7 { label: text; detail: text; pinned: bool }',
           '    model wl max 7 { img: image 112, 63; on: bool }',
@@ -199,9 +202,6 @@ def scene():
           '    fact nd_nfr = false   // D257: the frame draws the notch (it is a piece of the frame\'s body)',
           '    // privacy (D232): the microphone or the camera started or stopped',
           '    text nd_pvt = ""', '    text nd_pvd = ""', '    fact nd_pvon = false',
-          '    // satellites',
-          '    model sa max 6 { x: number; y: number; w: number; h: number; label: text; kind: number }',
-          '    prop nd_sf = 0 ~nd.aux', '    follow nd_sf = if(nd_kind == 0, 1, 0)',
           '',
           '    event nd_hover ->     // the pointer over the node: 1 + x · 0 gone',
           '    event nd_press ->     // the node pressed',
@@ -211,7 +211,6 @@ def scene():
           '    event nd_ws ->        // a workspace on the rail',
           '    event nd_lr ->        // a launcher row',
           '    event nd_un ->        // a workspace in the universe',
-          '    event nd_sa ->        // a satellite (its kind)',
           '    event nd_key ->       // a key while the node holds the keyboard',
           '    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time',
           '    event nd_tab ->       // the studio: a page',
@@ -224,7 +223,11 @@ def scene():
           '    event nd_md ->        // the module editor: in the pill, i * 10 + 1 left · 2 right · 9 out; 100 + i adds the i-th of the rest',
           '    event nd_tm ->        // the time tools: 0-3 a mode · 10 go · 11 reset · 12 lap or skip · 2x timer · 3x alarm',
           '    event nd_dn ->        // the finish card answered',
-          '    event nd_sh ->        // a side pill pressed: its code',
+          '    event nd_pg ->        // the panel: 0 home · 1 calendar · 2 notes · 3 clipboard · 4 stash · 5 wallpaper · 6 system · 7 time · 8 studio · 9 settings · 10 power',
+          '    event nd_ptog ->      // a panel toggle: 1 Wi-Fi · 2 silent · 3 timer · 4 Bluetooth',
+          '    event nd_pclear ->    // the panel: clear every notice',
+          '    event nd_popen ->     // the panel: open the full player',
+          '    event nd_pclose ->    // the panel: a press on its empty body closes it',
           '    event nd_wheel ->     // the wheel over the node: 1 up · -1 down (the volume)',
           '    event nd_sys ->       // a reading of the system cluster pressed (D249: btop, in the owner\'s terminal)',
           '    event nd_br ->        // in a branch: 1 back a month / step · 2 on a month / step · 10 + row a row · 30 + row its second press',
@@ -599,81 +602,206 @@ def music_forms(c, acc, ink, dim, hull):
     return L
 
 
-def shelf_parts(c, acc, ink, dim, hull):
-    """D247: the shelf — the active window and the time in the node, side pills either side that grow out of it —
-    and the branch each pill grows into, under the node."""
-    L = [f'{c}// the shelf: the node holds what has the focus and the time; the side pills grow out of its ends',
-         f'{c}group {{ show: nd_kind == 12; opacity: nd_cf',
-         f'{c}    text nd_awin {{ at: nb_x + 16, nb_y + nb_h / 2; anchor: left center; size: 12; weight: 600; family: {SANS}; color: {ink}; width: nb_w - 90; lines: 1 }}',
-         f'{c}    text nd_shclk {{ at: nb_x + nb_w - 14, nb_y + nb_h / 2; anchor: right center; align: right; size: 11; weight: 700; family: {MONO}; color: {acc} }}',
-         f'{c}}}',
-         f'{c}for p in sh {{',
-         f'{c}    let g = clamp(nd_grow * nd_gk - p.index * 0.09 * nd_stg, 0, 1)',
-         f'{c}    let edge = if(p.side < 0, nb_x, nb_x + nb_w)',
-         f'{c}    group {{ show: nd_kind == 12; opacity: g',
-         f'{c}        let sx = if(p.side < 0, edge - (edge - p.x) * g, edge + (p.x - edge) * g)',
-         f'{c}        box {{ from: sx, p.y; size: p.w * max(0.2, g), 26; corner: 13 * max(0.3, nd_rnd); color: if(shz.hover, fl.hull_raised, {hull}); opacity: 0.95 }}',
-         f'{c}        box {{ from: sx, p.y; size: p.w * max(0.2, g), 26; corner: 13 * max(0.3, nd_rnd); stroke: 1; color: if(shz.hover, {acc}, fl.trace_lit); opacity: 0.8 }}',
-         f'{c}        text p.label {{ at: sx + p.w * g / 2, p.y + 13; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(shz.hover, {acc}, {ink}); opacity: g }}',
-         f'{c}    }}',
-         f'{c}    zone box shz {{ from: p.x, p.y; size: p.w, 26; corner: 13; cursor: pointer; role: button; label: "{{p.label}}"; show: nd_kind == 12 and g > 0.9 }}',
-         f'{c}    on press shz {{ emit nd_sh(p.code) }}',
-         f'{c}}}',
-         f'{c}// a branch: its title, and what it holds',
+def panel_parts(c, acc, ink, dim, hull):
+    """D260: the panel. One body grows straight down out of the pill; every page shares the width and the icon
+    row at its foot. Home is the whole dashboard; the others carry one branch's contents under a header."""
+    L = [f'{c}// the panel (D260): one rounded body, grown straight down out of the pill',
          f'{c}group {{ show: nd_kind == 13; opacity: nd_cf',
          f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
-         f'{c}    text nd_brt {{ at: nb_x + 20, nb_y + 22; anchor: left center; size: 10; weight: 700; family: {MONO}; color: {acc} }}',
-         f'{c}    text nd_brs {{ at: nb_x + nb_w - 20, nb_y + 22; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 300; lines: 1 }}',
-         f'{c}    line {{ from: nb_x + 16, nb_y + 38; to: nb_x + nb_w - 16, nb_y + 38; width: 1; color: fl.trace_dim }}',
-         f'{c}    // the calendar: a month of six weeks, today lit; ‹ › for the months either side',
-         f'{c}    group {{ show: nd_bk == 1']
-    for i, d in enumerate("MTWTFSS"):
-        L += [f'{c}        text "{d}" {{ at: nb_x + 34 + {i} * 66, nb_y + 54; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: {dim} }}']
-    L += [f'{c}        for d in cal {{',
-          f'{c}            let col = d.index - floor(d.index / 7) * 7',
-          f'{c}            let rw = floor(d.index / 7)',
-          f'{c}            ellipse {{ at: nb_x + 34 + col * 66, nb_y + 76 + rw * 26; radius: 11; color: {acc}; show: d.today }}',
-          f'{c}            text d.d {{ at: nb_x + 34 + col * 66, nb_y + 76 + rw * 26; anchor: center; align: center; size: 11; weight: if(d.today, 700, 500); family: {MONO}; color: if(d.today, fl.ground, if(d.muted, fl.trace_lit, if(d.weekend, {acc}, {ink}))) }}',
+         f'{c}    // a press on the body where nothing else is drawn closes it',
+         f'{c}    zone box pcz {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "Close the panel"; show: nd_kind == 13 }}',
+         f'{c}    on press pcz {{ emit nd_pclose }}']
+    # ── home ───────────────────────────────────────────────────────────────────────────────────────────
+    media_y = 'nb_y + 14'
+    L += [f'{c}    group {{ show: nd_pgp == 0',
+          f'{c}        // the media card: a 64 px cover, the song, its transport, and the seek bar along its foot',
+          f'{c}        box {{ from: nb_x + 14, {media_y}; size: nb_w - 28, 112; corner: 14; color: fl.well }}',
+          f'{c}        group {{ clip box {{ from: nb_x + 26, {media_y} + 12; size: 64, 64; corner: 10 }}',
+          f'{c}            box {{ from: nb_x + 26, {media_y} + 12; size: 64, 64; color: fl.hull_raised }}',
+          f'{c}            image nd_cover {{ at: nb_x + 26, {media_y} + 12; size: 64, 64; fit: cover; show: nd_arted }} }}',
+          f'{c}        zone box pcover {{ from: nb_x + 26, {media_y} + 12; size: 64, 64; corner: 10; cursor: pointer; role: button; label: "Open the player"; show: nd_kind == 13 and nd_pgp == 0 }}',
+          f'{c}        on press pcover {{ emit nd_popen }}',
+          f'{c}        text nd_title {{ at: nb_x + 102, {media_y} + 26; anchor: left center; size: 14; weight: 700; family: {SANS}; color: {ink}; width: nb_w - 320; lines: 1; show: nd_playing or nd_paused }}',
+          f'{c}        text nd_artist {{ at: nb_x + 102, {media_y} + 46; anchor: left center; size: 11; family: {SANS}; color: {dim}; width: nb_w - 320; lines: 1; show: nd_playing or nd_paused }}',
+          f'{c}        text "Nothing playing" {{ at: nb_x + 102, {media_y} + 38; anchor: left center; size: 12; family: {SANS}; color: {dim}; show: not (nd_playing or nd_paused) }}',
+          ]
+    # transport: prev, play in a filled circle, next
+    for code, glyph, cx, r, lit, label in (
+            (1, "󰒮", 'nb_x + nb_w - 146', 15, 'false', 'Back'),
+            (3, "󰒭", 'nb_x + nb_w - 50', 15, 'false', 'Next')):
+        L += [f'{c}        text "{glyph}" {{ at: {cx}, {media_y} + 58; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(pm{code}.hover, {acc}, {ink}); show: nd_playing }}',
+              f'{c}        zone box pm{code} {{ from: {cx} - 16, {media_y} + 42; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "{label}"; show: nd_kind == 13 and nd_pgp == 0 and (nd_playing or nd_paused) }}',
+              f'{c}        on press pm{code} {{ emit nd_media({code}) }}']
+    L += [f'{c}        // play, in a filled accent circle',
+          f'{c}        ellipse {{ at: nb_x + nb_w - 98, {media_y} + 58; radius: 18; color: {acc}; opacity: 0.92; show: nd_playing }}',
+          f'{c}        text "󰐊" {{ at: nb_x + nb_w - 98, {media_y} + 58; anchor: center; align: center; size: 17; family: "CaskaydiaCove Nerd Font"; color: fl.ground; show: nd_paused }}',
+          f'{c}        text "󰏤" {{ at: nb_x + nb_w - 98, {media_y} + 58; anchor: center; align: center; size: 17; family: "CaskaydiaCove Nerd Font"; color: fl.ground; show: nd_playing }}',
+          f'{c}        zone box pm2 {{ from: nb_x + nb_w - 116, {media_y} + 40; size: 36, 36; corner: 18; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 13 and nd_pgp == 0 and (nd_playing or nd_paused) }}',
+          f'{c}        on press pm2 {{ emit nd_media(2) }}',
+          f'{c}        // where in it, along the card’s foot, and the two times under it',
+          f'{c}        box {{ from: nb_x + 26, {media_y} + 91; size: nb_w - 52, 3; corner: 1.5; color: fl.trace_dim }}',
+          f'{c}        box {{ from: nb_x + 26, {media_y} + 91; size: (nb_w - 52) * nd_prog, 3; corner: 1.5; color: {acc} }}',
+          f'{c}        ellipse {{ at: nb_x + 26 + (nb_w - 52) * nd_prog, {media_y} + 92.5; radius: if(pseek.hover, 6, 4); color: {acc} }}',
+          f'{c}        text nd_hompos {{ at: nb_x + 26, {media_y} + 105; anchor: left center; size: 9; family: {MONO}; color: {dim} }}',
+          f'{c}        text nd_homlen {{ at: nb_x + nb_w - 26, {media_y} + 105; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim} }}',
+          f'{c}        zone box pseek {{ from: nb_x + 20, {media_y} + 82; size: nb_w - 40, 22; cursor: pointer; role: slider; label: "Where in the song"; value: "{{nd_hompos}}"; show: nd_kind == 13 and nd_pgp == 0 }}',
+          f'{c}        on press pseek {{ emit nd_seek(round(clamp((pointer.x - nb_x - 26) / (nb_w - 52), 0, 1) * 1000)) }}',
+          f'{c}        on drag pseek {{ emit nd_seek(round(clamp((pointer.x - nb_x - 26) / (nb_w - 52), 0, 1) * 1000)) }}',
+          f'{c}    }}']
+    # toggles: four equal filled buttons
+    tw = '(nb_w - 52) / 4'
+    toggles = (
+        (1, 'nd_wifi', 'if(nd_wifi, "󰖩", "󰖪")', 'nd_wifin', 'Wi-Fi', 'Wi-Fi'),
+        (2, 'nd_dnd_on', 'if(nd_dnd_on, "󰂛", "󰂚")', '"Silent"', 'Silent', 'Silent'),
+        (3, 'nd_tmr_on', '"󰔛"', 'if(nd_tmr_on, nd_capt, "Timer")', 'Timer', 'Timer'),
+        (4, 'nd_bt', 'if(nd_bt, "󰂯", "󰂲")', 'if(nd_bt, "On", "Off")', 'Bluetooth', 'Bluetooth'),
+    )
+    L += [f'{c}    group {{ show: nd_pgp == 0']
+    for code, lit, glyph, label, role, word in toggles:
+        x = f'nb_x + 14 + {code - 1} * ({tw} + 8)'
+        L += [f'{c}        box {{ from: {x}, nb_y + 138; size: {tw}, 40; corner: 12; color: {acc}; opacity: if({lit}, 0.2, if(pt{code}.hover, 0.12, 0.05)) }}',
+              f'{c}        box {{ from: {x}, nb_y + 138; size: {tw}, 40; corner: 12; stroke: 1; color: if({lit}, {acc}, fl.trace_dim); opacity: if({lit}, 0.9, 0.7) }}',
+              f'{c}        text {glyph} {{ at: {x} + {tw} / 2, nb_y + 153; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if({lit}, {acc}, {ink}) }}',
+              f'{c}        text {label} {{ at: {x} + {tw} / 2, nb_y + 170; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if({lit}, {acc}, {dim}); width: {tw} - 8; lines: 1 }}',
+              f'{c}        zone box pt{code} {{ from: {x}, nb_y + 138; size: {tw}, 40; corner: 12; cursor: pointer; role: toggle; label: "{role}"; checked: {lit}; show: nd_kind == 13 and nd_pgp == 0 }}',
+              f'{c}        on press pt{code} {{ emit nd_ptog({code}) }}']
+    L += [f'{c}    }}']
+    # sliders: volume, then the screen's light (hidden without a backlight)
+    for m, glyph, label, val, y, zone in (
+            (0, "󰕾", "Volume", 'nd_vol', 'nb_y + 190', 'pvz'),
+            (1, "󰃟", "Brightness", 'nd_bri', 'nb_y + 234', 'plz')):
+        show = ' and nd_hasbri' if m == 1 else ''
+        L += [f'{c}    group {{ show: nd_pgp == 0{show}',
+              f'{c}        text "{glyph}" {{ at: nb_x + 26, {y} + 20; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: {ink} }}',
+              f'{c}        text "{label}" {{ at: nb_x + 42, {y} + 20; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {dim} }}',
+              f'{c}        box {{ from: nb_x + 104, {y} + 19; size: nb_w - 170, 3; corner: 1.5; color: fl.trace_dim }}',
+              f'{c}        box {{ from: nb_x + 104, {y} + 19; size: (nb_w - 170) * {val}, 3; corner: 1.5; color: {acc} }}',
+              f'{c}        ellipse {{ at: nb_x + 104 + (nb_w - 170) * {val}, {y} + 20.5; radius: if({zone}.hover, 6, 4); color: {acc} }}',
+              f'{c}        text "{{round({val} * 100)}}%" {{ at: nb_x + nb_w - 26, {y} + 20; anchor: right center; align: right; size: 10; weight: 700; family: {MONO}; color: {ink} }}',
+              f'{c}        zone box {zone} {{ from: nb_x + 90, {y} + 4; size: nb_w - 122, 32; cursor: ew_resize; role: slider; label: "{label}"; value: round({val} * 100); show: nd_kind == 13 and nd_pgp == 0{show} }}',
+              f'{c}        on press {zone} {{ emit nd_mt({m} * 2000 + round(clamp((pointer.x - nb_x - 104) / (nb_w - 170), 0, 1) * 1000)) }}',
+              f'{c}        on drag {zone} {{ emit nd_mt({m} * 2000 + round(clamp((pointer.x - nb_x - 104) / (nb_w - 170), 0, 1) * 1000)) }}',
+              f'{c}    }}']
+    # notifications
+    L += [f'{c}    group {{ show: nd_pgp == 0',
+          f'{c}        text "Notifications ({{nd_ncn, 0}})" {{ at: nb_x + 26, nb_y + 298; anchor: left center; size: 11; weight: 700; family: {SANS}; color: {ink} }}',
+          f'{c}        box {{ from: nb_x + nb_w - 98, nb_y + 288; size: 72, 22; corner: 11; stroke: 1; color: if(pclz.hover, {acc}, fl.trace_dim) }}',
+          f'{c}        text "Clear all" {{ at: nb_x + nb_w - 62, nb_y + 299; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(pclz.hover, {acc}, {dim}); width: 66; lines: 1; show: nd_ncn > 0 }}',
+          f'{c}        zone box pclz {{ from: nb_x + nb_w - 98, nb_y + 288; size: 72, 22; corner: 11; cursor: pointer; role: button; label: "Clear all notifications"; show: nd_kind == 13 and nd_pgp == 0 and nd_ncn > 0 }}',
+          f'{c}        on press pclz {{ emit nd_pclear }}',
+          f'{c}        text "No notifications" {{ at: nb_x + 26, nb_y + 322; anchor: left center; size: 11; family: {SANS}; color: {dim}; show: pn.count == 0 }}',
+          f'{c}        for n in pn {{',
+          f'{c}            let ny = nb_y + 313 + n.index * 58',
+          f'{c}            box {{ from: nb_x + 14, ny; size: nb_w - 28, 52; corner: 12; color: fl.well; opacity: if(pnz.hover, 0.95, 0.7) }}',
+          f'{c}            text n.icon {{ at: nb_x + 34, ny + 26; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: {acc} }}',
+          f'{c}            text n.app {{ at: nb_x + 50, ny + 17; anchor: left center; size: 12; weight: 700; family: {SANS}; color: {ink}; width: nb_w - 190; lines: 1 }}',
+          f'{c}            text n.title {{ at: nb_x + 50, ny + 36; anchor: left center; size: 11; family: {SANS}; color: {dim}; width: nb_w - 190; lines: 1 }}',
+          f'{c}            text n.age {{ at: nb_x + nb_w - 54, ny + 17; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 60; lines: 1 }}',
+          f'{c}            text "×" {{ at: nb_x + nb_w - 32, ny + 36; anchor: center; size: 14; family: {SANS}; color: if(pnx.hover, {ink}, {dim}) }}',
+          f'{c}            zone box pnz {{ from: nb_x + 14, ny; size: nb_w - 70, 52; corner: 12; cursor: pointer; role: button; label: "{{n.app}}: {{n.title}}"; show: nd_kind == 13 and nd_pgp == 0 }}',
+          f'{c}            on press pnz {{ emit nd_nc(n.index * 10) }}',
+          f'{c}            zone box pnx {{ from: nb_x + nb_w - 54, ny + 24; size: 36, 26; cursor: pointer; role: button; label: "Dismiss"; show: nd_kind == 13 and nd_pgp == 0 }}',
+          f'{c}            on press pnx {{ emit nd_nc(n.index * 10 + 9) }}',
           f'{c}        }}',
           f'{c}    }}']
-    for code, glyph, x in ((1, "‹", "nb_x + nb_w - 70"), (2, "›", "nb_x + nb_w - 40")):
-        L += [f'{c}    text "{glyph}" {{ at: {x}, nb_y + 22; anchor: center; size: 16; family: {SANS}; color: if(brz{code}.hover, {acc}, {ink}); show: nd_bk == 1 or nd_bk == 5 }}',
-              f'{c}    zone box brz{code} {{ from: {x} - 12, nb_y + 8; size: 24, 28; cursor: pointer; role: button; label: "{"Back" if code == 1 else "On"}"; show: nd_kind == 13 and (nd_bk == 1 or nd_bk == 5) }}',
-              f'{c}    on press brz{code} {{ emit nd_br({code}) }}']
-    L += [f'{c}    // notes: a line to write one, the newest under it (pinned first); a press copies one',
-          f'{c}    group {{ show: nd_bk == 2',
-          f'{c}        box {{ from: nb_x + 16, nb_y + 48; size: nb_w - 32, 30; corner: 15 * max(0.3, nd_rnd); color: fl.well }}',
-          f'{c}        text "+" {{ at: nb_x + 32, nb_y + 63; anchor: center; size: 14; family: {SANS}; color: {acc} }}',
-          f'{c}        input nd_nq {{ at: nb_x + 46, nb_y + 54; width: nb_w - 80; size: 12; family: {SANS}; color: {ink}; selection: fl.hull_raised; placeholder: "write a note, Return keeps it" }}',
-          f'{c}    }}',
-          f'{c}    // a list: notes, the clipboard, the stash — a row each',
-          f'{c}    group {{ show: (nd_bk >= 2 and nd_bk <= 4) or nd_bk == 6',
-          f'{c}        for r in br {{',
-          f'{c}            let ry = nb_y + if(nd_bk == 2, 86, 48) + r.index * 30',
-          f'{c}            box {{ from: nb_x + 12, ry; size: nb_w - 24, 27; corner: 8 * nd_rnd; color: fl.well; opacity: if(brr.hover, 0.9, 0.35) }}',
-          f'{c}            ellipse {{ at: nb_x + 24, ry + 13.5; radius: 2.5; color: {acc}; show: r.pinned }}',
-          f'{c}            text r.label {{ at: nb_x + 34, ry + 13.5; anchor: left center; size: 11; family: {SANS}; color: {ink}; width: nb_w - 170; lines: 1 }}',
-          f'{c}            text r.detail {{ at: nb_x + nb_w - 22, ry + 13.5; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 110; lines: 1 }}',
-          f'{c}            zone box brr {{ from: nb_x + 12, ry; size: nb_w - 24, 27; cursor: pointer; role: item; label: "{{r.label}}"; show: nd_kind == 13 and ((nd_bk >= 2 and nd_bk <= 4) or nd_bk == 6) }}',
-          f'{c}            on press brr {{ emit nd_br(10 + r.index) }}',
+    # ── the other pages: a header, then one branch's contents ─────────────────────────────────────────
+    L += [f'{c}    group {{ show: nd_pgp > 0',
+          f'{c}        text "‹" {{ at: nb_x + 26, nb_y + 27; anchor: center; size: 20; family: {SANS}; color: if(pbkz.hover, {acc}, {ink}) }}',
+          f'{c}        text nd_pgt {{ at: nb_x + 44, nb_y + 27; anchor: left center; size: 12; weight: 700; family: {SANS}; color: {ink}; width: 240; lines: 1 }}',
+          f'{c}        text nd_pgs {{ at: nb_x + nb_w - 24, nb_y + 27; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 220; lines: 1 }}',
+          f'{c}        line {{ from: nb_x + 16, nb_y + 44; to: nb_x + nb_w - 16, nb_y + 44; width: 1; color: fl.trace_dim }}',
+          f'{c}        zone box pbkz {{ from: nb_x + 12, nb_y + 10; size: 32, 32; cursor: pointer; role: button; label: "Back home"; show: nd_kind == 13 and nd_pgp > 0 }}',
+          f'{c}        on press pbkz {{ emit nd_pg(0) }}']
+    # calendar
+    L += [f'{c}        group {{ show: nd_pgp == 1']
+    for i, d in enumerate("MTWTFSS"):
+        L += [f'{c}            text "{d}" {{ at: nb_x + 20 + {i} * ((nb_w - 40) / 7) + (nb_w - 40) / 14, nb_y + 68; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: {dim} }}']
+    L += [f'{c}            for d in cal {{',
+          f'{c}                let col = d.index - floor(d.index / 7) * 7',
+          f'{c}                let rw = floor(d.index / 7)',
+          f'{c}                let cx = nb_x + 20 + col * ((nb_w - 40) / 7) + (nb_w - 40) / 14',
+          f'{c}                ellipse {{ at: cx, nb_y + 94 + rw * 28; radius: 12; color: {acc}; show: d.today }}',
+          f'{c}                text d.d {{ at: cx, nb_y + 94 + rw * 28; anchor: center; align: center; size: 11; weight: if(d.today, 700, 500); family: {MONO}; color: if(d.today, fl.ground, if(d.muted, fl.trace_lit, if(d.weekend, {acc}, {ink}))) }}',
+          f'{c}            }}',
+          f'{c}        }}']
+    for code, glyph in ((1, "‹"), (2, "›")):
+        L += [f'{c}        text "{glyph}" {{ at: nb_x + nb_w - {70 if code == 1 else 40}, nb_y + 27; anchor: center; size: 16; family: {SANS}; color: if(prz{code}.hover, {acc}, {ink}); show: nd_pgp == 1 or nd_pgp == 5 }}',
+              f'{c}        zone box prz{code} {{ from: nb_x + nb_w - {82 if code == 1 else 52}, nb_y + 12; size: 24, 30; cursor: pointer; role: button; label: "{'Back' if code == 1 else 'On'}"; show: nd_kind == 13 and (nd_pgp == 1 or nd_pgp == 5) }}',
+              f'{c}        on press prz{code} {{ emit nd_br({code}) }}']
+    # notes input
+    L += [f'{c}        group {{ show: nd_pgp == 2',
+          f'{c}            box {{ from: nb_x + 16, nb_y + 58; size: nb_w - 32, 32; corner: 16 * max(0.3, nd_rnd); color: fl.well }}',
+          f'{c}            text "+" {{ at: nb_x + 32, nb_y + 74; anchor: center; size: 14; family: {SANS}; color: {acc} }}',
+          f'{c}            input nd_nq {{ at: nb_x + 48, nb_y + 64; width: nb_w - 84; size: 12; family: {SANS}; color: {ink}; selection: fl.hull_raised; placeholder: "write a note, Return keeps it" }}',
+          f'{c}        }}']
+    # lists (notes, clipboard, stash, power)
+    L += [f'{c}        group {{ show: (nd_pgp >= 2 and nd_pgp <= 4) or nd_pgp == 7',
+          f'{c}            for r in br {{',
+          f'{c}                let ry = nb_y + if(nd_pgp == 2, 100, 58) + r.index * if(nd_pgp == 7, 46, 32)',
+          f'{c}                box {{ from: nb_x + 12, ry; size: nb_w - 24, if(nd_pgp == 7, 40, 28); corner: 8 * nd_rnd; color: fl.well; opacity: if(prr.hover, 0.9, 0.35) }}',
+          f'{c}                ellipse {{ at: nb_x + 24, ry + if(nd_pgp == 7, 20, 14); radius: 2.5; color: {acc}; show: r.pinned }}',
+          f'{c}                text r.label {{ at: nb_x + 34, ry + if(nd_pgp == 7, 20, 14); anchor: left center; size: 11; family: {SANS}; color: {ink}; width: nb_w - 170; lines: 1 }}',
+          f'{c}                text r.detail {{ at: nb_x + nb_w - 22, ry + if(nd_pgp == 7, 20, 14); anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 110; lines: 1 }}',
+          f'{c}                zone box prr {{ from: nb_x + 12, ry; size: nb_w - 24, if(nd_pgp == 7, 40, 28); cursor: pointer; role: item; label: "{{r.label}}"; show: nd_kind == 13 and nd_pgp >= 2 and nd_pgp <= 4 or (nd_kind == 13 and nd_pgp == 7) }}',
+          f'{c}                on press prr {{ emit nd_br(10 + r.index) }}',
+          f'{c}            }}',
+          f'{c}        }}']
+    # wallpaper strip
+    L += [f'{c}        group {{ show: nd_pgp == 5',
+          f'{c}            for w in wl {{',
+          f'{c}                let wx = nb_x + 16 + w.index * ((nb_w - 32) / 7)',
+          f'{c}                let ww = (nb_w - 32) / 7 - 6',
+          f'{c}                group {{ clip box {{ from: wx, nb_y + 66; size: ww, ww * 0.5625; corner: 6 * nd_rnd }}',
+          f'{c}                    image w.img {{ at: wx, nb_y + 66; size: ww, ww * 0.5625; fit: cover }} }}',
+          f'{c}                box {{ from: wx, nb_y + 66; size: ww, ww * 0.5625; corner: 6 * nd_rnd; stroke: if(w.on, 2, 1); color: if(w.on, {acc}, if(pwlz.hover, fl.trace_lit, fl.trace_dim)) }}',
+          f'{c}                zone box pwlz {{ from: wx, nb_y + 66; size: ww, ww * 0.5625; cursor: pointer; role: item; label: "Wear this picture"; show: nd_kind == 13 and nd_pgp == 5 }}',
+          f'{c}                on press pwlz {{ emit nd_br(10 + w.index) }}',
+          f'{c}                on scroll pwlz {{ emit nd_br(if(wheel > 0, 1, 2)) }}',
+          f'{c}            }}',
+          f'{c}        }}']
+    # system cards
+    L += [f'{c}        group {{ show: nd_pgp == 6',
+          f'{c}            for p in sy {{',
+          f'{c}                let col = p.index - floor(p.index / 2) * 2',
+          f'{c}                let row = floor(p.index / 2)',
+          f'{c}                let gx = nb_x + 14 + col * ((nb_w - 28) / 2 + 12)',
+          f'{c}                let gy = nb_y + 56 + row * 96',
+          f'{c}                let gw = (nb_w - 40) / 2',
+          f'{c}                box {{ from: gx, gy; size: gw, 88; corner: 12; color: fl.well }}',
+          f'{c}                text p.label {{ at: gx + 12, gy + 17; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {dim} }}',
+          f'{c}                text p.value {{ at: gx + gw - 12, gy + 17; anchor: right center; align: right; size: 12; weight: 700; family: {MONO}; color: if(p.hot, fl.ember, {ink}) }}',
+          ] + [f'{c}                box {{ from: gx + 12 + {k} * ((gw - 24) / 20), gy + 70 - p.h{k} * 38; size: (gw - 28) / 20, p.h{k} * 38 + 1; corner: 1; color: if(p.hot, fl.ember, {acc}); opacity: 0.35 + 0.55 * p.h{k} }}' for k in range(20)] + [
+          f'{c}                zone box psyz {{ from: gx, gy; size: gw, 88; corner: 12; cursor: if(p.deep, pointer, default); role: button; label: "{{p.label}} {{p.value}}"; show: nd_kind == 13 and nd_pgp == 6 }}',
+          f'{c}                on press psyz {{ emit nd_sys(p.index) }}',
+          f'{c}            }}',
           f'{c}        }}',
-          f'{c}    }}',
-          f'{c}    // the wallpaper: a strip of pictures round the one worn; the wheel or ‹ › walk it, a press wears one',
-          f'{c}    group {{ show: nd_bk == 5',
-          f'{c}        for w in wl {{',
-          f'{c}            let wx = nb_x + 16 + w.index * ((nb_w - 32) / 7)',
-          f'{c}            let ww = (nb_w - 32) / 7 - 6',
-          f'{c}            group {{ clip box {{ from: wx, nb_y + 58; size: ww, ww * 0.5625; corner: 6 * nd_rnd }}',
-          f'{c}                image w.img {{ at: wx, nb_y + 58; size: ww, ww * 0.5625; fit: cover }} }}',
-          f'{c}            box {{ from: wx, nb_y + 58; size: ww, ww * 0.5625; corner: 6 * nd_rnd; stroke: if(w.on, 2, 1); color: if(w.on, {acc}, if(wlz.hover, fl.trace_lit, fl.trace_dim)) }}',
-          f'{c}            zone box wlz {{ from: wx, nb_y + 58; size: ww, ww * 0.5625; cursor: pointer; role: item; label: "Wear this picture"; show: nd_kind == 13 and nd_bk == 5 }}',
-          f'{c}            on press wlz {{ emit nd_br(10 + w.index) }}',
-          f'{c}            on scroll wlz {{ emit nd_br(if(wheel > 0, 1, 2)) }}',
-          f'{c}        }}',
-          f'{c}    }}',
-          f'{c}}}',
-          f'{c}on submit nd_nq {{ emit nd_br(90) }}',
-          f'{c}on change nd_kb while nd_kb and nd_kind == 13 and nd_bk == 2 {{ focus nd_nq }}']
+          f'{c}    }}']
+    # the icon row, every page
+    icons = (
+        (0, 'nd_pgp == 0', "󰋜", "Home"),
+        (1, 'nd_pgp == 1', "󰃭", "Calendar"),
+        (2, 'nd_pgp == 2', "󰎞", "Notes"),
+        (3, 'nd_pgp == 3', "󰅌", "Clipboard"),
+        (4, 'nd_pgp == 4', "󰏗", "Stash"),
+        (5, 'nd_pgp == 5', "󰸉", "Wallpaper"),
+        (6, 'nd_pgp == 6', "󰍛", "System"),
+        (7, 'false', "󰔛", "Time"),
+        (8, 'false', "󰏘", "Studio"),
+        (9, 'false', "󰒓", "Settings"),
+        (10, 'nd_pgp == 7', "󰐥", "Power"),
+    )
+    iw = '(nb_w - 28) / 11'
+    L += [f'{c}    // the icon row: every page, the current page lit',
+          f'{c}    line {{ from: nb_x + 14, nb_y + nb_h - 58; to: nb_x + nb_w - 14, nb_y + nb_h - 58; width: 1; color: fl.trace_dim }}']
+    for code, lit, glyph, label in icons:
+        x = f'nb_x + 14 + {code} * {iw}'
+        L += [f'{c}    box {{ from: {x}, nb_y + nb_h - 52; size: {iw} - 4, 42; corner: 10; color: {acc}; opacity: if({lit}, 0.18, 0) }}',
+              f'{c}    box {{ from: {x}, nb_y + nb_h - 52; size: {iw} - 4, 42; corner: 10; stroke: 1; color: {acc}; opacity: if({lit}, 0.8, 0) }}',
+              f'{c}    text "{glyph}" {{ at: {x} + {iw} / 2, nb_y + nb_h - 31; anchor: center; align: center; size: 17; family: "CaskaydiaCove Nerd Font"; color: if({lit}, {acc}, if(pi{code}.hover, {ink}, {dim})) }}',
+              f'{c}    zone box pi{code} {{ from: {x}, nb_y + nb_h - 52; size: {iw}, 42; cursor: pointer; role: button; label: "{label}"; show: nd_kind == 13 }}',
+              f'{c}    on press pi{code} {{ emit nd_pg({code}) }}']
+    L += [f'{c}}}', f'{c}on submit nd_nq {{ emit nd_br(90) }}',
+          f'{c}on change nd_kb while nd_kb and nd_kind == 13 and nd_pgp == 2 {{ focus nd_nq }}']
     return L
 
 
@@ -853,7 +981,7 @@ def surface():
               f'{c}    on press nmc{code} {{ emit nd_media({code}) }}']
     L += [f'{c}}}']
     L += music_forms(c, acc, ink, dim, hull)
-    L += shelf_parts(c, acc, ink, dim, hull)
+    L += panel_parts(c, acc, ink, dim, hull)
     # notices
     L += [f'{c}// notices: a stem drops from the node, and the cards branch from it one after another (each grows out of',
           f'{c}// the stem\'s foot: it slides down from it, opening as it comes)',
@@ -917,54 +1045,6 @@ def surface():
           f'{c}    ellipse {{ at: nd_bead, nb_y + nb_h / 2; radius: 10 + 26 * (1 - nd_grow); stroke: 1.5; color: {acc}; opacity: 0.8 * nd_grow * (1 - nd_grow) * 4; show: nd_wss == 3 }}',
           f'{c}    for r in rl {{ text r.n {{ at: r.x, nb_y + nb_h / 2; anchor: center; align: center; size: 10; weight: 700; family: {MONO}; color: fl.ground; show: r.on and nd_grow > 0.6 }} }}',
           f'{c}}}']
-    # system
-    L += [f'{c}// system (D249): spokes from the node, rings in a row under it, or a card each with its last readings; a press',
-          f'{c}// on one that runs deeper (the processor, the memory, the heat) opens btop',
-          f'{c}group {{ show: nd_kind == 5',
-          f'{c}    for p in sy {{',
-          f'{c}        let g = clamp(nd_grow * nd_gk - p.index * 0.2 * nd_stg, 0, 1)',
-          f'{c}        let n5 = sy.count',
-          f'{c}        // the spokes',
-          f'{c}        group {{ show: nd_sys == 0',
-          f'{c}            let px = nb_x + nb_w / 2 + (p.x - nb_x - nb_w / 2) * g',
-          f'{c}            let py = nb_y + nb_h / 2 + (p.y - nb_y - nb_h / 2) * g',
-          f'{c}            line {{ from: nb_x + nb_w / 2, nb_y + nb_h / 2; to: px, py; width: 1; color: fl.trace_lit; opacity: 0.7 }}',
-          f'{c}            group {{ opacity: g; pivot: px, py; scale: 0.5 + 0.5 * g',
-          f'{c}                box {{ from: px - 46, py - 14; size: 92, 28; corner: 14 * nd_rnd; color: {hull}; opacity: 0.95 }}',
-          f'{c}                box {{ from: px - 46, py - 14; size: 92, 28; corner: 14 * nd_rnd; stroke: 1; color: if(p.hot, fl.ember, if(syz0.hover, {ink}, {acc})); opacity: 0.8 }}',
-          f'{c}                text p.label {{ at: px - 38, py; anchor: left center; size: 8; family: {MONO}; color: {dim} }}',
-          f'{c}                text p.value {{ at: px + 38, py; anchor: right center; size: 11; weight: 700; family: {MONO}; color: if(p.hot, fl.ember, {ink}) }}',
-          f'{c}            }}',
-          f'{c}            zone box syz0 {{ from: p.x - 46, p.y - 14; size: 92, 28; cursor: if(p.deep, pointer, default); role: button; label: "{{p.label}} {{p.value}}"; show: nd_kind == 5 and nd_sys == 0 and g > 0.9 }}',
-          f'{c}            on press syz0 {{ emit nd_sys(p.index) }}',
-          f'{c}        }}',
-          f'{c}        // the rings: a gauge each, in a row under the node',
-          f'{c}        group {{ show: nd_sys == 1; opacity: g',
-          f'{c}            let rx = nb_x + nb_w / 2 + (p.index - (n5 - 1) / 2) * 86',
-          f'{c}            let ry = nb_y + nb_h + 48 - 20 * (1 - g)',
-          f'{c}            group {{ glow: 10, if(syz1.hover, 0.6, 0.25) * nd_gw, if(p.hot, fl.ember, nd_glc)',
-          f'{c}                arc {{ at: rx, ry; radius: 32; span: 360deg; width: 4; color: fl.trace_dim; opacity: 0.6 }}',
-          f'{c}                arc {{ at: rx, ry; radius: 32; span: p.frac * 360deg * g; rotate: p.frac * 180deg * g; width: 4; color: if(p.hot, fl.ember, {acc}) }} }}',
-          f'{c}            text p.value {{ at: rx, ry - 3; anchor: center; align: center; size: 12; weight: 700; family: {MONO}; color: if(p.hot, fl.ember, {ink}) }}',
-          f'{c}            text p.label {{ at: rx, ry + 12; anchor: center; align: center; size: 8; family: {MONO}; color: {dim} }}',
-          f'{c}            zone box syz1 {{ from: rx - 36, ry - 36; size: 72, 72; corner: 36; cursor: if(p.deep, pointer, default); role: button; label: "{{p.label}} {{p.value}}"; show: nd_kind == 5 and nd_sys == 1 and g > 0.9 }}',
-          f'{c}            on press syz1 {{ emit nd_sys(p.index) }}',
-          f'{c}        }}',
-          f'{c}        // the graphs: a card each, its last readings as bars, the newest at the right',
-          f'{c}        group {{ show: nd_sys == 2; opacity: g',
-          f'{c}            let gx = nb_x + nb_w / 2 + (p.index - (n5 - 1) / 2) * 134 - 62',
-          f'{c}            let gy = nb_y + nb_h + 18 - 14 * (1 - g)',
-          f'{c}            box {{ from: gx, gy; size: 124, 64; corner: 12 * nd_rnd; color: {hull}; opacity: 0.95 }}',
-          f'{c}            box {{ from: gx, gy; size: 124, 64; corner: 12 * nd_rnd; stroke: 1; color: if(p.hot, fl.ember, if(syz2.hover, {acc}, fl.trace_lit)); opacity: 0.7 }}',
-          f'{c}            text p.label {{ at: gx + 10, gy + 13; anchor: left center; size: 8; family: {MONO}; color: {dim} }}',
-          f'{c}            text p.value {{ at: gx + 114, gy + 13; anchor: right center; size: 11; weight: 700; family: {MONO}; color: if(p.hot, fl.ember, {ink}) }}',
-          ] + [f'{c}            box {{ from: gx + 8 + {k} * 5.4, gy + 58 - p.h{k} * 32; size: 3.6, p.h{k} * 32 + 1; corner: 1; color: if(p.hot, fl.ember, {acc}); opacity: 0.4 + 0.5 * p.h{k} }}' for k in range(20)] + [
-          f'{c}            zone box syz2 {{ from: gx, gy; size: 124, 64; corner: 12; cursor: if(p.deep, pointer, default); role: button; label: "{{p.label}} {{p.value}}"; show: nd_kind == 5 and nd_sys == 2 and g > 0.9 }}',
-          f'{c}            on press syz2 {{ emit nd_sys(p.index) }}',
-          f'{c}        }}',
-          f'{c}    }}',
-          f'{c}    ellipse {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; radius: 5; color: {acc} }}',
-          f'{c}}}']
     # launcher
     L += [f'{c}// the launcher: the node widens into a search line, the results drop out of it one after another',
           f'{c}group {{ show: nd_kind == 6; opacity: nd_cf',
@@ -995,30 +1075,6 @@ def surface():
           f'{c}        ellipse {{ at: nb_x + 22, nb_y + nb_h / 2; radius: 5; color: if(nd_pvon, fl.ember, fl.trace_lit) }} }}',
           f'{c}    text nd_pvt {{ at: nb_x + 38, nb_y + nb_h / 2 - 7; anchor: left center; size: 10; weight: 700; family: {MONO}; color: if(nd_pvon, fl.ember, {ink}) }}',
           f'{c}    text nd_pvd {{ at: nb_x + 38, nb_y + nb_h / 2 + 8; anchor: left center; size: 10; family: {SANS}; color: {dim}; width: nb_w - 50; lines: 1 }}',
-          f'{c}}}']
-    # satellites
-    L += [f'{c}// satellites: they leave the seed for their place on the arc and come back into it; organic ones drift.',
-          f'{c}// Pills (a word), dots (a point), or ticks (a stroke and a word under it)',
-          f'{c}for s in sa {{',
-          f'{c}    let g = clamp(nd_sf * (1 + 0.5 * nd_stg) - s.index * 0.15 * nd_stg, 0, 1)',
-          f'{c}    let drift = if(nd_np == 0, sin(nd_ph + s.index * 60) * 2, 0)',
-          f'{c}    let sx = nb_x + nb_w / 2 - s.w / 2 + (s.x - (nb_x + nb_w / 2 - s.w / 2)) * g',
-          f'{c}    let sy = nb_y + (s.y - nb_y) * g + drift',
-          f'{c}    let warm = s.kind == 2 or s.kind == 3 or s.kind == 4 or s.kind == 7 or s.kind == 9',
-          f'{c}    group {{ opacity: g; show: g > 0.01',
-          f'{c}        line {{ from: nb_x + nb_w / 2, nb_y + nb_h; to: sx + s.w / 2, sy; width: 1; color: fl.trace_lit; opacity: 0.35 }}',
-          f'{c}        group {{ show: nd_sst == 0',
-          f'{c}            box {{ from: sx, sy; size: s.w, s.h; corner: s.h / 2 * max(0.2, nd_rnd); color: {hull}; opacity: 0.92 }}',
-          f'{c}            box {{ from: sx, sy; size: s.w, s.h; corner: s.h / 2 * max(0.2, nd_rnd); stroke: 1; color: if(warm, fl.ember, {acc}); opacity: 0.8 }}',
-          f'{c}            text s.label {{ at: sx + s.w / 2, sy + s.h / 2; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: {ink}; width: s.w - 10; lines: 1 }} }}',
-          f'{c}        group {{ show: nd_sst == 1; glow: 8, 0.6 * nd_gw, if(warm, fl.ember, nd_glc)',
-          f'{c}            ellipse {{ at: sx + s.w / 2, sy + s.h / 2; radius: if(saz.hover, 5, 3.5); color: if(warm, fl.ember, {acc}) }} }}',
-          f'{c}        group {{ show: nd_sst == 2',
-          f'{c}            box {{ from: sx + s.w / 2 - 1, sy; size: 2, 10; color: if(warm, fl.ember, {acc}) }}',
-          f'{c}            text s.label {{ at: sx + s.w / 2, sy + 18; anchor: center; align: center; size: 8; family: {MONO}; color: {dim}; width: s.w; lines: 1 }} }}',
-          f'{c}    }}',
-          f'{c}    zone box saz {{ from: s.x, s.y; size: s.w, s.h; cursor: pointer; role: button; label: "{{s.label}}"; show: nd_kind == 0 and g > 0.9 and not nd_studio }}',
-          f'{c}    on press saz {{ emit nd_sa(s.kind) }}',
           f'{c}}}']
     L += studio_deck()
     L += [f'{c}// the keyboard, while the node holds it (the launcher, the universe, the studio)']

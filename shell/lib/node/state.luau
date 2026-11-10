@@ -1,11 +1,11 @@
 -- The node's state (D226, spec docs/superpowers/specs/2026-11-09-dynamic-pill-node-design.md §3). Pure.
--- What the node is now: what was opened on purpose (held: the launcher, the universe, the system cluster) wins;
+-- What the node is now: what was opened on purpose (held: the launcher, the universe, the panel) wins;
 -- else the strongest event still alive (a notice over a volume change over a workspace change); else the music
 -- while the pointer is near; else the seed. A fresh event is first a reaction — the seed stretching toward it.
 
 local M = {}
 
-M.PRIORITY = { universe = 100, done = 95, launcher = 90, player = 88, branch = 87, shelf = 86, time = 85, system = 80, privacy = 75, battery = 76, notice = 70, volume = 60, workspaces = 50, media = 40, rest = 0 }
+M.PRIORITY = { universe = 100, done = 95, launcher = 90, player = 88, panel = 86, time = 85, privacy = 75, battery = 76, notice = 70, volume = 60, workspaces = 50, media = 40, rest = 0 }
 M.LIFE = { battery = 6000, privacy = 3500, notice = 6000, volume = 1800, workspaces = 1500, media = 4000 }
 M.REACT_MS = 140
 

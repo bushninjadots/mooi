@@ -7017,3 +7017,26 @@ screenshots (D246–D258 had been designed from their READMEs): one pill, and ev
 grown straight out of it.
 
 **Verified.** Unit 831 / 0; scenes compile; `bin/mooi check` green.
+
+## D260 · 2026-11-10 · One panel, out of the pill
+
+The owner's redesign, step two. There is now one body at rest and one panel. Super, or a press on the
+resting pill, grows the panel straight down out of it on the body's springs; Super again, Esc, or a press on
+an empty part of it lets it go. Side pills, the shelf and the system cluster's spokes are gone. The panel is
+500 px wide on every page and as tall as that page needs: home, calendar, notes, clipboard, stash,
+wallpaper, system and power.
+
+**Home** is everything at once. A media card holds the cover, song, transport and a seek bar; pressing the
+cover opens the player. Four buttons follow — Wi-Fi, Silent, Timer and Bluetooth — lit when on, and each
+does what its name says. Two sliders, volume and brightness, are next, then the three newest notices with
+`Clear all`. The floor of every page is the same row of icons: home, calendar, notes, clipboard, stash,
+wallpaper, system, time, studio, settings and power, the current page lit. The other pages reuse what the
+branches held: the month, the notes line and list, the clipboard, the stash, the wallpaper strip and the
+power choices. **System** lays the five readings out as cards with their last twenty samples, as graphs did.
+
+**Removed** with the shelf: the `sh` model and `nd_sh`; the branch title and page facts; the floating
+system cluster and `sys_style`; the satellites (`sa`, `nd_sst`, the look rows and the Settings row), since
+the panel now says what is going on. The media capsule, notices, volume gauge, workspace rail, launcher,
+universe, time tools, player, privacy and battery cards and reactions all stay.
+
+**Verified.** Unit 832 / 0; scenes compile; `bin/mooi check` green.
