@@ -167,6 +167,8 @@ SETTERS = [
     "keys.drawer_left", "keys.drawer_right",
     # D276: the arcade. Appended.
     "keys.arcade",
+    # D280: the dock. Appended.
+    "dock.on", "dock.empty", "keys.dock",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -208,6 +210,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("drawer_left", "Dashboard drawer", "GitHub, updates and a quote, out of the frame's left side"),
         ("drawer_right", "Notifications drawer", "Your notices, out of the frame's right side"),
         ("arcade", "Arcade", "mooi's games: Snake, and more to come"),
+        ("dock", "Dock", "Hold the dock up until this is pressed again"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),
@@ -802,6 +805,13 @@ SECTIONS = [
         ("toggle", "GitHub", "Your profile, four numbers, half a year of contributions and your top repository. Uses the GitHub CLI (gh auth login)", "drawers.github", "sv_drawers_github", "sv_drawers_on > 0.5"),
         ("toggle", "A quote", "A line for the day under the updates", "drawers.quote", "sv_drawers_quote", "sv_drawers_on > 0.5"),
         ("note", "true", "SUPER+D THE DASHBOARD · SUPER+N THE NOTICES · THE SAME KEY OR ESC CLOSES (SETTINGS → KEYS)"),
+    ]),
+    # D280: the dock (k4's), appended last so no page's place moves
+    ("Dock", "Dock", "Your apps in a row out of the frame's bottom edge: pinned ones stay, running ones come and go", "SHELL", [
+        ("card", "The dock"),
+        ("toggle", "Dock", "Touch the bottom edge of the screen to bring it up. A press brings an app forward (again: its next window) or starts it; a right press pins or unpins it", "dock.on", "sv_dock_on"),
+        ("toggle", "Show on an empty workspace", "Up by itself whenever the workspace has no windows", "dock.empty", "sv_dock_empty", "sv_dock_on > 0.5"),
+        ("note", "true", "SUPER+SHIFT+D HOLDS IT UP UNTIL PRESSED AGAIN (SETTINGS → KEYS)"),
     ]),
 ]
 TAB = {label: i for i, (label, *_rest) in enumerate(SECTIONS)}

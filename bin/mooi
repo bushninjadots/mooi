@@ -40,6 +40,7 @@
 #   mooi game-mode [on|off|status]  game mode: no animations, blur, shadows or gaps; VRR on; put back exactly after
 #   mooi self-check | self-update   is there a newer mooi (origin); bring it in (fast-forward only) and refresh
 #   mooi arcade            mooi's games: Snake, La Grieta, Mazmorra (Super+G)
+#   mooi dock              hold the dock up, or let it hide again (Super+Shift+D)
 #   mooi drawer [dashboard|notices|close]  the side drawers out of the frame (Super+D, Super+N)
 #   mooi capture text      choose a region of the screen: its words (tesseract) go to the clipboard
 #   mooi pkg search WORDS | install NAME [repo|aur] | update   packages: search, and install or update in a terminal
@@ -1097,7 +1098,7 @@ not() { ! "$@"; }
 settings_link() {
     # (its own names: `scene` is the keeper's, and refresh finds the bar's process by it)
     local prog link
-    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-surface mooi-node mooi-drawers mooi-arcade; do
+    for prog in mooi-settings mooi-board mooi-nexus mooi-desk mooi-player mooi-notch mooi-frame mooi-widgets mooi-walls mooi-viz mooi-surface mooi-node mooi-drawers mooi-arcade mooi-dock; do
         link="$(dirname "$folder")/$prog"
         [ -L "$link" ] && continue
         if [ -e "$link" ]; then
@@ -1162,6 +1163,7 @@ mooi-surface.plm:Surface
 mooi-node.plm:the Pill (the node)
 mooi-drawers.plm:the side drawers
 mooi-arcade.plm:the arcade
+mooi-dock.plm:the dock
 bmo/bmo.plm:BMO"
 snapshot() {
     reap_sockets
@@ -1649,6 +1651,8 @@ case "$cmd" in
             done
             echo "the arcade did not start; see $log" >&2; exit 1
         fi ;;
+    dock) # D280: the dock held up (or let go), as k4's Super+Shift+D brings its dock
+        "$pleamar" --say mooi-dock "emit dk_hold" >/dev/null 2>&1 || : ;;
     drawer) # D275: the side drawers — dashboard (left, Super+D) | notices (right, Super+N) | close
         case "${1:-dashboard}" in dashboard|left) n=1 ;; notices|right) n=2 ;; close) n=0 ;; *) echo "usage: mooi drawer [dashboard|notices|close]" >&2; exit 2 ;; esac
         "$pleamar" --say mooi-drawers "emit dr_cmd $n" >/dev/null 2>&1 || : ;;

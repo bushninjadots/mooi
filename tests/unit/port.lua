@@ -343,3 +343,45 @@ do
         assert(b:find("git -C \"$root\" pull --ff-only", 1, true) and b:find("rev-list --count HEAD..@{u}", 1, true))
     end)
 end
+
+section("the dock (D280; k4's Dual mode's dock)")
+do
+    local DK = require("lib/dock")
+    local apps = { { id = "kitty.desktop", wmclass = "kitty", name = "kitty", icon = "kitty", exec = "kitty" },
+                   { id = "org.gnome.Nautilus", name = "Files", icon = "org.gnome.Nautilus", exec = "nautilus --new-window" },
+                   { id = "zen", wmclass = "zen", name = "Zen Browser", icon = "zen-browser", exec = "zen" } }
+    local clients = { { class = "kitty", address = "0x1", workspace = { name = "1" } },
+                      { class = "zen", address = "0x2", workspace = { name = "2" } },
+                      { class = "kitty", address = "0x3", workspace = { name = "1" } },
+                      { class = "org.gnome.Nautilus", address = "0x4", workspace = { name = "special:mooi-buried" } },
+                      { class = "pleamar", address = "0x5", workspace = { name = "1" } },
+                      { class = "mystery", address = "0x6", workspace = { name = "3" } } }
+    test("items: the pinned first, then the running, windows grouped, the buried and mooi's own left out", function()
+        local it = DK.items({ "org.gnome.Nautilus" }, apps, clients, "0x3")
+        eq(#it, 4); eq(it[1].name, "Files"); eq(it[1].pinned, true); eq(#it[1].windows, 0, "a buried window is not its")
+        eq(it[2].key, "kitty"); eq(#it[2].windows, 2); eq(it[2].active, true)
+        eq(it[3].name, "Zen Browser"); eq(it[4].name, "mystery"); eq(it[4].icon, "mystery")
+    end)
+    test("a press: launch what does not run, else the next of its windows", function()
+        local it = DK.items({ "org.gnome.Nautilus" }, apps, clients, "0x3")
+        eq(DK.press(it[1], "0x3")[1], "launch"); eq(DK.press(it[1])[2], "nautilus --new-window")
+        eq(DK.press(it[2], "0x3")[2], "0x1", "from the focused one to the next, round")
+        eq(DK.press(it[2], "0x9")[2], "0x1"); eq(DK.press(nil), nil)
+    end)
+    test("pins toggle; addresses are checked", function()
+        local p, added = DK.toggle_pin({ "kitty" }, "zen"); eq(#p, 2); eq(added, true)
+        p, added = DK.toggle_pin(p, "kitty"); eq(#p, 1); eq(p[1], "zen"); eq(added, false)
+        eq(DK.address("0xabc"), "0xabc"); eq(DK.address("0x1; rm"), nil)
+        eq(DK.app_for("Nautilus", apps).name, "Files", "the id's last part")
+    end)
+    test("the dock: kept by the bar, held up by Super+Shift+D, pins in dock.json, its own Settings page", function()
+        local c = require("lib/config").defaults()
+        eq(c.dock.on, true); eq(c.dock.empty, false); eq(c.keys.dock, "SUPER + SHIFT + D")
+        assert(read("shell/mooi.luau"):find('SURFACE.args(shell_dir() .. "/mooi-dock.plm")', 1, true))
+        local l = read("shell/mooi-dock.luau")
+        assert(l:find('"files.write", "dock.json"', 1, true) and not l:find('"settings.json", json.encode', 1, true))
+        local p = read("shell/mooi-dock.plm")
+        assert(p:find("on press right dkz_i { emit dk_pin(i.index) }", 1, true) and p:find("event dk_hold ->", 1, true))
+        assert(read("tools/gen-settings.py"):find('("Dock", "Dock"', 1, true))
+    end)
+end

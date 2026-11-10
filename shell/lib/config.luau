@@ -329,6 +329,9 @@ M.SCHEMA = {
     { path = "keys.drawer_left", kind = "key", default = "SUPER + D" },      -- D275: the Dashboard drawer
     { path = "keys.drawer_right", kind = "key", default = "SUPER + N" },     -- D275: the notices drawer
     { path = "keys.arcade", kind = "key", default = "SUPER + G" },           -- D276: the arcade
+    { path = "keys.dock", kind = "key", default = "SUPER + SHIFT + D" },     -- D280: the dock held up
+    { path = "dock.on", kind = "boolean", default = true },
+    { path = "dock.empty", kind = "boolean", default = false },
     { path = "drawers.on", kind = "boolean", default = true },
     { path = "drawers.dashboard", kind = "boolean", default = true },
     { path = "drawers.notices", kind = "boolean", default = true },

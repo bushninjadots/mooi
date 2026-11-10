@@ -7390,3 +7390,26 @@ globals are still only the runtime's.
 and the guide were merged, and its own number moved from D272 (taken by Home) to D279. One change: a note of a
 single line now wraps onto two lines of its card instead of being cut after a few words. Checked live after
 `mooi refresh`: six cards with their ages and pins, and the Stash page's three buttons over its empty state.
+
+## D280 · 2026-11-10 · The dock (k4's Dual mode's dock)
+
+k4's bar can split and run down the screen's sides into a dock. mooi keeps its top as it is and grows the dock
+alone: a row of apps rising out of the frame's bottom edge, in the frame's fill and edge with concave fillets where
+it leaves the band, like the side drawers (D275). It is `mooi-dock`, kept by the bar while Settings → Dock has it
+on.
+
+Its items are the pinned apps first, then each app that runs, its windows grouped (a dot for each, up to three, in
+the accent while it has the focus). Windows buried under the wallpaper and mooi's own surfaces are not apps. A press
+brings the app forward, and pressing again walks through its windows; an app with none starts. A right press pins
+or unpins it; pins are kept in the dock's own `dock.json`, so it never writes settings. Its name shows over it while
+the pointer is on it, and every app sits on a soft tile with its initial, so an icon Pleamar cannot load (Zen's,
+here) leaves a letter rather than a hole.
+
+It hides until the pointer touches the bottom edge and goes again a moment after the pointer leaves it. **Show on
+an empty workspace** (off) keeps it up while the workspace has no windows, and Super+Shift+D (`keys.dock`,
+`mooi dock`) holds it up until pressed again, as k4's key brings its dock. Hyprland's windows are asked for when the
+workspaces or the focused window change, never on a timer. `lib/dock` is the pure part.
+
+**Verified.** Unit 887 / 0; the scene compiles; live after `mooi refresh`: Super+Shift+D's command brought it up
+with the running apps (Kitty's icon, Zen's letter) and let it go again. Pressing, pinning and the edge were not
+tried with a real pointer.

@@ -306,6 +306,8 @@ local rows = {
     { title = "Open by touching the side", desc = "Push the pointer against the screen's left or right edge to open that drawer", tab = 23, page = "Side drawers", y = 336 },
     { title = "GitHub", desc = "Your profile, four numbers, half a year of contributions and your top repository. Uses the GitHub CLI (gh auth login)", tab = 23, page = "Side drawers", y = 462 },
     { title = "A quote", desc = "A line for the day under the updates", tab = 23, page = "Side drawers", y = 522 },
+    { title = "Dock", desc = "Touch the bottom edge of the screen to bring it up. A press brings an app forward (again: its next window) or starts it; a right press pins or unpins it", tab = 24, page = "Dock", y = 156 },
+    { title = "Show on an empty workspace", desc = "Up by itself whenever the workspace has no windows", tab = 24, page = "Dock", y = 216 },
 }
 rows.resets = {
     [0] = { "theme.preset", "theme.source", "desk.on", "island.morph", "bar.mode", "bar.style", "bar.height", "bar.workspaces" },
@@ -332,6 +334,7 @@ rows.resets = {
     [21] = { "herdr.show_idle", "herdr.show_done", "herdr.brief", "herdr.brief_lines", "herdr.poll" },
     [22] = { "live.on", "live.where", "live.speed", "live.ripple.on", "live.ripple.strength", "live.ripple.size", "live.ripple.blend", "live.breathe.on", "live.breathe.strength", "live.breathe.size", "live.breathe.blend", "live.flow.on", "live.flow.strength", "live.flow.size", "live.flow.blend", "live.sweep.on", "live.sweep.strength", "live.sweep.size", "live.sweep.blend", "live.music.on", "live.music.strength", "live.music.size", "live.music.blend", "live.music.height" },
     [23] = { "drawers.on", "drawers.dashboard", "drawers.notices", "drawers.edge", "drawers.github", "drawers.quote" },
+    [24] = { "dock.on", "dock.empty" },
 }
 rows.layout_tab = 3
 rows.modules_fold = "fd_3_4"

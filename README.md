@@ -19,6 +19,7 @@ apps and lock screen all follow it.
 - **Lock screen**: your colours and wallpaper, PAM password, and media controls.
 - **Settings window**: every option in one place, with no config files to edit.
 - **BMO**: a small desktop companion.
+- **The dock**: touch the bottom edge and your apps rise out of the frame; pinned ones stay (right-click pins).
 - **The arcade** (Super+G): mooi's own games, starting with Snake.
 
 ## Install

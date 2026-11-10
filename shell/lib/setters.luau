@@ -304,6 +304,8 @@ M.SETTERS = {
     "keys.drawer_left", "keys.drawer_right",
     -- D276: the arcade. Appended.
     "keys.arcade",
+    -- D280: the dock. Appended.
+    "dock.on", "dock.empty", "keys.dock",
 }
 
 local function row_of(path)

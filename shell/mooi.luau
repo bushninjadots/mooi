@@ -358,6 +358,7 @@ sys.watch("files:" .. FILE, function()
     if surface_sync then surface_sync() end
     if node_sync then node_sync() end           -- D226
     if drawers_sync then drawers_sync() end     -- D275
+    if dock_sync then dock_sync() end           -- D280
     if notch_cut then notch_cut() end
 end)
 sys.watch("files:" .. PALETTE, function()
@@ -2347,6 +2348,29 @@ function drawers_sync()
     DRAWERS.win = mine
 end
 after(3000, drawers_sync)
+-- D280: the dock, kept the same way while Settings → Dock has it on
+DOCK = { win = nil, tries = 0, gave_up = false }
+function dock_sync()
+    local want = type(settings.dock) == "table" and settings.dock.on == true
+    if not want then
+        DOCK.tries, DOCK.gave_up = 0, false
+        if DOCK.win then DOCK.win = nil; run("pleamar", { "--say", "mooi-dock", "quit" }) end
+        return
+    end
+    if DOCK.win or DOCK.gave_up then return end
+    local mine
+    local started = os.time()
+    mine = spawn("pleamar", SURFACE.args(shell_dir() .. "/mooi-dock.plm"), function() end, function(_, code)
+        if DOCK.win ~= mine then return end
+        DOCK.win = nil
+        if os.time() - started < 5 then DOCK.tries = DOCK.tries + 1 else DOCK.tries = 0 end
+        if code ~= 0 then log("dock · ended (" .. tostring(code) .. ")") end
+        if DOCK.tries < 5 then after(1000 * (DOCK.tries + 1), dock_sync)
+        else DOCK.gave_up = true; log("dock · gave up after five quick ends") end
+    end, { errors = true })
+    DOCK.win = mine
+end
+after(3200, dock_sync)
 -- D209 live: the opening's ground is at level background, so its layer must map AFTER mooi-desk's
 -- wallpaper (map order is the level's order; the probe had the opposite). The desk starts at 1.5 s.
 after(2500, surface_sync)
