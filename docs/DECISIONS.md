@@ -7229,3 +7229,21 @@ offers (AMD, and Intel's newer drivers), else `nvidia-smi`; a card that says nei
 
 **Verified.** Unit 857 / 0; the scene compiles; live after `mooi refresh`: GPU 43% with its history from card1's
 busy file, DISK 74%.
+
+## D271 · 2026-11-10 · Super is the Pill's again: the Subsurface opens only when asked
+
+The owner: "whenever pressing super the subsurface thing shows up — fix that". The cause was in the Reveal's own
+notes: Hyprland never sends Super's release after a Super shortcut, so after Super+K, Super+1 or any chord the
+Subsurface still believed Super was held and opened once the hold time passed. Holding Super cannot be told apart
+from starting a chord, so the hold cannot be made safe; it becomes a choice.
+
+Settings → The Subsurface now has two switches where it had one. **The Subsurface** (`surface.on`) keeps it
+existing: the widgets under the wallpaper, burying windows, the Overview. **Hold Super to open it**
+(`surface.hold`, new, off) is the gesture, with its warning in its description. With it off, a Super press opens
+nothing and its release is the Pill's tap, as before D208. The Overview has a key of its own instead:
+**Super+Alt+U** (`keys.surface`, Settings → Keys, `mooi reveal overview`) opens it straight to the canvas without
+holding anything, and pressing it again closes it, as Esc does.
+
+**Verified.** Unit 858 / 0; scenes compile; live after `mooi refresh`: a simulated hold (`mooi reveal down`, 1.5 s)
+opened nothing and its release opened the Pill's panel; Super+Alt+U's command opened the Overview's canvas and the
+second press closed it, the windows sliding back.

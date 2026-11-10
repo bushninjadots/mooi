@@ -1639,6 +1639,7 @@ case "$cmd" in
         # today's Super tap
         case "${1:-}" in
             down) "$pleamar" --say mooi-surface "emit rv_down" >/dev/null 2>&1 || : ;;
+            overview) "$pleamar" --say mooi-surface "emit rv_overview" >/dev/null 2>&1 || : ;;   # D271: Super+Alt+U
             up) "$pleamar" --say mooi-surface "emit rv_up" >/dev/null 2>&1 || exec "$self" pill ;;
             heal) # the keeper's path when mooi-surface ends: heal it if it still answers, and always put the
                   # window drag bind back (Task 1: it is put down while the opening is open)

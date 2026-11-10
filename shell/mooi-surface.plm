@@ -113,6 +113,7 @@ scene Sigil {
     image sf_cover = from rv_wall, 0, 0
     image sf_contain = from rv_wall, 0, 0
     event rv_down ->       // from `mooi reveal down`: Super went down
+    event rv_overview ->   // from `mooi reveal overview` (D271): the Overview at once
     event rv_up ->         // from `mooi reveal up`: Super came up
     event rv_esc ->        // Escape while revealing
     event rv_move ->       // x * 10000 + y: the pointer while revealing

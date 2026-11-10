@@ -160,6 +160,8 @@ SETTERS = [
     "keys.node_launch", "keys.node_universe", "keys.node_time", "node.privacy", "node.lyrics",
     # D267: the shortcut sheet. Appended.
     "keys.node_keys",
+    # D271: holding Super is its own switch; the Overview's key. Appended.
+    "surface.hold", "keys.surface",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -197,6 +199,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("node_universe", "The Pill: workspaces", "The workspaces round the node; arrows or the wheel, Return goes there"),
         ("node_time", "The Pill: time", "A timer, a stopwatch, focus rounds and an alarm, grown from the node"),
         ("node_keys", "The Pill: shortcuts", "Every key Hyprland has bound, in words, with a filter"),
+        ("surface", "Under the windows", "The Subsurface's Overview: the widgets under the wallpaper, at once; again closes it"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),
@@ -701,8 +704,9 @@ SECTIONS = [
     # that is a choice has a home here, beside the gesture itself.
     ("The Subsurface", "The Subsurface", "Hold Super on the wallpaper: the widgets that live under it, and every part of the opening's look", "SHELL", [
         ("card", "The opening"),
-        ("toggle", "Hold Super to reveal", "The wallpaper opens at your pointer; a quick tap keeps Super's old meaning", "surface.on", "sv_surface_on"),
-        ("slider", "Hold for", "How long Super is held before it opens", "surface.delay", 150, 800, "{sv_surface_delay + 150, 0} ms"),
+        ("toggle", "The Subsurface", "Widgets that live under the wallpaper, burying windows and the Overview (Super+Alt+U)", "surface.on", "sv_surface_on"),
+        ("toggle", "Hold Super to open it", "Off: Super is only the Pill's tap. On: holding Super opens the wallpaper at your pointer (a Super shortcut held too long opens it as well)", "surface.hold", "sv_surface_hold"),
+        ("slider", "Hold for", "How long Super is held before it opens, when holding is on", "surface.delay", 150, 800, "{sv_surface_delay + 150, 0} ms"),
         ("choice", "Effect", "How the wallpaper gives way: torn, a lens, a soft membrane, ripples, folded paper, dissolving, glass or a glow", "surface.effect", "sv_surface_effect", ["Tear", "Aperture", "Membrane", "Ripple", "Fold", "Dissolve", "Glass", "Glow"]),
         ("slider", "Intensity", "How strongly the effect shows: the lip, the halo, the shadow", "surface.intensity", 20, 100, "{sv_surface_intensity + 20, 0} %"),
         ("slider", "Edge width", "How wide the opened edge is: thin and sharp or broad and soft", "surface.edge", 20, 100, "{sv_surface_edge + 20, 0} %"),

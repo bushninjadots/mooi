@@ -297,6 +297,8 @@ M.SETTERS = {
     "keys.node_launch", "keys.node_universe", "keys.node_time", "node.privacy", "node.lyrics",
     -- D267: the shortcut sheet. Appended.
     "keys.node_keys",
+    -- D271: holding Super is its own switch; the Overview's key. Appended.
+    "surface.hold", "keys.surface",
 }
 
 local function row_of(path)

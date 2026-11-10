@@ -188,3 +188,17 @@ do
         eq(require("lib/node/geometry").PANEL_H.system, 520)
     end)
 end
+
+section("Super is the Pill's again: holding it opens the Subsurface only when asked (D271)")
+do
+    test("hold is its own switch, off; Super+Alt+U opens the Overview on purpose", function()
+        local c = require("lib/config").defaults()
+        eq(c.surface.hold, false); eq(c.keys.surface, "SUPER + ALT + U")
+        local l = read("shell/mooi-surface.luau")
+        assert(l:find('on("rv_down", function()\n    if not hold_on() then return end', 1, true), "a Super press does nothing without hold")
+        assert(l:find('on("rv_overview", function()', 1, true) and l:find("if SF.want_full then", 1, true))
+        assert(read("bin/mooi"):find('overview) "$pleamar" --say mooi-surface "emit rv_overview"', 1, true))
+        local g = read("tools/gen-settings.py")
+        assert(g:find('"Hold Super to open it"', 1, true) and g:find('"surface.hold", "sv_surface_hold"', 1, true))
+    end)
+end

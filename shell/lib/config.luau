@@ -33,6 +33,7 @@ M.SCHEMA = {
     -- is held before it begins (a quicker tap keeps Super's old meaning)
     { path = "surface.on", kind = "boolean", default = false },   -- review C1: off until the owner tries the real key with it
     { path = "surface.delay", kind = "integer", default = 250, min = 150, max = 800 },
+    { path = "surface.hold", kind = "boolean", default = false },   -- D271: holding Super opens it (off: Super is the tap)
     -- D209: how the wallpaper opens (the Tear or the Aperture), and whether BMO lives under it
     { path = "surface.effect", kind = "enum", values = { "tear", "aperture", "membrane", "ripple", "fold", "dissolve", "glass", "glow" }, default = "tear" },
     { path = "surface.bmo_below", kind = "boolean", default = true },
@@ -323,7 +324,8 @@ M.SCHEMA = {
     { path = "keys.node_launch", kind = "key", default = "SUPER + space" },
     { path = "keys.node_universe", kind = "key", default = "SUPER + Tab" },
     { path = "keys.node_time", kind = "key", default = "SUPER + T" },
-    { path = "keys.node_keys", kind = "key", default = "SUPER + K" },   -- D267: the shortcut sheet
+    { path = "keys.node_keys", kind = "key", default = "SUPER + K" },
+    { path = "keys.surface", kind = "key", default = "SUPER + ALT + U" },   -- D271: the Subsurface's Overview   -- D267: the shortcut sheet
     { path = "keys.settings", kind = "key", default = "SUPER + ALT + S" },
     -- D160: the lock screen at once. The session also locks itself after `lock.idle` minutes
     -- (hypridle, Settings → Lock); this is the key for when you are leaving now.

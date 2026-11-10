@@ -7203,7 +7203,7 @@ do
         eq(require("lib/config").defaults().surface.on, false, "Surface waits for the owner to switch it on")
         local l = read("shell/mooi-surface.luau")
         assert(l:find("local function tap()", 1, true), "one tap path")
-        assert(l:find("if not surface_on() then tap(); return end", 1, true), "off: Super's release is the old tap")
+        assert(l:find("if not hold_on() and not SF.rv.down_at then tap(); return end", 1, true), "no hold: Super's release is the old tap")
         local plm = read("shell/mooi-surface.plm")
         -- D209: the overlay that grabbed keys and clicks is gone; the edge's keyboard is the opening's own,
         -- only once the opening is firm, and it still catches no clicks

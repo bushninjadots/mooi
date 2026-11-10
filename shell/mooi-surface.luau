@@ -186,6 +186,10 @@ end
 
 -- ── the opening (D209): what mooi-surface owns and every program under the wallpaper mirrors ──
 local function surface_on() return type(S.settings.surface) == "table" and S.settings.surface.on == true end
+-- D271: holding Super opens it only when asked for. Hyprland never sends Super's release after a Super shortcut, so
+-- with this on, Super+K or Super+1 held a moment longer also opened it; off (the default), Super is the node's tap
+-- and Super+Alt+U (`mooi reveal overview`) opens the Overview on purpose.
+local function hold_on() return surface_on() and S.settings.surface.hold == true end
 local function tap() run("mooi", { "pill" }) end      -- today's Super tap (D226: the node's wake, when it runs)
 
 local function bmo_below() return not (type(S.settings.surface) == "table" and S.settings.surface.bmo_below == false) end
@@ -344,6 +348,16 @@ local function tick()
         opening.move(SF.op, boxes(), SF.ptr, bar_h(), SF.clock)
         drag_down()
         broadcast()
+        -- D271: opened by its key, it goes straight to the Overview and stays, as a hold let go in full does
+        if SF.want_full then
+            SF.want_full = nil
+            opening.widen(SF.op, SF.scr, SF.ptr)
+            opening.widen(SF.op, SF.scr, SF.ptr)
+            reveal.finish(SF.rv)
+            close_reveal()
+            broadcast()
+            return
+        end
     end
     -- faint until it is firm (the pointer has really moved) or snapped: then it opens all the way
     if SF.op.faint and reveal.firm(SF.rv) then
@@ -353,7 +367,7 @@ local function tick()
 end
 
 on("rv_down", function()
-    if not surface_on() then return end
+    if not hold_on() then return end
     reveal.DELAY = tonumber(S.settings.surface and S.settings.surface.delay) or reveal.DELAY
     reveal.down(SF.rv, SF.clock)
     SF.opened, SF.dragging = false, nil
@@ -368,6 +382,16 @@ on("rv_down", function()
     end)
     if not SF.ticking then SF.ticking = every(50, tick) end
 end)
+-- D271: `mooi reveal overview` (Super+Alt+U): the Overview at once, without holding anything; again closes it
+on("rv_overview", function()
+    if not surface_on() then return end
+    if SF.op.mode == opening.MODES.full then close_reveal(); heal_opening(); return end
+    reveal.DELAY = 0
+    reveal.down(SF.rv, SF.clock - reveal.OPEN_MS - 1)
+    SF.opened, SF.dragging, SF.want_full = false, nil, true
+    if read_clients then read_clients() end
+    if not SF.ticking then SF.ticking = every(50, tick) end
+end)
 on("rv_move", function(v)
     v = math.floor(tonumber(v) or 0)
     SF.ptr = { x = v // 10000, y = v % 10000 }
@@ -378,7 +402,7 @@ on("rv_move", function(v)
     end
 end)
 on("rv_up", function()
-    if not surface_on() then tap(); return end       -- review I1: off, Super's release is the old tap
+    if not hold_on() and not SF.rv.down_at then tap(); return end   -- review I1, D271: no hold, Super's release is the tap
     local res = reveal.up(SF.rv, SF.clock)
     -- in the Overview a Super tap is its own close, not the bar's tap
     if res == "tap" and SF.op.mode == opening.MODES.full then
