@@ -104,3 +104,67 @@ do
         assert(p:find("on change nd_kb while nd_kb and nd_kind == 13 and nd_pgp == 10 { focus nd_kq }", 1, true))
     end)
 end
+
+section("the node's logic names only what Pleamar gives it (D267 fix)")
+do
+    test("every global the node's logic reads is one of the runtime's: a local used before it is declared is not", function()
+        local p = io.popen("luac5.4 -l -l -p shell/mooi-node.luau 2>/dev/null")
+        local listing = p and p:read("a") or ""
+        if p then p:close() end
+        if listing == "" then return end   -- no luac5.4 here (CI's image): the gate's parse still runs
+        local ok = {}
+        for _, g in ipairs({ "N", "fact", "text", "model", "on", "run", "every", "after", "sys", "json", "sound", "require",
+                             "math", "string", "table", "os", "pairs", "ipairs", "type", "tonumber", "tostring", "pcall" }) do ok[g] = true end
+        for g in listing:gmatch('[GS]ETTABUP[^\n]-_ENV "([%w_]+)"') do
+            assert(ok[g], "the node's logic reads a global it is not given: " .. g)
+        end
+    end)
+end
+
+section("SSH hosts and packages in the search line (D268; k4's and Minflair's)")
+do
+    local SSH, PK = require("lib/node/ssh"), require("lib/node/pkgs")
+    test("hosts: plain names only, each once, with where they go", function()
+        local h = SSH.hosts(table.concat({
+            "Host *", "  ServerAliveInterval 30", "Host box nas", "  HostName 10.0.0.2", "Host  pi.local",
+            "  hostname=pi.lan", "Host !bad web-? me;rm", "Match host x", "  HostName nowhere", "host box",
+        }, "\n"))
+        eq(#h, 3); eq(h[1].name, "box"); eq(h[1].to, "10.0.0.2"); eq(h[2].name, "nas"); eq(h[3].to, "pi.lan")
+        eq(SSH.safe("me;rm"), false); eq(SSH.safe("-oProxyCommand=x"), false); eq(SSH.safe("pi.local"), true)
+    end)
+    test("hosts match by name, by where they go, or all under `ssh`", function()
+        local h = SSH.hosts("Host box\n HostName 10.0.0.2\nHost nas\n HostName storage.lan\n")
+        eq(SSH.match(h, "box")[1].host, "box"); eq(SSH.match(h, "storage")[1].host, "nas")
+        eq(#SSH.match(h, "ssh", 5), 2); eq(SSH.match(h, "ssh n")[1].host, "nas"); eq(#SSH.match(h, "zzz"), 0)
+        eq(SSH.match(h, "box")[1].kind, "ssh")
+    end)
+    test("a package search is asked for with `pkg`, `pacman` or `aur`, and only with words", function()
+        eq(PK.query("pkg firefox"), "firefox"); eq(PK.query("pkg: rip grep "), "rip grep"); eq(PK.query("aur yay-bin"), "yay-bin")
+        eq(PK.query("pkg -Syu"), nil); eq(PK.query("pkg a;b"), nil); eq(PK.query("pkgfoo"), nil); eq(PK.query("pkg "), nil)
+        eq(PK.safe_name("lib32-gcc-libs"), true); eq(PK.safe_name("-x"), false); eq(PK.safe_name("a b"), false)
+    end)
+    test("rows: the repositories', then the AUR's best two, installed marked", function()
+        local out = table.concat({
+            "## repo",
+            "extra/ripgrep 15.2.0-1 [installed]", "    A search tool", "extra/repgrep 0.17.1-1", "    A replacer",
+            "extra/a 1-1", "    x", "extra/b 1-1", "    x", "extra/c 1-1", "    x",
+            "## aur",
+            "aur/ripgrep-all-git 0.10-1 [+2 ~0.00]", "    rga", "aur/rg-bin 1-1 [+0 ~0.00] [Installed]", "    bin",
+        }, "\n")
+        local r = PK.parse(out, 5)
+        eq(#r, 5); eq(r[1].pkg, "ripgrep"); eq(r[1].tag, "EXTRA · INSTALLED"); eq(r[1].name, "ripgrep — A search tool")
+        eq(r[4].source, "aur"); eq(r[4].tag, "AUR"); eq(r[5].tag, "AUR · INSTALLED")
+        eq(#PK.parse("## repo\n## aur\n"), 0)
+        eq(PK.parse(out, 5, "repgrep")[1].pkg, "repgrep", "the exact name first")
+    end)
+    test("choosing opens the terminal on `mooi pkg install` or `ssh HOST`, checked again", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('in_terminal({ "pkg", "install", a.pkg, a.source == "aur" and "aur" or "repo" })', 1, true))
+        assert(l:find('elseif a.kind == "ssh" and SSH.safe(a.host) then', 1, true))
+        assert(l:find('if not tostring(w):match("^[%w@%._%+%-]+$") then return end', 1, true), "every word checked")
+        local b = read("bin/mooi")
+        assert(b:find('sudo pacman -S -- "$name"', 1, true) and b:find('"$h" -S -- "$name"', 1, true))
+        assert(b:find("case \"$q\" in ''|-*)", 1, true), "an option is never a query")
+        eq(require("lib/node/commands").match("update the system")[1].term, true)
+    end)
+end

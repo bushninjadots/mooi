@@ -36,6 +36,8 @@ local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
 local KS = require("lib/node/keysheet")
+local SSH = require("lib/node/ssh")
+local PK = require("lib/node/pkgs")
 local DESK = require("lib/desktop")
 
 local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, panel = 13 }
@@ -133,6 +135,8 @@ pcall(sys.watch, "files:palette.json", function() palette = read("palette.json",
 -- ── drawing what the node is ──
 local render
 local show_panel, open_panel
+local show_keys       -- (D267) the shortcut sheet's rows; the keyboard reaches it before it is written, below
+local with_terminal   -- (D268) the search line opens SSH and packages in it; defined with btop's, below
 local function schedule()
     -- what is due next: the next event that ends, or the pointer's next decision
     local t = ST.next_change(N.st, now())
@@ -237,7 +241,8 @@ local function show_launcher(b)
         local name = tostring(a.name or a.id or "")
         local icon = (a.kind == "app" and type(a.icon) == "string") and a.icon or ""
         local letter = a.kind == "web" and "W" or a.kind == "calc" and "=" or a.kind == "command" and "M" or a.kind == "window" and string.sub(tostring(a.app or name), 1, 1) or string.sub(name ~= "" and name or "?", 1, 1)
-        local tag = CMD.TAG[a.kind] or ""
+        local tag = a.tag or CMD.TAG[a.kind] or ""
+        if a.kind == "ssh" then letter = ">" elseif a.kind == "pkg" then letter = a.source == "aur" and "A" or "P" elseif a.kind == "info" then letter = "…" end
         if a.kind == "window" and a.workspace ~= "" then tag = "WINDOW · " .. a.workspace end
         rows[i] = { x = p.x, y = p.y, w = p.w, h = p.h, name = name, icon = icon, iconed = icon ~= "",
                     letter = string.upper(letter), tag = tag }
@@ -700,13 +705,31 @@ on("nd_ws", function(v)
 end)
 
 -- ── the launcher ──
+-- D268: packages (`pkg WORDS`) are asked of `mooi pkg search` once the typing rests, and the answer kept for that
+-- query; SSH hosts come from ~/.ssh/config, read when the search line opens
+N.pkg = { q = nil, rows = {}, busy = false }
 local function search()
+    local pq = PK.query(N.q)
+    if pq then
+        local rows = {}
+        if N.pkg.q == pq and not N.pkg.busy then
+            for _, r in ipairs(N.pkg.rows) do rows[#rows + 1] = r end
+            if #rows == 0 then rows[1] = { kind = "info", name = "No package called “" .. pq .. "”", tag = "" } end
+        else
+            rows[1] = { kind = "info", name = "Looking for “" .. pq .. "” in the repositories and the AUR…", tag = "" }
+        end
+        N.results = rows
+        N.sel = math.max(0, math.min(N.sel, #N.results - 1))
+        return
+    end
     local wd = read("widgets.json", "json")
     local apps = WB.grid_apps(N.apps, type(wd) == "table" and wd.launch_counts or {}, N.q, 6)
     for _, a in ipairs(apps) do a.kind = a.kind or "app" end
     -- D234: mooi's own commands and the open windows, when something is typed
     if N.q:match("%S") then
-        apps = CMD.merge(apps, CMD.match(N.q, 3), CMD.windows(N.clients, N.q, 2), 6)
+        local cmds = CMD.match(N.q, 3)
+        for _, h in ipairs(SSH.match(N.ssh_hosts, N.q, 2)) do cmds[#cmds + 1] = h end
+        apps = CMD.merge(apps, cmds, CMD.windows(N.clients, N.q, 2), 6)
         -- D256: the last row searches the web for it (sent only if chosen)
         if #apps >= 6 then table.remove(apps) end
         apps[#apps + 1] = { kind = "web", name = "Search the web for “" .. N.q:gsub("^%s+", ""):gsub("%s+$", "") .. "”", query = N.q }
@@ -733,13 +756,41 @@ end
 local function copy(text) run("wl-copy", {}, nil, { input = tostring(text or ""), output = false }) end
 N.copy = copy
 -- what a chosen row does: an app starts, a window comes forward, a command of mooi's runs, a sum is copied
+-- (D268) one of mooi's own commands in the owner's terminal — a package installed or the system updated, where
+-- the password and the confirmation are theirs. mooi by its full path: the terminal starts from Hyprland, which
+-- has never heard of the repo's bin.
+local function in_terminal(args)
+    local okb, bin = pcall(sys.ask, "env", "MOOI_BIN")
+    if not (okb and type(bin) == "string" and bin:match("^/[%w%._/%-]+$")) then
+        local okh, home = pcall(sys.ask, "env", "HOME")
+        bin = (okh and type(home) == "string" and home or "") .. "/Projects/mooi/bin/mooi"
+        if not bin:match("^/[%w%._/%-]+$") then return end
+    end
+    for _, w in ipairs(args) do if not tostring(w):match("^[%w@%._%+%-]+$") then return end end
+    with_terminal(function(t)
+        local argv = t and TM.argv(t, { bin, table.unpack(args) })
+        if argv then run("hyprctl", { "dispatch", HY.exec(table.concat(argv, " ")) }, function() end) end
+    end)
+end
 local function choose(a)
     if not a then return end
     if a.kind == "window" then
         local d = HY.dispatch("focus", a.address)   -- the address checked, the expression built safely
         if d then run("hyprctl", { "dispatch", d }, function() end) end
+    elseif a.kind == "command" and a.term then
+        in_terminal(a.args)
     elseif a.kind == "command" then
         run("mooi", a.args, function() end)
+    elseif a.kind == "ssh" and SSH.safe(a.host) then
+        -- checked again here: the name is part of a shell line (Hyprland's exec)
+        with_terminal(function(t)
+            local argv = t and TM.argv(t, { "ssh", a.host })
+            if argv then run("hyprctl", { "dispatch", HY.exec(table.concat(argv, " ")) }, function() end) end
+        end)
+    elseif a.kind == "pkg" and PK.safe_name(a.pkg) then
+        in_terminal({ "pkg", "install", a.pkg, a.source == "aur" and "aur" or "repo" })
+    elseif a.kind == "info" then
+        return
     elseif a.kind == "calc" then
         copy(a.value)
     elseif a.kind == "web" then
@@ -757,6 +808,11 @@ local function open_launcher()
     text.nd_q = ""
     search()
     render()
+    -- D268: the SSH hosts, for the same reason
+    local okh, home = pcall(sys.ask, "env", "HOME")
+    if okh and type(home) == "string" and home ~= "" then
+        run("cat", { home .. "/.ssh/config" }, function(out, code) N.ssh_hosts = code == 0 and SSH.hosts(out) or {} end)
+    end
     -- the open windows, for the search to find (a moment later is soon enough: nobody has typed yet)
     run("hyprctl", { "-j", "clients" }, function(out)
         local ok, c = pcall(json.decode, out or "")
@@ -764,7 +820,22 @@ local function open_launcher()
         if N.q:match("%S") then search(); render() end
     end)
 end
-on("text:nd_q", function(v) N.q = tostring(v or ""); N.sel = 0; search(); render() end)
+local function pkg_search()
+    local pq = PK.query(N.q)
+    if not pq or (N.pkg.q == pq and not N.pkg.busy) then return end
+    N.pkg = { q = pq, rows = {}, busy = true }
+    local words = {}
+    for w in pq:gmatch("%S+") do words[#words + 1] = w end
+    run("mooi", { "pkg", "search", table.unpack(words) }, function(out)
+        if N.pkg.q ~= pq then return end
+        N.pkg = { q = pq, rows = PK.parse(out or "", 5, pq), busy = false }
+        if N.kind == "launcher" then search(); render() end
+    end)
+end
+on("text:nd_q", function(v)
+    N.q = tostring(v or ""); N.sel = 0; search(); render()
+    if PK.query(N.q) then local q = N.q; after(400, function() if N.q == q then pkg_search() end end) end
+end)
 
 -- ── the universe ──
 local function open_universe()
@@ -1413,7 +1484,7 @@ end
 -- the page opens, so a key changed a minute ago is shown as it is.
 N.kq, N.ksc, N.krows = "", 0, {}
 local KEYS_SHOWN = 10
-local function show_keys()
+show_keys = function()
     local rows = KS.filter(N.krows, N.kq)
     N.ksc = math.max(0, math.min(N.ksc, #rows - KEYS_SHOWN))
     local out = {}
@@ -1482,7 +1553,7 @@ N.open_panel, N.close_panel = open_panel, function() ST.release(N.st, "panel"); 
 -- ── a reading pressed (D249): btop, in the owner's terminal — the first of the usual ones that answers, found
 -- once by asking each its version (no shell), and started through Hyprland so it is a window like any other ──
 local TERMS = { "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm" }
-local function with_terminal(go)
+with_terminal = function(go)
     if N.term then go(N.term); return end
     local i = 0
     local function try()

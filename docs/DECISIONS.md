@@ -7174,3 +7174,31 @@ binary `~`, `<<` and `>>` in any logic file, with strings and comments taken out
 
 **Verified.** Unit 849 / 0; the node's scene compiles; live after `mooi refresh`: Super+K bound, the page opened by
 `mooi node keys` with 133 shortcuts, the filter "volume" left 4, and the second press closed it.
+
+## D268 · 2026-11-10 · SSH hosts and packages in the search line (k4's and Minflair's)
+
+k4 reaches the servers in `~/.ssh/config` in two keys; Minflair has a package manager and k4 searches packages
+from its launcher. mooi puts both in the node's search line rather than in new windows.
+
+**SSH.** When the search line opens it reads `~/.ssh/config` (`cat`, already allowed). `Host` names that are plain
+aliases become rows tagged `SSH`, matched by name or by their `HostName`; `ssh` alone lists them all. Return
+opens the owner's terminal on `ssh NAME`. A pattern (`*`, `?`, `!`) is a rule for many hosts, and a name with any
+other character could change the shell line Hyprland's exec runs, so neither becomes a row (`lib/node/ssh`).
+
+**Packages.** `pkg WORDS` (or `pacman`, `aur`) asks `mooi pkg search` 400 ms after the typing rests: `pacman -Ss`
+under `## repo`, then paru's or yay's `-Ssa` under `## aur`. `lib/node/pkgs` turns that into at most five rows,
+the repositories' first with room kept for the AUR's best two and the exact name leading, each tagged with its
+repository and `INSTALLED`. Return opens the terminal on `mooi pkg install NAME repo|aur`, which runs
+`sudo pacman -S` or the helper's `-S` there, so the password and every question are the owner's; the terminal
+waits for Return. **Update the system** is a command that does the same with `-Syu`. Queries that look like
+options are refused by both the node and `mooi pkg`, and names are checked again where they meet a shell line.
+The AUR search sends the typed words to aur.archlinux.org; docs/NODE.md says so.
+
+**And a fix to D267.** The node's globals were listed for this change and one was wrong: the shortcut sheet's
+arrow keys called `show_keys` before its `local` was written, so it was a nil global and ↑ ↓ would have raised an
+error. It is declared at the top now, and a unit test reads `luac5.4 -l -l` and fails on any global the runtime
+does not give.
+
+**Verified.** Unit 855 / 0; live after `mooi refresh`: `pkg ripgrep` gave three repository rows (two marked
+installed) and two AUR rows. SSH was not tried live: this machine has no `~/.ssh/config`; its parsing and
+matching are unit-tested.

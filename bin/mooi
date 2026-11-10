@@ -38,6 +38,7 @@
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi game-mode [on|off|status]  game mode: no animations, blur, shadows or gaps; VRR on; put back exactly after
+#   mooi pkg search WORDS | install NAME [repo|aur] | update   packages: search, and install or update in a terminal
 #   mooi keys-text         Hyprland's config files as written (the node's shortcut sheet reads its words)
 #   mooi osd caps|num      the node's gauge for a lock key (Hyprland's Caps_Lock and Num_Lock binds call it)
 #   mooi open              same as `window` (kept for old scripts)
@@ -970,6 +971,45 @@ game_mode() {
     fi
 }
 
+# Packages (D268; Minflair's package manager, k4's launcher): `pkg search WORDS` prints pacman's answer under
+# `## repo` and the AUR helper's (paru, else yay) under `## aur`, for the node's search line to read
+# (lib/node/pkgs). `pkg install NAME repo|aur` and `pkg update` run in the terminal they were opened in, so the
+# password and every confirmation are the owner's own; the terminal waits for Return when it is done.
+pkg_helper() { for h in paru yay; do command -v "$h" >/dev/null 2>&1 && { echo "$h"; return 0; }; done; return 1; }
+pkg_wait() { printf '\n%s ' "Done. Return closes this window."; read -r _ || :; }
+pkg_cmd() {
+    local verb="${1:-}"; shift || :
+    case "$verb" in
+        search)
+            local q="$*"
+            case "$q" in ''|-*) echo "usage: mooi pkg search WORDS" >&2; return 2 ;; esac
+            printf '%s' "$q" | grep -Eq '^[[:alnum:]][[:alnum:][:space:]._+@-]*$' || { echo "pkg: words only" >&2; return 2; }
+            echo "## repo"
+            # shellcheck disable=SC2086 # the words are separate terms for pacman, checked above
+            timeout 8 pacman -Ss -- $q 2>/dev/null | head -n 60
+            local h; h=$(pkg_helper) || return 0
+            echo "## aur"
+            # shellcheck disable=SC2086
+            timeout 10 "$h" -Ssa -- $q 2>/dev/null | head -n 40
+            ;;
+        install)
+            local name="${1:-}" src="${2:-repo}"
+            printf '%s' "$name" | grep -Eq '^[[:alnum:]@._+][[:alnum:]@._+-]*$' || { echo "pkg: not a package name: $name" >&2; return 2; }
+            if [ "$src" = aur ]; then
+                local h; h=$(pkg_helper) || { echo "no AUR helper (paru or yay) is installed" >&2; pkg_wait; return 1; }
+                "$h" -S -- "$name"
+            else
+                sudo pacman -S -- "$name"
+            fi
+            pkg_wait ;;
+        update)
+            local h
+            if h=$(pkg_helper); then "$h" -Syu; else sudo pacman -Syu; fi
+            pkg_wait ;;
+        *) echo "usage: mooi pkg search WORDS | install NAME [repo|aur] | update" >&2; return 2 ;;
+    esac
+}
+
 ws_fx() {
     exec 9>"$rt/ws-fx.lock"
     flock -n 9 2>/dev/null || { echo "mooi-ws-fx: already running" >&2; exit 1; }
@@ -1546,6 +1586,7 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     game-mode) game_mode "$@"; exit $? ;;
+    pkg) pkg_cmd "$@"; exit $? ;;
     keys-text) # D267: Hyprland's config as written, for the node's shortcut sheet to read the binds' own words
                # from (Hyprland 0.57's Lua binds do not say what they run). The main file, then the parts it reads.
         c="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"

@@ -24,6 +24,8 @@ M.LIST = {
     { name = "Record the screen", args = { "record" }, words = "record recording screen capture video" },
     -- D267: the shortcut sheet
     { name = "Keyboard shortcuts", args = { "node", "keys" }, words = "keys keybinds keybindings shortcuts hotkeys cheat sheet bindings" },
+    -- D268: the system's packages brought up to date, in the owner's terminal (`term`: never in the background)
+    { name = "Update the system", args = { "pkg", "update" }, term = true, words = "update upgrade packages pacman paru yay syu" },
     -- D266: Minflair's game mode — reversible, and the gauge says which way it went
     { name = "Game mode", args = { "game-mode" }, words = "game gaming performance vrr fps animations blur" },
 }
@@ -55,7 +57,7 @@ function M.match(q, limit)
     local out = {}
     for i, c in ipairs(M.LIST) do
         local s = M.score(q, c.name, c.words)
-        if s > 0 then out[#out + 1] = { kind = "command", name = c.name, args = c.args, score = s, order = i } end
+        if s > 0 then out[#out + 1] = { kind = "command", name = c.name, args = c.args, term = c.term, score = s, order = i } end
     end
     table.sort(out, function(a, b) if a.score ~= b.score then return a.score > b.score end; return a.order < b.order end)
     while #out > (limit or 3) do table.remove(out) end
@@ -110,6 +112,6 @@ function M.merge(apps, commands, windows, max)
 end
 
 -- the word each kind wears on its row
-M.TAG = { app = "", command = "MOOI", window = "WINDOW", calc = "=", web = "WEB" }
+M.TAG = { app = "", command = "MOOI", window = "WINDOW", calc = "=", web = "WEB", ssh = "SSH" }
 
 return M

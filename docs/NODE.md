@@ -194,6 +194,15 @@ Super+Space opens the search line. Type, and the node looks for:
 - **Sums** — `200+10%` gives `= 220`, `2^10` gives `= 1024`, `sqrt(9)` gives `= 3`.
 - **Conversions** — `5 km in mi` gives `= 3.10686 mi`, `20 c to f` gives `= 68 f`, and
   `2 GB in MiB` gives `= 1907.35 MiB`.
+- **SSH hosts** — the `Host` names in `~/.ssh/config`, by name or by the address they go to; `ssh`
+  alone lists them all. A row is tagged `SSH`, and Return opens your terminal on `ssh NAME`. Patterns
+  such as `Host *` are rules, not hosts, and are left out.
+- **Packages** — start with `pkg ` (or `pacman ` or `aur `): `pkg ripgrep` asks the repositories and,
+  when paru or yay is installed, the AUR, once you stop typing. Up to five rows come back, the
+  repositories' first and the AUR's best two after, the exact name leading; each is tagged with its
+  repository, and `INSTALLED` when it is. Return opens your terminal on the install (`sudo pacman -S`
+  or `paru -S`), so the password and every question are yours; it waits for Return when it is done.
+  **Update the system** does the same with `-Syu`.
 
 A sum or conversion comes first. Then come strong command and window matches, then applications,
 then weaker ones, up to six rows. Each row says what it is: `MOOI`, `WINDOW · 3`, or `=`.
@@ -458,6 +467,10 @@ The node is local. It does not send anything anywhere except the one lyrics requ
   checks, and `notify-send` shows a desktop notification.
 - **The shortcut sheet** — when it opens, `hyprctl binds -j` for what is bound, and `mooi keys-text`,
   which prints Hyprland's own config files, for the words. Nothing is written.
+- **SSH and packages** — when the search line opens, `cat ~/.ssh/config` for the host names. A package
+  search runs `mooi pkg search`, which asks `pacman -Ss` (the local database) and `paru -Ssa` or
+  `yay -Ssa`, **which sends the words you typed to aur.archlinux.org**. Nothing is installed or
+  connected without your Return, and then only in a terminal you see.
 - **The lock keys** — Hyprland's `Caps_Lock` and `Num_Lock` binds run `mooi osd caps|num`, which asks
   `hyprctl devices -j` whether the main keyboard's lock is on. Nothing is read from the keyboard itself.
 - **Copying an answer** — a chosen sum or conversion goes to `wl-copy`.
