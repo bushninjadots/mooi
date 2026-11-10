@@ -5,6 +5,7 @@
 -- a recording. Nothing that stops, restarts or rewrites anything.
 
 local M = {}
+local FZ = require("lib/node/fuzzy")
 
 M.LIST = {
     { name = "Settings", args = { "settings" }, words = "preferences options configure" },
@@ -37,6 +38,8 @@ function M.score(q, name, words)
         if n:sub(1, #part) == part then s = 3
         elseif n:find("%f[%w]" .. part:gsub("%p", "%%%0")) then s = 2
         elseif n:find(part, 1, true) or w:find(part, 1, true) then s = 1
+        -- D235: letters in order, mostly at the starts of words ("vsc", "nxs"): as weak as a match inside a word
+        elseif FZ.score(part, name) >= 40 then s = 1
         else return 0 end
         if s < best then best = s end
     end

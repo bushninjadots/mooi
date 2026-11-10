@@ -18,6 +18,7 @@ local CMD = require("lib/node/commands")
 local HY = require("lib/hypr")
 local MK = require("lib/node/mediakit")
 local NT = require("lib/node/notices")
+local CALC = require("lib/node/calc")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
@@ -190,7 +191,7 @@ local function show_launcher(b)
         local p = places[i]
         local name = tostring(a.name or a.id or "")
         local icon = (a.kind == "app" and type(a.icon) == "string") and a.icon or ""
-        local letter = a.kind == "command" and "M" or a.kind == "window" and string.sub(tostring(a.app or name), 1, 1) or string.sub(name ~= "" and name or "?", 1, 1)
+        local letter = a.kind == "calc" and "=" or a.kind == "command" and "M" or a.kind == "window" and string.sub(tostring(a.app or name), 1, 1) or string.sub(name ~= "" and name or "?", 1, 1)
         local tag = CMD.TAG[a.kind] or ""
         if a.kind == "window" and a.workspace ~= "" then tag = "WINDOW · " .. a.workspace end
         rows[i] = { x = p.x, y = p.y, w = p.w, h = p.h, name = name, icon = icon, iconed = icon ~= "",
@@ -565,6 +566,15 @@ local function search()
     -- D234: mooi's own commands and the open windows, when something is typed
     if N.q:match("%S") then
         apps = CMD.merge(apps, CMD.match(N.q, 3), CMD.windows(N.clients, N.q, 2), 6)
+        -- D235: a sum is worked out (lib/node/calc: its own parser, nothing run) and comes first; Return copies it
+        if CALC.looks_like(N.q) then
+            local v = CALC.eval(N.q)
+            if v then
+                local shown = CALC.format(v)
+                table.insert(apps, 1, { kind = "calc", name = "= " .. shown, value = shown })
+                while #apps > 6 do table.remove(apps) end
+            end
+        end
     end
     N.results = apps
     N.sel = math.max(0, math.min(N.sel, #N.results - 1))

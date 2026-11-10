@@ -6716,3 +6716,15 @@ copying its body were left out on purpose: the feed never carries bodies out of 
 decision stands until the owner says otherwise. `lib/node/notices` is pure and tested.
 
 **Verified.** Unit 688 / 0; scenes compile; `bin/mooi check` green.
+
+## D235 · 2026-11-10 · A calculator and fuzzy matching in the launcher
+
+From opencode (task 4), reviewed. `lib/node/calc` is a hand-written tokenizer and recursive-descent parser: the
+text typed is only ever numbers, `+ - * / ^ %`, percentages (`200 + 10%`), parentheses, fourteen maths functions
+and `pi e tau`. Nothing is loaded or run, input is capped at 200 characters and nesting at 64, and NaN and
+infinity are refused. A sum in the search line comes first as `= 220`, and Return copies it (`wl-copy`).
+`lib/node/fuzzy` scores letters in order, favouring the starts of words (`vsc` for Visual Studio Code). The
+launcher uses it as the weakest match for commands and windows (`wpp` for the wallpaper picker). Its scoring is
+O(query × name²); measured at ≈ 9 ms per keystroke over 200 long names, so it is left as written.
+
+**Verified.** Unit 722 / 0; scenes compile; `bin/mooi check` green.
