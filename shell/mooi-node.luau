@@ -1,6 +1,6 @@
 -- The Dynamic Pill as a living node (D226; docs/superpowers/specs/2026-11-09-dynamic-pill-node-design.md). The
 -- logic: what is happening (the services, Signal Loom's feed, the bar's feed), what the node is now
--- (lib/node/state), where its body and parts go (lib/node/geometry, satellites), how it looks (lib/node/look, set
+-- (lib/node/state), where its body and parts go (lib/node/geometry), how it looks (lib/node/look, set
 -- in its studio, D229), how it answers the pointer (lib/node/interaction) — written as facts for
 -- shell/mooi-node.plm (tools/gen-node.py) to spring and draw.
 -- Event-driven: one timer for the next thing that ends, none at rest.
@@ -34,13 +34,11 @@ local CS = require("lib/node/clockstyles")
 local WFX = require("lib/node/wsfx")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
-local SAT = require("lib/node/satellites")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
 
-local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, shelf = 12, branch = 13 }
+local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, panel = 13 }
 -- what a press, Super or another opening lets go of (`done` is never among them: it waits to be answered)
-local HELD = { "system", "launcher", "universe", "time", "player", "shelf", "branch" }
-local SAT_KIND = { music = 1, rec = 2, battery = 3, network = 4, music_rec = 5, notice = 6, mic = 7, cam = 9 }   -- 8 was the timer's mark: a running timer is the seed's capsule (D231)
+local HELD = { "launcher", "universe", "time", "player", "panel" }
 
 local function read(name, kind)
     local ok, v
@@ -59,6 +57,7 @@ N = {
     apps = {}, q = "", results = {}, sel = 0,
     pointer = nil, due = nil,
     clients = {},
+    panel = "home", wifi_on = false, wifi_name = "Off", bt_on = false,
 }
 
 local function cfg() local n = N.settings.node; return type(n) == "table" and n or {} end
@@ -131,6 +130,7 @@ pcall(sys.watch, "files:palette.json", function() palette = read("palette.json",
 
 -- ── drawing what the node is ──
 local render
+local show_panel, open_panel
 local function schedule()
     -- what is due next: the next event that ends, or the pointer's next decision
     local t = ST.next_change(N.st, now())
@@ -150,12 +150,19 @@ local function set_body(b, overshoot)
     if o > 0 then after(110, function() fact.nd_tx, fact.nd_tw = b.x, b.w end) end
 end
 
+local function mmss(sec)
+    sec = math.max(0, math.floor(tonumber(sec) or 0))
+    return (sec // 60) .. ":" .. string.format("%02d", sec % 60)
+end
 local function show_media(b)
     local m = N.media
     text.nd_title = m.title ~= "" and m.title or "Nothing playing"
     text.nd_artist = m.artist
     fact.nd_playing = m.playing
+    fact.nd_paused = not m.playing and (m.title ~= "" or m.length > 0)
+    fact.nd_arted = m.art ~= ""
     fact.nd_prog = (m.length > 0) and math.max(0, math.min(1, m.position / m.length)) or 0
+    text.nd_hompos, text.nd_homlen = mmss(m.position), mmss(m.length)
 end
 
 -- D237: one card per app (its newest notice, and how many it has sent); each row remembers which notice it is
@@ -204,16 +211,17 @@ local function show_system(b)
         { "RAM", mem and (math.floor(mem + 0.5) .. "%") or "—", (mem or 0) > 90, (mem or 0) / 100, true, N.hist.mem },
         { "TEMP", f.temp and (math.floor(f.temp) .. "°") or "—", (tonumber(f.temp) or 0) > 85, math.min(1, (tonumber(f.temp) or 0) / 100), true, N.hist.temp },
         { "NET", N.online and "ON" or "OFF", not N.online, N.online and 1 or 0, false },
+        { "BAT", N.bat and (math.floor(N.bat + 0.5) .. "%" .. (N.charging and "+" or "")) or "—", N.bat ~= nil and DV.band(N.bat) == "critical" and not N.charging, (N.bat or 0) / 100, false },
     }
-    if N.bat then
-        items[#items + 1] = { "BAT", math.floor(N.bat + 0.5) .. "%" .. (N.charging and "+" or ""), DV.band(N.bat) == "critical" and not N.charging, N.bat / 100, false }
-    end
-    local sp = G.spokes(b, #items)
     local rows = {}
+    -- D260: the panel's System page is a two-column grid of cards, each with its last twenty readings
+    local cw = (b.w - 40) / 2
     for i, it in ipairs(items) do
-        local r = { x = sp[i].x, y = sp[i].y, label = it[1], value = it[2], hot = it[3], frac = math.max(0, math.min(1, it[4] or 0)), deep = it[5] == true }
+        local col, row = (i - 1) % 2, (i - 1) // 2
+        local r = { x = b.x + 14 + col * (cw + 12), y = b.y + 56 + row * 96, label = it[1], value = it[2], hot = it[3],
+                    frac = math.max(0, math.min(1, it[4] or 0)), deep = it[5] == true }
         local bars = it[6] and HI.bars(it[6], 20) or {}
-        for k = 0, 19 do r["h" .. k] = bars[k + 1] or 0 end
+        for k = 0, 19 do r["h" .. k] = bars[k + 1] or (it[6] and 0 or (it[4] or 0)) end
         rows[i] = r
     end
     model.sy = rows
@@ -358,21 +366,6 @@ local function show_done()
     text.nd_dnd = d.detail .. (#N.done > 1 and ("  ·  +" .. (#N.done - 1) .. " MORE") or "")
 end
 
-local function show_satellites(b, kind)
-    if not on_for("satellites") then model.sa = {}; return end
-    local f = N.feed
-    local list = SAT.collect({ playing = N.media.playing and on_for("media"), media_open = kind == "media", title = N.media.title,
-                               recording = f.recording == true, notices = on_for("notices") and #N.notices or 0,
-                               battery = N.bat, charging = N.charging, online = N.online,
-                               mic = N.mic_on, cam = N.cam_on })
-    local rows = {}
-    for i, s in ipairs(SAT.layout(list, b)) do
-        if i > N.look.satellites then break end
-        rows[i] = { x = s.x, y = s.y, w = s.w, h = s.h, label = s.label, kind = SAT_KIND[s.kind] or 0 }
-    end
-    model.sa = rows
-end
-
 -- the studio (D229): what the node is shown as on its stage (the eighth chip tours them all), and what it shows
 -- when nothing real is there to show
 local PREVIEW = { "rest", "media", "notice", "volume", "workspaces", "system", "launcher" }
@@ -411,7 +404,7 @@ render = function()
     end
     if studio then shape.top = 96 end
     local anchor = studio and "centre" or (cfg().anchor or "centre")
-    local data = { n = #N.ws.list }
+    local data = { n = #N.ws.list, page = N.panel }
     -- at rest with something running, the seed is the time capsule
     local cap = (not studio and kind == "rest") and TK.capsule(N.time, wall()) or nil
     -- the music in the form the look chose (D246): a capsule, a visualiser strip, or a record (always round)
@@ -447,7 +440,7 @@ render = function()
     if changed and N.wants_bands and N.wants_bands() then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
     -- the keyboard only for what is opened to be typed into: the time panel, the player and a finish card never
     -- take it, so a timer that ends while you type steals no keys
-    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "branch" and N.branch == 2)
+    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "panel" and N.panel == "notes")
     set_body(b, changed and LK.overshoot(look) or 0)
     -- D257: a notch at rest is a piece of the frame's body (the frame draws it, joined to its band); the node
     -- only says where it is, and draws what is inside
@@ -464,11 +457,10 @@ render = function()
         show_notices(b)
     end
     if kind == "workspaces" then show_rail(b) end
-    if kind == "system" then show_system(b) end
+    if kind == "panel" then show_panel(b) end
     if kind == "launcher" then show_launcher(b) end
     if kind == "universe" then show_universe() end
     if kind == "time" then show_time() end
-    if kind == "shelf" and N.shelf_show then N.shelf_show(b) end
     if kind == "player" then show_media(b); if N.player_show then N.player_show() end end
     if kind == "done" then show_done() end
     if kind == "volume" then
@@ -476,7 +468,6 @@ render = function()
         fact.nd_vol = v
         text.nd_vlabel = "VOLUME " .. math.floor(v * 100 + 0.5) .. "%"
     end
-    show_satellites(b, kind)
     if reacting then N.pointer_due = math.min(N.pointer_due or math.huge, now() + ST.REACT_MS + 10) end
     schedule()
 end
@@ -633,13 +624,14 @@ on("nd_press", function()
     local k = N.kind
     if k == "launcher" or k == "universe" or k == "done" then return end
     -- a press on the panel's own body (not one of its controls) folds the time panel or the player away
-    if k == "time" or k == "player" or k == "shelf" or k == "branch" then ST.release(N.st, k); render(); return end
+    if k == "time" or k == "player" or k == "panel" then ST.release(N.st, k); render(); return end
     -- the music capsule pressed: it grows into the player (D236)
     if k == "media" then if N.open_player then N.open_player() end; return end
     if k == "rest" and fact.nd_cap then if N.open_time then N.open_time() end; return end
-    if k == "system" then ST.release(N.st, "system")
+    -- at rest the pill itself opens the panel (D260); with music playing, a press on it stays the music's
+    if k == "rest" then open_panel("home")
     elseif N.media.playing and k ~= "media" and on_for("media") then ST.push(N.st, "media", now())
-    elseif on_for("system") then toggle_hold("system") end
+    else open_panel("home") end
     render()
 end)
 on("nd_media", function(v)
@@ -670,13 +662,6 @@ end)
 on("nd_ws", function(v)
     local w = N.ws.list[math.floor(tonumber(v) or -1) + 1]
     if w then run("hyprctl", { "dispatch", 'hl.dsp.focus({ workspace = "' .. tostring(w.id) .. '" })' }) end
-end)
-on("nd_sa", function(v)
-    local k = math.floor(tonumber(v) or 0)
-    if k == SAT_KIND.music or k == SAT_KIND.music_rec then ST.push(N.st, "media", now())
-    elseif k == SAT_KIND.notice then ST.push(N.st, "notice", now())
-    elseif k == SAT_KIND.network or k == SAT_KIND.battery then toggle_hold("system") end
-    render()
 end)
 
 -- ── the launcher ──
@@ -776,8 +761,8 @@ on("nd_key", function(v)
         if v == 27 or v == 13 or v == 32 then N.answer_done() end
         return
     end
-    if N.kind == "branch" then
-        if v == 27 then ST.release(N.st, "branch"); render() end
+    if N.kind == "panel" then
+        if v == 27 then ST.release(N.st, "panel"); render() end
         return
     end
     if N.kind == "player" then
@@ -1174,51 +1159,60 @@ pcall(sys.watch, "files:bmo-shared.json", bmo_show)
 -- his face changes with time too (a reaction ends, he gets sleepy): looked at every ten seconds while he is the seed
 every(10000, bmo_show)
 
--- ── the shelf and its branches (D247): Super grows side pills out of the node — what you reach often — and each
--- grows its own panel under it. The node holds what has the focus and the time ──
-local SHELF = {
-    { code = 1, label = "CALENDAR", side = -1 }, { code = 2, label = "NOTES", side = -1 },
-    { code = 3, label = "CLIPBOARD", side = -1 }, { code = 4, label = "STASH", side = -1 },
-    { code = 9, label = "MUSIC", side = 1, music = true }, { code = 10, label = "TIME", side = 1 },
-    { code = 5, label = "WALLPAPER", side = 1 }, { code = 6, label = "SYSTEM", side = 1 },
-    { code = 7, label = "NEXUS", side = 1 }, { code = 8, label = "SETTINGS", side = 1 }, { code = 11, label = "POWER", side = 1 },
-}
-N.shelf_show = function(b)
-    local rows, lx, rx = {}, b.x - 8, b.x + b.w + 8
-    for _, p in ipairs(SHELF) do
-        if not p.music or N.media.playing then
-            local w = #p.label * 7 + 22
-            local x
-            if p.side < 0 then x = lx - w; lx = x - 6 else x = rx; rx = x + w + 6 end
-            rows[#rows + 1] = { x = x, y = b.y + b.h / 2 - 13, w = w, label = p.label, code = p.code, side = p.side }
-        end
-    end
-    model.sh = rows
-    text.nd_shclk = os.date("%H:%M")
+-- ── the panel (D260): one body grown straight down out of the pill. Home holds what is happening now; the
+-- pages its icon row reaches hold what the shelf and the branches used to, and each page keeps that row ──
+N.panel = "home"
+N.panel_sub, N.panel_items = "", {}
+local PANEL_PAGES = { home = 0, calendar = 1, notes = 2, clipboard = 3, stash = 4, wallpaper = 5, system = 6, power = 7 }
+local PANEL_TITLE = { calendar = "Calendar", notes = "Notes", clipboard = "Clipboard", stash = "Stash",
+                      wallpaper = "Wallpaper", system = "System", power = "Power" }
+local function ago(t) local s = os.time() - (tonumber(t) or 0); if s < 3600 then return math.max(1, s // 60) .. " min" elseif s < 86400 then return (s // 3600) .. " h" end; return (s // 86400) .. " d" end
+local function dnd_state()
+    local n = type(N.settings.notifications) == "table" and N.settings.notifications or {}
+    return n.dnd ~= nil and n.dnd ~= "off"
 end
-local function open_shelf()
-    for _, k in ipairs(HELD) do ST.release(N.st, k) end
-    ST.hold(N.st, "shelf")
-    text.nd_awin = ""
-    render()
-    run("hyprctl", { "-j", "activewindow" }, function(out)
-        local ok, w = pcall(json.decode, out or "")
-        if ok and type(w) == "table" and type(w.class) == "string" and w.class ~= "" then
-            local t = tostring(w.title or "")
-            text.nd_awin = string.upper(w.class) .. (t ~= "" and t ~= w.class and ("  ·  " .. t) or "")
-        else text.nd_awin = "THE DESKTOP" end
+-- the two radios' own state, asked when the panel opens (the name needs nmcli; Bluetooth only says on or off)
+local function panel_state()
+    run("nmcli", { "-t", "-f", "active,ssid", "dev", "wifi" }, function(out, code)
+        local name = "Off"
+        if code == 0 then
+            for line in tostring(out or ""):gmatch("[^\n]+") do
+                local on, ssid = line:match("^(%a+):(.*)$")
+                if on == "yes" and ssid ~= "" then name = ssid; break end
+            end
+        end
+        N.wifi_name = name
+        N.wifi_on = name ~= "Off"
+        if N.kind == "panel" then render() end
+    end)
+    run("bluetoothctl", { "show" }, function(out, code)
+        N.bt_on = code == 0 and tostring(out or ""):find("Powered: yes", 1, true) ~= nil
+        if N.kind == "panel" then render() end
     end)
 end
-N.open_shelf = open_shelf
 
--- the branches' contents
-N.branch, N.cal, N.branch_items = 0, nil, {}
-local BRANCH_TITLE = { "CALENDAR", "NOTES", "CLIPBOARD", "STASH", "WALLPAPER", "POWER" }
--- power (D256): each needs a second press within three seconds, as on the lock; nothing here ends a session by a slip
-local POWER = { { label = "Lock", argv = { "mooi", "lock" } }, { label = "Sleep", argv = { "systemctl", "suspend" } },
-                { label = "Reboot", argv = { "systemctl", "reboot" } }, { label = "Power off", argv = { "systemctl", "poweroff" } } }
-N.armed, N.armed_at = nil, 0
-local function ago(t) local s = os.time() - (tonumber(t) or 0); if s < 3600 then return math.max(1, s // 60) .. " min" elseif s < 86400 then return (s // 3600) .. " h" end; return (s // 86400) .. " d" end
+local function show_panel_home(b)
+    show_media(b)
+    fact.nd_pgp = 0
+    text.nd_pgt, text.nd_pgs = "", ""
+    N.dnd_on = dnd_state()
+    fact.nd_dnd_on = N.dnd_on
+    fact.nd_wifi = N.wifi_on == true
+    text.nd_wifin = N.wifi_name or "Off"
+    fact.nd_bt = N.bt_on == true
+    local cap = TK.capsule(N.time, wall())
+    fact.nd_tmr_on = cap ~= nil
+    if cap then text.nd_capt = cap.text end
+    local rows = {}
+    for i, n in ipairs(N.notices) do
+        if i > 3 then break end
+        rows[i] = { icon = "󰂚", app = string.upper(tostring(n.app or "MOOI")), title = tostring(n.title or ""), age = ago(n.time) }
+    end
+    model.pn = rows
+    fact.nd_ncn = #rows
+    fact.nd_vol = N.vol or 0
+end
+
 local function show_calendar()
     local now = os.date("*t")
     N.cal = N.cal or { y = now.year, m = now.month }
@@ -1226,35 +1220,34 @@ local function show_calendar()
     local rows = {}
     for i, c in ipairs(mo.cells) do rows[i] = { d = tostring(c.day), muted = not c.cur, today = c.today, weekend = c.weekend } end
     model.cal = rows
-    text.nd_brs = string.upper(mo.title)
+    N.panel_sub = string.upper(mo.title)
 end
 local function show_notes()
     local list = NOTES.decode(read("notes.json", "json"))
     table.sort(list, function(a, b) if a.pinned ~= b.pinned then return a.pinned end; return a.time > b.time end)
     local rows = {}
-    N.branch_items = {}
+    N.panel_items = {}
     for i, n in ipairs(list) do
-        if i > 6 then break end
+        if i > 7 then break end
         rows[i] = { label = NOTES.one_line(n.text, 80), detail = ago(n.time), pinned = n.pinned }
-        N.branch_items[i] = n.text
+        N.panel_items[i] = n.text
     end
     model.br = rows
-    text.nd_brs = #list .. " NOTES  ·  A PRESS COPIES ONE"
+    N.panel_sub = #list .. " NOTES  ·  A PRESS COPIES ONE"
 end
 local function show_stash()
     local items = STASH.decode(read("stash.json", "json"))
     table.sort(items, function(a, b) return (a.time or 0) > (b.time or 0) end)
     local rows = {}
-    N.branch_items = {}
+    N.panel_items = {}
     for i, it in ipairs(items) do
         if i > 7 then break end
         rows[i] = { label = it.name, detail = it.detail ~= "" and it.detail or ago(it.time), pinned = false }
-        N.branch_items[i] = it.url
+        N.panel_items[i] = it.url
     end
     model.br = rows
-    text.nd_brs = #items == 0 and "EMPTY  ·  DROP THINGS ON THE BAR'S STASH" or (#items .. " KEPT  ·  A PRESS OPENS ONE")
+    N.panel_sub = #items == 0 and "EMPTY  ·  DROP THINGS ON THE BAR'S STASH" or (#items .. " KEPT  ·  A PRESS OPENS ONE")
 end
--- the wallpaper: the index the picker keeps; the strip starts round the one worn
 local function show_walls()
     if not N.walls then
         local idx = read("walls-index.json", "json")
@@ -1274,30 +1267,34 @@ local function show_walls()
         if it then rows[#rows + 1] = { img = it.thumb, on = it.path == N.wl_worn } end
     end
     model.wl = rows
-    text.nd_brs = (#N.walls > 0) and (N.wl_at .. "–" .. math.min(#N.walls, N.wl_at + 6) .. " OF " .. #N.walls) or "NO PICTURES INDEXED YET"
+    N.panel_sub = (#N.walls > 0) and (N.wl_at .. "–" .. math.min(#N.walls, N.wl_at + 6) .. " OF " .. #N.walls) or "NO PICTURES INDEXED YET"
 end
--- the clipboard: cliphist's newest, text shown as it reads, pictures by their size; a press puts one back
 local function show_clipboard()
-    N.branch_items = {}
+    N.panel_items = {}
     run("cliphist", { "list" }, function(out, code)
-        if N.branch ~= 3 then return end
+        if N.panel ~= "clipboard" then return end
         local list = code == 0 and CH.parse(out, 7) or {}
         local rows = {}
         for i, e in ipairs(list) do
             rows[i] = { label = e.label, detail = e.kind == "text" and "" or string.upper(e.kind), pinned = false }
-            N.branch_items[i] = e.id
+            N.panel_items[i] = e.id
         end
         model.br = rows
-        text.nd_brs = code ~= 0 and "CLIPHIST IS NOT RUNNING" or (#list == 0 and "NOTHING COPIED YET" or "A PRESS PUTS ONE BACK")
+        N.panel_sub = code ~= 0 and "CLIPHIST IS NOT RUNNING" or (#list == 0 and "NOTHING COPIED YET" or "A PRESS PUTS ONE BACK")
+        render()
     end)
 end
 N.clip_choose = function(i)
-    local argv = CH.decode_args(N.branch_items[i])
+    local argv = CH.decode_args(N.panel_items[i])
     if not argv then return end
     run(argv[1], { table.unpack(argv, 2) }, function(out, code)
         if code == 0 and out then run("wl-copy", {}, nil, { input = out, output = false }) end
     end)
 end
+-- power (D256): each needs a second press within three seconds, as on the lock; nothing here ends a session by a slip
+local POWER = { { label = "Lock", argv = { "mooi", "lock" } }, { label = "Sleep", argv = { "systemctl", "suspend" } },
+                { label = "Reboot", argv = { "systemctl", "reboot" } }, { label = "Power off", argv = { "systemctl", "poweroff" } } }
+N.armed, N.armed_at = nil, 0
 local function show_power()
     local rows = {}
     for i, p in ipairs(POWER) do
@@ -1305,7 +1302,7 @@ local function show_power()
         rows[i] = { label = p.label, detail = armed and "PRESS AGAIN" or "", pinned = armed }
     end
     model.br = rows
-    text.nd_brs = "TWO PRESSES"
+    N.panel_sub = "TWO PRESSES"
 end
 N.power_choose = function(i)
     local p = POWER[i]
@@ -1317,68 +1314,37 @@ N.power_choose = function(i)
         run(p.argv[1], { table.unpack(p.argv, 2) }, function() end)
     else
         N.armed, N.armed_at = i, now()
-        after(3100, function() if N.branch == 6 then show_power() end end)
+        after(3100, function() if N.panel == "power" then show_power(); render() end end)
     end
 end
-local SHOW = { show_calendar, show_notes, show_clipboard, show_stash, show_walls, show_power }
-local function show_branch()
-    text.nd_brt = BRANCH_TITLE[N.branch] or ""
-    fact.nd_bk = N.branch
-    local f = SHOW[N.branch]
-    if f then f() elseif N.show_clipboard then N.show_clipboard() end
+local PANEL_SHOW = { calendar = show_calendar, notes = show_notes, clipboard = show_clipboard, stash = show_stash,
+                     wallpaper = show_walls, power = show_power }
+show_panel = function(b)
+    local pg = PANEL_PAGES[N.panel] or 0
+    if pg == 0 then show_panel_home(b); return end
+    fact.nd_pgp = pg
+    text.nd_pgt = PANEL_TITLE[N.panel] or ""
+    N.panel_sub = N.panel_sub or ""
+    if N.panel_shown ~= N.panel then
+        N.panel_shown = N.panel
+        local f = PANEL_SHOW[N.panel]
+        if f then f() end
+    end
+    text.nd_pgs = N.panel_sub or ""
+    if N.panel == "system" then show_system(b) end
 end
-local function open_branch(k)
-    for _, h in ipairs(HELD) do ST.release(N.st, h) end
-    N.branch = k
-    if k == 2 then text.nd_nq = "" end
-    show_branch()
-    ST.hold(N.st, "branch")
+open_panel = function(page)
+    for _, k in ipairs(HELD) do ST.release(N.st, k) end
+    N.panel = PANEL_PAGES[page] and page or "home"
+    N.panel_sub, N.panel_shown = "", nil
+    if N.panel == "notes" then text.nd_nq = "" end
+    ST.hold(N.st, "panel")
+    panel_state()
     render()
 end
-on("nd_sh", function(v)
-    v = math.floor(tonumber(v) or 0)
-    if (v >= 1 and v <= 5) or v == 11 then open_branch(v == 11 and 6 or v)
-    elseif v == 6 then for _, h in ipairs(HELD) do ST.release(N.st, h) end; ST.hold(N.st, "system"); render()
-    elseif v == 7 or v == 8 then
-        for _, h in ipairs(HELD) do ST.release(N.st, h) end
-        run("mooi", { v == 7 and "nexus" or "settings" }, function() end)
-        render()
-    elseif v == 9 and N.open_player then N.open_player()
-    elseif v == 10 and N.open_time then N.open_time() end
-end)
-on("text:nd_nq", function(v) N.nq = tostring(v or "") end)
-on("nd_br", function(v)
-    v = math.floor(tonumber(v) or 0)
-    local k = N.branch
-    if v == 1 or v == 2 then
-        local d = v == 1 and -1 or 1
-        if k == 1 and N.cal then N.cal.y, N.cal.m = CAL.shift(N.cal.y, N.cal.m, d)
-        elseif k == 5 and N.walls then N.wl_at = math.max(1, math.min(math.max(1, #N.walls - 6), N.wl_at + d * 7)) end
-    elseif v == 90 and k == 2 then
-        local t = (N.nq or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        if t ~= "" then
-            -- into the bar's inbox, a file in mooi's own data folder (only its owner can read it), never on a
-            -- command line where every process could see it (D258); the bar adds it to its notes
-            local box = read("notes-inbox.json", "json")
-            box = type(box) == "table" and box or {}
-            box[#box + 1] = t
-            pcall(sys.call, "files.write", "notes-inbox.json", json.encode(box))
-            after(400, function() if N.branch == 2 then show_notes() end end)
-            N.nq, text.nd_nq = "", ""
-        end
-    elseif v >= 10 and v < 30 then
-        local i = v - 9
-        if k == 2 and N.branch_items[i] then N.copy(N.branch_items[i])
-        elseif k == 3 and N.clip_choose then N.clip_choose(i)
-        elseif k == 4 and N.branch_items[i] then run("xdg-open", { N.branch_items[i] }, function() end)
-        elseif k == 6 then N.power_choose(i)
-        elseif k == 5 then
-            local it = N.walls and N.walls[N.wl_at + i - 1]
-            if it then N.wl_worn = it.path; run("mooi", { "wall", "apply", it.path }, function() end) end
-        end
-    end
-    show_branch()
-end)
+N.open_panel, N.close_panel = open_panel, function() ST.release(N.st, "panel"); render() end
+local function close_panel() ST.release(N.st, "panel"); render() end
+N.close_panel = close_panel
 
 -- ── a reading pressed (D249): btop, in the owner's terminal — the first of the usual ones that answers, found
 -- once by asking each its version (no shell), and started through Hyprland so it is a window like any other ──
@@ -1703,9 +1669,9 @@ on("nd_cmd", function(v)
     v = math.floor(tonumber(v) or 0)
     if N.studio.open and v ~= 4 then close_studio(); return end
     if v == 1 then
-        -- Super: what is open folds away; at rest, the shelf grows (D247: the music and the system are pills on it)
+        -- Super: what is open folds away; at rest, the panel grows out of the pill (D260)
         if N.kind ~= "rest" then for _, k in ipairs(HELD) do ST.release(N.st, k) end; render()
-        else open_shelf() end
+        else open_panel("home") end
     elseif v == 2 then
         if ST.held(N.st, "launcher") then ST.release(N.st, "launcher"); render() else open_launcher() end
     elseif v == 3 then
@@ -1715,6 +1681,90 @@ on("nd_cmd", function(v)
     elseif v == 5 then
         if ST.held(N.st, "time") then ST.release(N.st, "time"); render() else open_time() end
     end
+end)
+
+-- ── the panel's own input (D260): its pages, its four toggles, its notices and the way home ──
+on("nd_pg", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if v == 7 then
+        for _, k in ipairs(HELD) do ST.release(N.st, k) end
+        open_time()
+    elseif v == 8 then
+        for _, k in ipairs(HELD) do ST.release(N.st, k) end
+        open_studio()
+    elseif v == 9 then
+        for _, k in ipairs(HELD) do ST.release(N.st, k) end
+        render()
+        run("mooi", { "settings" }, function() end)
+    elseif v == 10 then open_panel("power")
+    else
+        local page = ({ [0] = "home", [1] = "calendar", [2] = "notes", [3] = "clipboard", [4] = "stash", [5] = "wallpaper", [6] = "system" })[v]
+        if page then open_panel(page) end
+    end
+end)
+on("nd_ptog", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if v == 1 then
+        N.wifi_on = not (N.wifi_on == true)
+        run("nmcli", { "radio", "wifi", N.wifi_on and "on" or "off" }, function() after(300, panel_state) end)
+        render()
+    elseif v == 2 then
+        N.dnd_on = not dnd_state()
+        fact.nd_dnd_on = N.dnd_on
+        run("pleamar", { "--say", "mooi", "emit note_dnd" }, function() end)
+        render()
+    elseif v == 3 then
+        for _, k in ipairs(HELD) do ST.release(N.st, k) end
+        open_time()
+    elseif v == 4 then
+        N.bt_on = not (N.bt_on == true)
+        run("bluetoothctl", { "power", N.bt_on and "on" or "off" }, function() after(400, panel_state) end)
+        render()
+    end
+end)
+on("nd_pclear", function()
+    N.notices = {}
+    model.pn = {}
+    fact.nd_ncn = 0
+    run("pleamar", { "--say", "mooi", "emit note_clear" }, function() end)
+    render()
+end)
+on("nd_popen", function() if N.open_player then N.open_player() end end)
+on("nd_pclose", function() ST.release(N.st, "panel"); render() end)
+
+-- on the panel's pages: the month's turns, a note kept, a row copied or opened, a picture worn
+on("text:nd_nq", function(v) N.nq = tostring(v or "") end)
+on("nd_br", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local page = N.panel
+    if v == 1 or v == 2 then
+        local d = v == 1 and -1 or 1
+        if page == "calendar" and N.cal then N.cal.y, N.cal.m = CAL.shift(N.cal.y, N.cal.m, d); N.panel_shown = nil
+        elseif page == "wallpaper" and N.walls then N.wl_at = math.max(1, math.min(math.max(1, #N.walls - 6), N.wl_at + d * 7)); N.panel_shown = nil end
+    elseif v == 90 and page == "notes" then
+        local t = (N.nq or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if t ~= "" then
+            -- into the bar's inbox, a file in mooi's own data folder (only its owner can read it), never on a
+            -- command line where every process could see it (D258); the bar adds it to its notes
+            local box = read("notes-inbox.json", "json")
+            box = type(box) == "table" and box or {}
+            box[#box + 1] = t
+            pcall(sys.call, "files.write", "notes-inbox.json", json.encode(box))
+            after(400, function() if N.panel == "notes" then N.panel_shown = nil; render() end end)
+            N.nq, text.nd_nq = "", ""
+        end
+    elseif v >= 10 and v < 30 then
+        local i = v - 9
+        if page == "notes" and N.panel_items[i] then N.copy(N.panel_items[i])
+        elseif page == "clipboard" and N.clip_choose then N.clip_choose(i)
+        elseif page == "stash" and N.panel_items[i] then run("xdg-open", { N.panel_items[i] }, function() end)
+        elseif page == "power" then N.power_choose(i)
+        elseif page == "wallpaper" then
+            local it = N.walls and N.walls[N.wl_at + i - 1]
+            if it then N.wl_worn = it.path; run("mooi", { "wall", "apply", it.path }, function() end); N.panel_shown = nil end
+        end
+    end
+    render()
 end)
 
 -- ── the screen it stands on ──

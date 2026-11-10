@@ -2,8 +2,8 @@
 
 The node is the small living thing at the top of the screen: a seed that grows into whatever is
 happening and folds back when it is over. It is also called the Dynamic Pill. It can show the music,
-a notice, the volume, the workspaces, the microphone, the battery, the search line, the time and the
-player, and it can be shaped and coloured to suit you.
+a notice, the volume, the workspaces, the microphone, the battery, the search line, the time, the
+player and one panel with everything else, and it can be shaped and coloured to suit you.
 
 It is one program, `mooi-node`, which mooi starts and keeps while the bar's shape is Pill and
 Settings → Bar & Frame → The Pill → The node is on. It asks the system only for what it needs, when
@@ -50,25 +50,22 @@ from the top of the screen (0–40 px) and its character: Organic, Minimal, Tech
 character changes the details it wears — a soft glow, a bare hairline, ticks and brackets, or a
 broken outline that glitches when it changes.
 
-### Satellites
+### The panel
 
-Small marks can sit on an arc under the seed, up to six of them. They are drawn as pills, dots or
-ticks, and the strongest sits in the middle, with the others alternating to its right and left. The
-marks are:
+Super, or a press on the resting pill, grows one panel straight down out of it. It is 500 pixels wide on
+every page and as tall as the page needs. Super again, Esc, or a press on an empty part of it lets it go.
 
-- **Music** — the song's title while it plays (or `MUSIC` when there is no title). Press it to open
-  the player.
-- **Recording** — `REC` while the screen is being recorded.
-- **Recording and music together** — one mark, `REC · MUSIC`, when both are true.
-- **Notices** — the number of notices waiting. Press it to show them.
-- **Low battery** — the percentage, when the battery is at 15% or less and not charging.
-- **Offline** — `OFFLINE` when there is no network.
-- **Microphone** — `MIC` while an application is using the microphone.
-- **Camera** — `CAM` while a camera is open.
+- **Home** — the music (cover, song, transport, a seek bar; press the cover for the player), four buttons
+  for Wi-Fi, Silent, Timer and Bluetooth, volume and brightness sliders, the three newest notices with
+  `Clear all`, and the page icons.
+- **Calendar**, **Notes**, **Clipboard**, **Stash**, **Wallpaper** and **Power** — what the shelf's
+  branches held, now pages of the same panel.
+- **System** — CPU, memory, temperature, network and battery as cards, each with its last twenty samples.
+  Press the processor, memory or heat card for btop.
 
-A running timer has no mark: it is the capsule below. The microphone and camera marks are warm, as are recording, a low battery
-and being offline. Pressing the microphone or camera mark does nothing; the system and battery marks
-open the system cluster, and the notice mark opens the notices.
+Every page ends in the same row of icons: home, calendar, notes, clipboard, stash, wallpaper, system, time,
+studio, settings and power. The current page is lit. Time, studio and settings leave the panel for their
+own places.
 
 ### The time capsule
 
@@ -101,7 +98,7 @@ the pointer is near it.
 
 ### Notices
 
-When a notice arrives and Notices is on, the node grows a branch of cards. Notices are gathered by
+When a notice arrives and Notices is on, the node grows a column of cards. Notices are gathered by
 application: one card per app, showing that app's newest notice and how many it has sent
 (`FIREFOX · 3`). You see as many cards as your Notices setting allows (1–5, three by default), and
 `+N MORE` counts the notices still waiting, not the cards.
@@ -134,9 +131,8 @@ recording and whether a camera is open. The moment either starts or stops, it gr
   use` when it cannot name them.
 - `CAMERA ON` or `CAMERA OFF`.
 
-The card stays for three and a half seconds. While either is in use, the `MIC` or `CAM` satellite
-stays under the seed. Visualisers listening to the speakers, peak meters and mooi's own helpers are
-not counted as microphone users.
+The card stays for three and a half seconds. Visualisers listening to the speakers, peak meters and
+mooi's own helpers are not counted as microphone users.
 
 ### The battery
 
@@ -151,23 +147,22 @@ Pressing the body depends on what is showing:
 
 - the music strip opens the player;
 - the time capsule opens the time panel;
-- the system cluster closes;
+- the panel closes;
 - otherwise, if music is playing, the music strip opens;
-- otherwise the system cluster opens for a moment.
+- otherwise the panel opens at home.
 
-Cards and satellites have their own presses, described above.
+Cards have their own presses, described above.
 
 ## What you open
 
 ### Super
 
 A tap of Super (press and release it without another key) wakes the node. While a panel you opened
-is showing — the search, the orbit, the time panel, the player or the system cluster — Super lets go
+is showing — the search, the orbit, the time panel, the player or the node's panel — Super lets go
 of it. It does not sweep away a passing card, and it never dismisses a finished timer: that waits for
 your answer.
 
-At rest, a tap of Super shows the music if something is playing, and otherwise the system cluster for
-a moment.
+At rest, a tap of Super opens the panel at home.
 
 ### Super+Space — the search line
 
@@ -230,7 +225,7 @@ Everything is kept in `node-time.json` against the wall clock, so a timer surviv
 
 ### The player
 
-Press the music strip, or the music satellite, and it grows into the player. It shows the cover (a
+Press the music strip, or the panel's cover, and it grows into the player. It shows the cover (a
 square or a round one, as you chose), the title and artist, and a seek bar with the position and
 length. Drag the bar to seek; the player is told once the drag rests.
 
@@ -256,20 +251,12 @@ If Lyrics in the player is on, the player shows the line being sung, lit, and th
 in place of the spectrum. A song with no current line shows `♪`. The words come from the shared
 lyrics cache or from LRCLIB, once per song; see Privacy below.
 
-### The system cluster
+### The system page
 
-Press the node at rest when nothing is playing, or press the `NET` or battery satellite, and the
-system cluster grows around it. It has up to five spokes:
-
-- `CPU N%`
-- `RAM N%`
-- `TEMP N°`
-- `NET ON` or `NET OFF`
-- `BAT N%`, with `+` while charging, when there is a battery.
-
-A reading turns warm when the processor is over 85%, memory over 90%, the temperature over 85°, the
-network is offline, or the battery is below 20% and unplugged. A reading that is not available shows
-`—`. Press the node again, or Super, to close the cluster.
+The panel's system page shows the machine in five cards: `CPU`, `RAM`, `TEMP`, `NET` and `BAT`, each with
+its value and its last twenty samples. A reading turns warm when the processor is over 85%, memory over
+90%, the temperature over 85°, the network is offline, or the battery is below 20% and unplugged. A
+reading that is not available shows `—`. Press the processor, memory or heat card for btop.
 
 ## The studio
 
@@ -330,8 +317,6 @@ Press a card to wear that preset. `RESET` wears the current preset again and cle
 - **Visualiser** — Bars, Wave, Dots or Off, for the music inside the media capsule.
 - **Cover** — Square or Round.
 - **Notices** — 1–5 cards.
-- **Satellites** — 0–6 marks; 0 shows `None`.
-- **Satellite style** — Pills, Dots or Ticks.
 - **Search dim** — 0–60%: how far the desktop steps back behind the search.
 - **Orbit** — 300–700 px: how wide the workspaces' orbit is.
 
@@ -367,14 +352,13 @@ Shape → Pill above.
 | Where | `node.anchor` | Centre | Where it sits at the top: Left, Centre or Right. |
 | Side groups | `pill.sides` | Show | The left and right groups as islands beside it, or the Pill alone. This is a bar setting, not a node setting. |
 | Music | `node.media` | on | A strip with the cover, the song and its controls when music starts. |
-| Notices | `node.notices` | on | A branch with each new notice and its action. |
+| Notices | `node.notices` | on | A column of cards with each new notice and its action. |
 | Workspaces | `node.workspaces` | on | A rail with the workspaces when you change them. |
 | Volume | `node.volume` | on | A gauge while the volume changes. |
-| System | `node.system` | on | Processor, memory, temperature and network round it when you press it. |
-| Satellites | `node.satellites` | on | Small marks under it for what is going on. |
+| System | `node.system` | on | Processor, memory, temperature, network and battery on the panel's system page. |
 | On the wallpaper | `node.wallpaper` | on | A notice ripples the wallpaper under it. |
 | Lyrics in the player | `node.lyrics` | off | The words in time with the song, from the cache or LRCLIB. |
-| Microphone and camera | `node.privacy` | on | A card when either starts or stops, and a mark while one is on. |
+| Microphone and camera | `node.privacy` | on | A card when either starts or stops. |
 
 The page also carries the three keys:
 
@@ -394,7 +378,7 @@ If you have reduced motion turned on, the node does not breathe, whatever the lo
 
 | Key or command | What it does |
 | --- | --- |
-| Super (tap) | Wakes the node; lets go of a panel you opened. At rest, shows the music if playing, otherwise the system cluster. |
+| Super (tap) | Wakes the node; lets go of a panel you opened. At rest, opens the panel at home. |
 | Super+Space | The search line. |
 | Super+Tab | The workspaces' orbit. |
 | Super+T | The time panel. |

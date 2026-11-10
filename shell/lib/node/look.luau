@@ -56,10 +56,7 @@ M.SCHEMA = {
     },
     Parts = {
         choice("reactions", "Reactions", "A ring from the node when something happens: music, a notice, the charger, the microphone", { "off", "subtle", "lively" }, { "Off", "Subtle", "Lively" }),
-        choice("sys_style", "System as", "How the machine's readings show: spokes, rings, or a short history each", { "spokes", "rings", "graphs" }, { "Spokes", "Rings", "Graphs" }),
         range("cards", "Notices", "How many notice cards branch from it", 1, 5, ""),
-        range("satellites", "Satellites", "How many small marks may orbit the seed", 0, 6, ""),
-        choice("sat_style", "Satellite style", "What those marks look like", { "pill", "dot", "tick" }, { "Pills", "Dots", "Ticks" }),
         range("dim", "Search dim", "How far the desktop steps back behind the search", 0, 60, "%"),
         range("orbit", "Orbit", "How wide the workspaces orbit (Super+Tab)", 300, 700, " px"),
     },
@@ -70,14 +67,14 @@ local BASE = {
     texture = "solid", fill = 95, outline = 10, glow = 70, accent = "phos", glow_colour = "phos",
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
     viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse",
-    sys_style = "spokes", place = "floating", clock_style = "pixel", ws_style = "bead", reactions = "subtle", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
+    place = "floating", clock_style = "pixel", ws_style = "bead", reactions = "subtle", cards = 3, dim = 28, orbit = 520,
 }
 local PRESET = {
     organic = {},
     minimal = { seed = "dot", seed_w = 6, seed_h = 6, style = "minimal", outline = 7, glow = 8, speed = "quick", bounce = "none",
-                growth = "fast", stagger = 30, breath = 15, music = 20, viz = "dots", sat_style = "dot", dim = 20 },
+                growth = "fast", stagger = 30, breath = 15, music = 20, viz = "dots", dim = 20 },
     technical = { seed = "bar", seed_w = 26, seed_h = 4, round = 18, style = "technical", texture = "scan", glow = 5,
-                  speed = "quick", bounce = "none", stagger = 60, breath = 0, music = 35, sat_style = "tick", cover = "square" },
+                  speed = "quick", bounce = "none", stagger = 60, breath = 0, music = 35, cover = "square" },
     cyber = { seed = "twin", seed_w = 24, seed_h = 5, round = 32, style = "cyber", texture = "segmented", outline = 15, glow = 90,
               glow_colour = "ember", speed = "snap", bounce = "some", stagger = 80, breath = 20, music = 80, viz = "wave" },
 }
@@ -208,7 +205,6 @@ function M.shown(t, row)
     local v = tonumber(t[row.key]) or row.lo
     local word = tostring(math.floor(v + 0.5)) .. row.unit
     if row.key == "outline" then word = string.format("%.1f px", v / 10) end
-    if row.key == "satellites" and v == 0 then word = "None" end
     return word, (v - row.lo) / math.max(1, row.hi - row.lo), -1
 end
 
@@ -308,9 +304,8 @@ function M.facts(t)
         nd_ol = t.outline / 10, nd_gw = t.glow / 100, nd_ac = ix(COLOURS, t.accent), nd_gc = ix(COLOURS, t.glow_colour),
         nd_stg = t.stagger / 100, nd_bd = t.breath / 100, nd_mu = t.music / 100,
         nd_viz = ix({ "bars", "wave", "dots", "off" }, t.viz), nd_cov = ix({ "square", "round" }, t.cover),
-        nd_sst = ix({ "pill", "dot", "tick" }, t.sat_style), nd_ldm = t.dim / 100, nd_ur = t.orbit,
+        nd_ldm = t.dim / 100, nd_ur = t.orbit,
         nd_long = ({ seed = 0, long = 1, notch = 2 })[M.form(t)],
-        nd_sys = ix({ "spokes", "rings", "graphs" }, t.sys_style),
         nd_cks = ix({ "pixel", "digital", "analog", "words", "binary", "dots" }, t.clock_style),
         nd_wss = ix({ "bead", "slide", "flip", "pulse", "count" }, t.ws_style),
         nd_rxl = ix({ "off", "subtle", "lively" }, t.reactions),

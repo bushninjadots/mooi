@@ -461,7 +461,6 @@ M.SCHEMA = {
     { path = "node.workspaces", kind = "boolean", default = true },
     { path = "node.volume", kind = "boolean", default = true },
     { path = "node.system", kind = "boolean", default = true },
-    { path = "node.satellites", kind = "boolean", default = true },
     { path = "node.wallpaper", kind = "boolean", default = true },
     { path = "node.privacy", kind = "boolean", default = true },   -- D232: the microphone and the camera
     { path = "node.lyrics", kind = "boolean", default = false },   -- D240: the player's words from LRCLIB (asks the internet)
