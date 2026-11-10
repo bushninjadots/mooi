@@ -248,6 +248,40 @@ scene Arcade {
     text sn_score = "0"
     text sn_best = "0"
 
+    // ── La Grieta ──
+    model gz max 16 { text: text; done: text; n: number; x: number; y: number }
+    model gzu max 3 { name: text; line: text; glyph: text }
+    fact gz_state = 0      // 0 ready · 1 playing · 2 choosing · 3 over
+    fact gz_wave = 1
+    fact gz_flash = 0
+    fact gz_sel = 0
+    fact gz_charge = false
+    fact gz_bx = 50
+    fact gz_by = 40
+    fact gz_burst = 0
+    text gz_score = "0"
+    text gz_best = "0"
+    text gz_lives = ""
+    text gz_typed = "TYPE A WORD"
+    text gz_charges = ""
+
+    // ── Mazmorra ──
+    model mzlog max 5 { line: text }
+    model mzshop max 4 { name: text; glyph: text; level: text; cost: text; afford: bool }
+    fact mz_floor = 1
+    fact mz_gold = 0
+    fact mz_best = 1
+    fact mz_hero = 40
+    fact mz_heromax = 40
+    fact mz_mon = 0
+    fact mz_monmax = 1
+    fact mz_boss = false
+    fact mz_boost = 0
+    fact mz_rest = 0
+    text mz_name = "Slime"
+    text mz_glyph = "󰯈"
+    text mz_state = "SPACE · BOOST 30 s"
+
     event ac_cmd ->       // from `mooi arcade`: 1 open (or close) · 0 close
     event ac_key ->       // a key while the arcade holds the keyboard
     event ac_pick ->      // a game's card pressed
@@ -271,8 +305,8 @@ scene Arcade {
                 box { from: px, py; size: 860, 600; corner: 22; stroke: 1.2; color: fl.trace }
                 zone box acz_in { from: px, py; size: 860, 600; role: region; label: "Arcade"; show: ac_page > 0 }
                 text "󰊴" { at: px + 34, py + 34; anchor: center; size: 18; family: "CaskaydiaCove Nerd Font"; color: fl.phos }
-                text pick(ac_page, "", "Arcade", "Snake") { at: px + 56, py + 34; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: fl.engrave }
-                text if(ac_page == 1, "← → CHOOSE · RETURN PLAYS · ESC CLOSES", "ESC BACK TO THE GAMES") { at: px + 860 - 28, py + 34; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                text pick(ac_page, "", "Arcade", "Snake", "La Grieta", "Mazmorra") { at: px + 56, py + 34; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: fl.engrave }
+                text pick(ac_page, "", "← → CHOOSE · RETURN PLAYS · ESC CLOSES", "ESC BACK TO THE GAMES · SPACE STARTS", "A–Z TYPE · BACKSPACE ERASES · TAB SEALS · ESC BACK", "Z X C V / KEYPAD 1–4 BUY · SPACE BOOST · ESC BACK") { at: px + 860 - 28, py + 34; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
                 line { from: px + 20, py + 58; to: px + 860 - 20, py + 58; width: 1; color: fl.trace_dim }
                 group { show: ac_page == 1
                     for g in gm {
@@ -304,8 +338,139 @@ scene Arcade {
                         text pick(sn_state, "Ready", "", "Paused", "Game over", "You filled the board") { at: px + 860 / 2, py + 80 + 468 / 2 - 16; anchor: center; align: center; size: 26; weight: 700; family: "Exo 2"; color: if(sn_state == 3, fl.ember, fl.phos) }
                         text if(sn_state == 2, "SPACE OR P GOES ON", "ARROWS OR WASD STEER · SPACE STARTS") { at: px + 860 / 2, py + 80 + 468 / 2 + 22; anchor: center; align: center; size: 11; family: "Share Tech Mono"; color: fl.muted } }
                 }
+                group { show: ac_page == 3
+                    box { from: px + 40, py + 84; size: 780, 442; corner: 14; color: fl.well; opacity: 0.42 }
+                    box { from: px + 40, py + 84; size: 780, 442; corner: 14; stroke: 1; color: fl.trace_dim }
+                    line { from: px + 40 + 2, py + 84 + 9; to: px + 40 + 126, py + 84 + 2; width: 2; color: fl.ember; opacity: 0.85 }
+                    line { from: px + 40 + 126, py + 84 + 2; to: px + 40 + 218, py + 84 + 12; width: 1.5; color: fl.ember; opacity: 0.75 }
+                    line { from: px + 40 + 218, py + 84 + 12; to: px + 40 + 352, py + 84 + 4; width: 1.5; color: fl.ember; opacity: 0.8 }
+                    line { from: px + 40 + 352, py + 84 + 4; to: px + 40 + 470, py + 84 + 14; width: 1.5; color: fl.ember; opacity: 0.7 }
+                    line { from: px + 40 + 470, py + 84 + 14; to: px + 40 + 612, py + 84 + 3; width: 2; color: fl.ember; opacity: 0.8 }
+                    line { from: px + 40 + 612, py + 84 + 3; to: px + 40 + 778, py + 84 + 8; width: 1.5; color: fl.ember; opacity: 0.75 }
+                    line { from: px + 40 + 14, py + 434; to: px + 40 + 766, py + 434; width: 2; color: if(gz_flash == 1, fl.ember, fl.phos); opacity: 0.8 }
+                    text "WAVE {gz_wave} · SCORE {gz_score}" { at: px + 40, py + 70; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                    text gz_lives { at: px + 40 + 780 - 140, py + 70; anchor: right center; align: right; size: 12; family: "CaskaydiaCove Nerd Font"; color: fl.ember }
+                    text "BEST {gz_best}" { at: px + 40 + 780, py + 70; anchor: right center; align: right; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    for w in gz {
+                        let wx = px + 40 + 18 + w.x * (780 - 36) / 100
+                        let wy = py + 84 + 14 + w.y * (py + 434 - py + 84 - 14) / 84
+                        text w.text { at: wx, wy; anchor: left center; size: 13; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                        text w.done { at: wx, wy; anchor: left center; size: 13; weight: 700; family: "Share Tech Mono"; color: fl.phos; show: w.n > 0 }
+                    }
+                    group { show: gz_burst > 0
+                        let gbx = px + 40 + 18 + gz_bx * (780 - 36) / 100
+                        let gby = py + 84 + 14 + gz_by * (py + 434 - py + 84 - 14) / 84
+                        ellipse { at: gbx - 10, gby - 4; radius: 2.6; color: fl.phos; opacity: 0.85 * gz_burst }
+                        ellipse { at: gbx + 8, gby - 10; radius: 2; color: fl.flare; opacity: 0.8 * gz_burst }
+                        ellipse { at: gbx + 13, gby + 5; radius: 2.3; color: fl.phos; opacity: 0.75 * gz_burst }
+                        ellipse { at: gbx - 5, gby + 11; radius: 1.8; color: fl.flare; opacity: 0.8 * gz_burst }
+                        ellipse { at: gbx + 1, gby - 16; radius: 2; color: fl.phos; opacity: 0.7 * gz_burst }
+                        ellipse { at: gbx - 15, gby + 3; radius: 1.7; color: fl.flare; opacity: 0.7 * gz_burst } }
+                    text gz_typed { at: px + 860 / 2, py + 548; anchor: center; align: center; size: 18; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+                    text gz_charges { at: px + 40 + 780, py + 548; anchor: right center; align: right; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.flare }
+                    group { show: gz_state == 0
+                        box { from: px + 40, py + 84; size: 780, 442; corner: 14; color: fl.ground; opacity: 0.84 }
+                        text "LA GRIETA" { at: px + 860 / 2, py + 84 + 120; anchor: center; align: center; size: 34; weight: 700; family: "Exo 2"; color: fl.phos }
+                        text "Words crawl out of the crack. Type them whole to seal them." { at: px + 860 / 2, py + 84 + 168; anchor: center; align: center; size: 13; family: "Exo 2"; color: fl.engrave; width: 560; lines: 2 }
+                        text "A–Z TYPE · BACKSPACE ERASES · TAB SEALS · ESC BACK" { at: px + 860 / 2, py + 84 + 236; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                        text "RETURN STARTS" { at: px + 860 / 2, py + 84 + 292; anchor: center; align: center; size: 13; weight: 700; family: "Share Tech Mono"; color: fl.phos } }
+                    group { show: gz_state == 2
+                        box { from: px + 40, py + 84; size: 780, 442; corner: 14; color: fl.ground; opacity: 0.9 }
+                        text "WAVE {gz_wave} CLEARED" { at: px + 860 / 2, py + 84 + 40; anchor: center; align: center; size: 22; weight: 700; family: "Exo 2"; color: fl.phos }
+                        text "CHOOSE ONE" { at: px + 860 / 2, py + 84 + 68; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                        for u in gzu {
+                            let ux = px + (860 - 692) / 2 + u.index * (220 + 16)
+                            let uy = py + 84 + 100
+                            let on = u.index == gz_sel
+                            box { from: ux, uy; size: 220, 170; corner: 14; color: fl.well; opacity: if(on, 1, 0.72) }
+                            box { from: ux, uy; size: 220, 170; corner: 14; stroke: if(on, 2, 1); color: if(on, fl.phos, fl.trace_dim) }
+                            text u.glyph { at: ux + 220 / 2, uy + 38; anchor: center; size: 30; family: "CaskaydiaCove Nerd Font"; color: if(on, fl.phos, fl.muted) }
+                            text u.name { at: ux + 220 / 2, uy + 82; anchor: center; align: center; size: 15; weight: 700; family: "Exo 2"; color: fl.engrave }
+                            text u.line { at: ux + 220 / 2, uy + 106; anchor: center; align: center; size: 10; family: "Exo 2"; color: fl.muted; width: 220 - 28; lines: 2 }
+                            text "{u.index + 1, 0}" { at: ux + 16, uy + 16; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(on, fl.phos, fl.muted) }
+                            zone box gzu { from: ux, uy; size: 220, 170; corner: 14; cursor: pointer; role: button; label: "{u.name}"; show: ac_page == 3 and gz_state == 2 }
+                            on press gzu { emit ac_key(49 + u.index) }
+                        }
+                        text "← → CHOOSE · RETURN TAKES IT · Z X C" { at: px + 860 / 2, py + 84 + 320; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.muted } }
+                    group { show: gz_state == 3
+                        box { from: px + 40, py + 84; size: 780, 442; corner: 14; color: fl.ground; opacity: 0.88 }
+                        text "THE CRACK WINS" { at: px + 860 / 2, py + 84 + 130; anchor: center; align: center; size: 32; weight: 700; family: "Exo 2"; color: fl.ember }
+                        text "SCORE {gz_score} · BEST {gz_best}" { at: px + 860 / 2, py + 84 + 184; anchor: center; align: center; size: 15; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                        text "RETURN STARTS AGAIN · ESC BACK TO THE GAMES" { at: px + 860 / 2, py + 84 + 236; anchor: center; align: center; size: 10; family: "Share Tech Mono"; color: fl.muted } }
+                }
+                group { show: ac_page == 4
+                    text "FLOOR {mz_floor}" { at: px + 40, py + 70; anchor: left center; size: 12; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                    text "BEST {mz_best}" { at: px + 40 + 132, py + 70; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted }
+                    text "󰪚 {mz_gold}" { at: px + 40 + 780, py + 70; anchor: right center; align: right; size: 14; weight: 700; family: "Share Tech Mono"; color: fl.flare }
+                    text mz_state { at: px + 860 / 2, py + 70; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(mz_boost > 0, fl.phos, fl.muted) }
+                    line { from: px + 40, py + 94; to: px + 40 + 780, py + 94; width: 1; color: fl.trace_dim }
+                    box { from: px + 40, py + 84 + 18; size: 330, 180; corner: 14; color: fl.well; opacity: 0.62 }
+                    box { from: px + 40, py + 84 + 18; size: 330, 180; corner: 14; stroke: 1; color: fl.trace_dim }
+                    ellipse { at: px + 40 + 62, py + 84 + 90; radius: 36; color: fl.well; opacity: 0.9 }
+                    ellipse { at: px + 40 + 62, py + 84 + 90; radius: 38; stroke: 1.5; color: fl.phos; opacity: 0.55 }
+                    text "󰙊" { at: px + 40 + 62, py + 84 + 90; anchor: center; size: 32; family: "CaskaydiaCove Nerd Font"; color: fl.phos }
+                    text "THE HERO" { at: px + 40 + 116, py + 84 + 48; anchor: left center; size: 13; weight: 700; family: "Exo 2"; color: fl.engrave }
+                    text "HP {mz_hero} / {mz_heromax}" { at: px + 40 + 116, py + 84 + 70; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    box { from: px + 40 + 116, py + 84 + 82; size: 186, 9; corner: 4; color: fl.ground; opacity: 0.8 }
+                    box { from: px + 40 + 116, py + 84 + 82; size: max(1, 186 * mz_hero / max(1, mz_heromax)), 9; corner: 4; color: fl.phos }
+                    text "AUTO-FIGHT · THE HERO HEALS ON DEATH" { at: px + 40 + 116, py + 84 + 114; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    box { from: px + 860 - 40 - 330, py + 84 + 18; size: 330, 180; corner: 14; color: fl.well; opacity: 0.62 }
+                    box { from: px + 860 - 40 - 330, py + 84 + 18; size: 330, 180; corner: 14; stroke: if(mz_boss, 2, 1); color: if(mz_boss, fl.ember, fl.trace_dim) }
+                    ellipse { at: px + 860 - 40 - 330 + 62, py + 84 + 90; radius: 36; color: fl.well; opacity: 0.9 }
+                    ellipse { at: px + 860 - 40 - 330 + 62, py + 84 + 90; radius: if(mz_boss, 40, 38); stroke: if(mz_boss, 4, 1.5); color: if(mz_boss, fl.ember, fl.phos); opacity: 0.9 }
+                    text mz_glyph { at: px + 860 - 40 - 330 + 62, py + 84 + 90; anchor: center; size: if(mz_boss, 38, 32); family: "CaskaydiaCove Nerd Font"; color: if(mz_boss, fl.ember, fl.phos) }
+                    text mz_name { at: px + 860 - 40 - 330 + 116, py + 84 + 48; anchor: left center; size: 13; weight: 700; family: "Exo 2"; color: fl.engrave; width: 190; lines: 1 }
+                    text "HP {mz_mon} / {mz_monmax}" { at: px + 860 - 40 - 330 + 116, py + 84 + 70; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    box { from: px + 860 - 40 - 330 + 116, py + 84 + 82; size: 186, 9; corner: 4; color: fl.ground; opacity: 0.8 }
+                    box { from: px + 860 - 40 - 330 + 116, py + 84 + 82; size: max(1, 186 * mz_mon / max(1, mz_monmax)), 9; corner: 4; color: if(mz_boss, fl.ember, fl.phos) }
+                    text "AUTO-FIGHT · ONE TICK A SECOND" { at: px + 860 - 40 - 330 + 116, py + 84 + 114; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                    text "THE DEEP" { at: px + 40, py + 84 + 220; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                    for l in mzlog {
+                        text l.line { at: px + 40, py + 84 + 242 + l.index * 21; anchor: left center; size: 10; family: "Share Tech Mono"; color: if(l.index == 0, fl.engrave, fl.muted); width: 780; lines: 1 }
+                    }
+                    text "SPEND GOLD" { at: px + 40, py + 452; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                    for u in mzshop {
+                        let ux = px + 40 + u.index * (186.0 + 12)
+                        let uy = py + 466
+                        box { from: ux, uy; size: 186.0, 92; corner: 12; color: fl.well; opacity: if(u.afford, 0.8, 0.45) }
+                        box { from: ux, uy; size: 186.0, 92; corner: 12; stroke: 1; color: if(u.afford, fl.phos, fl.trace_dim) }
+                        text u.glyph { at: ux + 22, uy + 26; anchor: center; size: 20; family: "CaskaydiaCove Nerd Font"; color: if(u.afford, fl.phos, fl.muted) }
+                        text u.name { at: ux + 42, uy + 22; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: if(u.afford, fl.engrave, fl.muted) }
+                        text "LV {u.level}" { at: ux + 18, uy + 50; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                        text "󰪚 {u.cost}" { at: ux + 18, uy + 70; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(u.afford, fl.flare, fl.muted) }
+                        text "{u.index + 1, 0}" { at: ux + 186.0 - 18, uy + 18; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                        zone box mzu { from: ux, uy; size: 186.0, 92; corner: 12; cursor: pointer; role: button; label: "Buy {u.name}"; show: ac_page == 4 }
+                        on press mzu { emit ac_key(49 + u.index) }
+                    }
+                }
             }
         }
+        on key a while ac_page > 0 { emit ac_key(1097); emit ac_key(65) }
+        on key b while ac_page > 0 { emit ac_key(1098) }
+        on key c while ac_page > 0 { emit ac_key(1099); emit ac_key(67) }
+        on key d while ac_page > 0 { emit ac_key(1100); emit ac_key(68) }
+        on key e while ac_page > 0 { emit ac_key(1101) }
+        on key f while ac_page > 0 { emit ac_key(1102) }
+        on key g while ac_page > 0 { emit ac_key(1103) }
+        on key h while ac_page > 0 { emit ac_key(1104) }
+        on key i while ac_page > 0 { emit ac_key(1105) }
+        on key j while ac_page > 0 { emit ac_key(1106) }
+        on key k while ac_page > 0 { emit ac_key(1107) }
+        on key l while ac_page > 0 { emit ac_key(1108) }
+        on key m while ac_page > 0 { emit ac_key(1109) }
+        on key n while ac_page > 0 { emit ac_key(1110) }
+        on key o while ac_page > 0 { emit ac_key(1111) }
+        on key p while ac_page > 0 { emit ac_key(1112); emit ac_key(80) }
+        on key q while ac_page > 0 { emit ac_key(1113) }
+        on key r while ac_page > 0 { emit ac_key(1114) }
+        on key s while ac_page > 0 { emit ac_key(1115); emit ac_key(83) }
+        on key t while ac_page > 0 { emit ac_key(1116) }
+        on key u while ac_page > 0 { emit ac_key(1117) }
+        on key v while ac_page > 0 { emit ac_key(1118); emit ac_key(86) }
+        on key w while ac_page > 0 { emit ac_key(1119); emit ac_key(87) }
+        on key x while ac_page > 0 { emit ac_key(1120); emit ac_key(88) }
+        on key y while ac_page > 0 { emit ac_key(1121) }
+        on key z while ac_page > 0 { emit ac_key(1122); emit ac_key(90) }
         on key Escape while ac_page > 0 { emit ac_key(27) }
         on key Return while ac_page > 0 { emit ac_key(13) }
         on key Up while ac_page > 0 { emit ac_key(38) }
@@ -313,10 +478,11 @@ scene Arcade {
         on key Left while ac_page > 0 { emit ac_key(37) }
         on key Right while ac_page > 0 { emit ac_key(39) }
         on key space while ac_page > 0 { emit ac_key(32) }
-        on key w while ac_page > 0 { emit ac_key(87) }
-        on key a while ac_page > 0 { emit ac_key(65) }
-        on key s while ac_page > 0 { emit ac_key(83) }
-        on key d while ac_page > 0 { emit ac_key(68) }
-        on key p while ac_page > 0 { emit ac_key(80) }
+        on key BackSpace while ac_page > 0 { emit ac_key(8) }
+        on key Tab while ac_page > 0 { emit ac_key(9) }
+        on key KP_1 while ac_page > 0 { emit ac_key(49) }
+        on key KP_2 while ac_page > 0 { emit ac_key(50) }
+        on key KP_3 while ac_page > 0 { emit ac_key(51) }
+        on key KP_4 while ac_page > 0 { emit ac_key(52) }
     }
 }

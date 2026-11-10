@@ -19,7 +19,7 @@ apps and lock screen all follow it.
 - **Lock screen**: your colours and wallpaper, PAM password, and media controls.
 - **Settings window**: every option in one place, with no config files to edit.
 - **BMO**: a small desktop companion.
-- **The arcade** (Super+G): mooi's own games, starting with Snake.
+- **The arcade** (Super+G): mooi's own games — Snake, La Grieta and Mazmorra.
 
 ## Install
 

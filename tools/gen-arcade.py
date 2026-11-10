@@ -16,7 +16,16 @@ NERD = '"CaskaydiaCove Nerd Font"'
 PW, PH = 860, 600          # the window
 SW, SH, CELL = 28, 18, 26   # Snake's board
 KEYS = [("Escape", 27), ("Return", 13), ("Up", 38), ("Down", 40), ("Left", 37), ("Right", 39), ("space", 32),
-        ("w", 87), ("a", 65), ("s", 83), ("d", 68), ("p", 80)]
+        ("BackSpace", 8), ("Tab", 9), ("KP_1", 49), ("KP_2", 50), ("KP_3", 51), ("KP_4", 52),
+        ("w", 87), ("a", 65), ("s", 83), ("d", 68), ("p", 80), ("z", 90), ("x", 88), ("c", 67), ("v", 86)]
+LETTERS = [(chr(97 + i), 1000 + 97 + i) for i in range(26)]
+# every letter is sent as its own code (1000 + byte) for La Grieta, and the old code too for Snake's WASD and the
+# picker's A/D. One key can emit both.
+KEYMAP = {}
+for _k, _c in LETTERS:
+    KEYMAP.setdefault(_k, []).append(_c)
+for _k, _c in KEYS:
+    KEYMAP.setdefault(_k, []).append(_c)
 
 
 def palette_block():
@@ -47,6 +56,23 @@ def scene():
           '    fact sn_state = 0      // 0 ready · 1 playing · 2 paused · 3 over · 4 won',
           '    text sn_score = "0"', '    text sn_best = "0"',
           '',
+          '    // ── La Grieta ──',
+          '    model gz max 16 { text: text; done: text; n: number; x: number; y: number }',
+          '    model gzu max 3 { name: text; line: text; glyph: text }',
+          '    fact gz_state = 0      // 0 ready · 1 playing · 2 choosing · 3 over',
+          '    fact gz_wave = 1', '    fact gz_flash = 0', '    fact gz_sel = 0', '    fact gz_charge = false',
+          '    fact gz_bx = 50', '    fact gz_by = 40', '    fact gz_burst = 0',
+          '    text gz_score = "0"', '    text gz_best = "0"', '    text gz_lives = ""',
+          '    text gz_typed = "TYPE A WORD"', '    text gz_charges = ""',
+          '',
+          '    // ── Mazmorra ──',
+          '    model mzlog max 5 { line: text }',
+          '    model mzshop max 4 { name: text; glyph: text; level: text; cost: text; afford: bool }',
+          '    fact mz_floor = 1', '    fact mz_gold = 0', '    fact mz_best = 1',
+          '    fact mz_hero = 40', '    fact mz_heromax = 40', '    fact mz_mon = 0', '    fact mz_monmax = 1',
+          '    fact mz_boss = false', '    fact mz_boost = 0', '    fact mz_rest = 0',
+          '    text mz_name = "Slime"', '    text mz_glyph = "󰯈"', '    text mz_state = "SPACE · BOOST 30 s"',
+          '',
           '    event ac_cmd ->       // from `mooi arcade`: 1 open (or close) · 0 close',
           '    event ac_key ->       // a key while the arcade holds the keyboard',
           '    event ac_pick ->      // a game\'s card pressed']
@@ -74,14 +100,17 @@ def surface():
          f'{c}        box {{ from: px, py; size: {PW}, {PH}; corner: 22; stroke: 1.2; color: fl.trace }}',
          f'{c}        zone box acz_in {{ from: px, py; size: {PW}, {PH}; role: region; label: "Arcade"; show: ac_page > 0 }}',
          f'{c}        text "󰊴" {{ at: px + 34, py + 34; anchor: center; size: 18; family: {NERD}; color: {acc} }}',
-         f'{c}        text pick(ac_page, "", "Arcade", "Snake") {{ at: px + 56, py + 34; anchor: left center; size: 16; weight: 700; family: {SANS}; color: {ink} }}',
-         f'{c}        text if(ac_page == 1, "← → CHOOSE · RETURN PLAYS · ESC CLOSES", "ESC BACK TO THE GAMES") {{ at: px + {PW} - 28, py + 34; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}        text pick(ac_page, "", "Arcade", "Snake", "La Grieta", "Mazmorra") {{ at: px + 56, py + 34; anchor: left center; size: 16; weight: 700; family: {SANS}; color: {ink} }}',
+         f'{c}        text pick(ac_page, "", "← → CHOOSE · RETURN PLAYS · ESC CLOSES", "ESC BACK TO THE GAMES · SPACE STARTS", "A–Z TYPE · BACKSPACE ERASES · TAB SEALS · ESC BACK", "Z X C V / KEYPAD 1–4 BUY · SPACE BOOST · ESC BACK") {{ at: px + {PW} - 28, py + 34; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim} }}',
          f'{c}        line {{ from: px + 20, py + 58; to: px + {PW} - 20, py + 58; width: 1; color: fl.trace_dim }}']
     L += picker(c, ink, dim, acc)
     L += snake(c, ink, dim, acc)
+    L += grieta(c, ink, dim, acc)
+    L += mazmorra(c, ink, dim, acc)
     L += [f'{c}    }}', f'{c}}}']
-    for k, code in KEYS:
-        L += [f'{c}on key {k} while ac_page > 0 {{ emit ac_key({code}) }}']
+    for k, codes in KEYMAP.items():
+        emits = "; ".join(f"emit ac_key({code})" for code in codes)
+        L += [f'{c}on key {k} while ac_page > 0 {{ {emits} }}']
     L += ['    }']
     return L
 
@@ -124,6 +153,128 @@ def snake(c, ink, dim, acc):
          f'{c}                box {{ from: {bx} - 6, {by} - 6; size: {bw} + 12, {bh} + 12; corner: 12; color: fl.ground; opacity: 0.72 }}',
          f'{c}                text pick(sn_state, "Ready", "", "Paused", "Game over", "You filled the board") {{ at: px + {PW} / 2, {by} + {bh} / 2 - 16; anchor: center; align: center; size: 26; weight: 700; family: {SANS}; color: if(sn_state == 3, fl.ember, {acc}) }}',
          f'{c}                text if(sn_state == 2, "SPACE OR P GOES ON", "ARROWS OR WASD STEER · SPACE STARTS") {{ at: px + {PW} / 2, {by} + {bh} / 2 + 22; anchor: center; align: center; size: 11; family: {MONO}; color: {dim} }} }}',
+         f'{c}        }}']
+    return L
+
+
+def grieta(c, ink, dim, acc):
+    bx, by, bw, bh = "px + 40", "py + 84", 780, 442
+    liney = "py + 434"
+    cw, ch, gap = 220, 170, 16
+    cards = cw * 3 + gap * 2
+    sx = f"px + ({PW} - {cards}) / 2"
+    L = [f'{c}        group {{ show: ac_page == 3',
+         f'{c}            box {{ from: {bx}, {by}; size: {bw}, {bh}; corner: 14; color: fl.well; opacity: 0.42 }}',
+         f'{c}            box {{ from: {bx}, {by}; size: {bw}, {bh}; corner: 14; stroke: 1; color: fl.trace_dim }}',
+         f'{c}            line {{ from: {bx} + 2, {by} + 9; to: {bx} + 126, {by} + 2; width: 2; color: fl.ember; opacity: 0.85 }}',
+         f'{c}            line {{ from: {bx} + 126, {by} + 2; to: {bx} + 218, {by} + 12; width: 1.5; color: fl.ember; opacity: 0.75 }}',
+         f'{c}            line {{ from: {bx} + 218, {by} + 12; to: {bx} + 352, {by} + 4; width: 1.5; color: fl.ember; opacity: 0.8 }}',
+         f'{c}            line {{ from: {bx} + 352, {by} + 4; to: {bx} + 470, {by} + 14; width: 1.5; color: fl.ember; opacity: 0.7 }}',
+         f'{c}            line {{ from: {bx} + 470, {by} + 14; to: {bx} + 612, {by} + 3; width: 2; color: fl.ember; opacity: 0.8 }}',
+         f'{c}            line {{ from: {bx} + 612, {by} + 3; to: {bx} + 778, {by} + 8; width: 1.5; color: fl.ember; opacity: 0.75 }}',
+         f'{c}            line {{ from: {bx} + 14, {liney}; to: {bx} + {bw - 14}, {liney}; width: 2; color: if(gz_flash == 1, fl.ember, {acc}); opacity: 0.8 }}',
+         f'{c}            text "WAVE {{gz_wave}} · SCORE {{gz_score}}" {{ at: {bx}, py + 70; anchor: left center; size: 11; weight: 700; family: {MONO}; color: {ink} }}',
+         f'{c}            text gz_lives {{ at: {bx} + {bw} - 140, py + 70; anchor: right center; align: right; size: 12; family: {NERD}; color: fl.ember }}',
+         f'{c}            text "BEST {{gz_best}}" {{ at: {bx} + {bw}, py + 70; anchor: right center; align: right; size: 10; family: {MONO}; color: {dim} }}',
+         f'{c}            for w in gz {{',
+         f'{c}                let wx = {bx} + 18 + w.x * ({bw} - 36) / 100',
+         f'{c}                let wy = {by} + 14 + w.y * ({liney} - {by} - 14) / 84',
+         f'{c}                text w.text {{ at: wx, wy; anchor: left center; size: 13; weight: 700; family: {MONO}; color: {ink} }}',
+         f'{c}                text w.done {{ at: wx, wy; anchor: left center; size: 13; weight: 700; family: {MONO}; color: {acc}; show: w.n > 0 }}',
+         f'{c}            }}',
+         f'{c}            group {{ show: gz_burst > 0',
+         f'{c}                let gbx = {bx} + 18 + gz_bx * ({bw} - 36) / 100',
+         f'{c}                let gby = {by} + 14 + gz_by * ({liney} - {by} - 14) / 84',
+         f'{c}                ellipse {{ at: gbx - 10, gby - 4; radius: 2.6; color: {acc}; opacity: 0.85 * gz_burst }}',
+         f'{c}                ellipse {{ at: gbx + 8, gby - 10; radius: 2; color: fl.flare; opacity: 0.8 * gz_burst }}',
+         f'{c}                ellipse {{ at: gbx + 13, gby + 5; radius: 2.3; color: {acc}; opacity: 0.75 * gz_burst }}',
+         f'{c}                ellipse {{ at: gbx - 5, gby + 11; radius: 1.8; color: fl.flare; opacity: 0.8 * gz_burst }}',
+         f'{c}                ellipse {{ at: gbx + 1, gby - 16; radius: 2; color: {acc}; opacity: 0.7 * gz_burst }}',
+         f'{c}                ellipse {{ at: gbx - 15, gby + 3; radius: 1.7; color: fl.flare; opacity: 0.7 * gz_burst }} }}',
+         f'{c}            text gz_typed {{ at: px + {PW} / 2, py + 548; anchor: center; align: center; size: 18; weight: 700; family: {MONO}; color: {acc} }}',
+         f'{c}            text gz_charges {{ at: {bx} + {bw}, py + 548; anchor: right center; align: right; size: 9; weight: 700; family: {MONO}; color: fl.flare }}',
+         f'{c}            group {{ show: gz_state == 0',
+         f'{c}                box {{ from: {bx}, {by}; size: {bw}, {bh}; corner: 14; color: fl.ground; opacity: 0.84 }}',
+         f'{c}                text "LA GRIETA" {{ at: px + {PW} / 2, {by} + 120; anchor: center; align: center; size: 34; weight: 700; family: {SANS}; color: {acc} }}',
+         f'{c}                text "Words crawl out of the crack. Type them whole to seal them." {{ at: px + {PW} / 2, {by} + 168; anchor: center; align: center; size: 13; family: {SANS}; color: {ink}; width: 560; lines: 2 }}',
+         f'{c}                text "A–Z TYPE · BACKSPACE ERASES · TAB SEALS · ESC BACK" {{ at: px + {PW} / 2, {by} + 236; anchor: center; align: center; size: 10; family: {MONO}; color: {dim} }}',
+         f'{c}                text "RETURN STARTS" {{ at: px + {PW} / 2, {by} + 292; anchor: center; align: center; size: 13; weight: 700; family: {MONO}; color: {acc} }} }}',
+         f'{c}            group {{ show: gz_state == 2',
+         f'{c}                box {{ from: {bx}, {by}; size: {bw}, {bh}; corner: 14; color: fl.ground; opacity: 0.9 }}',
+         f'{c}                text "WAVE {{gz_wave}} CLEARED" {{ at: px + {PW} / 2, {by} + 40; anchor: center; align: center; size: 22; weight: 700; family: {SANS}; color: {acc} }}',
+         f'{c}                text "CHOOSE ONE" {{ at: px + {PW} / 2, {by} + 68; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: {dim} }}',
+         f'{c}                for u in gzu {{',
+         f'{c}                    let ux = {sx} + u.index * ({cw} + {gap})',
+         f'{c}                    let uy = {by} + 100',
+         f'{c}                    let on = u.index == gz_sel',
+         f'{c}                    box {{ from: ux, uy; size: {cw}, {ch}; corner: 14; color: fl.well; opacity: if(on, 1, 0.72) }}',
+         f'{c}                    box {{ from: ux, uy; size: {cw}, {ch}; corner: 14; stroke: if(on, 2, 1); color: if(on, {acc}, fl.trace_dim) }}',
+         f'{c}                    text u.glyph {{ at: ux + {cw} / 2, uy + 38; anchor: center; size: 30; family: {NERD}; color: if(on, {acc}, {dim}) }}',
+         f'{c}                    text u.name {{ at: ux + {cw} / 2, uy + 82; anchor: center; align: center; size: 15; weight: 700; family: {SANS}; color: {ink} }}',
+         f'{c}                    text u.line {{ at: ux + {cw} / 2, uy + 106; anchor: center; align: center; size: 10; family: {SANS}; color: {dim}; width: {cw} - 28; lines: 2 }}',
+         f'{c}                    text "{{u.index + 1, 0}}" {{ at: ux + 16, uy + 16; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(on, {acc}, {dim}) }}',
+         f'{c}                    zone box gzu {{ from: ux, uy; size: {cw}, {ch}; corner: 14; cursor: pointer; role: button; label: "{{u.name}}"; show: ac_page == 3 and gz_state == 2 }}',
+         f'{c}                    on press gzu {{ emit ac_key(49 + u.index) }}',
+         f'{c}                }}',
+         f'{c}                text "← → CHOOSE · RETURN TAKES IT · Z X C" {{ at: px + {PW} / 2, {by} + 320; anchor: center; align: center; size: 9; family: {MONO}; color: {dim} }} }}',
+         f'{c}            group {{ show: gz_state == 3',
+         f'{c}                box {{ from: {bx}, {by}; size: {bw}, {bh}; corner: 14; color: fl.ground; opacity: 0.88 }}',
+         f'{c}                text "THE CRACK WINS" {{ at: px + {PW} / 2, {by} + 130; anchor: center; align: center; size: 32; weight: 700; family: {SANS}; color: fl.ember }}',
+         f'{c}                text "SCORE {{gz_score}} · BEST {{gz_best}}" {{ at: px + {PW} / 2, {by} + 184; anchor: center; align: center; size: 15; weight: 700; family: {MONO}; color: {ink} }}',
+         f'{c}                text "RETURN STARTS AGAIN · ESC BACK TO THE GAMES" {{ at: px + {PW} / 2, {by} + 236; anchor: center; align: center; size: 10; family: {MONO}; color: {dim} }} }}',
+         f'{c}        }}']
+    return L
+
+
+def mazmorra(c, ink, dim, acc):
+    bx, by, bw = "px + 40", "py + 84", 780
+    card_w, card_h = 330, 180
+    rx = f"px + {PW} - 40 - {card_w}"
+    shop_w, shop_h, gap = (bw - 3 * 12) / 4, 92, 12
+    L = [f'{c}        group {{ show: ac_page == 4',
+         f'{c}            text "FLOOR {{mz_floor}}" {{ at: {bx}, py + 70; anchor: left center; size: 12; weight: 700; family: {MONO}; color: {ink} }}',
+         f'{c}            text "BEST {{mz_best}}" {{ at: {bx} + 132, py + 70; anchor: left center; size: 10; family: {MONO}; color: {dim} }}',
+         f'{c}            text "󰪚 {{mz_gold}}" {{ at: {bx} + {bw}, py + 70; anchor: right center; align: right; size: 14; weight: 700; family: {MONO}; color: fl.flare }}',
+         f'{c}            text mz_state {{ at: px + {PW} / 2, py + 70; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(mz_boost > 0, {acc}, {dim}) }}',
+         f'{c}            line {{ from: {bx}, py + 94; to: {bx} + {bw}, py + 94; width: 1; color: fl.trace_dim }}',
+         f'{c}            box {{ from: {bx}, {by} + 18; size: {card_w}, {card_h}; corner: 14; color: fl.well; opacity: 0.62 }}',
+         f'{c}            box {{ from: {bx}, {by} + 18; size: {card_w}, {card_h}; corner: 14; stroke: 1; color: fl.trace_dim }}',
+         f'{c}            ellipse {{ at: {bx} + 62, {by} + 90; radius: 36; color: fl.well; opacity: 0.9 }}',
+         f'{c}            ellipse {{ at: {bx} + 62, {by} + 90; radius: 38; stroke: 1.5; color: {acc}; opacity: 0.55 }}',
+         f'{c}            text "󰙊" {{ at: {bx} + 62, {by} + 90; anchor: center; size: 32; family: {NERD}; color: {acc} }}',
+         f'{c}            text "THE HERO" {{ at: {bx} + 116, {by} + 48; anchor: left center; size: 13; weight: 700; family: {SANS}; color: {ink} }}',
+         f'{c}            text "HP {{mz_hero}} / {{mz_heromax}}" {{ at: {bx} + 116, {by} + 70; anchor: left center; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}            box {{ from: {bx} + 116, {by} + 82; size: 186, 9; corner: 4; color: fl.ground; opacity: 0.8 }}',
+         f'{c}            box {{ from: {bx} + 116, {by} + 82; size: max(1, 186 * mz_hero / max(1, mz_heromax)), 9; corner: 4; color: {acc} }}',
+         f'{c}            text "AUTO-FIGHT · THE HERO HEALS ON DEATH" {{ at: {bx} + 116, {by} + 114; anchor: left center; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}            box {{ from: {rx}, {by} + 18; size: {card_w}, {card_h}; corner: 14; color: fl.well; opacity: 0.62 }}',
+         f'{c}            box {{ from: {rx}, {by} + 18; size: {card_w}, {card_h}; corner: 14; stroke: if(mz_boss, 2, 1); color: if(mz_boss, fl.ember, fl.trace_dim) }}',
+         f'{c}            ellipse {{ at: {rx} + 62, {by} + 90; radius: 36; color: fl.well; opacity: 0.9 }}',
+         f'{c}            ellipse {{ at: {rx} + 62, {by} + 90; radius: if(mz_boss, 40, 38); stroke: if(mz_boss, 4, 1.5); color: if(mz_boss, fl.ember, {acc}); opacity: 0.9 }}',
+         f'{c}            text mz_glyph {{ at: {rx} + 62, {by} + 90; anchor: center; size: if(mz_boss, 38, 32); family: {NERD}; color: if(mz_boss, fl.ember, {acc}) }}',
+         f'{c}            text mz_name {{ at: {rx} + 116, {by} + 48; anchor: left center; size: 13; weight: 700; family: {SANS}; color: {ink}; width: 190; lines: 1 }}',
+         f'{c}            text "HP {{mz_mon}} / {{mz_monmax}}" {{ at: {rx} + 116, {by} + 70; anchor: left center; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}            box {{ from: {rx} + 116, {by} + 82; size: 186, 9; corner: 4; color: fl.ground; opacity: 0.8 }}',
+         f'{c}            box {{ from: {rx} + 116, {by} + 82; size: max(1, 186 * mz_mon / max(1, mz_monmax)), 9; corner: 4; color: if(mz_boss, fl.ember, {acc}) }}',
+         f'{c}            text "AUTO-FIGHT · ONE TICK A SECOND" {{ at: {rx} + 116, {by} + 114; anchor: left center; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}            text "THE DEEP" {{ at: {bx}, {by} + 220; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {dim} }}',
+         f'{c}            for l in mzlog {{',
+         f'{c}                text l.line {{ at: {bx}, {by} + 242 + l.index * 21; anchor: left center; size: 10; family: {MONO}; color: if(l.index == 0, {ink}, {dim}); width: {bw}; lines: 1 }}',
+         f'{c}            }}',
+         f'{c}            text "SPEND GOLD" {{ at: {bx}, py + 452; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {dim} }}',
+         f'{c}            for u in mzshop {{',
+         f'{c}                let ux = {bx} + u.index * ({shop_w} + {gap})',
+         f'{c}                let uy = py + 466',
+         f'{c}                box {{ from: ux, uy; size: {shop_w}, {shop_h}; corner: 12; color: fl.well; opacity: if(u.afford, 0.8, 0.45) }}',
+         f'{c}                box {{ from: ux, uy; size: {shop_w}, {shop_h}; corner: 12; stroke: 1; color: if(u.afford, {acc}, fl.trace_dim) }}',
+         f'{c}                text u.glyph {{ at: ux + 22, uy + 26; anchor: center; size: 20; family: {NERD}; color: if(u.afford, {acc}, {dim}) }}',
+         f'{c}                text u.name {{ at: ux + 42, uy + 22; anchor: left center; size: 12; weight: 700; family: {SANS}; color: if(u.afford, {ink}, {dim}) }}',
+         f'{c}                text "LV {{u.level}}" {{ at: ux + 18, uy + 50; anchor: left center; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}                text "󰪚 {{u.cost}}" {{ at: ux + 18, uy + 70; anchor: left center; size: 11; weight: 700; family: {MONO}; color: if(u.afford, fl.flare, {dim}) }}',
+         f'{c}                text "{{u.index + 1, 0}}" {{ at: ux + {shop_w} - 18, uy + 18; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: {dim} }}',
+         f'{c}                zone box mzu {{ from: ux, uy; size: {shop_w}, {shop_h}; corner: 12; cursor: pointer; role: button; label: "Buy {{u.name}}"; show: ac_page == 4 }}',
+         f'{c}                on press mzu {{ emit ac_key(49 + u.index) }}',
+         f'{c}            }}',
          f'{c}        }}']
     return L
 
