@@ -6990,6 +6990,19 @@ do
     end)
 end
 
+section("a notch while music plays (D264)")
+do
+    local LK = require("lib/node/look")
+    test("place = music: attached only while something plays; the scene is told each render", function()
+        local t = LK.normalise({ place = "music", modules = { "clock" } })
+        eq(LK.form(t, true), "notch"); eq(LK.form(t, false), "long"); eq(LK.form(LK.normalise({ place = "music" }), false), "seed")
+        eq(LK.form(LK.normalise({ place = "attached" }), false), "notch", "attached is attached whatever plays")
+        local l = assert(io.open("shell/mooi-node.luau")):read("a")
+        assert(l:find("local form = LK.form(look, N.media.playing)", 1, true))
+        assert(l:find('fact.nd_long = ({ seed = 0, long = 1, notch = 2 })[form]', 1, true))
+    end)
+end
+
 section("the node: what a review of its logic found (D244)")
 do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end

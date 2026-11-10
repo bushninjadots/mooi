@@ -20,7 +20,7 @@ local function choice(key, label, desc, values, names) return { key = key, label
 
 M.SCHEMA = {
     Pill = {
-        choice("place", "Place", "Floating at the top, or attached to the frame's border as one body with it (a notch)", { "floating", "attached" }, { "Floating", "Attached" }),
+        choice("place", "Place", "Floating at the top; attached to the frame's border as one body with it (a notch); or attached only while music plays", { "floating", "attached", "music" }, { "Floating", "Attached", "While music plays" }),
         choice("clock_style", "Clock seed", "How the clock seed tells the time (Shape → Seed → Clock)", { "pixel", "digital", "analog", "words", "binary", "dots" }, { "Pixel", "Digits", "Hands", "Words", "Binary", "Dots" }),
     },
     Shape = {
@@ -284,9 +284,9 @@ function M.module_move(t, i, d)
 end
 
 -- what the pill is at rest (D259): attached to the frame, a notch; holding modules, a pill as wide as they are;
--- neither, a seed
-function M.form(t)
-    if t.place == "attached" then return "notch" end
+-- neither, a seed. D264: "music" attaches it only while something plays (`playing`, from the logic)
+function M.form(t, playing)
+    if t.place == "attached" or (t.place == "music" and playing == true) then return "notch" end
     if type(t.modules) == "table" and #t.modules > 0 then return "long" end
     return "seed"
 end

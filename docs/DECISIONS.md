@@ -7079,3 +7079,13 @@ under it; the microphone's icon mutes it. The mixer and the lyrics are unchanged
 
 **Reviewed (Claude):** one fix. The wave drew 28 bars of the 32 the logic mirrors (centre at 16), so its peak sat
 right of the middle and the four highest bands were dropped; it draws all 32.
+
+## D264 · 2026-11-10 · A notch while music plays
+
+The owner asked for the pill to become a notch "sometimes, or on a certain event". **Place** (studio → Pill)
+gains **While music plays**: the pill attaches to the frame as one body with it while something plays, and
+floats again after. The music is the one event the node already knows without asking anything, so this costs
+no polling. The form is decided on each render (`lib/node/look`'s `form` takes whether music plays) and the
+frame is told through `node-geo.json` as for any notch (D257).
+
+**Verified.** Unit 836 / 0; scenes compile; `bin/mooi check` green.

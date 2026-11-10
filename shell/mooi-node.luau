@@ -395,7 +395,8 @@ render = function()
     -- on the studio's stage: in the middle, a little way down
     local shape = LK.shape(look)
     -- the long pill (D248): as wide as what it holds
-    local form = LK.form(look)
+    local form = LK.form(look, N.media.playing)
+    fact.nd_long = ({ seed = 0, long = 1, notch = 2 })[form]   -- (D264: the form may follow the music)
     if form ~= "seed" and kind == "rest" and N.long_layout then
         local w = N.long_layout()
         shape.seed_w, shape.seed_h = w, 26
