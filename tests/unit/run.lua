@@ -6905,8 +6905,12 @@ end)
 
 -- the node's helpers' own tests (D230), kept apart: tests/unit/node_helpers.lua, given the harness's section, test, eq
 do
-    local chunk = loadfile("tests/unit/node_helpers.lua")
-    if chunk then chunk(section, test, eq) end
+    local chunk, err = loadfile("tests/unit/node_helpers.lua")
+    if chunk then chunk(section, test, eq)
+    elseif io.open("tests/unit/node_helpers.lua") then
+        -- there but broken (a bad merge): a failure, never a quiet skip
+        test("tests/unit/node_helpers.lua loads", function() error(err) end)
+    end
 end
 
 print(string.format("\n%d tests, %d failed", count, failures))
