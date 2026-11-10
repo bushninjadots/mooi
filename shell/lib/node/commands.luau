@@ -106,6 +106,6 @@ function M.merge(apps, commands, windows, max)
 end
 
 -- the word each kind wears on its row
-M.TAG = { app = "", command = "MOOI", window = "WINDOW", calc = "=" }
+M.TAG = { app = "", command = "MOOI", window = "WINDOW", calc = "=", web = "WEB" }
 
 return M

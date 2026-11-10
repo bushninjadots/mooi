@@ -36,7 +36,7 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_mu", 0.6, "how much it moves with the music"), ("nd_viz", 0, "the media's music: 0 bars · 1 wave · 2 dots · 3 off"),
         ("nd_cov", 0, "the cover: 0 square · 1 round"), ("nd_sst", 0, "satellites: 0 pills · 1 dots · 2 ticks"),
         ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width"),
-        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_sys", 0, "the system as: 0 spokes · 1 rings · 2 graphs"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
+        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_sys", 0, "the system as: 0 spokes · 1 rings · 2 graphs"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_rxl", 1, "reactions: 0 off · 1 subtle · 2 lively"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "System", "Search", "Tour"]
 TABS = ["Presets", "Shape", "Surface", "Motion", "Music", "Parts"]
@@ -62,7 +62,7 @@ def scene():
          '// this springs and draws.', '',
          'scene Node {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm"',
+         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm"',
          '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
@@ -148,6 +148,10 @@ def scene():
           '    text nd_ckd = ""', '    text nd_ckw = ""', '    fact nd_ckh = 0', '    fact nd_ckm = 0', '    fact nd_ckdh = 0', '    fact nd_ckdm = 0',
           ] + [f'    fact nd_cb{i} = false' for i in range(12)] + [
           '    fact nd_wsoff = 0', '    text nd_wsl = ""',
+          '    // reactions (D256): a count bumped by the logic; a slow spring chases it and the lag is the ring\'s life',
+          '    fact nd_rn = 0', '    fact nd_rk = 0      // 0 its own colour · 1 warm',
+          '    spring nd.react = 40, 11', '    prop nd_rp = 0 ~nd.react', '    follow nd_rp = nd_rn',
+          '    let nd_rr = clamp(nd_rn - nd_rp, 0, 1)',
           '    model tr max 3 { label: text; value: text; on: bool; m: number }',
           '    fact nd_cap = false', '    text nd_capt = ""', '    text nd_capm = ""', '    fact nd_capf = 1', '    fact nd_capu = false',
           '    prop nd_swp = 0', '    spin nd_swp by if(nd_cap and nd_kind == 0, if(nd_capu, 300, 120), 0)',
@@ -605,14 +609,14 @@ def shelf_parts(c, acc, ink, dim, hull):
           f'{c}        input nd_nq {{ at: nb_x + 46, nb_y + 54; width: nb_w - 80; size: 12; family: {SANS}; color: {ink}; selection: fl.hull_raised; placeholder: "write a note, Return keeps it" }}',
           f'{c}    }}',
           f'{c}    // a list: notes, the clipboard, the stash — a row each',
-          f'{c}    group {{ show: nd_bk >= 2 and nd_bk <= 4',
+          f'{c}    group {{ show: (nd_bk >= 2 and nd_bk <= 4) or nd_bk == 6',
           f'{c}        for r in br {{',
           f'{c}            let ry = nb_y + if(nd_bk == 2, 86, 48) + r.index * 30',
           f'{c}            box {{ from: nb_x + 12, ry; size: nb_w - 24, 27; corner: 8 * nd_rnd; color: fl.well; opacity: if(brr.hover, 0.9, 0.35) }}',
           f'{c}            ellipse {{ at: nb_x + 24, ry + 13.5; radius: 2.5; color: {acc}; show: r.pinned }}',
           f'{c}            text r.label {{ at: nb_x + 34, ry + 13.5; anchor: left center; size: 11; family: {SANS}; color: {ink}; width: nb_w - 170; lines: 1 }}',
           f'{c}            text r.detail {{ at: nb_x + nb_w - 22, ry + 13.5; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 110; lines: 1 }}',
-          f'{c}            zone box brr {{ from: nb_x + 12, ry; size: nb_w - 24, 27; cursor: pointer; role: item; label: "{{r.label}}"; show: nd_kind == 13 and nd_bk >= 2 and nd_bk <= 4 }}',
+          f'{c}            zone box brr {{ from: nb_x + 12, ry; size: nb_w - 24, 27; cursor: pointer; role: item; label: "{{r.label}}"; show: nd_kind == 13 and ((nd_bk >= 2 and nd_bk <= 4) or nd_bk == 6) }}',
           f'{c}            on press brr {{ emit nd_br(10 + r.index) }}',
           f'{c}        }}',
           f'{c}    }}',
@@ -648,6 +652,13 @@ def surface():
           f'{c}let nd_acc = pick(nd_ac, fl.phos, fl.ember, fl.ink, fl.trace_lit)',
           f'{c}let nd_glc = pick(nd_gc, fl.phos, fl.ember, fl.ink, fl.trace_lit)']
     L += studio_back()
+    L += [f'{c}// a reaction (D256): rings out of the node, its own colour or warm; the lively one rings twice',
+          f'{c}group {{ show: nd_rxl > 0 and nd_rr > 0.01',
+          f'{c}    let rc = if(nd_rk == 1, fl.ember, nd_acc)',
+          f'{c}    let r0 = max(nb_w, nb_h) / 2',
+          f'{c}    ellipse {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; radius: r0 + (10 + 24 * nd_rxl) * (1 - nd_rr); scale: 1, min(1, (nb_h + 30) / max(1, nb_w)); stroke: 1.5; color: rc; opacity: 0.75 * nd_rr }}',
+          f'{c}    ellipse {{ at: nb_x + nb_w / 2, nb_y + nb_h / 2; radius: r0 + 40 * clamp(1.4 - nd_rr * 1.4, 0, 1); scale: 1, min(1, (nb_h + 30) / max(1, nb_w)); stroke: 1; color: rc; opacity: 0.5 * nd_rr; show: nd_rxl == 2 }}',
+          f'{c}}}']
     L += [f'{c}// the launcher: what is round it steps back (the look\'s dim), the search line in focus',
           f'{c}box {{ from: 0, 0; size: node.width, node.height; color: #000000; opacity: nd_ldm * nd_ld; show: nd_ld > 0.01 }}']
     # the universe: an orbit that turns on a spring

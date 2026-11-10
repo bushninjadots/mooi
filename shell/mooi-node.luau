@@ -105,6 +105,16 @@ N.time = TK.normalise(read(TK.FILE, "json"))
 local function save_time() pcall(sys.call, "files.write", TK.FILE, json.encode(N.time)) end
 N.done = {}   -- what finished and waits to be answered, oldest first
 
+-- ── reactions (D256): a ring out of the node when something happens — its own colour, or warm ──
+N.rn = 0
+local function react(warm)
+    if N.look.reactions == "off" or N.studio.open then return end
+    N.rn = N.rn + 1
+    fact.nd_rk = warm and 1 or 0
+    fact.nd_rn = N.rn
+end
+N.react = react
+
 -- ── the palette, as every program wearing Ferrolume paints it ──
 local palette = read("palette.json", "json")
 local function paint()
@@ -216,7 +226,7 @@ local function show_launcher(b)
         local p = places[i]
         local name = tostring(a.name or a.id or "")
         local icon = (a.kind == "app" and type(a.icon) == "string") and a.icon or ""
-        local letter = a.kind == "calc" and "=" or a.kind == "command" and "M" or a.kind == "window" and string.sub(tostring(a.app or name), 1, 1) or string.sub(name ~= "" and name or "?", 1, 1)
+        local letter = a.kind == "web" and "W" or a.kind == "calc" and "=" or a.kind == "command" and "M" or a.kind == "window" and string.sub(tostring(a.app or name), 1, 1) or string.sub(name ~= "" and name or "?", 1, 1)
         local tag = CMD.TAG[a.kind] or ""
         if a.kind == "window" and a.workspace ~= "" then tag = "WINDOW · " .. a.workspace end
         rows[i] = { x = p.x, y = p.y, w = p.w, h = p.h, name = name, icon = icon, iconed = icon ~= "",
@@ -470,6 +480,7 @@ pcall(sys.watch, "media", function(m)
     -- music starting, or a new song: the media branch grows for a moment, then it is a satellite
     if on_for("media") and N.media.playing and (not was or N.media.title ~= was_title) and was_title ~= nil then
         ST.push(N.st, "media", now())
+        if not was then react(false) end
     end
     render()
 end)
@@ -519,8 +530,9 @@ pcall(sys.watch, "battery", function(b)
         render()
         return
     end
-    local before = N.bat
+    local before, was_charging = N.bat, N.charging
     N.bat, N.charging = tonumber(b.percent), b.charging == true
+    if N.seen_bat and was_charging ~= N.charging then react(false) end
     if N.bat and N.seen_bat and DV.crossed_critical(before, N.bat, N.charging) then battery_card(N.bat) end
     N.seen_bat = true
     render()
@@ -542,6 +554,7 @@ local function notices_now()
     local stamp = first and (tostring(first.time or "") .. tostring(first.title or "")) or nil
     if stamp and stamp ~= N.notice_seen and N.notice_seen ~= nil and on_for("notices") then
         ST.push(N.st, "notice", now())
+        react(false)
         -- the wallpaper answers with a small ripple at the node (mooi-surface, D226)
         if cfg().wallpaper ~= false then
             local cx = math.floor((fact.nd_tx or 0) + (fact.nd_tw or 22) / 2 + 0.5)
@@ -661,6 +674,9 @@ local function search()
     -- D234: mooi's own commands and the open windows, when something is typed
     if N.q:match("%S") then
         apps = CMD.merge(apps, CMD.match(N.q, 3), CMD.windows(N.clients, N.q, 2), 6)
+        -- D256: the last row searches the web for it (sent only if chosen)
+        if #apps >= 6 then table.remove(apps) end
+        apps[#apps + 1] = { kind = "web", name = "Search the web for “" .. N.q:gsub("^%s+", ""):gsub("%s+$", "") .. "”", query = N.q }
         -- D238: a conversion ("5 km in mi", "20 c to f") is answered first; Return copies the answer
         local u = UN.answer(N.q)
         if u then
@@ -693,6 +709,10 @@ local function choose(a)
         run("mooi", a.args, function() end)
     elseif a.kind == "calc" then
         copy(a.value)
+    elseif a.kind == "web" then
+        local q = tostring(a.query or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        local enc = q:gsub("[^%w%-%._~]", function(ch) return string.format("%%%02X", string.byte(ch)) end)
+        run("xdg-open", { "https://duckduckgo.com/?q=" .. enc }, function() end)
     else
         pcall(sys.call, "apps.launch", a.exec)
     end
@@ -792,6 +812,7 @@ local function privacy_card(what, on, who)
     text.nd_pvd = on and (who ~= "" and who or "In use") or "No longer in use"
     fact.nd_pvon = on
     ST.push(N.st, "privacy", now())
+    if on then react(true) end
     render()
 end
 local pv_busy = false
@@ -1130,7 +1151,7 @@ local SHELF = {
     { code = 3, label = "CLIPBOARD", side = -1 }, { code = 4, label = "STASH", side = -1 },
     { code = 9, label = "MUSIC", side = 1, music = true }, { code = 10, label = "TIME", side = 1 },
     { code = 5, label = "WALLPAPER", side = 1 }, { code = 6, label = "SYSTEM", side = 1 },
-    { code = 7, label = "NEXUS", side = 1 }, { code = 8, label = "SETTINGS", side = 1 },
+    { code = 7, label = "NEXUS", side = 1 }, { code = 8, label = "SETTINGS", side = 1 }, { code = 11, label = "POWER", side = 1 },
 }
 N.shelf_show = function(b)
     local rows, lx, rx = {}, b.x - 8, b.x + b.w + 8
@@ -1162,7 +1183,11 @@ N.open_shelf = open_shelf
 
 -- the branches' contents
 N.branch, N.cal, N.branch_items = 0, nil, {}
-local BRANCH_TITLE = { "CALENDAR", "NOTES", "CLIPBOARD", "STASH", "WALLPAPER" }
+local BRANCH_TITLE = { "CALENDAR", "NOTES", "CLIPBOARD", "STASH", "WALLPAPER", "POWER" }
+-- power (D256): each needs a second press within three seconds, as on the lock; nothing here ends a session by a slip
+local POWER = { { label = "Lock", argv = { "mooi", "lock" } }, { label = "Sleep", argv = { "systemctl", "suspend" } },
+                { label = "Reboot", argv = { "systemctl", "reboot" } }, { label = "Power off", argv = { "systemctl", "poweroff" } } }
+N.armed, N.armed_at = nil, 0
 local function ago(t) local s = os.time() - (tonumber(t) or 0); if s < 3600 then return math.max(1, s // 60) .. " min" elseif s < 86400 then return (s // 3600) .. " h" end; return (s // 86400) .. " d" end
 local function show_calendar()
     local now = os.date("*t")
@@ -1243,7 +1268,29 @@ N.clip_choose = function(i)
         if code == 0 and out then run("wl-copy", {}, nil, { input = out, output = false }) end
     end)
 end
-local SHOW = { show_calendar, show_notes, show_clipboard, show_stash, show_walls }
+local function show_power()
+    local rows = {}
+    for i, p in ipairs(POWER) do
+        local armed = N.armed == i and now() - N.armed_at < 3000
+        rows[i] = { label = p.label, detail = armed and "PRESS AGAIN" or "", pinned = armed }
+    end
+    model.br = rows
+    text.nd_brs = "TWO PRESSES"
+end
+N.power_choose = function(i)
+    local p = POWER[i]
+    if not p then return end
+    if N.armed == i and now() - N.armed_at < 3000 then
+        N.armed = nil
+        for _, h in ipairs(HELD) do ST.release(N.st, h) end
+        render()
+        run(p.argv[1], { table.unpack(p.argv, 2) }, function() end)
+    else
+        N.armed, N.armed_at = i, now()
+        after(3100, function() if N.branch == 6 then show_power() end end)
+    end
+end
+local SHOW = { show_calendar, show_notes, show_clipboard, show_stash, show_walls, show_power }
 local function show_branch()
     text.nd_brt = BRANCH_TITLE[N.branch] or ""
     fact.nd_bk = N.branch
@@ -1260,7 +1307,7 @@ local function open_branch(k)
 end
 on("nd_sh", function(v)
     v = math.floor(tonumber(v) or 0)
-    if v >= 1 and v <= 5 then open_branch(v)
+    if (v >= 1 and v <= 5) or v == 11 then open_branch(v == 11 and 6 or v)
     elseif v == 6 then for _, h in ipairs(HELD) do ST.release(N.st, h) end; ST.hold(N.st, "system"); render()
     elseif v == 7 or v == 8 then
         for _, h in ipairs(HELD) do ST.release(N.st, h) end
@@ -1288,6 +1335,7 @@ on("nd_br", function(v)
         if k == 2 and N.branch_items[i] then N.copy(N.branch_items[i])
         elseif k == 3 and N.clip_choose then N.clip_choose(i)
         elseif k == 4 and N.branch_items[i] then run("xdg-open", { N.branch_items[i] }, function() end)
+        elseif k == 6 then N.power_choose(i)
         elseif k == 5 then
             local it = N.walls and N.walls[N.wl_at + i - 1]
             if it then N.wl_worn = it.path; run("mooi", { "wall", "apply", it.path }, function() end) end
@@ -1353,6 +1401,7 @@ local function time_tick()
             end
         end)
         ST.hold(N.st, "done")
+        react(true)
         render()
         return
     end

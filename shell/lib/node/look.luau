@@ -60,6 +60,7 @@ M.SCHEMA = {
         choice("cover", "Cover", "The album art's shape", { "square", "round" }, { "Square", "Round" }),
     },
     Parts = {
+        choice("reactions", "Reactions", "A ring from the node when something happens: music, a notice, the charger, the microphone", { "off", "subtle", "lively" }, { "Off", "Subtle", "Lively" }),
         choice("sys_style", "System as", "How the machine's readings show: spokes, rings, or a short history each", { "spokes", "rings", "graphs" }, { "Spokes", "Rings", "Graphs" }),
         range("cards", "Notices", "How many notice cards branch from it", 1, 5, ""),
         range("satellites", "Satellites", "How many small marks may orbit the seed", 0, 6, ""),
@@ -74,7 +75,7 @@ local BASE = {
     texture = "solid", fill = 95, outline = 10, glow = 70, accent = "phos", glow_colour = "phos",
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
     viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse",
-    sys_style = "spokes", rest = "seed", clock_style = "pixel", ws_style = "bead", m_clock = "on", m_window = "on", m_spaces = "on", m_battery = "off", m_music = "on", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
+    sys_style = "spokes", rest = "seed", clock_style = "pixel", ws_style = "bead", reactions = "subtle", m_clock = "on", m_window = "on", m_spaces = "on", m_battery = "off", m_music = "on", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
 }
 local PRESET = {
     organic = {},
@@ -258,6 +259,7 @@ function M.facts(t)
         nd_sys = ix({ "spokes", "rings", "graphs" }, t.sys_style),
         nd_cks = ix({ "pixel", "digital", "analog", "words", "binary", "dots" }, t.clock_style),
         nd_wss = ix({ "bead", "slide", "flip", "pulse", "count" }, t.ws_style),
+        nd_rxl = ix({ "off", "subtle", "lively" }, t.reactions),
         nd_mf = ix({ "capsule", "visualiser", "vinyl" }, t.music_form), nd_smu = ix({ "still", "pulse", "bars" }, t.seed_music),
     }
 end

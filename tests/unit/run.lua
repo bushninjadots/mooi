@@ -6732,7 +6732,7 @@ do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
     local l = read("shell/mooi-node.luau")
     test("the clipboard: cliphist's newest; a press puts one back on wl-copy's input, never its command line", function()
-        assert(l:find('local SHOW = { show_calendar, show_notes, show_clipboard, show_stash, show_walls }', 1, true))
+        assert(l:find('local SHOW = { show_calendar, show_notes, show_clipboard, show_stash, show_walls, show_power }', 1, true))
         assert(l:find('if code == 0 and out then run("wl-copy", {}, nil, { input = out, output = false }) end', 1, true))
         assert(not l:find('run("wl-copy", { ', 1, true), "nothing copied through an argument")
     end)
@@ -6815,6 +6815,28 @@ do
         assert(l:find('elseif style == "binary" then', 1, true))
         local p = read("shell/mooi-node.plm")
         assert(p:find("show: nd_kind == 4 and nd_wss == 4", 1, true) and p:find("show: nd_cks == 2; opacity: nd_cf", 1, true))
+    end)
+end
+
+section("reactions, the power pill, the web from the search line (D256)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local l = read("shell/mooi-node.luau")
+    test("a ring out of the node when something happens, unless the look says off; warm for the microphone and a finish", function()
+        local LK = require("lib/node/look")
+        eq(LK.preset("organic").reactions, "subtle"); eq(LK.facts(LK.normalise({ reactions = "off" })).nd_rxl, 0)
+        assert(l:find('if N.look.reactions == "off" or N.studio.open then return end', 1, true))
+        assert(l:find("if on then react(true) end", 1, true))
+        assert(read("shell/mooi-node.plm"):find("let nd_rr = clamp(nd_rn - nd_rp, 0, 1)", 1, true))
+    end)
+    test("power: lock, sleep, reboot, power off — each needs a second press within three seconds", function()
+        assert(l:find("if N.armed == i and now() - N.armed_at < 3000 then", 1, true))
+        assert(l:find('{ code = 11, label = "POWER", side = 1 }', 1, true))
+        assert(read("shell/mooi-node.plm"):find('"systemctl"', 1, true))
+    end)
+    test("the web: the search line's last row, its words sent only when it is chosen, encoded", function()
+        assert(l:find('apps[#apps + 1] = { kind = "web"', 1, true))
+        assert(l:find('run("xdg-open", { "https://duckduckgo.com/?q=" .. enc }', 1, true))
     end)
 end
 

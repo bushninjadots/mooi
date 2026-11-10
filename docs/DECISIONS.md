@@ -6946,3 +6946,19 @@ the rail sliding in from the side the switch came from, a flip, a pulse ringing 
 new workspace's number sliding in.
 
 **Verified.** Unit 822 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.
+
+## D256 · 2026-11-10 · Reactions, a power pill, the web
+
+**Reactions** (studio → Parts: off, subtle, lively): a ring goes out from the node when music starts, a notice
+arrives, or the charger is plugged in or out. It is warm when the microphone or the camera comes on, or when
+something the time tools ran finishes. Lively rings twice. It is a count the logic bumps and a slow spring
+chases, so the ring lives about a second and costs nothing after.
+
+**Power** (a pill on the shelf, after ChillPill-Shell's power menu): lock, sleep, reboot and power off, each
+needing a second press within three seconds, as on the lock. Logging out was left out: there is no safe single
+command for it in mooi yet.
+
+**The web** (after ChillPill-Shell's spotlight): once something is typed, the search line's last row searches
+the web for it (DuckDuckGo, through `xdg-open`). The words are sent only when that row is chosen.
+
+**Verified.** Unit tests green; `bin/mooi check` green. Not yet seen on screen.
