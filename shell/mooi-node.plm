@@ -425,7 +425,7 @@ scene Node {
     fact nd_studio = false
     prop nd_stf = 0 ~nd.aux
     follow nd_stf = if(nd_studio, 1, 0)
-    fact nd_tab = 0       // 0 Presets · 1 Rest · 2 Shape · 3 Surface · 4 Motion · 5 Music · 6 Parts
+    fact nd_tab = 0       // 0 Presets · 1 Pill · 2 Shape · 3 Surface · 4 Motion · 5 Music · 6 Parts
     fact nd_kr = 0        // the row the keyboard is on
     fact nd_pv = 0        // the preview: 0 Rest · 1 Music · 2 Notice · 3 Volume · 4 Rail · 5 System · 6 Search · 7 Tour
     text nd_lookname = "Organic"
@@ -1526,9 +1526,9 @@ scene Node {
             box { from: st_x + 20 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 0 }
             zone box stt0 { from: st_x + 20, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Presets"; selected: nd_tab == 0; show: nd_studio }
             on press stt0 { emit nd_tab(0) }
-            text "Rest" { at: st_x + 99 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
+            text "Pill" { at: st_x + 99 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
             box { from: st_x + 99 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 1 }
-            zone box stt1 { from: st_x + 99, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Rest"; selected: nd_tab == 1; show: nd_studio }
+            zone box stt1 { from: st_x + 99, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Pill"; selected: nd_tab == 1; show: nd_studio }
             on press stt1 { emit nd_tab(1) }
             text "Shape" { at: st_x + 178 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
             box { from: st_x + 178 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 2 }
@@ -1613,7 +1613,7 @@ scene Node {
             // out; a press on one of the rest adds it at the end
             group { show: nd_tab == 1
                 text "IN THE PILL" { at: st_x + 24, st_dy + 196; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
-                text "EMPTY: ADD ONE BELOW" { at: st_x + 130, st_dy + 196; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: md.count == 0 }
+                text "NONE: THE PILL RESTS AS A SEED (SHAPE → SEED)" { at: st_x + 130, st_dy + 196; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: md.count == 0 }
                 for m in md {
                     let mx = st_x + 24 + m.index * 148
                     box { from: mx, st_dy + 210; size: 140, 36; corner: 18 * max(0.3, nd_rnd); color: fl.hull_raised }

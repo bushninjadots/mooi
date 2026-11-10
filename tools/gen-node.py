@@ -39,7 +39,7 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_sys", 0, "the system as: 0 spokes · 1 rings · 2 graphs"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_rxl", 1, "reactions: 0 off · 1 subtle · 2 lively"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "System", "Search", "Tour"]
-TABS = ["Presets", "Rest", "Shape", "Surface", "Motion", "Music", "Parts"]   # lib/node/look M.TABS, in its order (a test holds them together)
+TABS = ["Presets", "Pill", "Shape", "Surface", "Motion", "Music", "Parts"]   # lib/node/look M.TABS, in its order (a test holds them together)
 MONO = '"Share Tech Mono"'
 SANS = '"Exo 2"'
 
@@ -326,7 +326,7 @@ def studio_deck():
           f'{d}// out; a press on one of the rest adds it at the end',
           f'{d}group {{ show: nd_tab == 1',
           f'{d}    text "IN THE PILL" {{ at: st_x + 24, st_dy + 196; anchor: left center; size: 9; weight: 700; family: {MONO}; color: fl.muted }}',
-          f'{d}    text "EMPTY: ADD ONE BELOW" {{ at: st_x + 130, st_dy + 196; anchor: left center; size: 9; family: {MONO}; color: fl.muted; show: md.count == 0 }}',
+          f'{d}    text "NONE: THE PILL RESTS AS A SEED (SHAPE → SEED)" {{ at: st_x + 130, st_dy + 196; anchor: left center; size: 9; family: {MONO}; color: fl.muted; show: md.count == 0 }}',
           f'{d}    for m in md {{',
           f'{d}        let mx = st_x + 24 + m.index * 148',
           f'{d}        box {{ from: mx, st_dy + 210; size: 140, 36; corner: 18 * max(0.3, nd_rnd); color: fl.hull_raised }}',

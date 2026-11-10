@@ -7002,3 +7002,18 @@ opencode (task 10, read-only) reviewed D245–D257. All nine findings were real,
   an error is a failed check (never a way in), and the next try asks again.
 
 **Verified.** Unit tests green (four new); scenes compile; `bin/mooi check` green.
+
+## D259 · 2026-11-10 · Modules live in the pill
+
+The owner, rightly: what is the point of a "long pill" if modules can simply be added to the pill? "At rest"
+(seed, long pill, notch) is gone. The pill holds whatever modules the editor gives it: with none it rests as a
+seed (its shape from Shape → Seed), and with some it is as wide as they are. **Place** says where it is:
+floating at the top, or **attached** to the frame's border as one body with it (the notch, D257). The studio's
+page is called **Pill** (place, modules, clock seed). Looks from before carry over: a seed stays a seed, a
+pill keeps its modules, and a notch becomes attached.
+
+This is step one of a redesign the owner approved after Claude finally looked at the two references' own
+screenshots (D246–D258 had been designed from their READMEs): one pill, and everything opening as one panel
+grown straight out of it.
+
+**Verified.** Unit 831 / 0; scenes compile; `bin/mooi check` green.

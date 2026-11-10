@@ -402,11 +402,12 @@ render = function()
     -- on the studio's stage: in the middle, a little way down
     local shape = LK.shape(look)
     -- the long pill (D248): as wide as what it holds
-    if (look.rest == "long" or look.rest == "notch") and kind == "rest" and N.long_layout then
+    local form = LK.form(look)
+    if form ~= "seed" and kind == "rest" and N.long_layout then
         local w = N.long_layout()
         shape.seed_w, shape.seed_h = w, 26
         -- the notch (D251) hangs from the top edge itself, and opens a little under the pointer
-        if look.rest == "notch" and not studio then shape.top = 0; shape.seed_h = N.near and 34 or 28 end
+        if form == "notch" and not studio then shape.top = 0; shape.seed_h = N.near and 34 or 28 end
     end
     if studio then shape.top = 96 end
     local anchor = studio and "centre" or (cfg().anchor or "centre")
@@ -451,7 +452,7 @@ render = function()
     -- D257: a notch at rest is a piece of the frame's body (the frame draws it, joined to its band); the node
     -- only says where it is, and draws what is inside
     local framed = N.settings.frame == nil or N.settings.frame.on ~= false
-    local notch = look.rest == "notch" and kind == "rest" and not studio and framed
+    local notch = form == "notch" and kind == "rest" and not studio and framed
     fact.nd_nfr = notch
     local geo = notch and json.encode({ x = math.floor(b.x + 0.5), w = math.floor(b.w + 0.5), h = math.floor(b.h + 0.5), r = math.floor(math.min(14, b.h / 2 + 4)) }) or "{}"
     if geo ~= N.node_geo then N.node_geo = geo; pcall(sys.call, "files.write", "node-geo.json", geo) end
@@ -1127,7 +1128,7 @@ N.long_layout = function()
 end
 -- what has the focus, while the long pill shows it (asked every second and a half, only then)
 every(1500, function()
-    if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") or N.studio.open then return end
+    if N.kind ~= "rest" or LK.form(N.look) == "seed" or N.studio.open then return end
     local want = false
     for _, k in ipairs(LK.modules(N.look.modules)) do if k == "window" then want = true end end
     if not want then return end
@@ -1140,7 +1141,7 @@ end)
 -- the minute turning, while the long pill holds the clock
 local long_min
 every(5000, function()
-    if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") then return end
+    if N.kind ~= "rest" or LK.form(N.look) == "seed" then return end
     local m = os.date("%H:%M")
     if m ~= long_min then long_min = m; render() end
 end)
@@ -1528,7 +1529,7 @@ local function studio_rows()
         model.sk = LK.rows(N.look, tab)
     end
     -- D257: the module editor, on the Rest page
-    if tab == "Rest" then
+    if tab == "Pill" then
         local inl, has, rest = {}, {}, {}
         for i, k in ipairs(LK.modules(N.look.modules)) do inl[i] = { label = string.upper(LK.MODULE_NAMES[k]) }; has[k] = true end
         N.mod_rest = {}
@@ -1610,7 +1611,6 @@ on("nd_md", function(v)
     end
     if done then
         -- the stage shows the pill as it is now
-        if N.look.rest == "seed" then N.look.rest = "long" end
         N.studio.pv = 0
         look_changed()
     end

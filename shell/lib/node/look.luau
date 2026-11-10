@@ -12,15 +12,15 @@ M.PRESETS = { "organic", "minimal", "technical", "cyber" }
 M.SLOTS = 3
 
 -- the studio's tabs; the first is the presets' own page (no rows)
-M.TABS = { "Presets", "Rest", "Shape", "Surface", "Motion", "Music", "Parts" }
+M.TABS = { "Presets", "Pill", "Shape", "Surface", "Motion", "Music", "Parts" }
 
 -- each row: key, label, description, and either a range (lo, hi, unit) or a choice (values, names)
 local function range(key, label, desc, lo, hi, unit) return { key = key, label = label, desc = desc, lo = lo, hi = hi, unit = unit or "" } end
 local function choice(key, label, desc, values, names) return { key = key, label = label, desc = desc, values = values, names = names } end
 
 M.SCHEMA = {
-    Rest = {
-        choice("rest", "At rest", "A seed, a longer pill that holds a few things, or a notch hanging from the top edge", { "seed", "long", "notch" }, { "Seed", "Long pill", "Notch" }),
+    Pill = {
+        choice("place", "Place", "Floating at the top, or attached to the frame's border as one body with it (a notch)", { "floating", "attached" }, { "Floating", "Attached" }),
         choice("clock_style", "Clock seed", "How the clock seed tells the time (Shape → Seed → Clock)", { "pixel", "digital", "analog", "words", "binary", "dots" }, { "Pixel", "Digits", "Hands", "Words", "Binary", "Dots" }),
     },
     Shape = {
@@ -70,7 +70,7 @@ local BASE = {
     texture = "solid", fill = 95, outline = 10, glow = 70, accent = "phos", glow_colour = "phos",
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
     viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse",
-    sys_style = "spokes", rest = "seed", clock_style = "pixel", ws_style = "bead", reactions = "subtle", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
+    sys_style = "spokes", place = "floating", clock_style = "pixel", ws_style = "bead", reactions = "subtle", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
 }
 local PRESET = {
     organic = {},
@@ -118,13 +118,16 @@ function M.normalise(t, fallback)
         end
     end
     out.custom = t.custom == true
-    -- the long pill's and the notch's modules, in order (D257); a look from before them keeps what it had on
+    -- the pill's modules, in order (D257). D259: they live in the pill itself — none, and it is a seed. A look from
+    -- before: its switched-on modules (D248), or none if it rested as a seed; a notch is now a place, attached
     local src = t.modules
     if type(src) ~= "table" and (t.m_clock or t.m_window or t.m_spaces or t.m_battery or t.m_music) then
         src = {}
         for _, k in ipairs({ "spaces", "window", "music", "battery", "clock" }) do if t["m_" .. k] == "on" then src[#src + 1] = k end end
     end
-    out.modules = M.modules(src)
+    if t.rest == "seed" then src = {} end
+    if t.rest == "notch" and t.place == nil then out.place = "attached" end
+    out.modules = M.modules(src or {})
     -- the saved looks: up to M.SLOTS, each a look of its own (or nothing)
     out.slots = {}
     if type(t.slots) == "table" then
@@ -229,13 +232,9 @@ M.MODULE_NAMES = { spaces = "Workspaces", window = "Window", music = "Music", cl
                    notices = "Notices" }
 M.MODULES_MAX = 6
 M.MODULES_DEFAULT = { "spaces", "window", "music", "clock" }
--- a list made sane: known names, each once, at most MODULES_MAX, in the order given; nothing given → the default
+-- a list made sane: known names, each once, at most MODULES_MAX, in the order given (none is none: a seed)
 function M.modules(list)
-    if type(list) ~= "table" then
-        local out = {}
-        for i, k in ipairs(M.MODULES_DEFAULT) do out[i] = k end
-        return out
-    end
+    if type(list) ~= "table" then return {} end
     local out, seen = {}, {}
     for _, k in ipairs(list) do
         if M.MODULE_NAMES[k] and not seen[k] and #out < M.MODULES_MAX then seen[k] = true; out[#out + 1] = k end
@@ -265,6 +264,14 @@ function M.module_move(t, i, d)
     l[i], l[j] = l[j], l[i]
     t.modules, t.custom = l, true
     return true
+end
+
+-- what the pill is at rest (D259): attached to the frame, a notch; holding modules, a pill as wide as they are;
+-- neither, a seed
+function M.form(t)
+    if t.place == "attached" then return "notch" end
+    if type(t.modules) == "table" and #t.modules > 0 then return "long" end
+    return "seed"
 end
 
 -- the springs the scene declares: speed × bounce, nine of them (index 0..8); and three for growth
@@ -302,7 +309,7 @@ function M.facts(t)
         nd_stg = t.stagger / 100, nd_bd = t.breath / 100, nd_mu = t.music / 100,
         nd_viz = ix({ "bars", "wave", "dots", "off" }, t.viz), nd_cov = ix({ "square", "round" }, t.cover),
         nd_sst = ix({ "pill", "dot", "tick" }, t.sat_style), nd_ldm = t.dim / 100, nd_ur = t.orbit,
-        nd_long = t.rest == "long" and 1 or t.rest == "notch" and 2 or 0,
+        nd_long = ({ seed = 0, long = 1, notch = 2 })[M.form(t)],
         nd_sys = ix({ "spokes", "rings", "graphs" }, t.sys_style),
         nd_cks = ix({ "pixel", "digital", "analog", "words", "binary", "dots" }, t.clock_style),
         nd_wss = ix({ "bead", "slide", "flip", "pulse", "count" }, t.ws_style),
