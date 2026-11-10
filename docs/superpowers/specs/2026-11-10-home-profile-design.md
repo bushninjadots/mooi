@@ -1,5 +1,18 @@
 # The panel's Home profile (2026-11-10)
 
+## Revision: under the header, and editable
+
+The owner, after seeing the first card: "i want to be able to change it, also i think it should go under the time,
+weather and battery". The card moves out of the top slot and becomes Home's second row: the clock, date, weather
+and battery keep the top, then the profile card, then the CPU/RAM/TEMP/GPU strip. Home is 732 px tall.
+
+The card is also its own editor. A press on it turns the name into a field in place, turns the picture into a
+"choose picture" control, and puts a check at the card's right. Return or the check saves the name; Escape leaves
+it as it was. The name is written through `lib/settingsfile` (one leaf at a time, never a whole copy), and a new
+picture goes through the same `zenity` → `mooi identity avatar` path the Nexus uses. A missing `zenity` or a
+failed import leaves the card as it was.
+
+
 The owner: "when clicking the pill the homepage part. add a part ontop where obvios and relevant for profile
 picture with system name". Asked which name, they said "yes hostname".
 

@@ -55,8 +55,9 @@ broken outline that glitches when it changes.
 Super, or a press on the resting pill, grows one panel straight down out of it. It is 500 pixels wide on
 every page and as tall as the page needs. Super again, Esc, or a press on an empty part of it lets it go.
 
-- **Home** — a profile card with the owner's picture (or their initial), display name and hostname, then a header
-  with the time, the date, the weather (from the Nexus's weather) and the battery; a strip
+- **Home** — a header with the time, the date, the weather (from the Nexus's weather) and the battery; under it a
+  profile card with the owner's picture (or their initial), display name and hostname (press the card to edit the
+  name — Return or ✓ saves, Escape cancels — and the picture to choose another); a strip
   of four readings (CPU, RAM, temperature, GPU) that turn warm when high; the music (cover, song, transport, a
   seek bar; press the cover for the player); five buttons for Wi-Fi, Silent, Timer, Bluetooth and Game mode;
   volume and brightness sliders; the three newest notices with `Clear all`; and the page icons. A button's icon

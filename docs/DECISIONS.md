@@ -7508,5 +7508,28 @@ down 58 px and Home is 718 px tall. `lib/node/home.identity` trims the words and
 `lib/node/home.face` decides whether the picture is there; the logic reads `settings.nexus.identity` and the data
 folder, asks `hostname`, and refreshes the card when `settings.json` changes.
 
-**Verified.** Unit 890 / 0 (the new identity and picture tests, the scene's card, and every command the logic runs
-being declared by the scene); the scene compiles; the node's globals are still only the runtime's.
+## D281 · 2026-11-10 · Home's profile moves under the header and becomes editable (opencode's)
+
+The owner: "great i want to be able to change it, also i think it should go under the time,weather and battery".
+The card now sits under the clock/date/weather/battery header instead of above it. Home's top is tightened by 44 px
+so the card's move costs only 14 px: the header is back at its original 34/60/28/58, the card starts at 78, and the
+readings, media, toggles, sliders and notices follow. Home is 732 px tall. The card itself is unchanged: a 58 px
+inset with the picture or initial, the display name and the hostname.
+
+A press on the card opens an editor in place. The display name becomes a text field; the picture gets a camera
+badge and a press opens a file chooser (`zenity`), then `mooi identity avatar` imports what was chosen. Return, or
+the check at the card's right, saves; Escape closes the editor before it would close the panel, and opening Home
+again starts closed. A blank name is refused (`lib/node/home.name` trims, drops control characters, caps at 48 and
+returns nil when nothing is left), a failed write leaves the editor open, and a cancelled chooser or failed import
+changes nothing.
+
+The name is written the safe way: the raw settings document is copied, only `nexus.identity.name` is changed in the
+copy, and `lib/settingsfile.save` re-reads the file and lays that leaf over what is there — never a command line,
+and never a whole-file rewrite that could revert another program's change. After a save the settings are re-read and
+the card redrawn. The scene gained `nd_hopen`, `nd_hsave`, `nd_hpic` and `nd_hdone`, the `nd_hedit` fact, the `nd_hn`
+field and the `phz`/`pha`/`phd` zones; `zenity` joined the scene's permitted commands.
+
+**Verified.** Unit 892 / 0 (the name validator, the moved offsets, the editor's scene and guards, and every command
+the logic runs being declared); the scene compiles (781 properties, 337 zones); `luau-ops`, the gate and the node's
+globals check pass.
+

@@ -62,7 +62,7 @@ def scene():
          '// this springs and draws.', '',
          'scene Node {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "hyprctl", "df", "nvidia-smi", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "wl-paste", "find", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm", "hostname"',
+         '        run: "pleamar", "mooi", "hyprctl", "df", "nvidia-smi", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "wl-paste", "find", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm", "hostname", "zenity"',
          '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "brightness", "network", "network.*", "bluetooth", "bluetooth.*", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
@@ -199,6 +199,7 @@ def scene():
           '    // the Home header (D272): the time, the date, the weather, the battery, four readings, game mode',
           '    text nd_hname = ""', '    text nd_hwho = ""', '    text nd_hinit = ""', '    text nd_face = ""',
           '    image nd_face_img = from nd_face, 96, 96', '    fact nd_face_on = false',
+          '    text nd_hn = ""', '    fact nd_hedit = false',
           '    text nd_hclock = ""', '    text nd_hdate = ""', '    text nd_hwg = ""', '    text nd_hwt = ""', '    text nd_hbat = ""',
           '    text nd_hs1 = ""', '    text nd_hs2 = ""', '    text nd_hs3 = ""', '    text nd_hs4 = ""',
           '    fact nd_hf1 = 0', '    fact nd_hh1 = false', '    fact nd_hf2 = 0', '    fact nd_hh2 = false', '    fact nd_hf3 = 0', '    fact nd_hh3 = false', '    fact nd_hf4 = 0', '    fact nd_hh4 = false',
@@ -271,6 +272,10 @@ def scene():
           '    event nd_sdl ->      // the Stash page: keep the newest file in Downloads',
           '    event nd_sclear ->   // the Stash page: clear the box (two presses within three seconds)',
           '    event nd_stdel ->    // the Stash page: forget one item (its id)',
+          '    event nd_hopen ->    // the Home profile pressed: edit the name and picture',
+          '    event nd_hsave ->    // the profile name submitted',
+          '    event nd_hpic ->     // the profile picture chosen',
+          '    event nd_hdone ->    // the profile editor checked',
           '    event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted',
           '    event nd_seek ->      // the player: where along the song (0 … 1000)',
           '    event nd_mx ->        // the mixer: row * 2000 + its level (0 … 1000)',
@@ -660,36 +665,49 @@ def panel_parts(c, acc, ink, dim, hull):
          f'{c}    // a press on the body where nothing else is drawn closes it',
          f'{c}    zone box pcz {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "Close the panel"; show: nd_kind == 13 }}',
          f'{c}    on press pcz {{ emit nd_pclose }}']
-    # ── the profile card (D280): who this machine is, above its clock ──
+    # ── the profile card (D280; D281: under the header, editable in place) ──
     L += [f'{c}    group {{ show: nd_pgp == 0',
-          f'{c}        box {{ from: nb_x + 14, nb_y + 14; size: nb_w - 28, 58; corner: 14; color: fl.well }}',
-          f'{c}        group {{ clip box {{ from: nb_x + 27, nb_y + 23; size: 40, 40; corner: 20 }}',
-          f'{c}            box {{ from: nb_x + 27, nb_y + 23; size: 40, 40; color: fl.hull_raised }}',
-          f'{c}            image nd_face_img {{ at: nb_x + 27, nb_y + 23; size: 40, 40; fit: cover; show: nd_face_on }} }}',
-          f'{c}        box {{ from: nb_x + 27, nb_y + 23; size: 40, 40; corner: 20; stroke: 1; color: {acc}; opacity: 0.65 }}',
-          f'{c}        text nd_hinit {{ at: nb_x + 47, nb_y + 43; anchor: center; align: center; size: 15; weight: 700; family: {SANS}; color: {acc}; show: not nd_face_on }}',
-          f'{c}        text nd_hname {{ at: nb_x + 80, nb_y + 34; anchor: left center; size: 13; weight: 700; family: {SANS}; color: {ink}; width: nb_w - 150; lines: 1 }}',
-          f'{c}        text nd_hwho {{ at: nb_x + 80, nb_y + 52; anchor: left center; size: 9; family: {MONO}; color: {dim}; width: nb_w - 150; lines: 1 }}',
-          f'{c}        text "󰌢" {{ at: nb_x + nb_w - 30, nb_y + 43; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: {dim}; opacity: 0.7 }}',
-          f'{c}    }}']
+          f'{c}        box {{ from: nb_x + 14, nb_y + 78; size: nb_w - 28, 58; corner: 14; color: fl.well }}',
+          f'{c}        box {{ from: nb_x + 14, nb_y + 78; size: nb_w - 28, 58; corner: 14; stroke: 1; color: {acc}; opacity: if(nd_hedit, 0.9, if(phz.hover, 0.45, 0)) }}',
+          f'{c}        group {{ clip box {{ from: nb_x + 27, nb_y + 87; size: 40, 40; corner: 20 }}',
+          f'{c}            box {{ from: nb_x + 27, nb_y + 87; size: 40, 40; color: fl.hull_raised }}',
+          f'{c}            image nd_face_img {{ at: nb_x + 27, nb_y + 87; size: 40, 40; fit: cover; show: nd_face_on }} }}',
+          f'{c}        box {{ from: nb_x + 27, nb_y + 87; size: 40, 40; corner: 20; stroke: 1; color: {acc}; opacity: 0.65 }}',
+          f'{c}        text nd_hinit {{ at: nb_x + 47, nb_y + 107; anchor: center; align: center; size: 15; weight: 700; family: {SANS}; color: {acc}; show: not nd_face_on }}',
+          f'{c}        text nd_hname {{ at: nb_x + 80, nb_y + 98; anchor: left center; size: 13; weight: 700; family: {SANS}; color: {ink}; width: nb_w - 150; lines: 1; show: not nd_hedit }}',
+          f'{c}        text nd_hwho {{ at: nb_x + 80, nb_y + 116; anchor: left center; size: 9; family: {MONO}; color: {dim}; width: nb_w - 150; lines: 1 }}',
+          f'{c}        group {{ show: nd_hedit',
+          f'{c}            input nd_hn {{ at: nb_x + 78, nb_y + 88; width: nb_w - 175; size: 13; family: {SANS}; color: {ink}; selection: fl.hull_raised; placeholder: "your name" }} }}',
+          f'{c}        text "󰄀" {{ at: nb_x + 60, nb_y + 120; anchor: center; align: center; size: 10; family: "CaskaydiaCove Nerd Font"; color: {acc}; show: nd_hedit }}',
+          f'{c}        text "󰄬" {{ at: nb_x + nb_w - 30, nb_y + 100; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: {acc}; show: nd_hedit }}',
+          f'{c}        text "󰌢" {{ at: nb_x + nb_w - 30, nb_y + 107; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: {dim}; opacity: 0.7; show: not nd_hedit }}',
+          f'{c}        zone box phz {{ from: nb_x + 14, nb_y + 78; size: nb_w - 28, 58; corner: 14; cursor: pointer; role: button; label: "Edit your profile"; show: nd_kind == 13 and nd_pgp == 0 and not nd_hedit }}',
+          f'{c}        on press phz {{ emit nd_hopen }}',
+          f'{c}        zone box pha {{ from: nb_x + 27, nb_y + 87; size: 40, 40; corner: 20; cursor: pointer; role: button; label: "Choose your profile picture"; show: nd_kind == 13 and nd_pgp == 0 and nd_hedit }}',
+          f'{c}        on press pha {{ emit nd_hpic }}',
+          f'{c}        zone box phd {{ from: nb_x + nb_w - 44, nb_y + 86; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Save your profile"; show: nd_kind == 13 and nd_pgp == 0 and nd_hedit }}',
+          f'{c}        on press phd {{ emit nd_hdone }}',
+          f'{c}    }}',
+          f'{c}    on submit nd_hn {{ emit nd_hsave }}',
+          f'{c}    on change nd_hedit while nd_hedit and nd_kind == 13 and nd_pgp == 0 {{ focus nd_hn }}']
     # ── home's header (D272): the time and the date on the left, the weather and the battery on the right, and a
     # strip of four readings under them ──
     L += [f'{c}    group {{ show: nd_pgp == 0',
-          f'{c}        text nd_hclock {{ at: nb_x + 24, nb_y + 92; anchor: left center; size: 30; weight: 700; family: {SANS}; color: {ink} }}',
-          f'{c}        text nd_hdate {{ at: nb_x + 26, nb_y + 118; anchor: left center; size: 10; family: {MONO}; color: {dim}; width: 220; lines: 1 }}',
-          f'{c}        text nd_hwg {{ at: nb_x + nb_w - 24, nb_y + 86; anchor: right center; align: right; size: 18; family: "CaskaydiaCove Nerd Font"; color: {acc} }}',
-          f'{c}        text nd_hwt {{ at: nb_x + nb_w - 50, nb_y + 86; anchor: right center; align: right; size: 11; family: {SANS}; color: {ink}; width: 200; lines: 1 }}',
-          f'{c}        text nd_hbat {{ at: nb_x + nb_w - 24, nb_y + 116; anchor: right center; align: right; size: 11; family: "CaskaydiaCove Nerd Font"; color: {dim}; width: 120; lines: 1 }}']
+          f'{c}        text nd_hclock {{ at: nb_x + 24, nb_y + 34; anchor: left center; size: 30; weight: 700; family: {SANS}; color: {ink} }}',
+          f'{c}        text nd_hdate {{ at: nb_x + 26, nb_y + 60; anchor: left center; size: 10; family: {MONO}; color: {dim}; width: 220; lines: 1 }}',
+          f'{c}        text nd_hwg {{ at: nb_x + nb_w - 24, nb_y + 28; anchor: right center; align: right; size: 18; family: "CaskaydiaCove Nerd Font"; color: {acc} }}',
+          f'{c}        text nd_hwt {{ at: nb_x + nb_w - 50, nb_y + 28; anchor: right center; align: right; size: 11; family: {SANS}; color: {ink}; width: 200; lines: 1 }}',
+          f'{c}        text nd_hbat {{ at: nb_x + nb_w - 24, nb_y + 58; anchor: right center; align: right; size: 11; family: "CaskaydiaCove Nerd Font"; color: {dim}; width: 120; lines: 1 }}']
     sw = '(nb_w - 52) / 4'
     for i in range(4):
         x = f'nb_x + 14 + {i} * ({sw} + 8)'
-        L += [f'{c}        group {{ show: nd_hstrip', f'{c}        box {{ from: {x}, nb_y + 136; size: {sw}, 34; corner: 10; color: fl.well }}',
-              f'{c}        text nd_hs{i + 1} {{ at: {x} + 10, nb_y + 150; anchor: left center; size: 9; weight: 700; family: {MONO}; color: if(nd_hh{i + 1}, fl.ember, {ink}); width: {sw} - 16; lines: 1 }}',
-              f'{c}        box {{ from: {x} + 10, nb_y + 161; size: {sw} - 20, 2; corner: 1; color: fl.trace_dim }}',
-              f'{c}        box {{ from: {x} + 10, nb_y + 161; size: ({sw} - 20) * nd_hf{i + 1}, 2; corner: 1; color: if(nd_hh{i + 1}, fl.ember, {acc}) }} }}']
+        L += [f'{c}        group {{ show: nd_hstrip', f'{c}        box {{ from: {x}, nb_y + 150; size: {sw}, 34; corner: 10; color: fl.well }}',
+              f'{c}        text nd_hs{i + 1} {{ at: {x} + 10, nb_y + 164; anchor: left center; size: 9; weight: 700; family: {MONO}; color: if(nd_hh{i + 1}, fl.ember, {ink}); width: {sw} - 16; lines: 1 }}',
+              f'{c}        box {{ from: {x} + 10, nb_y + 175; size: {sw} - 20, 2; corner: 1; color: fl.trace_dim }}',
+              f'{c}        box {{ from: {x} + 10, nb_y + 175; size: ({sw} - 20) * nd_hf{i + 1}, 2; corner: 1; color: if(nd_hh{i + 1}, fl.ember, {acc}) }} }}']
     L += [f'{c}    }}']
     # ── home ───────────────────────────────────────────────────────────────────────────────────────────
-    media_y = 'nb_y + 182'
+    media_y = 'nb_y + 196'
     L += [f'{c}    group {{ show: nd_pgp == 0',
           f'{c}        // the media card: a 64 px cover, the song, its transport, and the seek bar along its foot',
           f'{c}        box {{ from: nb_x + 14, {media_y}; size: nb_w - 28, 112; corner: 14; color: fl.well }}',
@@ -737,20 +755,20 @@ def panel_parts(c, acc, ink, dim, hull):
     L += [f'{c}    group {{ show: nd_pgp == 0']
     for code, lit, glyph, label, role, word in toggles:
         x = f'nb_x + 14 + {code - 1} * ({tw} + 8)'
-        L += [f'{c}        box {{ from: {x}, nb_y + 306; size: {tw}, 40; corner: 12; color: {acc}; opacity: if({lit}, 0.2, if(pt{code}.hover, 0.12, 0.05)) }}',
-              f'{c}        box {{ from: {x}, nb_y + 306; size: {tw}, 40; corner: 12; stroke: 1; color: if({lit}, {acc}, fl.trace_dim); opacity: if({lit}, 0.9, 0.7) }}',
-              f'{c}        text {glyph} {{ at: {x} + {tw} / 2, nb_y + 321; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if({lit}, {acc}, {ink}) }}',
-              f'{c}        text {label} {{ at: {x} + {tw} / 2, nb_y + 338; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if({lit}, {acc}, {dim}); width: {tw} - 8; lines: 1 }}',
-              f'{c}        zone box pt{code} {{ from: {x}, nb_y + 306; size: {tw}, 40; corner: 12; cursor: pointer; role: toggle; label: "{role}"; checked: {lit}; show: nd_kind == 13 and nd_pgp == 0 }}',
+        L += [f'{c}        box {{ from: {x}, nb_y + 320; size: {tw}, 40; corner: 12; color: {acc}; opacity: if({lit}, 0.2, if(pt{code}.hover, 0.12, 0.05)) }}',
+              f'{c}        box {{ from: {x}, nb_y + 320; size: {tw}, 40; corner: 12; stroke: 1; color: if({lit}, {acc}, fl.trace_dim); opacity: if({lit}, 0.9, 0.7) }}',
+              f'{c}        text {glyph} {{ at: {x} + {tw} / 2, nb_y + 335; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if({lit}, {acc}, {ink}) }}',
+              f'{c}        text {label} {{ at: {x} + {tw} / 2, nb_y + 352; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if({lit}, {acc}, {dim}); width: {tw} - 8; lines: 1 }}',
+              f'{c}        zone box pt{code} {{ from: {x}, nb_y + 320; size: {tw}, 40; corner: 12; cursor: pointer; role: toggle; label: "{role}"; checked: {lit}; show: nd_kind == 13 and nd_pgp == 0 }}',
               f'{c}        on press pt{code} {{ emit nd_ptog({code}) }}']
         if code == 1 or code == 4:
-            L += [f'{c}        zone box pt{code}n {{ from: {x} + 6, nb_y + 326; size: {tw} - 12, 18; corner: 8; cursor: pointer; role: button; label: "{word} settings"; show: nd_kind == 13 and nd_pgp == 0 }}',
+            L += [f'{c}        zone box pt{code}n {{ from: {x} + 6, nb_y + 340; size: {tw} - 12, 18; corner: 8; cursor: pointer; role: button; label: "{word} settings"; show: nd_kind == 13 and nd_pgp == 0 }}',
                   f'{c}        on press pt{code}n {{ emit nd_pg({7 if code == 1 else 8}) }}']
     L += [f'{c}    }}']
     # sliders: volume, then the screen's light (hidden without a backlight)
     for m, glyph, label, val, y, zone in (
-            (0, "󰕾", "Volume", 'nd_vol', 'nb_y + 358', 'pvz'),
-            (1, "󰃟", "Brightness", 'nd_bri', 'nb_y + 402', 'plz')):
+            (0, "󰕾", "Volume", 'nd_vol', 'nb_y + 372', 'pvz'),
+            (1, "󰃟", "Brightness", 'nd_bri', 'nb_y + 416', 'plz')):
         show = ' and nd_hasbri' if m == 1 else ''
         if m == 0:
             L += [f'{c}    group {{ show: nd_pgp == 0',
@@ -771,14 +789,14 @@ def panel_parts(c, acc, ink, dim, hull):
               f'{c}    }}']
     # notifications
     L += [f'{c}    group {{ show: nd_pgp == 0',
-          f'{c}        text "Notifications ({{nd_ncn, 0}})" {{ at: nb_x + 26, nb_y + 464; anchor: left center; size: 11; weight: 700; family: {SANS}; color: {ink} }}',
-          f'{c}        box {{ from: nb_x + nb_w - 98, nb_y + 454; size: 72, 22; corner: 11; stroke: 1; color: if(pclz.hover, {acc}, fl.trace_dim); show: nd_ncn > 0 }}',
-          f'{c}        text "Clear all" {{ at: nb_x + nb_w - 62, nb_y + 465; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(pclz.hover, {acc}, {dim}); width: 66; lines: 1; show: nd_ncn > 0 }}',
-          f'{c}        zone box pclz {{ from: nb_x + nb_w - 98, nb_y + 454; size: 72, 22; corner: 11; cursor: pointer; role: button; label: "Clear all notifications"; show: nd_kind == 13 and nd_pgp == 0 and nd_ncn > 0 }}',
+          f'{c}        text "Notifications ({{nd_ncn, 0}})" {{ at: nb_x + 26, nb_y + 478; anchor: left center; size: 11; weight: 700; family: {SANS}; color: {ink} }}',
+          f'{c}        box {{ from: nb_x + nb_w - 98, nb_y + 468; size: 72, 22; corner: 11; stroke: 1; color: if(pclz.hover, {acc}, fl.trace_dim); show: nd_ncn > 0 }}',
+          f'{c}        text "Clear all" {{ at: nb_x + nb_w - 62, nb_y + 479; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(pclz.hover, {acc}, {dim}); width: 66; lines: 1; show: nd_ncn > 0 }}',
+          f'{c}        zone box pclz {{ from: nb_x + nb_w - 98, nb_y + 468; size: 72, 22; corner: 11; cursor: pointer; role: button; label: "Clear all notifications"; show: nd_kind == 13 and nd_pgp == 0 and nd_ncn > 0 }}',
           f'{c}        on press pclz {{ emit nd_pclear }}',
-          f'{c}        text "No notifications" {{ at: nb_x + 26, nb_y + 488; anchor: left center; size: 11; family: {SANS}; color: {dim}; show: pn.count == 0 }}',
+          f'{c}        text "No notifications" {{ at: nb_x + 26, nb_y + 502; anchor: left center; size: 11; family: {SANS}; color: {dim}; show: pn.count == 0 }}',
           f'{c}        for n in pn {{',
-          f'{c}            let ny = nb_y + 479 + n.index * 58',
+          f'{c}            let ny = nb_y + 493 + n.index * 58',
           f'{c}            box {{ from: nb_x + 14, ny; size: nb_w - 28, 52; corner: 12; color: fl.well; opacity: if(pnz.hover, 0.95, 0.7) }}',
           f'{c}            text n.icon {{ at: nb_x + 34, ny + 26; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: {acc} }}',
           f'{c}            text n.app {{ at: nb_x + 50, ny + 17; anchor: left center; size: 12; weight: 700; family: {SANS}; color: {ink}; width: nb_w - 190; lines: 1 }}',
