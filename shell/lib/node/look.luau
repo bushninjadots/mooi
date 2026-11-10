@@ -21,11 +21,6 @@ local function choice(key, label, desc, values, names) return { key = key, label
 M.SCHEMA = {
     Rest = {
         choice("rest", "At rest", "A seed, a longer pill that holds a few things, or a notch hanging from the top edge", { "seed", "long", "notch" }, { "Seed", "Long pill", "Notch" }),
-        choice("m_clock", "Clock", "The time, in the long pill", { "off", "on" }, { "Off", "On" }),
-        choice("m_window", "Window", "What has the focus, in the long pill", { "off", "on" }, { "Off", "On" }),
-        choice("m_spaces", "Workspaces", "A dot for each, the one you are on lit", { "off", "on" }, { "Off", "On" }),
-        choice("m_battery", "Battery", "How full it is (only where there is one)", { "off", "on" }, { "Off", "On" }),
-        choice("m_music", "Music", "What plays, while something does", { "off", "on" }, { "Off", "On" }),
         choice("clock_style", "Clock seed", "How the clock seed tells the time (Shape → Seed → Clock)", { "pixel", "digital", "analog", "words", "binary", "dots" }, { "Pixel", "Digits", "Hands", "Words", "Binary", "Dots" }),
     },
     Shape = {
@@ -75,7 +70,7 @@ local BASE = {
     texture = "solid", fill = 95, outline = 10, glow = 70, accent = "phos", glow_colour = "phos",
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
     viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse",
-    sys_style = "spokes", rest = "seed", clock_style = "pixel", ws_style = "bead", reactions = "subtle", m_clock = "on", m_window = "on", m_spaces = "on", m_battery = "off", m_music = "on", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
+    sys_style = "spokes", rest = "seed", clock_style = "pixel", ws_style = "bead", reactions = "subtle", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
 }
 local PRESET = {
     organic = {},
@@ -123,6 +118,13 @@ function M.normalise(t, fallback)
         end
     end
     out.custom = t.custom == true
+    -- the long pill's and the notch's modules, in order (D257); a look from before them keeps what it had on
+    local src = t.modules
+    if type(src) ~= "table" and (t.m_clock or t.m_window or t.m_spaces or t.m_battery or t.m_music) then
+        src = {}
+        for _, k in ipairs({ "spaces", "window", "music", "battery", "clock" }) do if t["m_" .. k] == "on" then src[#src + 1] = k end end
+    end
+    out.modules = M.modules(src)
     -- the saved looks: up to M.SLOTS, each a look of its own (or nothing)
     out.slots = {}
     if type(t.slots) == "table" then
@@ -131,7 +133,7 @@ function M.normalise(t, fallback)
             if type(s) == "table" then
                 local c = {}
                 for k, _ in pairs(base) do if k ~= "preset" then c[k] = s[k] end end
-                c.preset, c.custom = s.preset, s.custom
+                c.preset, c.custom, c.modules = s.preset, s.custom, s.modules
                 out.slots[i] = M.normalise(c)
                 out.slots[i].slots = nil
             else out.slots[i] = false end
@@ -218,6 +220,51 @@ function M.rows(t, tab)
         out[i] = r
     end
     return out
+end
+
+-- the modules a long pill or a notch can hold (D257), and the word each wears in the studio
+M.MODULES = { "spaces", "window", "music", "clock", "date", "battery", "cpu", "ram", "volume", "weather", "notices" }
+M.MODULE_NAMES = { spaces = "Workspaces", window = "Window", music = "Music", clock = "Clock", date = "Date",
+                   battery = "Battery", cpu = "CPU", ram = "Memory", volume = "Volume", weather = "Weather",
+                   notices = "Notices" }
+M.MODULES_MAX = 6
+M.MODULES_DEFAULT = { "spaces", "window", "music", "clock" }
+-- a list made sane: known names, each once, at most MODULES_MAX, in the order given; nothing given → the default
+function M.modules(list)
+    if type(list) ~= "table" then
+        local out = {}
+        for i, k in ipairs(M.MODULES_DEFAULT) do out[i] = k end
+        return out
+    end
+    local out, seen = {}, {}
+    for _, k in ipairs(list) do
+        if M.MODULE_NAMES[k] and not seen[k] and #out < M.MODULES_MAX then seen[k] = true; out[#out + 1] = k end
+    end
+    return out
+end
+-- the editor's moves: add one at the end, take one out, move one a place left (-1) or right (1)
+function M.module_add(t, k)
+    local l = M.modules(t.modules)
+    for _, x in ipairs(l) do if x == k then return false end end
+    if not M.MODULE_NAMES[k] or #l >= M.MODULES_MAX then return false end
+    l[#l + 1] = k
+    t.modules, t.custom = l, true
+    return true
+end
+function M.module_remove(t, i)
+    local l = M.modules(t.modules)
+    if not l[i] then return false end
+    table.remove(l, i)
+    t.modules, t.custom = l, true
+    return true
+end
+function M.module_move(t, i, d)
+    local l = M.modules(t.modules)
+    local j = i + d
+    if not l[i] or not l[j] then return false end
+    l[i], l[j] = l[j], l[i]
+    t.modules, t.custom = l, true
+    return true
 end
 
 -- the springs the scene declares: speed × bounce, nine of them (index 0..8); and three for growth

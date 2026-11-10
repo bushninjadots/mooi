@@ -97,6 +97,13 @@ function M.pieces(geo, look, looks)
         end
         -- (D227: no Pill capsule, moons or extra pills — in Pill mode the node stands at the top centre)
     end
+    -- D257: the node as a notch is a piece of this body too — hung from above the screen, melted into the band
+    -- with the same fillet as the bar's notches, so the frame and the notch are one thing (node-geo.json)
+    local nd = type(geo.node) == "table" and geo.node or nil
+    if nd then
+        local x, w, h = tonumber(nd.x) or 0, tonumber(nd.w) or 0, tonumber(nd.h) or 0
+        if w > 0 and h > 0 then add(math.max(0, x), -40, math.min(look.screen_w, x + w) - math.max(0, x), h + 40, tonumber(nd.r) or 12, M.BLEND, true) end
+    end
     return out
 end
 

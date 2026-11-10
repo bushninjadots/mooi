@@ -432,6 +432,8 @@ scene Node {
     model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text }
     model ps max 4 { name: text; desc: text; on: bool; sw: number; sh: number; sr: number; seed: number }
     model sl max 3 { label: text; full: bool }
+    model md max 6 { label: text }     // D257: the modules in the pill, in order
+    model ma max 11 { label: text }    // …and those that can be added
     prop nd_ld = 0 ~nd.aux
     follow nd_ld = if(nd_kind == 6 and not nd_studio, 1, 0)
     // universe
@@ -627,6 +629,7 @@ scene Node {
     fact nd_lmws = 0
     fact nd_lmwa = 0   // the workspaces: how many, which one is on (0-based)
     fact nd_lmbat = 0
+    fact nd_nfr = false   // D257: the frame draws the notch (it is a piece of the frame's body)
     // privacy (D232): the microphone or the camera started or stopped
     text nd_pvt = ""
     text nd_pvd = ""
@@ -654,6 +657,7 @@ scene Node {
     event nd_ps ->        // the studio: a preset
     event nd_slot ->      // the studio: a saved look, slot * 10 + 0 save · 1 wear · 9 clear
     event nd_stc ->       // the studio: 1 shuffle · 2 done · 3 reset
+    event nd_md ->        // the module editor: in the pill, i * 10 + 1 left · 2 right · 9 out; 100 + i adds the i-th of the rest
     event nd_tm ->        // the time tools: 0-3 a mode · 10 go · 11 reset · 12 lap or skip · 2x timer · 3x alarm
     event nd_dn ->        // the finish card answered
     event nd_sh ->        // a side pill pressed: its code
@@ -798,7 +802,8 @@ scene Node {
             box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: nd_acc; opacity: 0.4; show: nd_long == 1 and nd_ol > 0.05 }
             // the notch (D251): hanging from the screen's top edge, square where it meets it, rounded below, and curved
             // out into the edge either side, as a notch is
-            group { show: nd_long == 2; glow: 10, 0.3 * nd_gw, nd_glc
+            // (D257: drawn here only without the frame; with it, the frame draws the notch as a piece of its own body)
+            group { show: nd_long == 2 and not nd_nfr; glow: 10, 0.3 * nd_gw, nd_glc
                 box { from: nb_x, nb_y - 16; size: nb_w, nb_h + 16; corner: min(14, nb_h / 2 + 4) * max(0.3, nd_rnd); color: fl.ground }
                 path { at: nb_x, nb_y; move -10, 0; curve 0, 10 via 0, 0; line 0, 0; close; color: fl.ground }
                 path { at: nb_x + nb_w, nb_y; move 10, 0; curve 0, 10 via 0, 0; line 0, 0; close; color: fl.ground } }
@@ -807,7 +812,7 @@ scene Node {
                 clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
                 for m in lm {
                     let mx = nb_x + m.x
-                    text m.label { at: mx, nb_y + nb_h / 2; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(m.kind == 1, nd_acc, fl.engrave); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 }
+                    text m.label { at: mx, nb_y + nb_h / 2; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(m.kind == 1, nd_acc, fl.engrave); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }
                     text m.label { at: mx + if(m.kind == 5, 10, 0), nb_y + nb_h / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - if(m.kind == 5, 10, 0); lines: 1; show: m.kind == 2 or m.kind == 5 }
                     repeat wsd in 0..10 { ellipse { at: mx + 4 + wsd * 12, nb_y + nb_h / 2; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, nd_acc, fl.muted); show: m.kind == 3 and wsd < nd_lmws } }
                     box { from: mx + m.w - 3, nb_y + nb_h / 2 - 5; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, nd_acc); show: m.kind == 4 }
@@ -1598,6 +1603,39 @@ scene Node {
                         zone box slx { from: st_x + 916 - 94, sy0 + 8; size: 94, 28; corner: 28 / 2; cursor: pointer; role: button; label: "Clear"; show: nd_studio }
                         on press slx { emit nd_slot(s.index * 10 + 9) }
                     }
+                }
+            }
+            // the modules (D257): what the long pill or the notch holds, in its order — ‹ › to move one, × to take it
+            // out; a press on one of the rest adds it at the end
+            group { show: nd_tab == 1
+                text "IN THE PILL" { at: st_x + 24, st_dy + 196; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                text "EMPTY: ADD ONE BELOW" { at: st_x + 130, st_dy + 196; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: md.count == 0 }
+                for m in md {
+                    let mx = st_x + 24 + m.index * 148
+                    box { from: mx, st_dy + 210; size: 140, 36; corner: 18 * max(0.3, nd_rnd); color: fl.hull_raised }
+                    box { from: mx, st_dy + 210; size: 140, 36; corner: 18 * max(0.3, nd_rnd); stroke: 1; color: nd_acc; opacity: 0.8 }
+                    text m.label { at: mx + 70, st_dy + 228; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: 84; lines: 1 }
+                    text "‹" { at: mx + 14, st_dy + 228; anchor: center; size: 15; family: "Exo 2"; color: if(mdl.hover, nd_acc, fl.muted); show: m.index > 0 }
+                    text "›" { at: mx + 126, st_dy + 228; anchor: center; size: 15; family: "Exo 2"; color: if(mdr.hover, nd_acc, fl.muted); show: m.index < md.count - 1 }
+                    ellipse { at: mx + 136, st_dy + 212; radius: 8; color: if(mdx.hover, fl.ember, fl.hull) }
+                    text "×" { at: mx + 136, st_dy + 212; anchor: center; size: 11; family: "Exo 2"; color: if(mdx.hover, fl.ground, fl.engrave) }
+                    zone box mdl { from: mx, st_dy + 210; size: 28, 36; cursor: pointer; role: button; label: "Move {m.label} left"; show: nd_studio and nd_tab == 1 and m.index > 0 }
+                    on press mdl { emit nd_md(m.index * 10 + 1) }
+                    zone box mdr { from: mx + 112, st_dy + 210; size: 28, 36; cursor: pointer; role: button; label: "Move {m.label} right"; show: nd_studio and nd_tab == 1 and m.index < md.count - 1 }
+                    on press mdr { emit nd_md(m.index * 10 + 2) }
+                    zone box mdx { from: mx + 127, st_dy + 203; size: 18, 18; corner: 9; cursor: pointer; role: button; label: "Take {m.label} out"; show: nd_studio and nd_tab == 1 }
+                    on press mdx { emit nd_md(m.index * 10 + 9) }
+                }
+                text "ADD" { at: st_x + 24, st_dy + 268; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                text "FULL: SIX AT MOST" { at: st_x + 70, st_dy + 268; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: md.count >= 6 }
+                for a in ma {
+                    let ax = st_x + 24 + (a.index - floor(a.index / 8) * 8) * 112
+                    let ay = st_dy + 282 + floor(a.index / 8) * 40
+                    box { from: ax, ay; size: 104, 32; corner: 16 * max(0.3, nd_rnd); color: nd_acc; opacity: if(maz.hover, 0.18, 0) }
+                    box { from: ax, ay; size: 104, 32; corner: 16 * max(0.3, nd_rnd); stroke: 1; color: if(maz.hover, nd_acc, fl.trace_lit) }
+                    text "+ {a.label}" { at: ax + 52, ay + 16; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: 98; lines: 1 }
+                    zone box maz { from: ax, ay; size: 104, 32; corner: 16; cursor: pointer; role: button; label: "Add {a.label}"; show: nd_studio and nd_tab == 1 and md.count < 6 }
+                    on press maz { emit nd_md(100 + a.index) }
                 }
             }
             // the other pages: a row each — a slider to drag, or a choice of chips; the arrows move the lit row

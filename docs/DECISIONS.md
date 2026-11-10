@@ -6962,3 +6962,20 @@ command for it in mooi yet.
 the web for it (DuckDuckGo, through `xdg-open`). The words are sent only when that row is chosen.
 
 **Verified.** Unit tests green; `bin/mooi check` green. Not yet seen on screen.
+
+## D257 · 2026-11-10 · The notch is the frame's; a module editor
+
+**The notch, one with the frame.** The owner: the notch should attach to the frame's border as if it were all
+one. Now it is the frame that draws it. The node writes where its notch is (`node-geo.json`: x, width,
+height), and `lib/chassis` makes it one more piece of the frame's body, hung from above the screen and melted
+into the band with the bar's fillet, in the frame's own material and outline. The node draws only what sits
+inside. With the frame off, the node draws a notch of its own as before.
+
+**A module editor, not switches.** The owner rightly found five on/off rows a poor way to fill a pill. The
+studio's Rest page now holds, under At rest and Clock seed, the modules **in the pill** as chips in their
+order: ‹ › moves one, × takes it out. Below them, **Add** offers every module not yet in it: a press adds it at
+the end, and the stage shows the long pill as it now is. There are eleven: workspaces, window, music, clock,
+date, battery, CPU, memory, volume, weather and notices, six at most in the pill. Looks from before keep the
+modules they had switched on. Saved looks keep their modules too.
+
+**Verified.** Unit 827 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.

@@ -445,6 +445,13 @@ render = function()
     -- take it, so a timer that ends while you type steals no keys
     fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "branch" and N.branch == 2)
     set_body(b, changed and LK.overshoot(look) or 0)
+    -- D257: a notch at rest is a piece of the frame's body (the frame draws it, joined to its band); the node
+    -- only says where it is, and draws what is inside
+    local framed = N.settings.frame == nil or N.settings.frame.on ~= false
+    local notch = look.rest == "notch" and kind == "rest" and not studio and framed
+    fact.nd_nfr = notch
+    local geo = notch and json.encode({ x = math.floor(b.x + 0.5), w = math.floor(b.w + 0.5), h = math.floor(b.h + 0.5), r = math.floor(math.min(14, b.h / 2 + 4)) }) or "{}"
+    if geo ~= N.node_geo then N.node_geo = geo; pcall(sys.call, "files.write", "node-geo.json", geo) end
     if kind == "media" then show_media(b) end
     if kind == "notice" then
         N.notice_list = (studio and #N.notices == 0) and SAMPLE_NOTICES or nil
@@ -1072,36 +1079,53 @@ end)
 
 -- ── the long pill (D248): the modules the look chose, laid out left to right, the pill as wide as they are ──
 N.awin = ""
-local MOD_ORDER = { { key = "m_spaces", kind = 3 }, { key = "m_window", kind = 2 }, { key = "m_music", kind = 5 },
-                    { key = "m_battery", kind = 4 }, { key = "m_clock", kind = 1 } }
+local MOD_KIND = { clock = 1, window = 2, spaces = 3, battery = 4, music = 5, date = 6, cpu = 7, ram = 8,
+                   volume = 9, weather = 10, notices = 11 }
+-- the weather the Nexus last read (nexus-weather.json), for the weather module
+local function weather_word()
+    local w = read("nexus-weather.json", "json")
+    local cur = type(w) == "table" and type(w.answer) == "table" and w.answer.current or nil
+    local t = type(cur) == "table" and tonumber(cur.temperature_2m)
+    return t and (math.floor(t + 0.5) .. "°") or ""
+end
 N.long_layout = function()
-    local L, x, rows = N.look, 14, {}
-    for _, m in ipairs(MOD_ORDER) do
-        if L[m.key] == "on" then
-            local w, label = 0, ""
-            if m.kind == 1 then w, label = 40, os.date("%H:%M")
-            elseif m.kind == 2 then label = N.awin ~= "" and N.awin or "Desktop"; w = math.min(190, #label * 6 + 6)
-            elseif m.kind == 3 then
-                local n = math.min(10, #N.ws.list)
-                w = n * 12
-                fact.nd_lmws = n
-                local a = 0
-                for i, ws in ipairs(N.ws.list) do if ws.id == N.ws.active then a = i - 1 end end
-                fact.nd_lmwa = a
-            elseif m.kind == 4 then
-                if N.bat then w, label = 44, math.floor(N.bat + 0.5) .. "%"; fact.nd_lmbat = N.bat / 100 end
-            elseif m.kind == 5 then
-                if N.media.playing and N.media.title ~= "" then label = N.media.title; w = math.min(160, #label * 6 + 16) end
-            end
-            if w > 0 then rows[#rows + 1] = { kind = m.kind, x = x, w = w, label = label }; x = x + w + 12 end
+    local x, rows = 14, {}
+    local f = type(N.feed.resources) == "table" and N.feed.resources or {}
+    local function pct(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v * 100 or v end
+    for _, name in ipairs(LK.modules(N.look.modules)) do
+        local kind = MOD_KIND[name]
+        local w, label = 0, ""
+        if kind == 1 then w, label = 40, os.date("%H:%M")
+        elseif kind == 2 then label = N.awin ~= "" and N.awin or "Desktop"; w = math.min(190, #label * 6 + 6)
+        elseif kind == 3 then
+            local n = math.min(10, #N.ws.list)
+            w = n * 12
+            fact.nd_lmws = n
+            local a = 0
+            for i, ws in ipairs(N.ws.list) do if ws.id == N.ws.active then a = i - 1 end end
+            fact.nd_lmwa = a
+        elseif kind == 4 then
+            if N.bat then w, label = 44, math.floor(N.bat + 0.5) .. "%"; fact.nd_lmbat = N.bat / 100 end
+        elseif kind == 5 then
+            if N.media.playing and N.media.title ~= "" then label = N.media.title; w = math.min(160, #label * 6 + 16) end
+        elseif kind == 6 then label = string.upper(os.date("%a %d")); w = 50
+        elseif kind == 7 then local c = pct(f.cpu); if c then label = "CPU " .. math.floor(c + 0.5) .. "%"; w = 62 end
+        elseif kind == 8 then local m = pct(f.mem); if m then label = "RAM " .. math.floor(m + 0.5) .. "%"; w = 62 end
+        elseif kind == 9 then if N.vol then label = "VOL " .. math.floor(N.vol * 100 + 0.5) .. "%"; w = 62 end
+        elseif kind == 10 then label = weather_word(); if label ~= "" then w = 34 end
+        elseif kind == 11 then if #N.notices > 0 then label = #N.notices .. " NEW"; w = 46 end
         end
+        if w > 0 then rows[#rows + 1] = { kind = kind, x = x, w = w, label = label }; x = x + w + 12 end
     end
     model.lm = rows
     return math.max(40, x + 2)
 end
 -- what has the focus, while the long pill shows it (asked every second and a half, only then)
 every(1500, function()
-    if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") or N.look.m_window ~= "on" or N.studio.open then return end
+    if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") or N.studio.open then return end
+    local want = false
+    for _, k in ipairs(LK.modules(N.look.modules)) do if k == "window" then want = true end end
+    if not want then return end
     run("hyprctl", { "-j", "activewindow" }, function(out)
         local ok, w = pcall(json.decode, out or "")
         local t = (ok and type(w) == "table" and type(w.class) == "string" and w.class ~= "") and tostring(w.title ~= "" and w.title or w.class) or ""
@@ -1111,7 +1135,7 @@ end)
 -- the minute turning, while the long pill holds the clock
 local long_min
 every(5000, function()
-    if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") or N.look.m_clock ~= "on" then return end
+    if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") then return end
     local m = os.date("%H:%M")
     if m ~= long_min then long_min = m; render() end
 end)
@@ -1490,6 +1514,16 @@ local function studio_rows()
     else
         model.sk = LK.rows(N.look, tab)
     end
+    -- D257: the module editor, on the Rest page
+    if tab == "Rest" then
+        local inl, has, rest = {}, {}, {}
+        for i, k in ipairs(LK.modules(N.look.modules)) do inl[i] = { label = string.upper(LK.MODULE_NAMES[k]) }; has[k] = true end
+        N.mod_rest = {}
+        for _, k in ipairs(LK.MODULES) do
+            if not has[k] then rest[#rest + 1] = { label = string.upper(LK.MODULE_NAMES[k]) }; N.mod_rest[#N.mod_rest + 1] = k end
+        end
+        model.md, model.ma = inl, rest
+    end
     st.row = math.max(0, math.min(st.row, math.max(0, #(LK.SCHEMA[tab] or {}) - 1)))
     fact.nd_kr = st.tab == 0 and -1 or st.row
     fact.nd_pv = st.pv
@@ -1550,6 +1584,23 @@ on("nd_so", function(v)
     if not key then return end
     N.studio.row = row
     if LK.set_choice(N.look, key, j + 1) then look_changed() end
+end)
+on("nd_md", function(v)
+    v = math.floor(tonumber(v) or -1)
+    local done
+    if v >= 100 then done = LK.module_add(N.look, (N.mod_rest or {})[v - 99])
+    elseif v >= 0 then
+        local i, op = v // 10 + 1, v % 10
+        if op == 1 then done = LK.module_move(N.look, i, -1)
+        elseif op == 2 then done = LK.module_move(N.look, i, 1)
+        elseif op == 9 then done = LK.module_remove(N.look, i) end
+    end
+    if done then
+        -- the stage shows the pill as it is now
+        if N.look.rest == "seed" then N.look.rest = "long" end
+        N.studio.pv = 0
+        look_changed()
+    end
 end)
 on("nd_pv", function(v)
     N.studio.pv = math.max(0, math.min(#PREVIEW, math.floor(tonumber(v) or 0)))

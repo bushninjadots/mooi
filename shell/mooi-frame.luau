@@ -140,6 +140,7 @@ end
 
 -- ── Where the bar's pieces are (bar-geo.json, written by shell/bar.luau), laid out by lib/chassis ──
 local geo_doc = nil
+local node_geo = nil   -- D257: the node's notch (node-geo.json), read below
 local announced = false
 local function place()
     local look = chassis.look(settings)
@@ -151,7 +152,9 @@ local function place()
             if type(isl) == "table" and type(isl.id) == "string" then looks[i] = modlook.of(settings, isl.id, roles_now) end
         end
     end
-    local pieces = chassis.pieces(geo_doc, look, looks)
+    local doc = type(geo_doc) == "table" and geo_doc or {}
+    doc.node = node_geo
+    local pieces = chassis.pieces(doc, look, looks)
     for i = 0, chassis.SLOTS - 1 do
         local p = pieces[i + 1]
         if p then
@@ -197,6 +200,14 @@ end
 paint(); apply(); geo(); listen()
 pcall(sys.watch, "files:palette.json", function() paint(); place() end)
 pcall(sys.watch, "files:" .. GEO, geo)
+-- D257: the node's notch, a piece of the body like the bar's (written by shell/mooi-node.luau)
+local function node_now()
+    local ok, d = pcall(sys.ask, "files.read", "node-geo.json", "json")
+    node_geo = ok and type(d) == "table" and d or nil
+    place()
+end
+pcall(sys.watch, "files:node-geo.json", node_now)
+node_now()
 pcall(sys.watch, "files:" .. FILE, function()
     settings = config.parse(read(FILE), json.decode)
     paint(); apply(); place(); listen()

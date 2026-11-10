@@ -6349,7 +6349,8 @@ do
         for _ = 1, 200 do
             local t = LK.shuffle(rand, { false, false, false })
             local n = LK.normalise(t)
-            for k, v in pairs(n) do if k ~= "slots" then eq(t[k], v, k) end end
+            for k, v in pairs(n) do if k ~= "slots" and k ~= "modules" then eq(t[k], v, k) end end
+            eq(table.concat(t.modules, ","), table.concat(n.modules, ","), "modules")
             assert(t.glow <= 85 and t.fill >= 60 and t.seed_h >= 3, "never too faint or too loud")
             eq(t.custom, true)
         end
@@ -6717,13 +6718,14 @@ do
     test("at rest a seed, or a long pill with the modules chosen; old looks keep the seed", function()
         eq(LK.preset("organic").rest, "seed"); eq(LK.facts(LK.normalise({ rest = "long" })).nd_long, 1)
         eq(LK.normalise({ rest = "huge" }).rest, "seed")
-        eq(#LK.SCHEMA.Rest, 7, "D255: the clock seed's style too")
+        eq(#LK.SCHEMA.Rest, 2, "D257: at rest and the clock seed's style; the modules have an editor of their own")
         for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab) end
     end)
     test("the pill is as wide as what it holds; the window is asked for only while shown", function()
         local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()
         assert(l:find("shape.seed_w, shape.seed_h = w, 26", 1, true))
-        assert(l:find('if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") or N.look.m_window ~= "on" or N.studio.open then return end', 1, true))
+        assert(l:find('if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") or N.studio.open then return end', 1, true))
+        assert(l:find('for _, k in ipairs(LK.modules(N.look.modules)) do if k == "window" then want = true end end', 1, true), "only while the window is one of its modules")
     end)
 end
 
@@ -6837,6 +6839,38 @@ do
     test("the web: the search line's last row, its words sent only when it is chosen, encoded", function()
         assert(l:find('apps[#apps + 1] = { kind = "web"', 1, true))
         assert(l:find('run("xdg-open", { "https://duckduckgo.com/?q=" .. enc }', 1, true))
+    end)
+end
+
+section("the notch is the frame's; the modules have an editor (D257)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("the node's notch is a piece of the frame's body, joined to its band; without the frame, the node draws it", function()
+        local C = require("lib/chassis")
+        local look = C.look(require("lib/config").defaults())
+        local p = C.pieces({ node = { x = 800, w = 320, h = 28, r = 12 } }, look, {})
+        local found
+        for _, x in ipairs(p) do if x.w == 320 then found = x end end
+        assert(found, "the notch among the pieces"); eq(found.y, -40); eq(found.h, 68); eq(found.j, true, "joined to the band")
+        eq(#C.pieces({ node = { x = 800, w = 0, h = 28 } }, look, {}), #C.pieces({}, look, {}), "nothing when there is no notch")
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('pcall(sys.call, "files.write", "node-geo.json", geo)', 1, true))
+        assert(read("shell/mooi-frame.luau"):find('pcall(sys.watch, "files:node-geo.json", node_now)', 1, true))
+        assert(read("shell/mooi-node.plm"):find("show: nd_long == 2 and not nd_nfr", 1, true))
+    end)
+    test("modules: added, moved, taken out; each once, six at most; a look from before keeps what it had on", function()
+        local LK = require("lib/node/look")
+        local t = LK.normalise({ m_clock = "on", m_spaces = "on", m_window = "off" })
+        eq(table.concat(t.modules, ","), "spaces,clock")
+        assert(LK.module_add(t, "cpu")); assert(not LK.module_add(t, "cpu"), "once")
+        assert(LK.module_move(t, 3, -1)); eq(table.concat(t.modules, ","), "spaces,cpu,clock")
+        assert(not LK.module_move(t, 1, -1), "nothing left of the first")
+        assert(LK.module_remove(t, 1)); eq(table.concat(t.modules, ","), "cpu,clock")
+        for _, k in ipairs({ "date", "ram", "volume", "weather" }) do LK.module_add(t, k) end
+        assert(not LK.module_add(t, "notices"), "six at most"); eq(#t.modules, 6)
+        eq(table.concat(LK.normalise({ modules = { "clock", "bogus", "clock", "date" } }).modules, ","), "clock,date")
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("on press mdx { emit nd_md(m.index * 10 + 9) }", 1, true) and p:find("on press maz { emit nd_md(100 + a.index) }", 1, true))
     end)
 end
 
