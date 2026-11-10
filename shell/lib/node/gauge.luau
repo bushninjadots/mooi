@@ -38,6 +38,28 @@ function M.lock(which, on)
     return { icon = l[1], label = l[2] .. (on and " ON" or " OFF"), level = on and 1 or 0 }
 end
 
+-- where the sound plays now (D277): the output switched to
+function M.output(name)
+    return { icon = "󰓃", label = "PLAYS ON " .. string.upper(M.short_output(name)), level = 1 }
+end
+-- an output's name as people say it: the device's own words without the controller's ("Ryzen HD Audio Controller
+-- Speaker" → "Speaker"), at most 22 letters
+function M.short_output(name)
+    name = tostring(name or ""):gsub("%s+", " ")
+    local tail = name:match("[Cc]ontroller%s+(.+)$") or name:match("[Aa]udio%s+(.+)$")
+    name = tail or name
+    if #name > 22 then name = name:sub(1, 21) .. "…" end
+    return name
+end
+-- the output after the one in use, round the list (`outputs` as the audio service gives them: { id, name, default })
+function M.next_output(outputs)
+    if type(outputs) ~= "table" or #outputs == 0 then return nil end
+    for i, o in ipairs(outputs) do
+        if type(o) == "table" and o.default then return outputs[i % #outputs + 1] end
+    end
+    return outputs[1]
+end
+
 -- game mode (D266) turned on or off
 function M.game(on)
     return { icon = "󰊴", label = on and "GAME MODE ON" or "GAME MODE OFF", level = on and 1 or 0, warm = on }

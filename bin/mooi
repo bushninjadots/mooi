@@ -38,6 +38,7 @@
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi game-mode [on|off|status]  game mode: no animations, blur, shadows or gaps; VRR on; put back exactly after
+#   mooi self-check | self-update   is there a newer mooi (origin); bring it in (fast-forward only) and refresh
 #   mooi arcade            mooi's games: Snake, La Grieta, Mazmorra (Super+G)
 #   mooi drawer [dashboard|notices|close]  the side drawers out of the frame (Super+D, Super+N)
 #   mooi capture text      choose a region of the screen: its words (tesseract) go to the clipboard
@@ -1618,6 +1619,24 @@ case "$cmd" in
     capture) # D269: `mooi capture text` — a region's words to the clipboard
         case "${1:-}" in text) capture_text; exit $? ;; *) echo "usage: mooi capture text" >&2; exit 2 ;; esac ;;
     pkg) pkg_cmd "$@"; exit $? ;;
+    self-check) # D278 (k4's): is there something newer of mooi? Asks origin (a fetch, nothing changed in the tree)
+        # and writes self.json beside the settings: how far behind, and whether the tree has changes of its own
+        out="$(dirname "$settings")/self.json"
+        timeout 15 git -C "$root" fetch --quiet origin 2>/dev/null || :
+        behind=$(git -C "$root" rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
+        dirty=false; [ -n "$(git -C "$root" status --porcelain --untracked-files=no 2>/dev/null)" ] && dirty=true
+        head=$(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo "")
+        printf '{"at":%s,"behind":%s,"dirty":%s,"head":"%s"}\n' "$(date +%s)" "${behind:-0}" "$dirty" "$head" > "$out.tmp" && mv "$out.tmp" "$out"
+        cat "$out" ;;
+    self-update) # D278: bring mooi up to date in the terminal this runs in: a fast-forward only, then a refresh. A
+        # tree with changes of its own is left alone and says so: nobody loses work to an update
+        if [ -n "$(git -C "$root" status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+            echo "mooi has changes of its own in $root; commit or put them aside first."
+        elif git -C "$root" pull --ff-only; then
+            "$self" refresh || :
+            "$self" self-check >/dev/null 2>&1 || :
+        fi
+        printf '\n%s ' "Done. Return closes this window."; read -r _ || : ;;
     arcade) # D276: mooi's arcade (Super+G) — started on the first press, kept for the next
         if ! "$pleamar" --say mooi-arcade "emit ac_cmd 1" >/dev/null 2>&1; then
             settings_link
@@ -1633,13 +1652,18 @@ case "$cmd" in
     drawer) # D275: the side drawers — dashboard (left, Super+D) | notices (right, Super+N) | close
         case "${1:-dashboard}" in dashboard|left) n=1 ;; notices|right) n=2 ;; close) n=0 ;; *) echo "usage: mooi drawer [dashboard|notices|close]" >&2; exit 2 ;; esac
         "$pleamar" --say mooi-drawers "emit dr_cmd $n" >/dev/null 2>&1 || : ;;
-    drawer-update) # D275: the Dashboard's Update — `mooi pkg update` in the first terminal that is installed
+    drawer-update) # D275: the Dashboard's Update — `mooi pkg update` (or, D278, `mooi self-update` when asked for
+        # with `mooi drawer-update self`) in the first terminal that is installed
+        what="pkg update"; [ "${1:-}" = self ] && what="self-update"
         for t in ${TERMINAL:-} kitty foot alacritty wezterm ghostty konsole xterm; do
             command -v "$t" >/dev/null 2>&1 || continue
             case "$t" in
-                foot) setsid -f "$t" "$self" pkg update ;;
-                wezterm) setsid -f "$t" start -- "$self" pkg update ;;
-                *) setsid -f "$t" -e "$self" pkg update ;;
+                # shellcheck disable=SC2086 # two words on purpose
+                foot) setsid -f "$t" "$self" $what ;;
+                # shellcheck disable=SC2086
+                wezterm) setsid -f "$t" start -- "$self" $what ;;
+                # shellcheck disable=SC2086
+                *) setsid -f "$t" -e "$self" $what ;;
             esac
             exit 0
         done

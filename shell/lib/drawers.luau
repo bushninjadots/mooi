@@ -72,6 +72,17 @@ function M.updates(doc)
     return n .. (n == 1 and " update waiting" or " updates waiting"), n
 end
 
+-- D278: mooi's own state (self.json from `mooi self-check`): the line, whether an update can be brought in, and
+-- whether it is time to ask again (every six hours)
+function M.self_line(doc, now)
+    if type(doc) ~= "table" then return "mooi · not checked yet", false, true end
+    local behind, head = tonumber(doc.behind) or 0, tostring(doc.head or "")
+    local stale = (tonumber(now) or 0) - (tonumber(doc.at) or 0) > 6 * 3600
+    if behind > 0 and doc.dirty == true then return "mooi · " .. behind .. " new · your changes first", false, stale end
+    if behind > 0 then return "mooi · " .. behind .. (behind == 1 and " new commit" or " new commits"), true, stale end
+    return "mooi " .. head .. " · up to date", false, stale
+end
+
 -- a quote for the day: one of a short list of old public-domain lines, the same all day
 M.QUOTES = {
     { "Well begun is half done.", "Aristotle" },

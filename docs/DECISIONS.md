@@ -7336,3 +7336,26 @@ what happens. A pause and a quick resume cannot start a second clock: each start
 **Verified.** Unit 868 / 0; the scene compiles; the gate now parses `shell/lib/arcade/` and `shell/lib/node/`
 too; live after `mooi refresh`: Super+G's command started the arcade, Snake ran and turned on a key, and the arcade
 closed again.
+
+## D277 · 2026-11-10 · Where the sound plays, from Home (k4's per-device sound)
+
+k4's control centre chooses the output per device. On the panel's Home the output in use is named above the volume
+slider (`󰓃 Speaker`, the device's own words without its controller's); a press switches to the next output round
+the list (`sys.call("audio.default", id)`, from Pleamar's own audio service), and the gauge says where the sound
+plays now (`PLAYS ON HEADPHONES`). Pure parts in `lib/node/gauge`. This machine has one output, so the switch was
+not pressed live: a single output is already the one in use and nothing happens.
+
+## D278 · 2026-11-10 · mooi says when there is a newer mooi (k4's)
+
+k4 tells you, in its settings, how many commits behind you are and runs its updater for you. mooi's is on the
+Dashboard drawer, under the system's updates: `mooi f08abbf · up to date`, or `mooi · 3 new commits` with
+**Update mooi**. `mooi self-check` fetches from origin (nothing in the tree changes) and writes `self.json`: how far
+behind, the commit, and whether the tree has changes of its own; the drawer asks again when the answer is over six
+hours old. `mooi self-update` runs in a terminal: a fast-forward only, then `mooi refresh`; with changes of your own
+in the tree it does nothing and says so, so nobody loses work to an update.
+
+Not built from wave 2: **the battery charge limit** — this laptop's battery has no `charge_control_end_threshold`,
+so there is nothing here to build it against or test it on.
+
+**Verified (both).** Unit 870 / 0; both scenes compile; live: `mooi self-check` answered behind 0 with this tree's
+changes noticed, and the Dashboard showed the line after `mooi refresh`.

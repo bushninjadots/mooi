@@ -96,11 +96,15 @@ local function github()
         end
     end)
 end
-local function dashboard()
+local dashboard
+dashboard = function()
     local upd, n = DR.updates(read("updates.json", "json"))
     text.dr_upd, fact.dr_updn = upd, n
     text.dr_quote, text.dr_qby = DR.quote(os.time())
     text.dr_qby = "— " .. text.dr_qby
+    local line, can, stale = DR.self_line(read("self.json", "json"), os.time())
+    text.dr_self, fact.dr_selfn = line, can
+    if stale and not D.self_asked then D.self_asked = true; run("mooi", { "self-check" }, function() D.self_asked = nil; if D.open == 1 then dashboard() end end) end
     github()
 end
 
@@ -133,6 +137,7 @@ on("dr_ghweb", function()
     if D.login and D.login:match("^[%w%-]+$") then run("xdg-open", { "https://github.com/" .. D.login }, function() end) end
     open(0)
 end)
+on("dr_self_go", function() open(0); run("mooi", { "drawer-update", "self" }, function() end) end)
 on("dr_upd_go", function()
     open(0)
     run("mooi", { "drawer-update" }, function() end)

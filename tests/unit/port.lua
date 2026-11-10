@@ -311,3 +311,35 @@ do
         eq(require("lib/node/commands").match("games")[1].args[1], "arcade")
     end)
 end
+
+section("where the sound plays, from Home (D277; k4's per-device sound)")
+do
+    local GA = require("lib/node/gauge")
+    test("outputs: the next round the list, their names short, the gauge says which", function()
+        local outs = { { id = 1, name = "Ryzen HD Audio Controller Speaker", default = true }, { id = 2, name = "Headphones" } }
+        eq(GA.next_output(outs).id, 2); outs[1].default, outs[2].default = false, true; eq(GA.next_output(outs).id, 1)
+        eq(GA.next_output({}), nil); eq(GA.next_output({ { id = 9 } }).id, 9)
+        eq(GA.short_output("Ryzen HD Audio Controller Speaker"), "Speaker")
+        eq(GA.short_output("A Very Long Output Name That Goes On"), "A Very Long Output Na…")
+        eq(GA.output("Headphones").label, "PLAYS ON HEADPHONES")
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('pcall(sys.call, "audio.default", o.id)', 1, true))
+        assert(read("shell/mooi-node.plm"):find("zone box pouz {", 1, true))
+    end)
+end
+
+section("mooi says when there is a newer mooi (D278, k4's)")
+do
+    local DR = require("lib/drawers")
+    test("behind, dirty, up to date, and asking again after six hours", function()
+        local now = 10 ^ 9
+        local l, can, stale = DR.self_line({ at = now - 60, behind = 3, dirty = false, head = "abc" }, now)
+        eq(l, "mooi · 3 new commits"); eq(can, true); eq(stale, false)
+        eq(select(2, DR.self_line({ at = now, behind = 2, dirty = true }, now)), false, "your changes are never pulled over")
+        eq(DR.self_line({ at = now, behind = 0, head = "f08abbf" }, now), "mooi f08abbf · up to date")
+        eq(select(3, DR.self_line({ at = now - 7 * 3600, behind = 0 }, now)), true)
+        eq(select(3, DR.self_line(nil, now)), true)
+        local b = read("bin/mooi")
+        assert(b:find("git -C \"$root\" pull --ff-only", 1, true) and b:find("rev-list --count HEAD..@{u}", 1, true))
+    end)
+end

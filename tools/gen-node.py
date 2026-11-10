@@ -196,7 +196,8 @@ def scene():
           '    text nd_hclock = ""', '    text nd_hdate = ""', '    text nd_hwg = ""', '    text nd_hwt = ""', '    text nd_hbat = ""',
           '    text nd_hs1 = ""', '    text nd_hs2 = ""', '    text nd_hs3 = ""', '    text nd_hs4 = ""',
           '    fact nd_hf1 = 0', '    fact nd_hh1 = false', '    fact nd_hf2 = 0', '    fact nd_hh2 = false', '    fact nd_hf3 = 0', '    fact nd_hh3 = false', '    fact nd_hf4 = 0', '    fact nd_hh4 = false',
-          '    fact nd_game = false', '    fact nd_hstrip = true', '    text nd_kq = ""', '    fact nd_kmore = 0',
+          '    fact nd_game = false', '    fact nd_hstrip = true',
+          '    text nd_hout = ""      // D277: where the sound plays; a press goes to the next output', '    text nd_kq = ""', '    fact nd_kmore = 0',
           '    // BMO as the seed (D253): the bar\'s own face (ui/bmoface.plm), his expression from bmo-shared.json',
           '    fact pb_ew = 8', '    fact pb_eh = 14', '    fact pb_lid = 0', '    fact pb_brow = 0', '    fact pb_bron = 0',
           '    fact pb_sql = 0', '    fact pb_sqr = 0', '    fact pb_mc = 0.7', '    fact pb_mo = 0.2', '    fact pb_mw = 24', '    fact pb_bl = 0',
@@ -230,6 +231,7 @@ def scene():
           '    event nd_un ->        // a workspace in the universe',
           '    event nd_key ->       // a key while the node holds the keyboard',
           '    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time · 6 keys',
+          '    event nd_out ->       // D277: the output name on Home pressed: the next output plays',
           '    event nd_osd ->       // from `mooi osd` (D265): a lock key or game mode for the gauge (lib/node/gauge decode)',
           '    event nd_tab ->       // the studio: a page',
           '    event nd_sk ->        // the studio: a slider, row * 2000 + where along it (0 … 1000: a stride of 2000, never ambiguous)',
@@ -725,6 +727,12 @@ def panel_parts(c, acc, ink, dim, hull):
             (0, "󰕾", "Volume", 'nd_vol', 'nb_y + 300', 'pvz'),
             (1, "󰃟", "Brightness", 'nd_bri', 'nb_y + 344', 'plz')):
         show = ' and nd_hasbri' if m == 1 else ''
+        if m == 0:
+            L += [f'{c}    group {{ show: nd_pgp == 0',
+                  f'{c}        text "󰓃 {{nd_hout}}" {{ at: nb_x + 104, {y} + 4; anchor: left center; size: 9; family: "CaskaydiaCove Nerd Font"; color: if(pouz.hover, {acc}, {dim}); width: 220; lines: 1 }}',
+                  f'{c}        zone box pouz {{ from: nb_x + 96, {y} - 6; size: 230, 18; cursor: pointer; role: button; label: "Where the sound plays: {{nd_hout}} (press for the next)"; show: nd_kind == 13 and nd_pgp == 0 }}',
+                  f'{c}        on press pouz {{ emit nd_out }}',
+                  f'{c}    }}']
         L += [f'{c}    group {{ show: nd_pgp == 0{show}',
               f'{c}        text "{glyph}" {{ at: nb_x + 26, {y} + 20; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: {ink} }}',
               f'{c}        text "{label}" {{ at: nb_x + 42, {y} + 20; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {dim} }}',

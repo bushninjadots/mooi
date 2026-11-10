@@ -266,6 +266,8 @@ scene Drawers {
     // ── the Dashboard: the system and a quote ──
     text dr_upd = "Not checked yet"
     fact dr_updn = 0
+    text dr_self = ""
+    fact dr_selfn = false   // D278: mooi itself has something newer to bring in
     text dr_quote = ""
     text dr_qby = ""
     fact dr_quote_on = true
@@ -278,6 +280,7 @@ scene Drawers {
     event dr_key ->       // a key while a drawer holds the keyboard
     event dr_upd_go ->    // Update: the system's packages in a terminal
     event dr_ghweb ->     // the profile in the browser
+    event dr_self_go ->   // D278: bring mooi up to date, in a terminal
     event dr_nact ->      // a notice pressed: row * 10 (its default), row * 10 + 9 (dismiss)
     event dr_nclear ->
     event dr_nsilent ->
@@ -370,7 +373,13 @@ scene Drawers {
                         text dr_tmeta { at: (-380 * (1 - dr_lk)) + 344, dr_top + 344; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 110; lines: 1 }
                         text dr_tdesc { at: (-380 * (1 - dr_lk)) + 36, dr_top + 370; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted; width: 308; lines: 1 } }
                 }
-                box { from: (-380 * (1 - dr_lk)) + 24, dr_top + 404; size: 332, 56; corner: 12; color: fl.well }
+                box { from: (-380 * (1 - dr_lk)) + 24, dr_top + 404; size: 332, 80; corner: 12; color: fl.well }
+                text dr_self { at: (-380 * (1 - dr_lk)) + 68, dr_top + 466; anchor: left center; size: 9; family: "Share Tech Mono"; color: if(dr_selfn, fl.flare, fl.muted); width: 200; lines: 1 }
+                group { show: dr_selfn
+                    box { from: (-380 * (1 - dr_lk)) + 260, dr_top + 455; size: 84, 22; corner: 11; stroke: 1; color: if(drz_sf.hover, fl.phos, fl.trace_lit) }
+                    text "Update mooi" { at: (-380 * (1 - dr_lk)) + 302, dr_top + 466; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(drz_sf.hover, fl.phos, fl.engrave) } }
+                zone box drz_sf { from: (-380 * (1 - dr_lk)) + 260, dr_top + 455; size: 84, 22; corner: 11; cursor: pointer; role: button; label: "Bring mooi up to date"; show: dr_open == 1 and dr_selfn }
+                on press drz_sf { emit dr_self_go }
                 text "󰚰" { at: (-380 * (1 - dr_lk)) + 46, dr_top + 432; anchor: center; size: 18; family: "CaskaydiaCove Nerd Font"; color: if(dr_updn > 0, fl.flare, fl.phos) }
                 text "SYSTEM UPDATES" { at: (-380 * (1 - dr_lk)) + 68, dr_top + 422; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted }
                 text dr_upd { at: (-380 * (1 - dr_lk)) + 68, dr_top + 441; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; width: 180; lines: 1 }
@@ -380,9 +389,9 @@ scene Drawers {
                 zone box drz_up { from: (-380 * (1 - dr_lk)) + 260, dr_top + 418; size: 84, 28; corner: 14; cursor: pointer; role: button; label: "Update the system"; show: dr_open == 1 and dr_updn > 0 }
                 on press drz_up { emit dr_upd_go }
                 group { show: dr_quote_on
-                    text "󰉾" { at: (-380 * (1 - dr_lk)) + 34, dr_top + 490; anchor: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: fl.phos; opacity: 0.6 }
-                    text dr_quote { at: (-380 * (1 - dr_lk)) + 52, dr_top + 506; anchor: left center; size: 12; family: "Exo 2"; color: fl.engrave; width: 300; lines: 3; line_height: 1.35 }
-                    text dr_qby { at: (-380 * (1 - dr_lk)) + 350, dr_top + 560; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 220; lines: 1 } }
+                    text "󰉾" { at: (-380 * (1 - dr_lk)) + 34, dr_top + 514; anchor: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: fl.phos; opacity: 0.6 }
+                    text dr_quote { at: (-380 * (1 - dr_lk)) + 52, dr_top + 530; anchor: left center; size: 12; family: "Exo 2"; color: fl.engrave; width: 300; lines: 3; line_height: 1.35 }
+                    text dr_qby { at: (-380 * (1 - dr_lk)) + 350, dr_top + 584; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 220; lines: 1 } }
                 // the foot: refresh, and the key that opens it
                 text "󰑐" { at: (-380 * (1 - dr_lk)) + 36, dr_top + 614; anchor: center; size: 13; family: "CaskaydiaCove Nerd Font"; color: if(drz_rf.hover, fl.phos, fl.muted) }
                 zone box drz_rf { from: (-380 * (1 - dr_lk)) + 22, dr_top + 600; size: 28, 28; cursor: pointer; role: button; label: "Ask again"; show: dr_open == 1 }

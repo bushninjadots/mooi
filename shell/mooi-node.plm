@@ -621,6 +621,7 @@ scene Node {
     fact nd_hh4 = false
     fact nd_game = false
     fact nd_hstrip = true
+    text nd_hout = ""      // D277: where the sound plays; a press goes to the next output
     text nd_kq = ""
     fact nd_kmore = 0
     // BMO as the seed (D253): the bar's own face (ui/bmoface.plm), his expression from bmo-shared.json
@@ -697,6 +698,7 @@ scene Node {
     event nd_un ->        // a workspace in the universe
     event nd_key ->       // a key while the node holds the keyboard
     event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time · 6 keys
+    event nd_out ->       // D277: the output name on Home pressed: the next output plays
     event nd_osd ->       // from `mooi osd` (D265): a lock key or game mode for the gauge (lib/node/gauge decode)
     event nd_tab ->       // the studio: a page
     event nd_sk ->        // the studio: a slider, row * 2000 + where along it (0 … 1000: a stride of 2000, never ambiguous)
@@ -1168,6 +1170,11 @@ scene Node {
                 text if(nd_game, "Game on", "Game") { at: nb_x + 14 + 4 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 280; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_game, nd_acc, fl.muted); width: (nb_w - 60) / 5 - 8; lines: 1 }
                 zone box pt5 { from: nb_x + 14 + 4 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; cursor: pointer; role: toggle; label: "Game mode"; checked: nd_game; show: nd_kind == 13 and nd_pgp == 0 }
                 on press pt5 { emit nd_ptog(5) }
+            }
+            group { show: nd_pgp == 0
+                text "󰓃 {nd_hout}" { at: nb_x + 104, nb_y + 300 + 4; anchor: left center; size: 9; family: "CaskaydiaCove Nerd Font"; color: if(pouz.hover, nd_acc, fl.muted); width: 220; lines: 1 }
+                zone box pouz { from: nb_x + 96, nb_y + 300 - 6; size: 230, 18; cursor: pointer; role: button; label: "Where the sound plays: {nd_hout} (press for the next)"; show: nd_kind == 13 and nd_pgp == 0 }
+                on press pouz { emit nd_out }
             }
             group { show: nd_pgp == 0
                 text "󰕾" { at: nb_x + 26, nb_y + 300 + 20; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: fl.engrave }

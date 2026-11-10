@@ -79,6 +79,7 @@ def scene():
           '    fact dr_github = true   // the GitHub part shows (Settings)',
           '    // ── the Dashboard: the system and a quote ──',
           '    text dr_upd = "Not checked yet"', '    fact dr_updn = 0',
+          '    text dr_self = ""', '    fact dr_selfn = false   // D278: mooi itself has something newer to bring in',
           '    text dr_quote = ""', '    text dr_qby = ""', '    fact dr_quote_on = true',
           '    // ── the notices ──',
           '    model nt max 5 { app: text; title: text; body: text; ago: text; act: text }',
@@ -88,6 +89,7 @@ def scene():
           '    event dr_key ->       // a key while a drawer holds the keyboard',
           '    event dr_upd_go ->    // Update: the system\'s packages in a terminal',
           '    event dr_ghweb ->     // the profile in the browser',
+          '    event dr_self_go ->   // D278: bring mooi up to date, in a terminal',
           '    event dr_nact ->      // a notice pressed: row * 10 (its default), row * 10 + 9 (dismiss)',
           '    event dr_nclear ->', '    event dr_nsilent ->', '    event dr_refresh ->']
     L += surface()
@@ -186,7 +188,13 @@ def left(c, ink, dim, acc, fill, edge):
           f'{c}                text dr_tdesc {{ at: {x(36)}, {y(370)}; anchor: left center; size: 10; family: {SANS}; color: {dim}; width: {W - 72}; lines: 1 }} }}',
           f'{c}        }}']
     # updates
-    L += [f'{c}        box {{ from: {x(24)}, {y(404)}; size: {W - 48}, 56; corner: 12; color: fl.well }}',
+    L += [f'{c}        box {{ from: {x(24)}, {y(404)}; size: {W - 48}, 80; corner: 12; color: fl.well }}',
+          f'{c}        text dr_self {{ at: {x(68)}, {y(466)}; anchor: left center; size: 9; family: {MONO}; color: if(dr_selfn, fl.flare, {dim}); width: 200; lines: 1 }}',
+          f'{c}        group {{ show: dr_selfn',
+          f'{c}            box {{ from: {x(W - 120)}, {y(455)}; size: 84, 22; corner: 11; stroke: 1; color: if(drz_sf.hover, {acc}, fl.trace_lit) }}',
+          f'{c}            text "Update mooi" {{ at: {x(W - 78)}, {y(466)}; anchor: center; align: center; size: 8; weight: 700; family: {MONO}; color: if(drz_sf.hover, {acc}, {ink}) }} }}',
+          f'{c}        zone box drz_sf {{ from: {x(W - 120)}, {y(455)}; size: 84, 22; corner: 11; cursor: pointer; role: button; label: "Bring mooi up to date"; show: dr_open == 1 and dr_selfn }}',
+          f'{c}        on press drz_sf {{ emit dr_self_go }}',
           f'{c}        text "󰚰" {{ at: {x(46)}, {y(432)}; anchor: center; size: 18; family: {NERD}; color: if(dr_updn > 0, fl.flare, {acc}) }}',
           f'{c}        text "SYSTEM UPDATES" {{ at: {x(68)}, {y(422)}; anchor: left center; size: 8; weight: 700; family: {MONO}; color: {dim} }}',
           f'{c}        text dr_upd {{ at: {x(68)}, {y(441)}; anchor: left center; size: 12; weight: 700; family: {SANS}; color: {ink}; width: 180; lines: 1 }}',
@@ -197,9 +205,9 @@ def left(c, ink, dim, acc, fill, edge):
           f'{c}        on press drz_up {{ emit dr_upd_go }}']
     # quote
     L += [f'{c}        group {{ show: dr_quote_on',
-          f'{c}            text "󰉾" {{ at: {x(34)}, {y(490)}; anchor: center; size: 16; family: {NERD}; color: {acc}; opacity: 0.6 }}',
-          f'{c}            text dr_quote {{ at: {x(52)}, {y(506)}; anchor: left center; size: 12; family: {SANS}; color: {ink}; width: {W - 80}; lines: 3; line_height: 1.35 }}',
-          f'{c}            text dr_qby {{ at: {x(W - 30)}, {y(560)}; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 220; lines: 1 }} }}',
+          f'{c}            text "󰉾" {{ at: {x(34)}, {y(514)}; anchor: center; size: 16; family: {NERD}; color: {acc}; opacity: 0.6 }}',
+          f'{c}            text dr_quote {{ at: {x(52)}, {y(530)}; anchor: left center; size: 12; family: {SANS}; color: {ink}; width: {W - 80}; lines: 3; line_height: 1.35 }}',
+          f'{c}            text dr_qby {{ at: {x(W - 30)}, {y(584)}; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 220; lines: 1 }} }}',
           f'{c}        // the foot: refresh, and the key that opens it',
           f'{c}        text "󰑐" {{ at: {x(36)}, {y(h - 26)}; anchor: center; size: 13; family: {NERD}; color: if(drz_rf.hover, {acc}, {dim}) }}',
           f'{c}        zone box drz_rf {{ from: {x(22)}, {y(h - 40)}; size: 28, 28; cursor: pointer; role: button; label: "Ask again"; show: dr_open == 1 }}',

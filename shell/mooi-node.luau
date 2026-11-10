@@ -533,6 +533,9 @@ N.gauge_show = gauge
 pcall(sys.watch, "audio", function(a)
     if type(a) ~= "table" then return end
     local v, muted, mic = tonumber(a.volume), a.muted == true, a.input_muted == true
+    -- D277: the outputs, for Home's switch; the one in use named beside the volume
+    N.outputs = type(a.outputs) == "table" and a.outputs or {}
+    for _, o in ipairs(N.outputs) do if type(o) == "table" and o.default then text.nd_hout = GA.short_output(o.name) end end
     if N.seen_audio then
         if v and N.vol and math.abs(v - N.vol) > 0.004 then gauge(GA.volume(v, muted))
         elseif muted ~= N.muted then gauge(GA.volume(v or 0, muted)) end
@@ -1973,6 +1976,14 @@ end)
 
 -- ── `mooi osd …` (D265): what has no service of its own — a lock key's light, game mode — told to the gauge ──
 on("nd_osd", function(v) gauge(GA.decode(v)); render() end)
+-- D277: Home's output name pressed — the next output plays, and the gauge says which
+on("nd_out", function()
+    local o = GA.next_output(N.outputs)
+    if not o or o.default then return end
+    pcall(sys.call, "audio.default", o.id)
+    gauge(GA.output(o.name))
+    render()
+end)
 
 -- ── the panel's own input (D260): its pages, its four toggles, its notices and the way home ──
 on("nd_pg", function(v)
