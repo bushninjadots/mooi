@@ -16,13 +16,15 @@ local CF = require("lib/node/clockfont")
 local DV = require("lib/node/devices")
 local CMD = require("lib/node/commands")
 local HY = require("lib/hypr")
+local MK = require("lib/node/mediakit")
+local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
 
-local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10 }
+local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11 }
 -- what a press, Super or another opening lets go of (`done` is never among them: it waits to be answered)
-local HELD = { "system", "launcher", "universe", "time" }
+local HELD = { "system", "launcher", "universe", "time", "player" }
 local SAT_KIND = { music = 1, rec = 2, battery = 3, network = 4, music_rec = 5, notice = 6, mic = 7, timer = 8, cam = 9 }
 
 local function read(name, kind)
@@ -361,7 +363,7 @@ render = function()
         end
     end
     fact.nd_kind = KIND[kind] or 0
-    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or kind == "time" or kind == "done"
+    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or kind == "time" or kind == "done" or kind == "player"
     set_body(b, changed and LK.overshoot(look) or 0)
     if kind == "media" then show_media(b) end
     if kind == "notice" then
@@ -373,6 +375,7 @@ render = function()
     if kind == "launcher" then show_launcher(b) end
     if kind == "universe" then show_universe() end
     if kind == "time" then show_time() end
+    if kind == "player" then show_media(b); if N.player_show then N.player_show() end end
     if kind == "done" then show_done() end
     if kind == "volume" then
         local v = N.vol or (studio and 0.6) or 0
@@ -514,7 +517,9 @@ end
 on("nd_press", function()
     if N.studio.open then if N.studio_press then N.studio_press() end; return end
     local k = N.kind
-    if k == "launcher" or k == "universe" or k == "time" or k == "done" then return end
+    if k == "launcher" or k == "universe" or k == "time" or k == "done" or k == "player" then return end
+    -- the music capsule pressed: it grows into the player (D236)
+    if k == "media" then if N.open_player then N.open_player() end; return end
     if k == "rest" and fact.nd_cap then if N.open_time then N.open_time() end; return end
     if k == "system" then ST.release(N.st, "system")
     elseif N.media.playing and k ~= "media" and on_for("media") then ST.push(N.st, "media", now())
@@ -616,6 +621,13 @@ on("nd_key", function(v)
         if v == 27 or v == 13 or v == 32 then N.answer_done() end
         return
     end
+    if N.kind == "player" then
+        if v == 27 then ST.release(N.st, "player"); render()
+        elseif v == 32 then pcall(sys.call, "media.toggle")
+        elseif v == 37 then pcall(sys.call, "media.previous")
+        elseif v == 39 then pcall(sys.call, "media.next") end
+        return
+    end
     if N.kind == "time" then
         local m = LK.index_of(TK.MODES, N.time.mode) or 1
         if v == 27 then ST.release(N.st, "time"); render()
@@ -684,6 +696,129 @@ every(2000, function()
         end)
     end)
     end)
+end)
+
+-- ── the player (D236): while it is open, the player's state each second, the light and the microphone every two,
+-- the music's bands from the bar's feed twenty times a second (asked for every three) ──
+N.pl = nil
+local function player_show()
+    local m = N.pl
+    fact.nd_shuf = m and m.shuffle or false
+    fact.nd_loop = m and (m.loop == "Playlist" and 1 or m.loop == "Track" and 2 or 0) or 0
+    local len = m and m.length_ms or (N.media.length or 0) * 1000
+    local pos = m and m.position_ms or 0
+    if m and m.playing and N.pl_at then pos = math.min(len, pos + (wall() - N.pl_at)) end
+    text.nd_pos = MK.format_time(pos)
+    text.nd_len = MK.format_time(len)
+    fact.nd_prog = len > 0 and math.max(0, math.min(1, pos / len)) or 0
+    fact.nd_vol = N.vol or 0
+end
+N.player_show = player_show
+local function player_poll()
+    run("playerctl", { "metadata", "--format", MK.FORMAT }, function(out, code)
+        N.pl = code == 0 and MK.parse(out) or nil
+        N.pl_at = wall()
+        if N.kind == "player" then player_show() end
+    end)
+end
+local function devices_poll()
+    run("brightnessctl", { "-m" }, function(out)
+        local b = DV.brightness(out)
+        fact.nd_hasbri = b ~= nil
+        if b and not N.bri_drag then fact.nd_bri = b.frac end
+    end)
+    run("pactl", { "get-source-volume", "@DEFAULT_SOURCE@" }, function(out)
+        local v = DV.source_volume(out)
+        if v and not N.mic_drag then fact.nd_mic = math.min(1, v) end
+    end)
+    run("pactl", { "get-source-mute", "@DEFAULT_SOURCE@" }, function(out)
+        local m = DV.source_mute(out)
+        if m ~= nil then fact.nd_micm = m end
+    end)
+end
+local function open_player()
+    for _, k in ipairs(HELD) do ST.release(N.st, k) end
+    ST.hold(N.st, "player")
+    player_poll(); devices_poll()
+    run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end)
+    render()
+end
+N.open_player = open_player
+local pl_tick = 0
+every(1000, function()
+    if N.kind ~= "player" then return end
+    pl_tick = pl_tick + 1
+    player_poll()
+    if pl_tick % 2 == 0 then devices_poll() end
+    if pl_tick % 3 == 0 then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
+end)
+-- the bands: the bar's 32, the lower 16 mirrored round the middle; a fact written only when it moves enough to see
+local sp_last, viz_seq = {}, nil
+every(50, function()
+    if N.kind ~= "player" then return end
+    local ok, raw = pcall(sys.ask, "files.read", VF.FILE)
+    local t = ok and type(raw) == "string" and VF.decode(raw) or nil
+    if t and VF.newer(viz_seq, t.seq) then viz_seq = t.seq else t = nil end
+    if not t then return end
+    local bands = t.playing and VF.resample(t.bands, 16) or {}
+    local m = MK.mirrored(bands, 32)
+    for i = 1, 32 do
+        local v = m[i] or 0
+        if math.abs((sp_last[i] or -1) - v) > 0.01 then sp_last[i] = v; fact["nd_sp" .. (i - 1)] = v end
+    end
+end)
+on("nd_pl", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local player = N.pl and N.pl.player or ""
+    if v == 1 then
+        local argv = MK.cmd_shuffle(player, not (N.pl and N.pl.shuffle))
+        if N.pl then N.pl.shuffle = not N.pl.shuffle end   -- shown at once; the next poll says what it is
+        run(argv[1], { table.unpack(argv, 2) }, function() end)
+    elseif v == 5 then
+        local nxt = MK.next_loop(N.pl and N.pl.loop or "None")
+        if N.pl then N.pl.loop = nxt end
+        local argv = MK.cmd_loop(player, nxt)
+        run(argv[1], { table.unpack(argv, 2) }, function() end)
+    elseif v == 2 or v == 3 or v == 4 then
+        pcall(sys.call, ({ [2] = "media.previous", [3] = "media.toggle", [4] = "media.next" })[v])
+        if v == 3 and N.pl then N.pl.playing = not N.pl.playing; N.pl.position_ms = N.pl.position_ms + (wall() - (N.pl_at or wall())); N.pl_at = wall() end
+    elseif v == 6 then
+        fact.nd_micm = not fact.nd_micm
+        local argv = DV.toggle_source_mute()
+        run(argv[1], { table.unpack(argv, 2) }, function() end)
+    end
+    player_show()
+end)
+on("nd_seek", function(v)
+    local f = math.max(0, math.min(1000, tonumber(v) or 0)) / 1000
+    local len = N.pl and N.pl.length_ms or 0
+    local argv = MK.cmd_seek(N.pl and N.pl.player or "", f, len)
+    if not argv then return end
+    if N.pl then N.pl.position_ms, N.pl_at = math.floor(f * len), wall() end
+    player_show()
+    -- a drag says where many times a second: the player is told the last place, a moment after it rests
+    N.seek_gen = (N.seek_gen or 0) + 1
+    local g = N.seek_gen
+    after(120, function() if g == N.seek_gen then run(argv[1], { table.unpack(argv, 2) }, function() end) end end)
+end)
+on("nd_mt", function(v)
+    v = math.floor(tonumber(v) or 0)
+    -- meter * 2000 + its level 0 … 1000 (a stride of 2000, so a full meter is never the next one at zero)
+    local m, f = v // 2000, math.min(1000, v % 2000) / 1000
+    if m == 0 then
+        fact.nd_vol = f
+        pcall(sys.call, "audio.volume", f)
+    elseif m == 1 or m == 2 then
+        if m == 1 then fact.nd_bri = math.max(0.01, f); N.bri_drag = true else fact.nd_mic = f; N.mic_drag = true end
+        N.mt_gen = (N.mt_gen or 0) + 1
+        local g = N.mt_gen
+        after(80, function()
+            if g ~= N.mt_gen then return end
+            local argv = m == 1 and DV.set_brightness(f) or DV.set_source_volume(f)
+            run(argv[1], { table.unpack(argv, 2) }, function() end)
+            after(600, function() if g == N.mt_gen then N.bri_drag, N.mic_drag = false, false end end)
+        end)
+    end
 end)
 
 -- ── the time tools (D231) ──
@@ -848,11 +983,11 @@ on("nd_tab", function(v)
 end)
 on("nd_sk", function(v)
     v = math.floor(tonumber(v) or 0)
-    local row = v // 1000
+    local row = v // 2000   -- row * 2000 + 0 … 1000: a full slider is never the next row at zero
     local key = row_key(row)
     if not key then return end
     N.studio.row = row
-    if LK.set_frac(N.look, key, (v % 1000) / 1000) then look_changed() end
+    if LK.set_frac(N.look, key, math.min(1000, v % 2000) / 1000) then look_changed() end
 end)
 on("nd_so", function(v)
     v = math.floor(tonumber(v) or 0)

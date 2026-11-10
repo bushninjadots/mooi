@@ -8,7 +8,7 @@ import "theme/ferrolume.plm"
 
 scene Node {
     permissions {
-        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy"
+        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl"
         services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"
     }
     service audio.level as lv { level: number }
@@ -469,6 +469,47 @@ scene Node {
     text nd_dnd = ""
     prop nd_dph = 0
     spin nd_dph by if(nd_kind == 9, 260, 0)
+    // the player (D236): the media capsule pressed grows into it
+    fact nd_shuf = false
+    fact nd_loop = 0      // 0 none · 1 the playlist · 2 the track
+    text nd_pos = "0:00"
+    text nd_len = "0:00"
+    fact nd_bri = 0.5
+    fact nd_mic = 0.5
+    fact nd_micm = false
+    fact nd_hasbri = false
+    fact nd_sp0 = 0
+    fact nd_sp1 = 0
+    fact nd_sp2 = 0
+    fact nd_sp3 = 0
+    fact nd_sp4 = 0
+    fact nd_sp5 = 0
+    fact nd_sp6 = 0
+    fact nd_sp7 = 0
+    fact nd_sp8 = 0
+    fact nd_sp9 = 0
+    fact nd_sp10 = 0
+    fact nd_sp11 = 0
+    fact nd_sp12 = 0
+    fact nd_sp13 = 0
+    fact nd_sp14 = 0
+    fact nd_sp15 = 0
+    fact nd_sp16 = 0
+    fact nd_sp17 = 0
+    fact nd_sp18 = 0
+    fact nd_sp19 = 0
+    fact nd_sp20 = 0
+    fact nd_sp21 = 0
+    fact nd_sp22 = 0
+    fact nd_sp23 = 0
+    fact nd_sp24 = 0
+    fact nd_sp25 = 0
+    fact nd_sp26 = 0
+    fact nd_sp27 = 0
+    fact nd_sp28 = 0
+    fact nd_sp29 = 0
+    fact nd_sp30 = 0
+    fact nd_sp31 = 0
     // privacy (D232): the microphone or the camera started or stopped
     text nd_pvt = ""
     text nd_pvd = ""
@@ -489,7 +530,7 @@ scene Node {
     event nd_key ->       // a key while the node holds the keyboard
     event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time
     event nd_tab ->       // the studio: a page
-    event nd_sk ->        // the studio: a slider, row * 1000 + where along it (0 … 1000)
+    event nd_sk ->        // the studio: a slider, row * 2000 + where along it (0 … 1000: a stride of 2000, never ambiguous)
     event nd_so ->        // the studio: a choice, row * 10 + which
     event nd_pv ->        // the studio: what the node is shown as
     event nd_ps ->        // the studio: a preset
@@ -497,6 +538,9 @@ scene Node {
     event nd_stc ->       // the studio: 1 shuffle · 2 done · 3 reset
     event nd_tm ->        // the time tools: 0-3 a mode · 10 go · 11 reset · 12 lap or skip · 2x timer · 3x alarm
     event nd_dn ->        // the finish card answered
+    event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted
+    event nd_seek ->      // the player: where along the song (0 … 1000)
+    event nd_mt ->        // the player: a meter dragged, meter * 2000 + its level (0 … 1000) · 0 volume · 1 light · 2 mic
 
     surface node {
         size: full, full
@@ -828,6 +872,135 @@ scene Node {
             zone box dnz { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "{nd_dnt}: OK"; show: nd_kind == 9 }
             on press dnz { emit nd_dn }
         }
+        // the player: the cover, the song, where in it (drag to go there), its transport, the music mirrored round
+        // the middle along its floor, and three meters on the right — volume, the screen's light, the microphone
+        group { show: nd_kind == 11; opacity: nd_cf
+            clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
+            let pw = nb_w - 164 - 160
+            group { clip box { from: nb_x + 16, nb_y + 16; size: 132, 132; corner: if(nd_cov == 1, 66, max(3, 14 * nd_rnd)) }
+                box { from: nb_x + 16, nb_y + 16; size: 132, 132; color: fl.well }
+                image nd_cover { at: nb_x + 16, nb_y + 16; size: 132, 132; fit: cover; show: nd_arted } }
+            text nd_title { at: nb_x + 164, nb_y + 32; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: fl.engrave; width: pw; lines: 1 }
+            text nd_artist { at: nb_x + 164, nb_y + 54; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; width: pw; lines: 1 }
+            box { from: nb_x + 164, nb_y + 78; size: pw, 3; corner: 1.5; color: fl.trace_dim }
+            box { from: nb_x + 164, nb_y + 78; size: pw * nd_prog, 3; corner: 1.5; color: nd_acc }
+            ellipse { at: nb_x + 164 + pw * nd_prog, nb_y + 79.5; radius: if(pkz.hover, 7, 5); color: nd_acc }
+            text nd_pos { at: nb_x + 164, nb_y + 94; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            text nd_len { at: nb_x + 164 + pw, nb_y + 94; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
+            zone box pkz { from: nb_x + 158, nb_y + 68; size: pw + 12, 22; cursor: pointer; role: slider; label: "Where in the song"; value: "{nd_pos}"; show: nd_kind == 11 }
+            on press pkz { emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }
+            on drag pkz { emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }
+            box { from: nb_x + 164 + 0, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(false, 0.9, if(nd_shuf, 0.22, if(pbz1.hover, 0.12, 0))) }
+            text "⤮" { at: nb_x + 164 + 0 + 19, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(false, fl.ground, if(nd_shuf, nd_acc, fl.engrave)) }
+            zone box pbz1 { from: nb_x + 164 + 0, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Shuffle"; show: nd_kind == 11 }
+            on press pbz1 { emit nd_pl(1) }
+            box { from: nb_x + 164 + 46, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(false, 0.9, if(false, 0.22, if(pbz2.hover, 0.12, 0))) }
+            text "⏮" { at: nb_x + 164 + 46 + 19, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(false, fl.ground, if(false, nd_acc, fl.engrave)) }
+            zone box pbz2 { from: nb_x + 164 + 46, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Back"; show: nd_kind == 11 }
+            on press pbz2 { emit nd_pl(2) }
+            box { from: nb_x + 164 + 92, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(true, 0.9, if(false, 0.22, if(pbz3.hover, 0.12, 0))) }
+            text "⏯" { at: nb_x + 164 + 92 + 19, nb_y + 127; anchor: center; align: center; size: 17; family: "Exo 2"; color: if(true, fl.ground, if(false, nd_acc, fl.engrave)) }
+            zone box pbz3 { from: nb_x + 164 + 92, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 11 }
+            on press pbz3 { emit nd_pl(3) }
+            box { from: nb_x + 164 + 138, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(false, 0.9, if(false, 0.22, if(pbz4.hover, 0.12, 0))) }
+            text "⏭" { at: nb_x + 164 + 138 + 19, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(false, fl.ground, if(false, nd_acc, fl.engrave)) }
+            zone box pbz4 { from: nb_x + 164 + 138, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Next"; show: nd_kind == 11 }
+            on press pbz4 { emit nd_pl(4) }
+            box { from: nb_x + 164 + 184, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: nd_acc; opacity: if(false, 0.9, if(nd_loop > 0, 0.22, if(pbz5.hover, 0.12, 0))) }
+            text "⟲" { at: nb_x + 164 + 184 + 19, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(false, fl.ground, if(nd_loop > 0, nd_acc, fl.engrave)) }
+            zone box pbz5 { from: nb_x + 164 + 184, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "Repeat"; show: nd_kind == 11 }
+            on press pbz5 { emit nd_pl(5) }
+            text "1" { at: nb_x + 164 + 4 * 46 + 30, nb_y + 116; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_loop == 2 }
+            // the music, mirrored: the low bands meet in the middle
+            box { from: nb_x + 164 + 0 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp0 * 34; size: pw / 32 - 2, nd_sp0 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp0 }
+            box { from: nb_x + 164 + 1 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp1 * 34; size: pw / 32 - 2, nd_sp1 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp1 }
+            box { from: nb_x + 164 + 2 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp2 * 34; size: pw / 32 - 2, nd_sp2 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp2 }
+            box { from: nb_x + 164 + 3 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp3 * 34; size: pw / 32 - 2, nd_sp3 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp3 }
+            box { from: nb_x + 164 + 4 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp4 * 34; size: pw / 32 - 2, nd_sp4 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp4 }
+            box { from: nb_x + 164 + 5 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp5 * 34; size: pw / 32 - 2, nd_sp5 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp5 }
+            box { from: nb_x + 164 + 6 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp6 * 34; size: pw / 32 - 2, nd_sp6 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp6 }
+            box { from: nb_x + 164 + 7 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp7 * 34; size: pw / 32 - 2, nd_sp7 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp7 }
+            box { from: nb_x + 164 + 8 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp8 * 34; size: pw / 32 - 2, nd_sp8 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp8 }
+            box { from: nb_x + 164 + 9 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp9 * 34; size: pw / 32 - 2, nd_sp9 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp9 }
+            box { from: nb_x + 164 + 10 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp10 * 34; size: pw / 32 - 2, nd_sp10 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp10 }
+            box { from: nb_x + 164 + 11 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp11 * 34; size: pw / 32 - 2, nd_sp11 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp11 }
+            box { from: nb_x + 164 + 12 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp12 * 34; size: pw / 32 - 2, nd_sp12 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp12 }
+            box { from: nb_x + 164 + 13 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp13 * 34; size: pw / 32 - 2, nd_sp13 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp13 }
+            box { from: nb_x + 164 + 14 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp14 * 34; size: pw / 32 - 2, nd_sp14 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp14 }
+            box { from: nb_x + 164 + 15 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp15 * 34; size: pw / 32 - 2, nd_sp15 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp15 }
+            box { from: nb_x + 164 + 16 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp16 * 34; size: pw / 32 - 2, nd_sp16 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp16 }
+            box { from: nb_x + 164 + 17 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp17 * 34; size: pw / 32 - 2, nd_sp17 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp17 }
+            box { from: nb_x + 164 + 18 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp18 * 34; size: pw / 32 - 2, nd_sp18 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp18 }
+            box { from: nb_x + 164 + 19 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp19 * 34; size: pw / 32 - 2, nd_sp19 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp19 }
+            box { from: nb_x + 164 + 20 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp20 * 34; size: pw / 32 - 2, nd_sp20 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp20 }
+            box { from: nb_x + 164 + 21 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp21 * 34; size: pw / 32 - 2, nd_sp21 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp21 }
+            box { from: nb_x + 164 + 22 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp22 * 34; size: pw / 32 - 2, nd_sp22 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp22 }
+            box { from: nb_x + 164 + 23 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp23 * 34; size: pw / 32 - 2, nd_sp23 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp23 }
+            box { from: nb_x + 164 + 24 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp24 * 34; size: pw / 32 - 2, nd_sp24 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp24 }
+            box { from: nb_x + 164 + 25 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp25 * 34; size: pw / 32 - 2, nd_sp25 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp25 }
+            box { from: nb_x + 164 + 26 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp26 * 34; size: pw / 32 - 2, nd_sp26 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp26 }
+            box { from: nb_x + 164 + 27 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp27 * 34; size: pw / 32 - 2, nd_sp27 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp27 }
+            box { from: nb_x + 164 + 28 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp28 * 34; size: pw / 32 - 2, nd_sp28 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp28 }
+            box { from: nb_x + 164 + 29 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp29 * 34; size: pw / 32 - 2, nd_sp29 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp29 }
+            box { from: nb_x + 164 + 30 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp30 * 34; size: pw / 32 - 2, nd_sp30 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp30 }
+            box { from: nb_x + 164 + 31 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp31 * 34; size: pw / 32 - 2, nd_sp31 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp31 }
+            group { show: true
+                box { from: nb_x + nb_w - 136, nb_y + 154; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(0 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(0 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 142; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(1 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(1 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 130; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(2 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(2 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 118; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(3 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(3 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 106; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(4 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(4 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 94; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(5 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(5 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 82; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(6 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(6 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 70; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(7 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(7 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 58; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(8 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(8 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 46; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(9 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(9 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 34; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(10 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(10 < round(nd_vol * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 136, nb_y + 22; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(11 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(11 < round(nd_vol * 12), 0.95, 0.5) }
+                text "VOL" { at: nb_x + nb_w - 136 + 15, nb_y + 178; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(0 == 2 and nd_micm, fl.ember, fl.muted) }
+                zone box pmz0 { from: nb_x + nb_w - 136 - 4, nb_y + 18; size: 38, 148; cursor: ns_resize; role: slider; label: "Vol"; value: nd_vol; show: nd_kind == 11 }
+                on press pmz0 { emit nd_mt(0 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
+                on drag pmz0 { emit nd_mt(0 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
+            }
+            group { show: nd_hasbri
+                box { from: nb_x + nb_w - 92, nb_y + 154; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(0 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(0 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 142; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(1 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(1 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 130; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(2 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(2 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 118; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(3 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(3 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 106; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(4 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(4 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 94; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(5 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(5 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 82; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(6 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(6 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 70; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(7 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(7 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 58; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(8 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(8 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 46; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(9 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(9 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 34; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(10 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(10 < round(nd_bri * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 92, nb_y + 22; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(11 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(11 < round(nd_bri * 12), 0.95, 0.5) }
+                text "LIGHT" { at: nb_x + nb_w - 92 + 15, nb_y + 178; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(1 == 2 and nd_micm, fl.ember, fl.muted) }
+                zone box pmz1 { from: nb_x + nb_w - 92 - 4, nb_y + 18; size: 38, 148; cursor: ns_resize; role: slider; label: "Light"; value: nd_bri; show: nd_kind == 11 }
+                on press pmz1 { emit nd_mt(1 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
+                on drag pmz1 { emit nd_mt(1 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
+            }
+            group { show: true
+                box { from: nb_x + nb_w - 48, nb_y + 154; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(0 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(0 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 142; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(1 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(1 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 130; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(2 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(2 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 118; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(3 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(3 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 106; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(4 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(4 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 94; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(5 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(5 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 82; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(6 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(6 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 70; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(7 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(7 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 58; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(8 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(8 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 46; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(9 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(9 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 34; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(10 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(10 < round(nd_mic * 12), 0.95, 0.5) }
+                box { from: nb_x + nb_w - 48, nb_y + 22; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(11 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(11 < round(nd_mic * 12), 0.95, 0.5) }
+                text "MIC" { at: nb_x + nb_w - 48 + 15, nb_y + 178; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(2 == 2 and nd_micm, fl.ember, fl.muted) }
+                zone box pmz2 { from: nb_x + nb_w - 48 - 4, nb_y + 18; size: 38, 148; cursor: ns_resize; role: slider; label: "Mic"; value: nd_mic; show: nd_kind == 11 }
+                on press pmz2 { emit nd_mt(2 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
+                on drag pmz2 { emit nd_mt(2 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
+                zone box pmmz { from: nb_x + nb_w - 48 - 4, nb_y + 170; size: 38, 18; cursor: pointer; role: toggle; label: "Mute the microphone"; checked: nd_micm; show: nd_kind == 11 }
+                on press pmmz { emit nd_pl(6) }
+            }
+        }
         // privacy: the microphone or the camera, the moment it starts or stops, and who has it
         group { show: nd_kind == 10; opacity: nd_cf
             group { glow: 10, if(nd_pvon, 0.8, 0.2), fl.ember
@@ -1002,8 +1175,8 @@ scene Node {
                     on press sko5 { emit nd_so(r.index * 10 + 5) }
                 }
                 zone box skz { from: tx - 12, ry + 4; size: 404, 38; cursor: grab; role: slider; label: "{r.label}"; value: "{r.value}"; show: nd_studio and nd_tab > 0 and r.kind == 0 }
-                on press skz { emit nd_sk(r.index * 1000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }
-                on drag skz { emit nd_sk(r.index * 1000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }
+                on press skz { emit nd_sk(r.index * 2000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }
+                on drag skz { emit nd_sk(r.index * 2000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }
             }
             text "↑ ↓  A ROW     ← →  CHANGE IT     TAB  THE NEXT PAGE     ESC  DONE     PRESS THE NODE  THE NEXT STATE" { at: st_x + 470, st_dy + 450; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.muted }
         }

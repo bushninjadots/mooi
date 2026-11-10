@@ -6562,6 +6562,36 @@ do
     end)
 end
 
+section("the node's player (D236)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("the music capsule pressed grows into the player; Esc, Super or another opening lets it go", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('if k == "media" then if N.open_player then N.open_player() end; return end', 1, true))
+        assert(l:find('local HELD = { "system", "launcher", "universe", "time", "player" }', 1, true))
+        local ST = require("lib/node/state")
+        local st = ST.new(); ST.hold(st, "player"); ST.push(st, "notice", 0)
+        eq(ST.current(st, 10, {}), "player", "held over an event")
+    end)
+    test("meters and sliders: a stride of 2000, so a full one is never the next at zero", function()
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("emit nd_mt(2 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000))", 1, true))
+        local l = read("shell/mooi-node.luau")
+        assert(l:find("local m, f = v // 2000, math.min(1000, v % 2000) / 1000", 1, true))
+        assert(l:find("local row = v // 2000", 1, true))
+        local function decode(v) return v // 2000, math.min(1000, v % 2000) / 1000 end
+        local m, f = decode(0 * 2000 + 1000); eq(m, 0); eq(f, 1)
+        m, f = decode(1 * 2000 + 0); eq(m, 1); eq(f, 0)
+    end)
+    test("a seek or a light dragged is told once it rests; the spectrum is mirrored from the bar's feed", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find("after(120, function() if g == N.seek_gen then", 1, true))
+        assert(l:find("local m = MK.mirrored(bands, 32)", 1, true))
+        assert(l:find('run("pleamar", { "--say", "mooi", "emit feed_want" }', 1, true), "the bar asked for its feed")
+        assert(read("shell/mooi-node.plm"):find('"brightnessctl"', 1, true))
+    end)
+end
+
 section("the Pill studio (D229)")
 do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
@@ -6587,7 +6617,7 @@ do
             assert(p:find("event " .. e .. " ->", 1, true), e)
             assert(read("shell/mooi-node.luau"):find('on("' .. e .. '"', 1, true), e)
         end
-        assert(p:find("on drag skz { emit nd_sk(", 1, true), "the sliders drag")
+        assert(p:find("on drag skz { emit nd_sk(r.index * 2000 + round(", 1, true), "the sliders drag (D236: a stride of 2000, so a full slider is never the next row at zero)")
         assert(p:find("level: top, overlay while nd_kind == 7 or nd_studio", 1, true))
         local l = read("shell/mooi-node.luau")
         assert(l:find("if N.studio.open then if N.studio_key then N.studio_key(v) end; return end", 1, true), "the keys are the studio's while it is open")

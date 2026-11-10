@@ -6679,3 +6679,29 @@ The harness now fails, instead of quietly skipping, when `tests/unit/node_helper
 load. A bad merge had left conflict markers in it, and the run had silently dropped those tests.
 
 **Verified.** Unit 657 / 0; scenes compile; `bin/mooi check` green.
+
+## D234 · 2026-11-10 · The launcher finds more than apps
+
+Inspired by DankMaterialShell's spotlight-style launcher. Once something is typed, the node's search line
+(Super+Space) also finds mooi's own commands and the open windows, each row tagged with what it is (`MOOI`,
+`WINDOW · 3`). Choosing one runs it: a command starts the matching `mooi` subcommand, a window comes to the front
+(its address goes through `lib/hypr`'s check, so the dispatch is built safely). `lib/node/commands` holds only
+what is safe to reach from a search line: mooi's panels and tools, light or dark, the lock, a recording. Nothing
+that stops or restarts anything. Strong matches (the start of a name) come first, then apps, then weaker matches.
+A calculator and fuzzy matching are with opencode (D235).
+
+## D236 · 2026-11-10 · The player, grown from the music capsule
+
+Press the music capsule and it grows into the player (Esc, Super or another opening lets go). It shows the
+cover; the song; where in it, as a bar you can drag (the player is told once the drag rests); shuffle, back,
+play/pause, next and repeat (playlist or track, from `playerctl`, shown at once and confirmed by the next poll);
+the music mirrored around the middle along its floor (the bar's 32 bands, asked for with `feed_want` while the
+player is open, the lower 16 mirrored by `lib/node/mediakit`); and three meters to drag: volume, the screen's
+light (hidden without a backlight) and the microphone (its label mutes it). Space plays or pauses, ← and → skip.
+Nothing is polled while the player is closed. `lib/node/mediakit` (opencode's, D233) was reviewed and merged
+unchanged.
+
+**Found in passing:** the studio's sliders sent `row * 1000 + level` with levels up to 1000, so dragging a slider
+to its maximum set the next row to its minimum. Sliders and meters now use a stride of 2000.
+
+**Verified.** Unit 680 / 0; scenes compile; `bin/mooi check` green.

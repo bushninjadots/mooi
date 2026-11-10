@@ -24,7 +24,7 @@ SPRINGS = [(f"{s}_{b}", k, int(2 * math.sqrt(k) * f + 0.5)) for s, k in SPEED fo
 GROWTH = [("slow", 90, 15), ("normal", 170, 19), ("fast", 320, 30)]
 FIELDS = [("x", 949), ("y", 8), ("w", 22), ("h", 6), ("r", 3)]
 # the kinds, as the logic numbers them (lib/node/state)
-K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "system": 5, "launcher": 6, "universe": 7, "time": 8, "done": 9, "privacy": 10}
+K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "system": 5, "launcher": 6, "universe": 7, "time": 8, "done": 9, "privacy": 10, "player": 11}
 KEYS = [("Escape", 27), ("Return", 13), ("Up", 38), ("Down", 40), ("Left", 37), ("Right", 39), ("Tab", 9), ("space", 32)]
 # the look's facts and their defaults (the organic preset; lib/node/look's M.facts names them)
 LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 cyber"), ("nd_sp", 2, "the body's spring (speed × bounce)"),
@@ -61,7 +61,7 @@ def scene():
          '// this springs and draws.', '',
          'scene Node {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy"',
+         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl"',
          '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
@@ -144,6 +144,12 @@ def scene():
           '    prop nd_swp = 0', '    spin nd_swp by if(nd_cap and nd_kind == 0, if(nd_capu, 300, 120), 0)',
           '    text nd_dnt = ""', '    text nd_dnd = ""',
           '    prop nd_dph = 0', '    spin nd_dph by if(nd_kind == 9, 260, 0)',
+          '    // the player (D236): the media capsule pressed grows into it',
+          '    fact nd_shuf = false', '    fact nd_loop = 0      // 0 none · 1 the playlist · 2 the track',
+          '    text nd_pos = "0:00"', '    text nd_len = "0:00"',
+          '    fact nd_bri = 0.5', '    fact nd_mic = 0.5', '    fact nd_micm = false',
+          '    fact nd_hasbri = false',
+          ] + [f'    fact nd_sp{i} = 0' for i in range(32)] + [
           '    // privacy (D232): the microphone or the camera started or stopped',
           '    text nd_pvt = ""', '    text nd_pvd = ""', '    fact nd_pvon = false',
           '    // satellites',
@@ -161,7 +167,7 @@ def scene():
           '    event nd_key ->       // a key while the node holds the keyboard',
           '    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time',
           '    event nd_tab ->       // the studio: a page',
-          '    event nd_sk ->        // the studio: a slider, row * 1000 + where along it (0 … 1000)',
+          '    event nd_sk ->        // the studio: a slider, row * 2000 + where along it (0 … 1000: a stride of 2000, never ambiguous)',
           '    event nd_so ->        // the studio: a choice, row * 10 + which',
           '    event nd_pv ->        // the studio: what the node is shown as',
           '    event nd_ps ->        // the studio: a preset',
@@ -169,6 +175,9 @@ def scene():
           '    event nd_stc ->       // the studio: 1 shuffle · 2 done · 3 reset',
           '    event nd_tm ->        // the time tools: 0-3 a mode · 10 go · 11 reset · 12 lap or skip · 2x timer · 3x alarm',
           '    event nd_dn ->        // the finish card answered',
+          '    event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted',
+          '    event nd_seek ->      // the player: where along the song (0 … 1000)',
+          '    event nd_mt ->        // the player: a meter dragged, meter * 2000 + its level (0 … 1000) · 0 volume · 1 light · 2 mic',
           '']
     L += surface()
     L += ['}', '']
@@ -285,8 +294,8 @@ def studio_deck():
               f'{d}        on press sko{j} {{ emit nd_so(r.index * 10 + {j}) }}']
     L += [f'{d}    }}',
           f'{d}    zone box skz {{ from: tx - 12, ry + 4; size: 404, 38; cursor: grab; role: slider; label: "{{r.label}}"; value: "{{r.value}}"; show: nd_studio and nd_tab > 0 and r.kind == 0 }}',
-          f'{d}    on press skz {{ emit nd_sk(r.index * 1000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }}',
-          f'{d}    on drag skz {{ emit nd_sk(r.index * 1000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }}',
+          f'{d}    on press skz {{ emit nd_sk(r.index * 2000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }}',
+          f'{d}    on drag skz {{ emit nd_sk(r.index * 2000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }}',
           f'{d}}}',
           f'{d}text "↑ ↓  A ROW     ← →  CHANGE IT     TAB  THE NEXT PAGE     ESC  DONE     PRESS THE NODE  THE NEXT STATE" {{ at: st_x + 470, st_dy + 450; anchor: center; align: center; size: 9; family: {MONO}; color: fl.muted }}',
           f'{c}}}']
@@ -362,6 +371,57 @@ def time_parts(c, acc, ink, dim, hull):
           f'{c}    zone box dnz {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "{{nd_dnt}}: OK"; show: nd_kind == 9 }}',
           f'{c}    on press dnz {{ emit nd_dn }}',
           f'{c}}}']
+    return L
+
+
+def player_parts(c, acc, ink, dim, hull):
+    """The player (D236): cover, song, seek, transport, a mirrored spectrum, and three meters to drag."""
+    L = [f'{c}// the player: the cover, the song, where in it (drag to go there), its transport, the music mirrored round',
+         f'{c}// the middle along its floor, and three meters on the right — volume, the screen\'s light, the microphone',
+         f'{c}group {{ show: nd_kind == 11; opacity: nd_cf',
+         f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
+         f'{c}    let pw = nb_w - 164 - 160',
+         f'{c}    group {{ clip box {{ from: nb_x + 16, nb_y + 16; size: 132, 132; corner: if(nd_cov == 1, 66, max(3, 14 * nd_rnd)) }}',
+         f'{c}        box {{ from: nb_x + 16, nb_y + 16; size: 132, 132; color: fl.well }}',
+         f'{c}        image nd_cover {{ at: nb_x + 16, nb_y + 16; size: 132, 132; fit: cover; show: nd_arted }} }}',
+         f'{c}    text nd_title {{ at: nb_x + 164, nb_y + 32; anchor: left center; size: 16; weight: 700; family: {SANS}; color: {ink}; width: pw; lines: 1 }}',
+         f'{c}    text nd_artist {{ at: nb_x + 164, nb_y + 54; anchor: left center; size: 11; family: {MONO}; color: {dim}; width: pw; lines: 1 }}',
+         f'{c}    box {{ from: nb_x + 164, nb_y + 78; size: pw, 3; corner: 1.5; color: fl.trace_dim }}',
+         f'{c}    box {{ from: nb_x + 164, nb_y + 78; size: pw * nd_prog, 3; corner: 1.5; color: {acc} }}',
+         f'{c}    ellipse {{ at: nb_x + 164 + pw * nd_prog, nb_y + 79.5; radius: if(pkz.hover, 7, 5); color: {acc} }}',
+         f'{c}    text nd_pos {{ at: nb_x + 164, nb_y + 94; anchor: left center; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}    text nd_len {{ at: nb_x + 164 + pw, nb_y + 94; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim} }}',
+         f'{c}    zone box pkz {{ from: nb_x + 158, nb_y + 68; size: pw + 12, 22; cursor: pointer; role: slider; label: "Where in the song"; value: "{{nd_pos}}"; show: nd_kind == 11 }}',
+         f'{c}    on press pkz {{ emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }}',
+         f'{c}    on drag pkz {{ emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }}']
+    for i, (glyph, code, lit, label) in enumerate((("⤮", 1, "nd_shuf", "Shuffle"), ("⏮", 2, "false", "Back"), ("⏯", 3, "false", "Play or pause"),
+                                                   ("⏭", 4, "false", "Next"), ("⟲", 5, "nd_loop > 0", "Repeat"))):
+        x = f"nb_x + 164 + {i * 46}"
+        big = code == 3
+        L += [f'{c}    box {{ from: {x}, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: {acc}; opacity: if({"true" if big else "false"}, 0.9, if({lit}, 0.22, if(pbz{code}.hover, 0.12, 0))) }}',
+              f'{c}    text "{glyph}" {{ at: {x} + 19, nb_y + 127; anchor: center; align: center; size: {17 if big else 15}; family: {SANS}; color: if({"true" if big else "false"}, fl.ground, if({lit}, {acc}, {ink})) }}',
+              f'{c}    zone box pbz{code} {{ from: {x}, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "{label}"; show: nd_kind == 11 }}',
+              f'{c}    on press pbz{code} {{ emit nd_pl({code}) }}']
+    L += [f'{c}    text "1" {{ at: nb_x + 164 + 4 * 46 + 30, nb_y + 116; anchor: center; size: 8; weight: 700; family: {MONO}; color: {acc}; show: nd_loop == 2 }}',
+          f'{c}    // the music, mirrored: the low bands meet in the middle']
+    for k in range(32):
+        L += [f'{c}    box {{ from: nb_x + 164 + {k} * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp{k} * 34; size: pw / 32 - 2, nd_sp{k} * 34 + 1; corner: 1; color: {acc}; opacity: 0.35 + 0.4 * nd_sp{k} }}']
+    meters = (("VOL", "nd_vol", 0), ("LIGHT", "nd_bri", 1), ("MIC", "nd_mic", 2))
+    for label, val, m in meters:
+        x = f"nb_x + nb_w - {136 - m * 44}"
+        L += [f'{c}    group {{ show: {"nd_hasbri" if m == 1 else "true"}']
+        for seg in range(12):
+            y = f"nb_y + {154 - seg * 12}"
+            L += [f'{c}        box {{ from: {x}, {y}; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if({seg} < round({val} * 12), if({m} == 2 and nd_micm, fl.trace_lit, {acc}), fl.trace_dim); opacity: if({seg} < round({val} * 12), 0.95, 0.5) }}']
+        L += [f'{c}        text "{label}" {{ at: {x} + 15, nb_y + 178; anchor: center; align: center; size: 8; weight: 700; family: {MONO}; color: if({m} == 2 and nd_micm, fl.ember, {dim}) }}',
+              f'{c}        zone box pmz{m} {{ from: {x} - 4, nb_y + 18; size: 38, 148; cursor: ns_resize; role: slider; label: "{label.capitalize()}"; value: {val}; show: nd_kind == 11 }}',
+              f'{c}        on press pmz{m} {{ emit nd_mt({m} * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }}',
+              f'{c}        on drag pmz{m} {{ emit nd_mt({m} * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }}']
+        if m == 2:
+            L += [f'{c}        zone box pmmz {{ from: {x} - 4, nb_y + 170; size: 38, 18; cursor: pointer; role: toggle; label: "Mute the microphone"; checked: nd_micm; show: nd_kind == 11 }}',
+                  f'{c}        on press pmmz {{ emit nd_pl(6) }}']
+        L += [f'{c}    }}']
+    L += [f'{c}}}']
     return L
 
 
@@ -569,6 +629,7 @@ def surface():
           f'{c}on submit nd_q {{ emit nd_key(13) }}',
           f'{c}on change nd_kb while nd_kb and nd_kind == 6 and not nd_studio {{ focus nd_q }}']
     L += time_parts(c, acc, ink, dim, hull)
+    L += player_parts(c, acc, ink, dim, hull)
     L += [f'{c}// privacy: the microphone or the camera, the moment it starts or stops, and who has it',
           f'{c}group {{ show: nd_kind == 10; opacity: nd_cf',
           f'{c}    group {{ glow: 10, if(nd_pvon, 0.8, 0.2), fl.ember',

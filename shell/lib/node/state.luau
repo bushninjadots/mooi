@@ -5,7 +5,7 @@
 
 local M = {}
 
-M.PRIORITY = { universe = 100, done = 95, launcher = 90, time = 85, system = 80, privacy = 75, battery = 76, notice = 70, volume = 60, workspaces = 50, media = 40, rest = 0 }
+M.PRIORITY = { universe = 100, done = 95, launcher = 90, player = 88, time = 85, system = 80, privacy = 75, battery = 76, notice = 70, volume = 60, workspaces = 50, media = 40, rest = 0 }
 M.LIFE = { battery = 6000, privacy = 3500, notice = 6000, volume = 1800, workspaces = 1500, media = 4000 }
 M.REACT_MS = 140
 
