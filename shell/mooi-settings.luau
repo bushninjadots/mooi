@@ -816,6 +816,19 @@ key_state()
 after(300, show_folders)
 
 -- D229: the Pill's look is set in its studio, on the node itself
+-- D293: the charge limit's state, and its one-time setup
+local function bat_status()
+    run("mooi", { "battery", "status" }, function(out)
+        local ok, b = pcall(json.decode, out or "")
+        if not ok or type(b) ~= "table" then return end
+        if b.writable and tonumber(b.limit) then text.bat_text = "CHARGING STOPS AT " .. math.floor(b.limit) .. " %"
+        elseif b.control then text.bat_text = "OFFERED · PRESS SET UP ONCE TO CHANGE IT"
+        else text.bat_text = "NOT OFFERED YET · SET UP INSTALLS WHAT IS NEEDED (MSI) OR SAYS WHY NOT" end
+    end)
+end
+bat_status()
+every(15000, bat_status)
+on("bat_setup", function() run("mooi", { "battery-setup" }, function() end); after(20000, bat_status) end)
 on("nd_settings_studio", function()
     run("mooi", { "node", "studio" })
     run("pleamar", { "--say", "mooi-settings", "quit" })

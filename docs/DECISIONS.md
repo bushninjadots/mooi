@@ -7666,3 +7666,22 @@ CI had failed on every push since D277/D278: in the Dashboard's update launcher 
 gate stops on any shellcheck error. Shellcheck is not installed on this machine, so the local gate said only that it
 had checked syntax and passed. The note now stands once above the `case`. Checked with CI's own shellcheck in a
 container (`koalaman/shellcheck:stable`, `-S error` on `bin/mooi`, `tests/*.sh`, `setup/*.sh`): clean.
+
+## D293 · 2026-11-10 · The battery's charge limit (Minflair's)
+
+The owner: "do the battery". This laptop is an MSI Modern 15 B7M. The kernel offers a charge limit through
+`charge_control_end_threshold`, which on MSI machines is the msi-ec driver's; the kernel's own msi-ec does not know
+this model's controller (15HK), but the AUR's `msi-ec-dkms-git` does, with the limit at EC address 0xef.
+
+`mooi battery setup` is the one step that needs root, so it runs in a terminal the owner sees (Settings → Power →
+**Set up**, `mooi battery-setup`), each step saying what it does and sudo asking for the password: on an MSI laptop
+without the limit, install `msi-ec-dkms-git` (paru or yay), load it now and at every boot
+(`/etc/modules-load.d/mooi-battery.conf`); then a udev rule (`/etc/udev/rules.d/90-mooi-battery.rules`) that lets the
+wheel group write the limit. A laptop that offers nothing and is not an MSI is told so, and nothing else changes.
+
+After that, **Stop charging at** (50–100 %, `power.charge_limit`, 100 charges fully) is written by `mooi battery
+apply` without root whenever the settings change, and at each start of mooi, since an EC can forget it. Settings
+shows whether the limit is offered and where charging stops now. `mooi battery limit N` sets it by hand.
+
+**Verified.** Unit 933 / 0; the Settings scene compiles; CI's shellcheck in a container is clean; live:
+`mooi battery status` saw an MSI with no limit yet. The setup itself was not run: it needs the owner's password.

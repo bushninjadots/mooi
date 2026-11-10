@@ -173,6 +173,8 @@ SETTERS = [
     "keys.ask",
     # D289. Appended.
     "keys.term",
+    # D293: the charge limit. Appended.
+    "power.charge_limit",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -629,6 +631,11 @@ SECTIONS = [
         ("card", "Battery"),
         ("info", "Charge", "What is left, and whether it is charging", "pw_text"),
         ("choice", "Battery saver", "Glow, aberration, the frame's music and the visualizer off", "motion.saver", "sv_motion_saver", ["Off", "On battery", "Always"]),
+        # D293: the charge limit (Minflair's): stop charging below full, which a battery that stays plugged in likes
+        ("card", "Charge limit"),
+        ("info", "Charge limit", "Whether this laptop offers one, and where charging stops now", "bat_text"),
+        ("slider", "Stop charging at", "100 % charges fully; 80 % is kinder to a battery that stays plugged in", "power.charge_limit", 50, 100, "{sv_power_charge_limit + 50, 0} %"),
+        ("button", "Set it up", "Once, in a terminal, with your password: on MSI laptops the msi-ec driver, then the right to write the limit", "Set up", "bat_setup", 1),
         ("note", "not pw_ppd", "POWER-PROFILES-DAEMON IS NOT RUNNING HERE, SO THERE ARE NO PROFILES TO CHOOSE"),
         ("card", "Power profile", "pw_ppd"),
         ("choice", "Profile", "power-profiles-daemon's: quieter and cooler, or faster", "power.profile", "sv_power_profile", ["Keep", "Saver", "Balanced", "Performance"]),
@@ -1511,8 +1518,10 @@ def main():
     event sw_slide ->         // to the logic: (row · 10 + 1 opacity · 2 bars) · 1000 + value
     event wg_settings_edit -> // to the logic: edit the widgets on the desktop (this window goes)
     event wl_settings_open -> // to the logic: open the wallpaper picker (this window goes)
+    event bat_setup ->        // D293: the charge limit's setup, in a terminal
     event nd_settings_studio -> // to the logic: open the Pill's studio (this window goes)
     text pw_text = ""
+    text bat_text = ""        // D293: the charge limit's state
     text lock_pic_now = ""    // the lock screen's picture (Settings → Lock): the identity's banner or picture
     text lk_wp = ""           // the wallpaper still the lock's backdrop preview wears (Settings → Lock)
     fact lk_wp_on = false     // there is one to show

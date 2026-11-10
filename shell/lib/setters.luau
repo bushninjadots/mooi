@@ -310,6 +310,8 @@ M.SETTERS = {
     "keys.ask",
     -- D289. Appended.
     "keys.term",
+    -- D293: the charge limit. Appended.
+    "power.charge_limit",
 }
 
 local function row_of(path)

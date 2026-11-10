@@ -697,3 +697,16 @@ do
         assert(read("bin/mooi"):find('sleep "${MOOI_DISPLAY_WAIT:-15}"', 1, true))
     end)
 end
+
+section("the battery's charge limit (D293, Minflair's)")
+do
+    test("set up once in a terminal; then Settings writes the limit, and the bar applies it on every change", function()
+        local b = read("bin/mooi")
+        assert(b:find("charge_control_end_threshold", 1, true) and b:find("msi-ec-dkms-git", 1, true))
+        assert(b:find('[ "$n" -ge 40 ] && [ "$n" -le 100 ]', 1, true), "a limit is 40 to 100")
+        assert(b:find("chgrp wheel $f && chmod g+w $f", 1, true), "the wheel group may write it after setup")
+        eq(require("lib/config").defaults().power.charge_limit, 100)
+        assert(read("shell/mooi.luau"):find('run("mooi", { "battery", "apply" }', 1, true))
+        assert(read("tools/gen-settings.py"):find('"power.charge_limit", 50, 100', 1, true))
+    end)
+end

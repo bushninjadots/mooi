@@ -42,6 +42,7 @@
 #   mooi arcade            mooi's games: Snake, La Grieta, Mazmorra (Super+G)
 #   mooi dock              hold the dock up, or let it hide again (Super+Shift+D)
 #   mooi drawer [dashboard|notices|close]  the side drawers out of the frame (Super+D, Super+N)
+#   mooi battery status | limit N | apply | setup   the charge limit (setup once, in a terminal, with your password)
 #   mooi display try NAME MODE POS SCALE | keep | revert   a monitor change, undone in 15 s unless kept
 #   mooi term [out]        a terminal that drops from the top and stays alive (Super+Shift+T); `out` makes it a window
 #   mooi ask               choose a region: its words start a question to Claude in the side notch (Super+Shift+G)
@@ -1097,6 +1098,65 @@ display_cmd() {
     esac
 }
 
+# The battery's charge limit (D293; Minflair's): stop charging at a level the battery likes better. The kernel says
+# it through /sys/class/power_supply/BAT*/charge_control_end_threshold; on an MSI laptop that file is the msi-ec
+# driver's (the kernel's own does not know every model; the AUR's msi-ec-dkms-git knows more). `battery setup` is
+# the one step that needs root, run in a terminal you see: the driver if it is missing, loading it at boot, and a
+# udev rule that lets the wheel group write the limit — after it, `battery limit N` and `battery apply` need nobody.
+battery_file() { for f in /sys/class/power_supply/BAT*/charge_control_end_threshold; do [ -e "$f" ] && { echo "$f"; return 0; }; done; return 1; }
+battery_cmd() {
+    local f; f=$(battery_file) || f=""
+    case "${1:-status}" in
+        status)
+            local vendor; vendor=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null)
+            local limit=""; [ -n "$f" ] && limit=$(cat "$f" 2>/dev/null)
+            local w=false; [ -n "$f" ] && [ -w "$f" ] && w=true
+            jq -n --arg v "$vendor" --arg f "$f" --arg l "$limit" --argjson w "$w" \
+                '{ vendor: $v, control: ($f != ""), writable: $w, limit: ($l | tonumber? // null) }' ;;
+        limit)
+            local n="${2:-}"
+            printf '%s' "$n" | grep -Eq '^[0-9]+$' && [ "$n" -ge 40 ] && [ "$n" -le 100 ] || { echo "battery: a limit is 40 to 100" >&2; return 2; }
+            [ -n "$f" ] || { echo "battery: this machine has no charge limit yet: mooi battery setup" >&2; return 1; }
+            [ -w "$f" ] || { echo "battery: the limit is not yours to write yet: mooi battery setup" >&2; return 1; }
+            printf '%s\n' "$n" > "$f" && echo "charging stops at $n %" ;;
+        apply) # the limit Settings chose (power.charge_limit), written if it can be; quiet when it cannot
+            local n; n=$(jq -r '.power.charge_limit // 100' "$settings" 2>/dev/null) || n=100
+            [ -n "$f" ] && [ -w "$f" ] || return 0
+            [ "$(cat "$f" 2>/dev/null)" = "$n" ] || printf '%s\n' "$n" > "$f" ;;
+        setup)
+            echo "The charge limit, set up once. Each step says what it does; sudo asks for your password."
+            echo
+            if [ -z "$f" ]; then
+                if grep -qi "micro-star" /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+                    echo "1. An MSI laptop: the msi-ec driver from the AUR (msi-ec-dkms-git) knows more models than the kernel's."
+                    if command -v paru >/dev/null 2>&1; then paru -S --needed msi-ec-dkms-git; elif command -v yay >/dev/null 2>&1; then yay -S --needed msi-ec-dkms-git
+                    else echo "   No AUR helper (paru or yay) here: install msi-ec-dkms-git yourself, then run this again."; fi
+                    echo "   Loading it now, and at every boot:"
+                    sudo modprobe -r msi_ec 2>/dev/null; sudo modprobe msi_ec && echo msi_ec | sudo tee /etc/modules-load.d/mooi-battery.conf >/dev/null
+                else
+                    echo "1. This laptop's kernel offers no charge limit (no charge_control_end_threshold), and mooi knows no driver for it."
+                fi
+            else
+                echo "1. The kernel already offers the limit: $f"
+            fi
+            f=$(battery_file) || f=""
+            if [ -n "$f" ]; then
+                echo "2. A udev rule so the wheel group may write the limit (kept in /etc/udev/rules.d/90-mooi-battery.rules):"
+                printf '%s\n' 'ACTION=="add|change", SUBSYSTEM=="power_supply", KERNEL=="BAT*", RUN+="/bin/sh -c '\''f=/sys%p/charge_control_end_threshold; [ -e $f ] && chgrp wheel $f && chmod g+w $f'\''"' \
+                    | sudo tee /etc/udev/rules.d/90-mooi-battery.rules >/dev/null
+                sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=power_supply --action=change
+                sleep 1
+                if [ -w "$f" ]; then "$self" battery apply; echo; echo "Done: Settings → Power → Charge limit sets it from now on."
+                else echo; echo "The rule is in place, but the limit is not writable yet: log out and in (the wheel group) and try again."; fi
+            else
+                echo; echo "No charge limit appeared, so nothing else was changed."
+                [ -n "$(sudo dmesg 2>/dev/null | grep -i 'msi_ec' | tail -1)" ] && sudo dmesg | grep -i msi_ec | tail -3
+            fi
+            printf '\n%s ' "Return closes this window."; read -r _ || : ;;
+        *) echo "usage: mooi battery status | limit 40-100 | apply | setup" >&2; return 2 ;;
+    esac
+}
+
 ws_fx() {
     exec 9>"$rt/ws-fx.lock"
     flock -n 9 2>/dev/null || { echo "mooi-ws-fx: already running" >&2; exit 1; }
@@ -1677,6 +1737,14 @@ case "$cmd" in
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     game-mode) game_mode "$@"; exit $? ;;
     display) display_cmd "${@}"; exit $? ;;
+    battery) battery_cmd "$@"; exit $? ;;
+    battery-setup) # D293: `mooi battery setup` in the first terminal installed (Settings → Power's button)
+        for t in ${TERMINAL:-} kitty foot alacritty wezterm ghostty konsole xterm; do
+            command -v "$t" >/dev/null 2>&1 || continue
+            case "$t" in foot) setsid -f "$t" "$self" battery setup ;; wezterm) setsid -f "$t" start -- "$self" battery setup ;;
+                         *) setsid -f "$t" -e "$self" battery setup ;; esac
+            exit 0
+        done; exit 1 ;;
     term) # D289 (k4's island terminal): a terminal that drops from the top and stays alive between presses — one kitty
         # (class mooi-dropterm) kept on the special workspace mooi-term. `mooi term` shows or hides it; `mooi term out`
         # moves it onto the workspace you are on as an ordinary window, and the next `mooi term` starts a fresh one

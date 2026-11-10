@@ -359,6 +359,8 @@ sys.watch("files:" .. FILE, function()
     if node_sync then node_sync() end           -- D226
     if drawers_sync then drawers_sync() end     -- D275
     if dock_sync then dock_sync() end           -- D280
+    -- D293: the charge limit Settings chose, written whenever the settings change (quiet until it can be)
+    run("mooi", { "battery", "apply" }, function() end)
     if notch_cut then notch_cut() end
 end)
 sys.watch("files:" .. PALETTE, function()

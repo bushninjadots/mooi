@@ -184,6 +184,7 @@ M.SCHEMA = {
     { path = "motion.saver", kind = "enum", values = { "off", "battery", "always" }, default = "off" },
     -- The system's power profile (power-profiles-daemon), or `keep` to leave it be.
     { path = "power.profile", kind = "enum", values = { "keep", "power-saver", "balanced", "performance" }, default = "keep" },
+    { path = "power.charge_limit", kind = "integer", default = 100, min = 50, max = 100 },   -- D293: where charging stops
     -- D161: how long the session may sit idle before the lock screen takes it. hypridle owns the
     -- timer, so `mooi idle` writes its file from this (and the machine suspends half an hour after).
     { path = "lock.idle", kind = "integer", default = 30, min = 1, max = 60 },
