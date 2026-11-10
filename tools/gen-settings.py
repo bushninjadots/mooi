@@ -175,6 +175,8 @@ SETTERS = [
     "keys.term",
     # D293: the charge limit. Appended.
     "power.charge_limit",
+    # D298: the apps that follow the wallpaper. Appended.
+    "apps.nvim", "apps.lazygit", "apps.starship", "apps.obsidian",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -288,6 +290,10 @@ SECTIONS = [
         ("card", "Your apps"),
         ("note", "true", "OFF, AN APP KEEPS ITS OWN COLOURS (YOUR MATUGEN SETUP); ON, IT WEARS THIS PALETTE"),
         ("toggle", "Kitty terminal", "Text, selection, cursor and the 16 terminal colours", "apps.kitty", "sv_apps_kitty"),
+        ("toggle", "Neovim", "A `mooi` colorscheme, worn at start; your own config is untouched (off takes it away)", "apps.nvim", "sv_apps_nvim"),
+        ("toggle", "lazygit", "Its borders, selection and marks, laid over your config.yml (new lazygit windows)", "apps.lazygit", "sv_apps_lazygit"),
+        ("toggle", "Starship prompt", "mooi's own prompt in your colours; off, your starship.toml again (new shells)", "apps.starship", "sv_apps_starship"),
+        ("toggle", "Obsidian", "A snippet in each vault: accents, headings, links and backgrounds", "apps.obsidian", "sv_apps_obsidian"),
         ("toggle", "GTK apps", "GTK 3 and 4 (libadwaita), light or dark with mooi; open windows change when reopened", "apps.gtk", "sv_apps_gtk"),
         ("toggle", "Files (Nautilus)", "Its path bar, Places list and file selection in the palette, and Papirus's folder icons recoloured to match; off leaves Nautilus as GTK gives it", "apps.files", "sv_apps_files"),
         ("toggle", "Qt and KDE apps", "Through qt6ct and KDE's colours (Dolphin, Kate…), light or dark; apps change when reopened", "apps.qt", "sv_apps_qt"),

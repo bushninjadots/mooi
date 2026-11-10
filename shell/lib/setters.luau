@@ -312,6 +312,8 @@ M.SETTERS = {
     "keys.term",
     -- D293: the charge limit. Appended.
     "power.charge_limit",
+    -- D298: the apps that follow the wallpaper. Appended.
+    "apps.nvim", "apps.lazygit", "apps.starship", "apps.obsidian",
 }
 
 local function row_of(path)

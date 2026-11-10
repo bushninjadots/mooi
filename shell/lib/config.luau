@@ -206,6 +206,10 @@ M.SCHEMA = {
     { path = "apps.kitty", kind = "boolean", default = false },
     { path = "apps.gtk", kind = "boolean", default = false },
     { path = "apps.qt", kind = "boolean", default = false },
+    { path = "apps.nvim", kind = "boolean", default = false },       -- D298
+    { path = "apps.lazygit", kind = "boolean", default = false },    -- D298
+    { path = "apps.starship", kind = "boolean", default = false },   -- D298
+    { path = "apps.obsidian", kind = "boolean", default = false },   -- D298
     -- Nautilus's own layer on top of apps.gtk: its CSS classes (path bar, Places, selection) and
     -- Papirus's folders recoloured to the palette. Off leaves the file manager as GTK gives it.
     { path = "apps.files", kind = "boolean", default = true },

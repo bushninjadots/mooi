@@ -1,0 +1,15 @@
+# written by mooi (theme/apps/lazygit.yml, `mooi apps-sync`): lazygit in the wallpaper's colours, read after your
+# own config.yml through LG_CONFIG_FILE while Settings → Theme & colour → lazygit is on.
+gui:
+  theme:
+    activeBorderColor: ["{{colors.primary.default.hex}}", bold]
+    inactiveBorderColor: ["{{colors.outline.default.hex}}"]
+    optionsTextColor: ["{{colors.secondary.default.hex}}"]
+    selectedLineBgColor: ["{{colors.surface_container_high.default.hex}}"]
+    cherryPickedCommitFgColor: ["{{colors.primary.default.hex}}"]
+    cherryPickedCommitBgColor: ["{{colors.primary_container.default.hex}}"]
+    markedBaseCommitFgColor: ["{{colors.tertiary.default.hex}}"]
+    markedBaseCommitBgColor: ["{{colors.tertiary_container.default.hex}}"]
+    unstagedChangesColor: ["{{colors.error.default.hex}}"]
+    defaultFgColor: ["{{colors.on_surface.default.hex}}"]
+    searchingActiveBorderColor: ["{{colors.tertiary.default.hex}}", bold]

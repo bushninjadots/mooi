@@ -9,6 +9,12 @@ local state = home .. "/.local/share/pleamar/mooi/hypr.lua"
 local ok, cfg = pcall(dofile, state)
 if not ok or type(cfg) ~= "table" then cfg = {} end
 
+-- mooi's apps' environment (D298): which lazygit and Starship configs new programs read, written by `mooi apps-sync`
+-- (your own while Settings → Theme & colour has those apps off). Missing, nothing is set.
+local env_ok, apps_env = pcall(dofile, home .. "/.local/share/pleamar/mooi/apps-env.lua")
+if env_ok and type(apps_env) == "table" then
+    for k, v in pairs(apps_env) do if type(k) == "string" and type(v) == "string" and v ~= "" then pcall(hl.env, k, v) end end
+end
 -- mooi's monitors (D290): the rules kept in Settings → Displays (bin/mooi display keep), each after the fallback in
 -- config/monitor.lua so a kept one wins. Missing or broken, nothing changes.
 local mon_ok, mons = pcall(dofile, home .. "/.local/share/pleamar/mooi/monitors.lua")

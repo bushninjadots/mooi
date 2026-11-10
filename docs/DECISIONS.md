@@ -7757,3 +7757,22 @@ narrower so the row keeps its words.
 **Verified.** Unit 939 / 0; every window shader (14) and transition (10) compiles under `glslangValidator`, now a
 unit test where it is installed; the Settings scene compiles. Not seen live: wearing one changes the owner's own
 window and workspace effects, which are theirs to choose.
+
+## D298 · 2026-11-10 · Neovim, lazygit, Starship and Obsidian follow the wallpaper (Minflair's appliers)
+
+The owner: "do the … colour theming". D282 had held these back because theming them meant rewriting the owner's own
+configs. They are built so that nothing of the owner's is rewritten: mooi adds files of its own beside theirs and
+takes them away again. Four switches on Settings → Theme & colour, off by default, rendered by `mooi apps-sync`
+from the same palette as Kitty, GTK and Qt:
+- **Neovim**: `colors/mooi.lua` (editor, syntax, Treesitter, diagnostics, menus, the status line) and
+  `plugin/mooi-theme.lua`, which wears it on VimEnter, after the owner's init.lua; `:colorscheme mooi` by hand too.
+- **lazygit**: `mooi-theme.yml` laid over the owner's config.yml through `LG_CONFIG_FILE`.
+- **Starship**: mooi's own prompt in the palette (`~/.config/mooi/starship.toml`) through `STARSHIP_CONFIG`; off, the
+  owner's starship.toml. It replaces the prompt's layout while on, and the switch says so.
+- **Obsidian**: a `mooi.css` snippet in every vault obsidian.json lists, added to that vault's enabled snippets, and
+  taken out again on off.
+The environment is `apps-env.lua` in mooi's data folder, which `custom/mooi.lua` applies at Hyprland's start and
+`apps-sync` also applies at once (`hl.env`) for programs started from then on.
+
+**Verified.** `tests/apps-more.sh` 17 / 0 (in the gate); the rendered colorscheme loads in a headless Neovim as
+`mooi`; Starship renders the prompt with no error; shellcheck (container) clean; `hyprctl reload` without errors.

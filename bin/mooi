@@ -495,6 +495,56 @@ PY
         if [ "$(get kde_backup)" = made ]; then rm -f "$kg"; else cp "$folder/apps-kdeglobals.backup" "$kg"; fi
         rm -f "$kscheme"; put kde_backup ""; did="$did kde(yours)"
     fi
+
+    # D298: Neovim, lazygit, Starship and Obsidian (Minflair's appliers). Nothing of yours is rewritten: mooi adds
+    # files of its own beside yours and takes them away again when the switch goes off.
+    # Neovim: a `mooi` colorscheme, and a plugin file that wears it at start (after your init.lua)
+    nvc="$C/nvim"
+    if on nvim && [ -d "$nvc" ]; then
+        mkdir -p "$nvc/colors" "$nvc/plugin"
+        render "$apps_dir/nvim.lua" "$nvc/colors/mooi.lua"
+        printf '%s\n' '-- written by mooi (Settings → Theme & colour → Neovim): wear the wallpaper colours; off, this file goes' \
+            'vim.api.nvim_create_autocmd("VimEnter", { once = true, callback = function() pcall(vim.cmd.colorscheme, "mooi") end })' \
+            > "$nvc/plugin/mooi-theme.lua"
+        put nvim_on yes; did="$did nvim"
+    elif [ -n "$(get nvim_on)" ]; then
+        rm -f "$nvc/colors/mooi.lua" "$nvc/plugin/mooi-theme.lua"
+        rmdir "$nvc/plugin" 2>/dev/null || :
+        put nvim_on ""; did="$did nvim(yours)"
+    fi
+    # lazygit and Starship are chosen by environment: apps-env.lua (read by custom/mooi.lua at Hyprland's start, and
+    # applied now with hyprctl for what starts from here) names mooi's file while on, your own while off
+    lgc="$C/lazygit"; lg_cfg="$lgc/config.yml"; lg_mooi="$lgc/mooi-theme.yml"
+    st_yours="$C/starship.toml"; st_mooi="$C/mooi/starship.toml"
+    lg_env="$lg_cfg"; st_env="$st_yours"
+    if on lazygit && command -v lazygit >/dev/null 2>&1; then
+        mkdir -p "$lgc"; render "$apps_dir/lazygit.yml" "$lg_mooi"; lg_env="$lg_cfg,$lg_mooi"; did="$did lazygit"
+    elif [ -f "$lg_mooi" ]; then rm -f "$lg_mooi"; did="$did lazygit(yours)"; fi
+    if on starship && command -v starship >/dev/null 2>&1; then
+        mkdir -p "$C/mooi"; render "$apps_dir/starship.toml" "$st_mooi"; st_env="$st_mooi"; did="$did starship"
+    elif [ -f "$st_mooi" ]; then rm -f "$st_mooi"; did="$did starship(yours)"; fi
+    envf="$folder/apps-env.lua"
+    want=$(printf 'return { LG_CONFIG_FILE = %s, STARSHIP_CONFIG = %s }\n' "$(printf '%s' "$lg_env" | jq -Rs .)" "$(printf '%s' "$st_env" | jq -Rs .)")
+    if [ "$(cat "$envf" 2>/dev/null)" != "$want" ]; then
+        printf '%s\n' "$want" > "$envf"
+        hyprctl eval "hl.env(\"LG_CONFIG_FILE\", $(printf '%s' "$lg_env" | jq -Rs .)); hl.env(\"STARSHIP_CONFIG\", $(printf '%s' "$st_env" | jq -Rs .))" >/dev/null 2>&1 || :
+    fi
+    # Obsidian: a snippet in each vault it knows, switched on in that vault's appearance.json, and off again
+    ob="$C/obsidian/obsidian.json"
+    if [ -f "$ob" ]; then
+        jq -r '.vaults[]?.path // empty' "$ob" 2>/dev/null | while IFS= read -r vault; do
+            [ -d "$vault/.obsidian" ] || continue
+            ap="$vault/.obsidian/appearance.json"; [ -f "$ap" ] || echo '{}' > "$ap"
+            if on obsidian; then
+                mkdir -p "$vault/.obsidian/snippets"; render "$apps_dir/obsidian.css" "$vault/.obsidian/snippets/mooi.css"
+                jq '.enabledCssSnippets = ((.enabledCssSnippets // []) - ["mooi"] + ["mooi"])' "$ap" > "$ap.mooi" && mv "$ap.mooi" "$ap"
+            elif [ -f "$vault/.obsidian/snippets/mooi.css" ]; then
+                rm -f "$vault/.obsidian/snippets/mooi.css"
+                jq '.enabledCssSnippets = ((.enabledCssSnippets // []) - ["mooi"])' "$ap" > "$ap.mooi" && mv "$ap.mooi" "$ap"
+            fi
+        done
+        if on obsidian; then did="$did obsidian"; fi
+    fi
     [ -n "$did" ] && echo "apps:$did"
     return 0
 }

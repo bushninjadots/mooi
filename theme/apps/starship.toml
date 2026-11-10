@@ -1,0 +1,39 @@
+# written by mooi (theme/apps/starship.toml, `mooi apps-sync`): a prompt in the wallpaper's colours, used through
+# STARSHIP_CONFIG while Settings → Theme & colour → Starship is on. Off, your own ~/.config/starship.toml is used.
+add_newline = false
+palette = "mooi"
+format = """
+[](fg:surface2)$directory[](fg:surface2 bg:surface3)$git_branch$git_status[](fg:surface3) $cmd_duration
+$character"""
+
+[palettes.mooi]
+primary = "{{colors.primary.default.hex}}"
+secondary = "{{colors.secondary.default.hex}}"
+tertiary = "{{colors.tertiary.default.hex}}"
+error = "{{colors.error.default.hex}}"
+text = "{{colors.on_surface.default.hex}}"
+surface2 = "{{colors.surface_container_high.default.hex}}"
+surface3 = "{{colors.surface_container_highest.default.hex}}"
+
+[directory]
+style = "fg:primary bg:surface2 bold"
+format = "[ $path ]($style)"
+truncation_length = 3
+
+[git_branch]
+symbol = " "
+style = "fg:secondary bg:surface3"
+format = "[ $symbol$branch ]($style)"
+
+[git_status]
+style = "fg:tertiary bg:surface3"
+format = "[$all_status$ahead_behind ]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:tertiary"
+format = "[ $duration]($style)"
+
+[character]
+success_symbol = "[❯](bold primary)"
+error_symbol = "[❯](bold error)"
