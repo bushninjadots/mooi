@@ -157,7 +157,7 @@ SETTERS = [
     # D226: the node (the Dynamic Pill). Appended.
     "node.on", "node.pointer", "node.anchor", "node.media", "node.notices",
     "node.workspaces", "node.volume", "node.system", "node.satellites", "node.wallpaper",
-    "keys.node_launch", "keys.node_universe", "keys.node_time", "node.privacy",
+    "keys.node_launch", "keys.node_universe", "keys.node_time", "node.privacy", "node.lyrics",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -360,6 +360,7 @@ SECTIONS = [
         ("toggle", "System", "Processor, memory, temperature and network round it when you press it", "node.system", "sv_node_system"),
         ("toggle", "Satellites", "Small marks under it for what is going on: music, recording, notices, a low battery", "node.satellites", "sv_node_satellites"),
         ("toggle", "On the wallpaper", "A notice ripples the wallpaper under it", "node.wallpaper", "sv_node_wallpaper"),
+        ("toggle", "Lyrics in the player", "The words in time with the song, from a file beside it or from LRCLIB (which is told the song's title and artist; each song is asked about once)", "node.lyrics", "sv_node_lyrics"),
         ("toggle", "Microphone and camera", "A card the moment either starts or stops, and a mark while one is on (checked every two seconds)", "node.privacy", "sv_node_privacy"),
         ("note", "true", "SUPER WAKES IT · SUPER+SPACE SEARCHES · SUPER+TAB SHOWS THE WORKSPACES ROUND IT (SETTINGS → KEYS)"),
     ]),

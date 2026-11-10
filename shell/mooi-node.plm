@@ -8,7 +8,7 @@ import "theme/ferrolume.plm"
 
 scene Node {
     permissions {
-        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl"
+        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl", "curl", "cat"
         services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"
     }
     service audio.level as lv { level: number }
@@ -483,6 +483,9 @@ scene Node {
     fact nd_hasbri = false
     fact nd_mix = false   // the player's other page: one row per app playing (D239)
     model mx max 4 { name: text; vol: number; muted: bool }
+    fact nd_lyon = false  // synced words for this song (D240)
+    text nd_lyc = ""
+    text nd_lyn = ""
     fact nd_sp0 = 0
     fact nd_sp1 = 0
     fact nd_sp2 = 0
@@ -922,38 +925,44 @@ scene Node {
                 on press pbz5 { emit nd_pl(5) }
                 text "1" { at: nb_x + 164 + 4 * 46 + 30, nb_y + 116; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_loop == 2 }
                 // the music, mirrored: the low bands meet in the middle
-                box { from: nb_x + 164 + 0 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp0 * 34; size: pw / 32 - 2, nd_sp0 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp0 }
-                box { from: nb_x + 164 + 1 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp1 * 34; size: pw / 32 - 2, nd_sp1 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp1 }
-                box { from: nb_x + 164 + 2 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp2 * 34; size: pw / 32 - 2, nd_sp2 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp2 }
-                box { from: nb_x + 164 + 3 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp3 * 34; size: pw / 32 - 2, nd_sp3 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp3 }
-                box { from: nb_x + 164 + 4 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp4 * 34; size: pw / 32 - 2, nd_sp4 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp4 }
-                box { from: nb_x + 164 + 5 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp5 * 34; size: pw / 32 - 2, nd_sp5 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp5 }
-                box { from: nb_x + 164 + 6 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp6 * 34; size: pw / 32 - 2, nd_sp6 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp6 }
-                box { from: nb_x + 164 + 7 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp7 * 34; size: pw / 32 - 2, nd_sp7 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp7 }
-                box { from: nb_x + 164 + 8 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp8 * 34; size: pw / 32 - 2, nd_sp8 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp8 }
-                box { from: nb_x + 164 + 9 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp9 * 34; size: pw / 32 - 2, nd_sp9 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp9 }
-                box { from: nb_x + 164 + 10 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp10 * 34; size: pw / 32 - 2, nd_sp10 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp10 }
-                box { from: nb_x + 164 + 11 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp11 * 34; size: pw / 32 - 2, nd_sp11 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp11 }
-                box { from: nb_x + 164 + 12 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp12 * 34; size: pw / 32 - 2, nd_sp12 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp12 }
-                box { from: nb_x + 164 + 13 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp13 * 34; size: pw / 32 - 2, nd_sp13 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp13 }
-                box { from: nb_x + 164 + 14 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp14 * 34; size: pw / 32 - 2, nd_sp14 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp14 }
-                box { from: nb_x + 164 + 15 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp15 * 34; size: pw / 32 - 2, nd_sp15 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp15 }
-                box { from: nb_x + 164 + 16 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp16 * 34; size: pw / 32 - 2, nd_sp16 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp16 }
-                box { from: nb_x + 164 + 17 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp17 * 34; size: pw / 32 - 2, nd_sp17 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp17 }
-                box { from: nb_x + 164 + 18 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp18 * 34; size: pw / 32 - 2, nd_sp18 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp18 }
-                box { from: nb_x + 164 + 19 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp19 * 34; size: pw / 32 - 2, nd_sp19 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp19 }
-                box { from: nb_x + 164 + 20 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp20 * 34; size: pw / 32 - 2, nd_sp20 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp20 }
-                box { from: nb_x + 164 + 21 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp21 * 34; size: pw / 32 - 2, nd_sp21 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp21 }
-                box { from: nb_x + 164 + 22 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp22 * 34; size: pw / 32 - 2, nd_sp22 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp22 }
-                box { from: nb_x + 164 + 23 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp23 * 34; size: pw / 32 - 2, nd_sp23 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp23 }
-                box { from: nb_x + 164 + 24 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp24 * 34; size: pw / 32 - 2, nd_sp24 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp24 }
-                box { from: nb_x + 164 + 25 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp25 * 34; size: pw / 32 - 2, nd_sp25 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp25 }
-                box { from: nb_x + 164 + 26 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp26 * 34; size: pw / 32 - 2, nd_sp26 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp26 }
-                box { from: nb_x + 164 + 27 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp27 * 34; size: pw / 32 - 2, nd_sp27 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp27 }
-                box { from: nb_x + 164 + 28 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp28 * 34; size: pw / 32 - 2, nd_sp28 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp28 }
-                box { from: nb_x + 164 + 29 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp29 * 34; size: pw / 32 - 2, nd_sp29 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp29 }
-                box { from: nb_x + 164 + 30 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp30 * 34; size: pw / 32 - 2, nd_sp30 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp30 }
-                box { from: nb_x + 164 + 31 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp31 * 34; size: pw / 32 - 2, nd_sp31 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp31 }
+                group { show: not nd_lyon
+                    box { from: nb_x + 164 + 0 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp0 * 34; size: pw / 32 - 2, nd_sp0 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp0 }
+                    box { from: nb_x + 164 + 1 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp1 * 34; size: pw / 32 - 2, nd_sp1 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp1 }
+                    box { from: nb_x + 164 + 2 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp2 * 34; size: pw / 32 - 2, nd_sp2 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp2 }
+                    box { from: nb_x + 164 + 3 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp3 * 34; size: pw / 32 - 2, nd_sp3 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp3 }
+                    box { from: nb_x + 164 + 4 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp4 * 34; size: pw / 32 - 2, nd_sp4 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp4 }
+                    box { from: nb_x + 164 + 5 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp5 * 34; size: pw / 32 - 2, nd_sp5 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp5 }
+                    box { from: nb_x + 164 + 6 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp6 * 34; size: pw / 32 - 2, nd_sp6 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp6 }
+                    box { from: nb_x + 164 + 7 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp7 * 34; size: pw / 32 - 2, nd_sp7 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp7 }
+                    box { from: nb_x + 164 + 8 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp8 * 34; size: pw / 32 - 2, nd_sp8 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp8 }
+                    box { from: nb_x + 164 + 9 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp9 * 34; size: pw / 32 - 2, nd_sp9 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp9 }
+                    box { from: nb_x + 164 + 10 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp10 * 34; size: pw / 32 - 2, nd_sp10 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp10 }
+                    box { from: nb_x + 164 + 11 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp11 * 34; size: pw / 32 - 2, nd_sp11 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp11 }
+                    box { from: nb_x + 164 + 12 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp12 * 34; size: pw / 32 - 2, nd_sp12 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp12 }
+                    box { from: nb_x + 164 + 13 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp13 * 34; size: pw / 32 - 2, nd_sp13 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp13 }
+                    box { from: nb_x + 164 + 14 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp14 * 34; size: pw / 32 - 2, nd_sp14 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp14 }
+                    box { from: nb_x + 164 + 15 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp15 * 34; size: pw / 32 - 2, nd_sp15 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp15 }
+                    box { from: nb_x + 164 + 16 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp16 * 34; size: pw / 32 - 2, nd_sp16 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp16 }
+                    box { from: nb_x + 164 + 17 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp17 * 34; size: pw / 32 - 2, nd_sp17 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp17 }
+                    box { from: nb_x + 164 + 18 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp18 * 34; size: pw / 32 - 2, nd_sp18 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp18 }
+                    box { from: nb_x + 164 + 19 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp19 * 34; size: pw / 32 - 2, nd_sp19 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp19 }
+                    box { from: nb_x + 164 + 20 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp20 * 34; size: pw / 32 - 2, nd_sp20 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp20 }
+                    box { from: nb_x + 164 + 21 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp21 * 34; size: pw / 32 - 2, nd_sp21 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp21 }
+                    box { from: nb_x + 164 + 22 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp22 * 34; size: pw / 32 - 2, nd_sp22 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp22 }
+                    box { from: nb_x + 164 + 23 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp23 * 34; size: pw / 32 - 2, nd_sp23 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp23 }
+                    box { from: nb_x + 164 + 24 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp24 * 34; size: pw / 32 - 2, nd_sp24 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp24 }
+                    box { from: nb_x + 164 + 25 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp25 * 34; size: pw / 32 - 2, nd_sp25 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp25 }
+                    box { from: nb_x + 164 + 26 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp26 * 34; size: pw / 32 - 2, nd_sp26 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp26 }
+                    box { from: nb_x + 164 + 27 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp27 * 34; size: pw / 32 - 2, nd_sp27 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp27 }
+                    box { from: nb_x + 164 + 28 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp28 * 34; size: pw / 32 - 2, nd_sp28 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp28 }
+                    box { from: nb_x + 164 + 29 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp29 * 34; size: pw / 32 - 2, nd_sp29 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp29 }
+                    box { from: nb_x + 164 + 30 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp30 * 34; size: pw / 32 - 2, nd_sp30 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp30 }
+                    box { from: nb_x + 164 + 31 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp31 * 34; size: pw / 32 - 2, nd_sp31 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp31 }
+                }
+                // the words, in time: the line sung now, lit, and the next one under it
+                group { show: nd_lyon
+                    text nd_lyc { at: nb_x + 164, nb_y + 164; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: nd_acc; width: pw; lines: 1 }
+                    text nd_lyn { at: nb_x + 164, nb_y + 183; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted; width: pw; lines: 1 } }
             }
             group { show: nd_mix
                 for a in mx {

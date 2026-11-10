@@ -6737,3 +6737,14 @@ come from `pactl -f json list sink-inputs` through `lib/node/mixer` (opencode's,
 while the page is shown. The poll is ignored while a level is being dragged, so the row never jumps back.
 
 **Verified.** Unit 723 / 0; scenes compile; `bin/mooi check` green.
+
+## D240 · 2026-11-10 · The words, in the player
+
+When Settings → The Pill → Lyrics in the player is on (off by default: LRCLIB is told the song's title and
+artist), the player shows the line being sung, lit, and the next one under it, in place of the spectrum, for
+songs with synced lyrics. It uses mooi's own player's fetcher (`player/lyricfetch`) and its cache: a `.lrc`
+beside the song first, then the saved answer, then LRCLIB, asked once per song, with "none" remembered too. The
+key is the one the player uses, so the two never ask twice. Lines are read and followed by `lib/node/lyrics`
+(opencode's, D230).
+
+**Verified.** Unit 724 / 0; scenes compile; `bin/mooi check` green.

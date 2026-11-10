@@ -61,7 +61,7 @@ def scene():
          '// this springs and draws.', '',
          'scene Node {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl"',
+         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "brightnessctl", "curl", "cat"',
          '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
@@ -152,6 +152,7 @@ def scene():
           '    fact nd_hasbri = false',
           '    fact nd_mix = false   // the player\'s other page: one row per app playing (D239)',
           '    model mx max 4 { name: text; vol: number; muted: bool }',
+          '    fact nd_lyon = false  // synced words for this song (D240)', '    text nd_lyc = ""', '    text nd_lyn = ""',
           ] + [f'    fact nd_sp{i} = 0' for i in range(32)] + [
           '    // privacy (D232): the microphone or the camera started or stopped',
           '    text nd_pvt = ""', '    text nd_pvd = ""', '    fact nd_pvon = false',
@@ -410,8 +411,14 @@ def player_parts(c, acc, ink, dim, hull):
               f'{c}        on press pbz{code} {{ emit nd_pl({code}) }}']
     L += [f'{c}        text "1" {{ at: nb_x + 164 + 4 * 46 + 30, nb_y + 116; anchor: center; size: 8; weight: 700; family: {MONO}; color: {acc}; show: nd_loop == 2 }}',
           f'{c}        // the music, mirrored: the low bands meet in the middle']
+    L += [f'{c}        group {{ show: not nd_lyon']
     for k in range(32):
-        L += [f'{c}        box {{ from: nb_x + 164 + {k} * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp{k} * 34; size: pw / 32 - 2, nd_sp{k} * 34 + 1; corner: 1; color: {acc}; opacity: 0.35 + 0.4 * nd_sp{k} }}']
+        L += [f'{c}            box {{ from: nb_x + 164 + {k} * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp{k} * 34; size: pw / 32 - 2, nd_sp{k} * 34 + 1; corner: 1; color: {acc}; opacity: 0.35 + 0.4 * nd_sp{k} }}']
+    L += [f'{c}        }}',
+          f'{c}        // the words, in time: the line sung now, lit, and the next one under it',
+          f'{c}        group {{ show: nd_lyon',
+          f'{c}            text nd_lyc {{ at: nb_x + 164, nb_y + 164; anchor: left center; size: 13; weight: 600; family: {SANS}; color: {acc}; width: pw; lines: 1 }}',
+          f'{c}            text nd_lyn {{ at: nb_x + 164, nb_y + 183; anchor: left center; size: 10; family: {SANS}; color: {dim}; width: pw; lines: 1 }} }}']
     L += [f'{c}    }}']
     # the mixer: one row per app that plays, its level to drag, its mute
     L += [f'{c}    group {{ show: nd_mix',

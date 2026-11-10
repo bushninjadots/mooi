@@ -20,6 +20,7 @@ local MK = require("lib/node/mediakit")
 local NT = require("lib/node/notices")
 local CALC = require("lib/node/calc")
 local MX = require("lib/node/mixer")
+local LY = require("lib/node/lyrics")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
@@ -755,10 +756,37 @@ local function devices_poll()
         if m ~= nil then fact.nd_micm = m end
     end)
 end
+-- the words (D240, only while Settings allows it): mooi's own player's fetcher and cache (a file beside the song,
+-- the saved answer, LRCLIB once), followed at a quarter of a second
+local fetch_lyrics = require("player/lyricfetch")({ read = read })
+N.lyr, N.lyr_key = nil, nil
+local function lyrics_now()
+    local m = N.media
+    local on = N.settings.node and N.settings.node.lyrics == true
+    if not on or m.title == "" then N.lyr, N.lyr_key = nil, nil; fact.nd_lyon = false; return end
+    local key = "remote:" .. tostring(m.artist) .. "\t" .. tostring(m.title)   -- as mooi's player keys a song
+    if key == N.lyr_key then return end
+    N.lyr_key, N.lyr = key, nil
+    fact.nd_lyon = false
+    fetch_lyrics(key, m.artist, m.title, "", math.floor((m.length or 0) + 0.5), nil, function(raw)
+        if N.lyr_key ~= key then return end
+        local lines = (type(raw) == "string" and raw ~= "none" and raw ~= "instrumental") and LY.parse(raw) or {}
+        N.lyr = #lines > 0 and lines or nil
+        fact.nd_lyon = N.lyr ~= nil
+    end)
+end
+local lyr_cur
+every(250, function()
+    if N.kind ~= "player" or not N.lyr then return end
+    local pos = N.pl and N.pl.position_ms or 0
+    if N.pl and N.pl.playing and N.pl_at then pos = pos + (wall() - N.pl_at) end
+    local w = LY.window(N.lyr, pos, 1)
+    if w.cur ~= lyr_cur then lyr_cur = w.cur; text.nd_lyc = w.cur ~= "" and w.cur or "♪"; text.nd_lyn = w.next end
+end)
 local function open_player()
     for _, k in ipairs(HELD) do ST.release(N.st, k) end
     ST.hold(N.st, "player")
-    player_poll(); devices_poll()
+    player_poll(); devices_poll(); lyrics_now()
     run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end)
     render()
 end
@@ -768,6 +796,7 @@ every(1000, function()
     if N.kind ~= "player" then return end
     pl_tick = pl_tick + 1
     player_poll()
+    lyrics_now()
     if pl_tick % 2 == 0 then devices_poll() end
     if pl_tick % 3 == 0 then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
 end)
