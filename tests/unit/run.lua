@@ -6527,6 +6527,41 @@ do
     end)
 end
 
+section("the node's launcher finds more than apps (D234)")
+do
+    local CMD = require("lib/node/commands")
+    test("commands: a name's start, a word of it, or its other words; every word of the query must be found", function()
+        eq(CMD.score("sett", "Settings", ""), 3); eq(CMD.score("picker", "Wallpaper picker", ""), 2)
+        eq(CMD.score("pomodoro", "Time: timer", "focus pomodoro"), 1); eq(CMD.score("lock zzz", "Lock the screen", ""), 0)
+        eq(CMD.score("(", "Settings", ""), 0, "a pattern character is only a character")
+        eq(CMD.match("lock")[1].args[1], "lock")
+        eq(#CMD.match("", 3), 0, "nothing typed: no commands")
+        for _, c in ipairs(CMD.LIST) do
+            for _, a in ipairs(c.args) do assert(a ~= "stop" and a ~= "restart-hypr" and a ~= "session", "never anything that stops or restarts") end
+        end
+    end)
+    test("windows: by title or app, never mooi's own surfaces or unmapped ones", function()
+        local cl = { { address = "0x1", class = "firefox", title = "Mail — Firefox", workspace = { id = 2, name = "2" } },
+                     { address = "0x2", class = "pleamar", title = "mooi" }, { address = "0x3", class = "kitty", title = "zsh", mapped = false },
+                     "junk", { class = "foot" } }
+        local w = CMD.windows(cl, "fire", 2)
+        eq(#w, 1); eq(w[1].address, "0x1"); eq(w[1].workspace, "2")
+        eq(#CMD.windows(cl, "mooi", 2), 0); eq(#CMD.windows(nil, "x"), 0)
+    end)
+    test("merge: strong matches first, apps next, weaker after; never more than six; nothing lost twice", function()
+        local apps = {}; for i = 1, 6 do apps[i] = { kind = "app", name = "App " .. i } end
+        local cmds = { { kind = "command", name = "Settings", score = 3 }, { kind = "command", name = "x", score = 1 } }
+        local out = CMD.merge(apps, cmds, {}, 6)
+        eq(#out, 6); eq(out[1].name, "Settings"); eq(out[6].name, "x", "the weaker one still shown")
+        eq(#CMD.merge({}, {}, {}, 6), 0)
+    end)
+    test("the node: a chosen row acts by its kind; a window's address goes through lib/hypr's check", function()
+        local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()
+        assert(l:find('local d = HY.dispatch("focus", a.address)', 1, true))
+        assert(l:find('run("mooi", a.args, function() end)', 1, true))
+    end)
+end
+
 section("the Pill studio (D229)")
 do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end

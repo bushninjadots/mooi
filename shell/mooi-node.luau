@@ -14,6 +14,8 @@ local TK = require("lib/node/timekit")
 local PV = require("lib/node/privacy")
 local CF = require("lib/node/clockfont")
 local DV = require("lib/node/devices")
+local CMD = require("lib/node/commands")
+local HY = require("lib/hypr")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
@@ -179,9 +181,12 @@ local function show_launcher(b)
     for i, a in ipairs(N.results) do
         local p = places[i]
         local name = tostring(a.name or a.id or "")
-        local icon = type(a.icon) == "string" and a.icon or ""
+        local icon = (a.kind == "app" and type(a.icon) == "string") and a.icon or ""
+        local letter = a.kind == "command" and "M" or a.kind == "window" and string.sub(tostring(a.app or name), 1, 1) or string.sub(name ~= "" and name or "?", 1, 1)
+        local tag = CMD.TAG[a.kind] or ""
+        if a.kind == "window" and a.workspace ~= "" then tag = "WINDOW · " .. a.workspace end
         rows[i] = { x = p.x, y = p.y, w = p.w, h = p.h, name = name, icon = icon, iconed = icon ~= "",
-                    letter = string.upper(string.sub(name ~= "" and name or "?", 1, 1)) }
+                    letter = string.upper(letter), tag = tag }
     end
     model.lr = rows
     fact.nd_sel = N.sel
@@ -542,16 +547,42 @@ end)
 -- ── the launcher ──
 local function search()
     local wd = read("widgets.json", "json")
-    N.results = WB.grid_apps(N.apps, type(wd) == "table" and wd.launch_counts or {}, N.q, 6)
+    local apps = WB.grid_apps(N.apps, type(wd) == "table" and wd.launch_counts or {}, N.q, 6)
+    for _, a in ipairs(apps) do a.kind = a.kind or "app" end
+    -- D234: mooi's own commands and the open windows, when something is typed
+    if N.q:match("%S") then
+        apps = CMD.merge(apps, CMD.match(N.q, 3), CMD.windows(N.clients, N.q, 2), 6)
+    end
+    N.results = apps
     N.sel = math.max(0, math.min(N.sel, #N.results - 1))
 end
+-- what a chosen row does: an app starts, a window comes forward, a command of mooi's runs, a sum is copied
+local function choose(a)
+    if not a then return end
+    if a.kind == "window" then
+        local d = HY.dispatch("focus", a.address)   -- the address checked, the expression built safely
+        if d then run("hyprctl", { "dispatch", d }, function() end) end
+    elseif a.kind == "command" then
+        run("mooi", a.args, function() end)
+    elseif a.kind == "calc" then
+        run("wl-copy", { tostring(a.value) }, function() end)
+    else
+        pcall(sys.call, "apps.launch", a.exec)
+    end
+end
 local function open_launcher()
-    for _, k in ipairs({ "system", "universe" }) do ST.release(N.st, k) end
+    for _, k in ipairs(HELD) do ST.release(N.st, k) end
     ST.hold(N.st, "launcher")
     N.q, N.sel = "", 0
     text.nd_q = ""
     search()
     render()
+    -- the open windows, for the search to find (a moment later is soon enough: nobody has typed yet)
+    run("hyprctl", { "-j", "clients" }, function(out)
+        local ok, c = pcall(json.decode, out or "")
+        N.clients = ok and type(c) == "table" and c or {}
+        if N.q:match("%S") then search(); render() end
+    end)
 end
 on("text:nd_q", function(v) N.q = tostring(v or ""); N.sel = 0; search(); render() end)
 
@@ -598,7 +629,7 @@ on("nd_key", function(v)
         elseif v == 40 or v == 9 then N.sel = math.min(#N.results - 1, N.sel + 1)
         elseif v == 13 then
             local a = N.results[N.sel + 1]
-            if a then pcall(sys.call, "apps.launch", a.exec) end
+            choose(a)
             ST.release(N.st, "launcher")
         end
     elseif N.kind == "universe" then
@@ -611,7 +642,7 @@ on("nd_key", function(v)
 end)
 on("nd_lr", function(v)
     local a = N.results[math.floor(tonumber(v) or -1) + 1]
-    if a then pcall(sys.call, "apps.launch", a.exec) end
+    choose(a)
     ST.release(N.st, "launcher")
     render()
 end)
