@@ -6329,6 +6329,7 @@ do
         assert(LK.set_choice(t, "seed", 3)); eq(t.seed, "ring")
         assert(not LK.set_choice(t, "seed", 9))
         LK.nudge(t, "seed", 1); eq(t.seed, "twin"); LK.nudge(t, "seed", 1); LK.nudge(t, "seed", 1); eq(t.seed, "clock", "D241")
+        LK.nudge(t, "seed", 1); eq(t.seed, "bmo", "D253")
         LK.nudge(t, "seed", 1); eq(t.seed, "line", "round again")
         local ck = LK.shape(LK.normalise({ seed = "clock" })); eq(ck.seed_w, 74); eq(ck.seed_h, 22)
         LK.nudge(t, "cards", 1); LK.nudge(t, "cards", 1); LK.nudge(t, "cards", 1); eq(t.cards, 5, "kept in its range")
