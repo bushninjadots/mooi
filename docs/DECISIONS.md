@@ -7658,3 +7658,11 @@ three; and after each win the team makes camp, every creature getting back a thi
 too). Now a player who recruits until the team is full and then rests wins stage 1 in 998 of 1000 runs and walks the
 whole road in about one in five, the medals the hard points; a unit test holds that range. Checked live: the road,
 the two starters against one foe, the log.
+
+## D292 · 2026-11-10 · CI green again: a shellcheck note in the wrong place
+
+CI had failed on every push since D277/D278: in the Dashboard's update launcher (`mooi drawer-update`), a
+`# shellcheck disable=SC2086` note stood on each `case` branch, where shellcheck refuses directives (SC1124), and the
+gate stops on any shellcheck error. Shellcheck is not installed on this machine, so the local gate said only that it
+had checked syntax and passed. The note now stands once above the `case`. Checked with CI's own shellcheck in a
+container (`koalaman/shellcheck:stable`, `-S error` on `bin/mooi`, `tests/*.sh`, `setup/*.sh`): clean.

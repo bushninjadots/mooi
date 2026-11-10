@@ -1757,12 +1757,11 @@ EOF
         what="pkg update"; [ "${1:-}" = self ] && what="self-update"
         for t in ${TERMINAL:-} kitty foot alacritty wezterm ghostty konsole xterm; do
             command -v "$t" >/dev/null 2>&1 || continue
+            # $what is two words on purpose (`pkg update`): split, never globbed (it is one of two fixed strings)
+            # shellcheck disable=SC2086
             case "$t" in
-                # shellcheck disable=SC2086 # two words on purpose
                 foot) setsid -f "$t" "$self" $what ;;
-                # shellcheck disable=SC2086
                 wezterm) setsid -f "$t" start -- "$self" $what ;;
-                # shellcheck disable=SC2086
                 *) setsid -f "$t" -e "$self" $what ;;
             esac
             exit 0
