@@ -6863,3 +6863,14 @@ the system cluster, which Super used to show, are pills on it now. Each pill gro
 - **Clipboard** follows with opencode's cliphist helper.
 
 **Verified.** Unit 758 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.
+
+## D248 · 2026-11-10 · The long pill
+
+The owner asked for a choice of a longer pill with modules inside it. The studio's new **Rest** page: **At rest**
+is either the seed or a **long pill**, with five modules to turn on or off: the workspaces (a dot each, the one
+you are on lit), what has the focus, what plays (with a dot that moves with the music), the battery (where there
+is one) and the time. The pill is as wide as what it holds, and everything else still grows out of it. What has
+the focus is asked every 1.5 s, and the clock checked every 5 s, only while the long pill shows them. The
+studio's tabs are narrower so seven fit.
+
+**Verified.** Unit 760 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.

@@ -6710,6 +6710,22 @@ do
     end)
 end
 
+section("the long pill (D248)")
+do
+    local LK = require("lib/node/look")
+    test("at rest a seed, or a long pill with the modules chosen; old looks keep the seed", function()
+        eq(LK.preset("organic").rest, "seed"); eq(LK.facts(LK.normalise({ rest = "long" })).nd_long, 1)
+        eq(LK.normalise({ rest = "huge" }).rest, "seed")
+        eq(#LK.SCHEMA.Rest, 6)
+        for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab) end
+    end)
+    test("the pill is as wide as what it holds; the window is asked for only while shown", function()
+        local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()
+        assert(l:find("shape.seed_w, shape.seed_h = w, 26", 1, true))
+        assert(l:find('if N.kind ~= "rest" or N.look.rest ~= "long" or N.look.m_window ~= "on" or N.studio.open then return end', 1, true))
+    end)
+end
+
 section("the node: what a review of its logic found (D244)")
 do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end

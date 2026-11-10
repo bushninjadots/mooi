@@ -360,6 +360,11 @@ render = function()
     else kind, reacting = ST.current(N.st, t, { playing = N.media.playing and on_for("media"), near = N.near }) end
     -- on the studio's stage: in the middle, a little way down
     local shape = LK.shape(look)
+    -- the long pill (D248): as wide as what it holds
+    if look.rest == "long" and kind == "rest" and N.long_layout then
+        local w = N.long_layout()
+        shape.seed_w, shape.seed_h = w, 26
+    end
     if studio then shape.top = 96 end
     local anchor = studio and "centre" or (cfg().anchor or "centre")
     local data = { n = #N.ws.list }
@@ -996,6 +1001,52 @@ every(250, function()
     if N.kind ~= "notice" or not ev then return end
     if N.near or N.nc_open then ev.till = ev.till + 250 end
     fact.nd_ncl = math.max(0, math.min(1, (ev.till - now()) / ST.LIFE.notice))
+end)
+
+-- ── the long pill (D248): the modules the look chose, laid out left to right, the pill as wide as they are ──
+N.awin = ""
+local MOD_ORDER = { { key = "m_spaces", kind = 3 }, { key = "m_window", kind = 2 }, { key = "m_music", kind = 5 },
+                    { key = "m_battery", kind = 4 }, { key = "m_clock", kind = 1 } }
+N.long_layout = function()
+    local L, x, rows = N.look, 14, {}
+    for _, m in ipairs(MOD_ORDER) do
+        if L[m.key] == "on" then
+            local w, label = 0, ""
+            if m.kind == 1 then w, label = 40, os.date("%H:%M")
+            elseif m.kind == 2 then label = N.awin ~= "" and N.awin or "Desktop"; w = math.min(190, #label * 6 + 6)
+            elseif m.kind == 3 then
+                local n = math.min(10, #N.ws.list)
+                w = n * 12
+                fact.nd_lmws = n
+                local a = 0
+                for i, ws in ipairs(N.ws.list) do if ws.id == N.ws.active then a = i - 1 end end
+                fact.nd_lmwa = a
+            elseif m.kind == 4 then
+                if N.bat then w, label = 44, math.floor(N.bat + 0.5) .. "%"; fact.nd_lmbat = N.bat / 100 end
+            elseif m.kind == 5 then
+                if N.media.playing and N.media.title ~= "" then label = N.media.title; w = math.min(160, #label * 6 + 16) end
+            end
+            if w > 0 then rows[#rows + 1] = { kind = m.kind, x = x, w = w, label = label }; x = x + w + 12 end
+        end
+    end
+    model.lm = rows
+    return math.max(40, x + 2)
+end
+-- what has the focus, while the long pill shows it (asked every second and a half, only then)
+every(1500, function()
+    if N.kind ~= "rest" or N.look.rest ~= "long" or N.look.m_window ~= "on" or N.studio.open then return end
+    run("hyprctl", { "-j", "activewindow" }, function(out)
+        local ok, w = pcall(json.decode, out or "")
+        local t = (ok and type(w) == "table" and type(w.class) == "string" and w.class ~= "") and tostring(w.title ~= "" and w.title or w.class) or ""
+        if t ~= N.awin then N.awin = t; render() end
+    end)
+end)
+-- the minute turning, while the long pill holds the clock
+local long_min
+every(5000, function()
+    if N.kind ~= "rest" or N.look.rest ~= "long" or N.look.m_clock ~= "on" then return end
+    local m = os.date("%H:%M")
+    if m ~= long_min then long_min = m; render() end
 end)
 
 -- ── the shelf and its branches (D247): Super grows side pills out of the node — what you reach often — and each

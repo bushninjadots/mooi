@@ -12,13 +12,21 @@ M.PRESETS = { "organic", "minimal", "technical", "cyber" }
 M.SLOTS = 3
 
 -- the studio's tabs; the first is the presets' own page (no rows)
-M.TABS = { "Presets", "Shape", "Surface", "Motion", "Music", "Parts" }
+M.TABS = { "Presets", "Rest", "Shape", "Surface", "Motion", "Music", "Parts" }
 
 -- each row: key, label, description, and either a range (lo, hi, unit) or a choice (values, names)
 local function range(key, label, desc, lo, hi, unit) return { key = key, label = label, desc = desc, lo = lo, hi = hi, unit = unit or "" } end
 local function choice(key, label, desc, values, names) return { key = key, label = label, desc = desc, values = values, names = names } end
 
 M.SCHEMA = {
+    Rest = {
+        choice("rest", "At rest", "A seed, or a longer pill that holds a few things of its own", { "seed", "long" }, { "Seed", "Long pill" }),
+        choice("m_clock", "Clock", "The time, in the long pill", { "off", "on" }, { "Off", "On" }),
+        choice("m_window", "Window", "What has the focus, in the long pill", { "off", "on" }, { "Off", "On" }),
+        choice("m_spaces", "Workspaces", "A dot for each, the one you are on lit", { "off", "on" }, { "Off", "On" }),
+        choice("m_battery", "Battery", "How full it is (only where there is one)", { "off", "on" }, { "Off", "On" }),
+        choice("m_music", "Music", "What plays, while something does", { "off", "on" }, { "Off", "On" }),
+    },
     Shape = {
         choice("seed", "Seed", "What rests at the top while nothing happens", { "line", "dot", "ring", "twin", "bar", "clock" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock" }),
         range("seed_w", "Seed width", "How long the resting seed is", 6, 80, " px"),
@@ -62,7 +70,8 @@ local BASE = {
     seed = "line", seed_w = 22, seed_h = 6, round = 100, style = "organic", top = 8,
     texture = "solid", fill = 95, outline = 10, glow = 70, accent = "phos", glow_colour = "phos",
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
-    viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
+    viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse",
+    rest = "seed", m_clock = "on", m_window = "on", m_spaces = "on", m_battery = "off", m_music = "on", cards = 3, satellites = 6, sat_style = "pill", dim = 28, orbit = 520,
 }
 local PRESET = {
     organic = {},
@@ -242,6 +251,7 @@ function M.facts(t)
         nd_stg = t.stagger / 100, nd_bd = t.breath / 100, nd_mu = t.music / 100,
         nd_viz = ix({ "bars", "wave", "dots", "off" }, t.viz), nd_cov = ix({ "square", "round" }, t.cover),
         nd_sst = ix({ "pill", "dot", "tick" }, t.sat_style), nd_ldm = t.dim / 100, nd_ur = t.orbit,
+        nd_long = t.rest == "long" and 1 or 0,
         nd_mf = ix({ "capsule", "visualiser", "vinyl" }, t.music_form), nd_smu = ix({ "still", "pulse", "bars" }, t.seed_music),
     }
 end

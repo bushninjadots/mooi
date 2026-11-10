@@ -36,7 +36,7 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_mu", 0.6, "how much it moves with the music"), ("nd_viz", 0, "the media's music: 0 bars · 1 wave · 2 dots · 3 off"),
         ("nd_cov", 0, "the cover: 0 square · 1 round"), ("nd_sst", 0, "satellites: 0 pills · 1 dots · 2 ticks"),
         ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width"),
-        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
+        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "System", "Search", "Tour"]
 TABS = ["Presets", "Shape", "Surface", "Motion", "Music", "Parts"]
@@ -167,6 +167,10 @@ def scene():
           '    model br max 7 { label: text; detail: text; pinned: bool }',
           '    model wl max 7 { img: image 112, 63; on: bool }',
           '    text nd_nq = ""',
+          '    // the long pill (D248): what it holds at rest, each a module laid out by the logic',
+          '    model lm max 5 { kind: number; x: number; w: number; label: text }',
+          '    fact nd_lmws = 0', '    fact nd_lmwa = 0   // the workspaces: how many, which one is on (0-based)',
+          '    fact nd_lmbat = 0',
           '    // privacy (D232): the microphone or the camera started or stopped',
           '    text nd_pvt = ""', '    text nd_pvd = ""', '    fact nd_pvon = false',
           '    // satellites',
@@ -247,10 +251,10 @@ def studio_deck():
          f'{d}    box {{ from: st_x, st_dy; size: 940, 470; corner: 18; color: fl.hull; opacity: 0.97 }} }}',
          f'{d}box {{ from: st_x, st_dy; size: 940, 470; corner: 18; stroke: 1; color: fl.trace_dim }}']
     for i, t in enumerate(TABS):
-        x = f"st_x + {24 + i * 92}"
-        L += [f'{d}text "{t}" {{ at: {x} + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == {i}, 700, 500); family: {SANS}; color: if(nd_tab == {i}, fl.engrave, fl.muted) }}',
-              f'{d}box {{ from: {x} + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == {i} }}',
-              f'{d}zone box stt{i} {{ from: {x}, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "{t}"; selected: nd_tab == {i}; show: nd_studio }}',
+        x = f"st_x + {20 + i * 79}"
+        L += [f'{d}text "{t}" {{ at: {x} + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == {i}, 700, 500); family: {SANS}; color: if(nd_tab == {i}, fl.engrave, fl.muted) }}',
+              f'{d}box {{ from: {x} + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == {i} }}',
+              f'{d}zone box stt{i} {{ from: {x}, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "{t}"; selected: nd_tab == {i}; show: nd_studio }}',
               f'{d}on press stt{i} {{ emit nd_tab({i}) }}']
     L += button(d, "stc3", "st_x + 940 - 24 - 336", "st_dy + 22", 100, 30, "RESET", "nd_stc(3)")
     L += button(d, "stc1", "st_x + 940 - 24 - 224", "st_dy + 22", 108, 30, "SHUFFLE", "nd_stc(1)")
@@ -662,19 +666,37 @@ def surface():
           f'{c}let nd_sy = nb_y - (nd_sh - nb_h) / 2',
           f'{c}let nd_sr = min(nb_r, nd_sh / 2)',
           f'{c}// the seed: a line, a bar or a dot (filled), a ring (an outline), twins (two halves breathing in turn)',
-          f'{c}group {{ show: nd_kind == 0 and not nd_cap and nd_seed != 5; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc',
+          f'{c}group {{ show: nd_kind == 0 and not nd_cap and nd_seed != 5 and nd_long == 0; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc',
           f'{c}    box {{ from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; color: {acc}; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 0 or nd_seed == 1 or nd_seed == 4 }}',
           f'{c}    box {{ from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; stroke: 1.5; color: {acc}; opacity: 0.6 + 0.35 * nd_br; show: nd_seed == 2 }}',
           f'{c}    box {{ from: nd_sx, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: {acc}; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 3 }}',
           f'{c}    box {{ from: nd_sx + nd_sw * 0.55, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: {acc}; opacity: (0.55 + 0.35 * (1 - nd_br)) * nd_fill; show: nd_seed == 3 }}',
           f'{c}}}',
           f'{c}// the seed with music as bars (D246): five little bars over it while something plays',
-          f'{c}group {{ show: nd_kind == 0 and nd_smu == 2 and nd_playing and not nd_cap and nd_seed != 5']
+          f'{c}group {{ show: nd_kind == 0 and nd_smu == 2 and nd_playing and not nd_cap and nd_seed != 5 and nd_long == 0']
     for k in range(5):
         L += [f'{c}    box {{ from: nb_x + nb_w / 2 - 14 + {k} * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp{13 + k} * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp{13 + k} * 9 * nd_mu); corner: 1.5; color: {acc}; opacity: 0.95 }}']
     L += [f'{c}}}',
+          f'{c}// the long pill (D248): at rest, a pill that holds the modules the look chose — the time, what has the focus,',
+          f'{c}// the workspaces, the battery, what plays',
+          f'{c}group {{ show: nd_kind == 0 and nd_long == 1 and not nd_cap',
+          f'{c}    group {{ glow: 10, 0.4 * nd_gw, nd_glc',
+          f'{c}        box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; opacity: nd_fill }} }}',
+          f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: {acc}; opacity: 0.4; show: nd_ol > 0.05 }}',
+          f'{c}    group {{ opacity: nd_cf',
+          f'{c}        clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
+          f'{c}        for m in lm {{',
+          f'{c}            let mx = nb_x + m.x',
+          f'{c}            text m.label {{ at: mx, nb_y + nb_h / 2; anchor: left center; size: 11; weight: 700; family: {MONO}; color: if(m.kind == 1, {acc}, {ink}); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 }}',
+          f'{c}            text m.label {{ at: mx + if(m.kind == 5, 10, 0), nb_y + nb_h / 2; anchor: left center; size: 10; family: {SANS}; color: {ink}; width: m.w - if(m.kind == 5, 10, 0); lines: 1; show: m.kind == 2 or m.kind == 5 }}',
+          f'{c}            repeat wsd in 0..10 {{ ellipse {{ at: mx + 4 + wsd * 12, nb_y + nb_h / 2; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, {acc}, {dim}); show: m.kind == 3 and wsd < nd_lmws }} }}',
+          f'{c}            box {{ from: mx + m.w - 3, nb_y + nb_h / 2 - 5; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, {acc}); show: m.kind == 4 }}',
+          f'{c}            ellipse {{ at: mx + 3, nb_y + nb_h / 2; radius: 2 + 2 * lv.level; color: {acc}; show: m.kind == 5 }}',
+          f'{c}        }}',
+          f'{c}    }}',
+          f'{c}}}',
           f'{c}// the clock seed: the time in mooi\'s 5×7 matrix, two pixels a cell, on a small capsule',
-          f'{c}group {{ show: nd_kind == 0 and nd_seed == 5 and not nd_cap',
+          f'{c}group {{ show: nd_kind == 0 and nd_seed == 5 and not nd_cap and nd_long == 0',
           f'{c}    group {{ glow: 8, 0.4 * nd_gw, nd_glc',
           f'{c}        box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; opacity: nd_fill }} }}',
           f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: {acc}; opacity: 0.45; show: nd_ol > 0.05 }}',

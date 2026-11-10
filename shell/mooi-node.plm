@@ -262,6 +262,7 @@ scene Node {
     fact nd_ldm = 0.28     // the search's dim
     fact nd_ur = 520     // the orbit's width
     fact nd_mf = 0     // music as: 0 a capsule · 1 a visualiser · 2 a record
+    fact nd_long = 0     // at rest: 0 the seed · 1 the long pill
     fact nd_smu = 1     // the seed with music: 0 still · 1 a pulse · 2 bars
     fact nd_tx = 949
     fact nd_ty = 8
@@ -535,6 +536,11 @@ scene Node {
     model br max 7 { label: text; detail: text; pinned: bool }
     model wl max 7 { img: image 112, 63; on: bool }
     text nd_nq = ""
+    // the long pill (D248): what it holds at rest, each a module laid out by the logic
+    model lm max 5 { kind: number; x: number; w: number; label: text }
+    fact nd_lmws = 0
+    fact nd_lmwa = 0   // the workspaces: how many, which one is on (0-based)
+    fact nd_lmbat = 0
     // privacy (D232): the microphone or the camera started or stopped
     text nd_pvt = ""
     text nd_pvd = ""
@@ -673,22 +679,40 @@ scene Node {
         let nd_sy = nb_y - (nd_sh - nb_h) / 2
         let nd_sr = min(nb_r, nd_sh / 2)
         // the seed: a line, a bar or a dot (filled), a ring (an outline), twins (two halves breathing in turn)
-        group { show: nd_kind == 0 and not nd_cap and nd_seed != 5; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc
+        group { show: nd_kind == 0 and not nd_cap and nd_seed != 5 and nd_long == 0; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc
             box { from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 0 or nd_seed == 1 or nd_seed == 4 }
             box { from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; stroke: 1.5; color: nd_acc; opacity: 0.6 + 0.35 * nd_br; show: nd_seed == 2 }
             box { from: nd_sx, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 3 }
             box { from: nd_sx + nd_sw * 0.55, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * (1 - nd_br)) * nd_fill; show: nd_seed == 3 }
         }
         // the seed with music as bars (D246): five little bars over it while something plays
-        group { show: nd_kind == 0 and nd_smu == 2 and nd_playing and not nd_cap and nd_seed != 5
+        group { show: nd_kind == 0 and nd_smu == 2 and nd_playing and not nd_cap and nd_seed != 5 and nd_long == 0
             box { from: nb_x + nb_w / 2 - 14 + 0 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp13 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp13 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
             box { from: nb_x + nb_w / 2 - 14 + 1 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp14 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp14 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
             box { from: nb_x + nb_w / 2 - 14 + 2 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp15 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp15 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
             box { from: nb_x + nb_w / 2 - 14 + 3 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp16 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp16 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
             box { from: nb_x + nb_w / 2 - 14 + 4 * 6, nb_y + nb_h / 2 + 1 - (2 + nd_sp17 * 9 * nd_mu); size: 3.5, 2 * (2 + nd_sp17 * 9 * nd_mu); corner: 1.5; color: nd_acc; opacity: 0.95 }
         }
+        // the long pill (D248): at rest, a pill that holds the modules the look chose — the time, what has the focus,
+        // the workspaces, the battery, what plays
+        group { show: nd_kind == 0 and nd_long == 1 and not nd_cap
+            group { glow: 10, 0.4 * nd_gw, nd_glc
+                box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: fl.hull; opacity: nd_fill } }
+            box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: nd_acc; opacity: 0.4; show: nd_ol > 0.05 }
+            group { opacity: nd_cf
+                clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
+                for m in lm {
+                    let mx = nb_x + m.x
+                    text m.label { at: mx, nb_y + nb_h / 2; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(m.kind == 1, nd_acc, fl.engrave); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 }
+                    text m.label { at: mx + if(m.kind == 5, 10, 0), nb_y + nb_h / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - if(m.kind == 5, 10, 0); lines: 1; show: m.kind == 2 or m.kind == 5 }
+                    repeat wsd in 0..10 { ellipse { at: mx + 4 + wsd * 12, nb_y + nb_h / 2; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, nd_acc, fl.muted); show: m.kind == 3 and wsd < nd_lmws } }
+                    box { from: mx + m.w - 3, nb_y + nb_h / 2 - 5; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, nd_acc); show: m.kind == 4 }
+                    ellipse { at: mx + 3, nb_y + nb_h / 2; radius: 2 + 2 * lv.level; color: nd_acc; show: m.kind == 5 }
+                }
+            }
+        }
         // the clock seed: the time in mooi's 5×7 matrix, two pixels a cell, on a small capsule
-        group { show: nd_kind == 0 and nd_seed == 5 and not nd_cap
+        group { show: nd_kind == 0 and nd_seed == 5 and not nd_cap and nd_long == 0
             group { glow: 8, 0.4 * nd_gw, nd_glc
                 box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: fl.hull; opacity: nd_fill } }
             box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: nd_acc; opacity: 0.45; show: nd_ol > 0.05 }
@@ -1308,29 +1332,29 @@ scene Node {
             group { glow: 24, 0.4, #000000
                 box { from: st_x, st_dy; size: 940, 470; corner: 18; color: fl.hull; opacity: 0.97 } }
             box { from: st_x, st_dy; size: 940, 470; corner: 18; stroke: 1; color: fl.trace_dim }
-            text "Presets" { at: st_x + 24 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 0, 700, 500); family: "Exo 2"; color: if(nd_tab == 0, fl.engrave, fl.muted) }
-            box { from: st_x + 24 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 0 }
-            zone box stt0 { from: st_x + 24, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Presets"; selected: nd_tab == 0; show: nd_studio }
+            text "Presets" { at: st_x + 20 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 0, 700, 500); family: "Exo 2"; color: if(nd_tab == 0, fl.engrave, fl.muted) }
+            box { from: st_x + 20 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 0 }
+            zone box stt0 { from: st_x + 20, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Presets"; selected: nd_tab == 0; show: nd_studio }
             on press stt0 { emit nd_tab(0) }
-            text "Shape" { at: st_x + 116 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
-            box { from: st_x + 116 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 1 }
-            zone box stt1 { from: st_x + 116, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Shape"; selected: nd_tab == 1; show: nd_studio }
+            text "Shape" { at: st_x + 99 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
+            box { from: st_x + 99 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 1 }
+            zone box stt1 { from: st_x + 99, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Shape"; selected: nd_tab == 1; show: nd_studio }
             on press stt1 { emit nd_tab(1) }
-            text "Surface" { at: st_x + 208 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
-            box { from: st_x + 208 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 2 }
-            zone box stt2 { from: st_x + 208, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Surface"; selected: nd_tab == 2; show: nd_studio }
+            text "Surface" { at: st_x + 178 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
+            box { from: st_x + 178 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 2 }
+            zone box stt2 { from: st_x + 178, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Surface"; selected: nd_tab == 2; show: nd_studio }
             on press stt2 { emit nd_tab(2) }
-            text "Motion" { at: st_x + 300 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 3, 700, 500); family: "Exo 2"; color: if(nd_tab == 3, fl.engrave, fl.muted) }
-            box { from: st_x + 300 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 3 }
-            zone box stt3 { from: st_x + 300, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Motion"; selected: nd_tab == 3; show: nd_studio }
+            text "Motion" { at: st_x + 257 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 3, 700, 500); family: "Exo 2"; color: if(nd_tab == 3, fl.engrave, fl.muted) }
+            box { from: st_x + 257 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 3 }
+            zone box stt3 { from: st_x + 257, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Motion"; selected: nd_tab == 3; show: nd_studio }
             on press stt3 { emit nd_tab(3) }
-            text "Music" { at: st_x + 392 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 4, 700, 500); family: "Exo 2"; color: if(nd_tab == 4, fl.engrave, fl.muted) }
-            box { from: st_x + 392 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 4 }
-            zone box stt4 { from: st_x + 392, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Music"; selected: nd_tab == 4; show: nd_studio }
+            text "Music" { at: st_x + 336 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 4, 700, 500); family: "Exo 2"; color: if(nd_tab == 4, fl.engrave, fl.muted) }
+            box { from: st_x + 336 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 4 }
+            zone box stt4 { from: st_x + 336, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Music"; selected: nd_tab == 4; show: nd_studio }
             on press stt4 { emit nd_tab(4) }
-            text "Parts" { at: st_x + 484 + 44, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 5, 700, 500); family: "Exo 2"; color: if(nd_tab == 5, fl.engrave, fl.muted) }
-            box { from: st_x + 484 + 14, st_dy + 52; size: 60, 2; corner: 1; color: nd_acc; show: nd_tab == 5 }
-            zone box stt5 { from: st_x + 484, st_dy + 18; size: 88, 38; cursor: pointer; role: tab; label: "Parts"; selected: nd_tab == 5; show: nd_studio }
+            text "Parts" { at: st_x + 415 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 5, 700, 500); family: "Exo 2"; color: if(nd_tab == 5, fl.engrave, fl.muted) }
+            box { from: st_x + 415 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 5 }
+            zone box stt5 { from: st_x + 415, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Parts"; selected: nd_tab == 5; show: nd_studio }
             on press stt5 { emit nd_tab(5) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; color: nd_acc; opacity: if(false, 0.9, if(stc3.hover, 0.18, 0)) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; stroke: 1; color: if(false, nd_acc, fl.trace_lit) }
