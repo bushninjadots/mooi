@@ -877,7 +877,11 @@ on("nd_key", function(v)
     end
     if N.kind == "panel" then
         if v == 27 then ST.release(N.st, "panel"); render()
-        elseif N.panel == "keys" and (v == 38 or v == 40) then N.ksc = N.ksc + (v == 38 and -1 or 1); show_keys(); render() end
+        elseif N.panel == "keys" and (v == 38 or v == 40) then N.ksc = N.ksc + (v == 38 and -1 or 1); show_keys(); render()
+        elseif N.panel == "notes" and (v == 38 or v == 40) then
+            N.npage = math.max(0, (N.npage or 0) + (v == 38 and -1 or 1))
+            N.panel_shown = nil; render()
+        end
         return
     end
     if N.kind == "player" then
@@ -1355,18 +1359,35 @@ local function show_calendar()
     model.cal = rows
     N.panel_sub = string.upper(mo.title)
 end
+-- D279: the page's changes go to the bar the same way a new note does — an inbox file in mooi's
+-- own data folder, never a command line. Then the page asks again once the bar has had its moment.
+local function inbox_add(name, entry)
+    local box = read(name, "json")
+    box = type(box) == "table" and box or {}
+    box[#box + 1] = entry
+    pcall(sys.call, "files.write", name, json.encode(box))
+end
+local function inbox_refresh(page)
+    after(400, function() if N.panel == page then N.panel_shown = nil; render() end end)
+end
 local function show_notes()
     local list = NOTES.decode(read("notes.json", "json"))
-    table.sort(list, function(a, b) if a.pinned ~= b.pinned then return a.pinned end; return a.time > b.time end)
+    table.sort(list, function(a, b)
+        if a.pinned ~= b.pinned then return a.pinned end
+        if a.time ~= b.time then return a.time > b.time end
+        return a.id > b.id
+    end)
+    local cards, page = NOTES.slice(list, N.npage or 0, 6)
+    N.npage = page
     local rows = {}
     N.panel_items = {}
-    for i, n in ipairs(list) do
-        if i > 7 then break end
-        rows[i] = { label = NOTES.one_line(n.text, 80), detail = ago(n.time), pinned = n.pinned }
+    for i, n in ipairs(cards) do
+        local first, rest = NOTES.split(n.text)
+        rows[i] = { id = n.id, title = first, rest = rest, more = rest ~= "", age = ago(n.time), pinned = n.pinned, tag = n.tag or 0 }
         N.panel_items[i] = n.text
     end
-    model.br = rows
-    N.panel_sub = #list .. " NOTES  ·  A PRESS COPIES ONE"
+    model.ncard = rows
+    N.panel_sub = #list .. " NOTES"
 end
 local function show_stash()
     local items = STASH.decode(read("stash.json", "json"))
@@ -1374,12 +1395,13 @@ local function show_stash()
     local rows = {}
     N.panel_items = {}
     for i, it in ipairs(items) do
-        if i > 7 then break end
-        rows[i] = { label = it.name, detail = it.detail ~= "" and it.detail or ago(it.time), pinned = false }
+        if i > 6 then break end
+        rows[i] = { id = it.id, icon = STASH.glyph(it.kind), name = it.name,
+                    detail = it.detail ~= "" and it.detail or ago(it.time) }
         N.panel_items[i] = it.url
     end
-    model.br = rows
-    N.panel_sub = #items == 0 and "EMPTY  ·  DROP THINGS ON THE BAR'S STASH" or (#items .. " KEPT  ·  A PRESS OPENS ONE")
+    model.stz = rows
+    N.panel_sub = #items == 0 and "NOTHING KEPT YET" or (#items .. " KEPT")
 end
 local function show_walls()
     if not N.walls then
@@ -1580,7 +1602,8 @@ open_panel = function(page)
     for _, k in ipairs(HELD) do ST.release(N.st, k) end
     N.panel = PANEL_PAGES[page] and page or "home"
     N.panel_sub, N.panel_shown = "", nil
-    if N.panel == "notes" then text.nd_nq = "" end
+    if N.panel == "notes" then text.nd_nq = ""; N.npage = 0 end
+    if N.panel == "stash" then N.sclear, fact.nd_sclear = nil, false end
     if N.panel == "keys" then N.kq, N.ksc, text.nd_kq = "", 0, ""; load_keys() end
     if (N.panel == "system" or N.panel == "home") and N.poll_extra then N.poll_extra() end
     if N.panel == "wifi" then N.wifi_ssid, fact.nd_wsel, text.nd_wpw, fact.nd_werron = "", 0, "", false end
@@ -2112,6 +2135,7 @@ on("nd_br", function(v)
             box = type(box) == "table" and box or {}
             box[#box + 1] = t
             pcall(sys.call, "files.write", "notes-inbox.json", json.encode(box))
+            N.npage = 0   -- the new note is at the top, so it can be seen
             after(400, function() if N.panel == "notes" then N.panel_shown = nil; render() end end)
             N.nq, text.nd_nq = "", ""
         end
@@ -2127,6 +2151,74 @@ on("nd_br", function(v)
         end
     end
     render()
+end)
+-- D279: the notes board pages with the wheel; a pin or a × is an op in the bar's inbox.
+on("nd_nsw", function(v)
+    if N.panel ~= "notes" then return end
+    local d = math.floor(tonumber(v) or 0)
+    if d == 0 then return end
+    N.npage = math.max(0, (N.npage or 0) + d)
+    N.panel_shown = nil
+    render()
+end)
+on("nd_npin", function(v)
+    local id = math.floor(tonumber(v) or 0)
+    if id < 1 or N.panel ~= "notes" then return end
+    inbox_add("notes-inbox.json", { op = "pin", id = id })
+    inbox_refresh("notes")
+end)
+on("nd_ndel", function(v)
+    local id = math.floor(tonumber(v) or 0)
+    if id < 1 or N.panel ~= "notes" then return end
+    inbox_add("notes-inbox.json", { op = "remove", id = id })
+    inbox_refresh("notes")
+end)
+-- D279: the Stash page fills the box without the bar's dock: the clipboard, the newest thing in
+-- Downloads, or (two presses within three seconds) nothing at all.
+on("nd_sclip", function()
+    if N.panel ~= "stash" then return end
+    run("wl-paste", { "--no-newline" }, function(out, code)
+        if code ~= 0 or type(out) ~= "string" or out == "" then return end
+        inbox_add("stash-inbox.json", out)
+        inbox_refresh("stash")
+    end)
+end)
+on("nd_sdl", function()
+    if N.panel ~= "stash" then return end
+    local okh, home = pcall(sys.ask, "env", "HOME")
+    if not okh or type(home) ~= "string" or home == "" then return end
+    run("find", { home .. "/Downloads", "-mindepth", "1", "-maxdepth", "1", "-type", "f", "-printf", "%T@ %p\n" },
+        function(out, code)
+            if code ~= 0 or type(out) ~= "string" then return end
+            local best, when = nil, -1
+            for line in string.gmatch(out, "[^\r\n]+") do
+                local stamp, path = string.match(line, "^(%S+) (.*)$")
+                local t = tonumber(stamp)
+                if path and path ~= "" and t and t > when then best, when = path, t end
+            end
+            if not best then return end
+            inbox_add("stash-inbox.json", best)
+            inbox_refresh("stash")
+        end)
+end)
+on("nd_sclear", function()
+    if N.panel ~= "stash" then return end
+    if N.sclear and now() - N.sclear_at < 3000 then
+        N.sclear, fact.nd_sclear = nil, false
+        inbox_add("stash-inbox.json", { op = "clear" })
+        inbox_refresh("stash")
+    else
+        N.sclear, N.sclear_at = true, now()
+        fact.nd_sclear = true
+        after(3100, function() if N.panel == "stash" then N.sclear, fact.nd_sclear = nil, false; render() end end)
+    end
+    render()
+end)
+on("nd_stdel", function(v)
+    local id = math.floor(tonumber(v) or 0)
+    if id < 1 or N.panel ~= "stash" then return end
+    inbox_add("stash-inbox.json", { op = "remove", id = id })
+    inbox_refresh("stash")
 end)
 
 -- ── the screen it stands on ──

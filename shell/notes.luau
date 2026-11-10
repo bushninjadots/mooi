@@ -131,12 +131,12 @@ return function(ctx)
     local function inbox()
         local ok, box = pcall(sys.ask, "files.read", "notes-inbox.json", "json")
         if not ok or type(box) ~= "table" or #box == 0 then return end
-        for _, t in ipairs(box) do
-            local c = pad.clean(tostring(t or ""))
-            if c ~= "" then items = pad.add(items, c, now_s()) end
-        end
+        -- D279: the panel can pin or remove a kept note as well as add one; a plain string is
+        -- still a note, so an older panel keeps working.
+        local changed
+        items, changed = pad.receive(items, box, now_s())
         pcall(sys.call, "files.write", "notes-inbox.json", "[]")
-        save(); show()
+        if changed then save(); show() end
     end
     pcall(sys.watch, "files:notes-inbox.json", inbox)
     inbox()

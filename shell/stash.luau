@@ -366,18 +366,34 @@ return function(ctx)
     end)
 
     -- A press on the ×: the item goes, and a copy of ours with it. A link or a piece of text
-    -- is only a line here, so it goes without a trace.
-    on("stash_del", function(v)
-        local id = math.floor(tonumber(v) or -1)
-        local it
-        items, it = st.remove(items, id)
+    -- is only a line here, so it goes without a trace. Forgetting is one path whether the press
+    -- was on the bar's box or on the node's Stash page (D279).
+    local function forget(it)
         if not it then return end
         if dir ~= "" and string.sub(it.url, 1, #dir + 1) == dir .. "/" then
             run("rm", { "-rf", "--", it.url })
             if it.poster then run("rm", { "-f", "--", it.poster }) end
         end
+    end
+    local function del_item(id)
+        local it
+        items, it = st.remove(items, id)
+        if not it then return false end
+        forget(it)
+        return true
+    end
+    on("stash_del", function(v)
+        if not del_item(math.floor(tonumber(v) or -1)) then return end
         save(); show(); say("REMOVED")
     end)
+
+    -- Clear the box: every item, and every copy of ours. The folders stay, with nothing in them.
+    local function clear_all()
+        for _, it in ipairs(items) do forget(it) end
+        items = {}
+        here, page = 0, 0
+        save(); show(); say("CLEARED")
+    end
 
     -- The wheel pages the list: one page a notch, a touchpad's small steps adding up.
     on("stash_scroll", function(v)
@@ -392,6 +408,23 @@ return function(ctx)
 
     if dir ~= "" then run("mkdir", { "-p", dir }) end
     load()
+
+    -- D279: the node's Stash page fills the box without the bar's dock. The same inbox pattern as
+    -- the notes: a file in mooi's own data folder, never a command line. A plain string is something
+    -- to keep; `{ op = "clear" }` empties the box; `{ op = "remove", id = … }` forgets one item.
+    local function inbox()
+        local ok, box = pcall(sys.ask, "files.read", "stash-inbox.json", "json")
+        if not ok or type(box) ~= "table" or #box == 0 then return end
+        pcall(sys.call, "files.write", "stash-inbox.json", "[]")
+        for _, o in ipairs(st.inbox(box)) do
+            if o.op == "take" then take(o.text, 0)
+            elseif o.op == "remove" then
+                if del_item(o.id) then save(); show(); say("REMOVED") end
+            elseif o.op == "clear" then clear_all() end
+        end
+    end
+    pcall(sys.watch, "files:stash-inbox.json", inbox)
+    inbox()
 
     fact.stash_page = 0
     fact.stash_saying = false

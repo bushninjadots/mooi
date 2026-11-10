@@ -1568,3 +1568,166 @@ do
         eq(type(W.plan("count", 1, 4, 9).label), "string")
     end)
 end
+
+-- The notes board and the stash's own way in (D272, opencode's): the page's helpers and the
+-- scene that wears them. The first half is pure; the second reads the built scene, so a zone or
+-- an event renamed without its handler (or the other way round) is caught here.
+section("the notes board and the stash's way in (D279): the page's helpers")
+do
+    local N = require("lib/notes")
+    local S = require("lib/stash")
+
+    local function note(id, text, pinned, time)
+        return { id = id, text = text, time = time or id, pinned = pinned or false, tag = 0 }
+    end
+
+    test("slice: nothing is one empty page, not none", function()
+        local out, page, pages = N.slice({}, 0, 6)
+        eq(#out, 0); eq(page, 0); eq(pages, 1)
+        local nilOut, nilPage, nilPages = N.slice(nil, 2, 6)
+        eq(#nilOut, 0); eq(nilPage, 0); eq(nilPages, 1)
+    end)
+
+    test("slice: six a page, the second page carrying the rest", function()
+        local list = {}
+        for i = 1, 7 do list[i] = note(i, "note " .. i) end
+        local one, p1, pages = N.slice(list, 0, 6)
+        eq(#one, 6); eq(p1, 0); eq(pages, 2); eq(one[1].id, 1)
+        local two, p2 = N.slice(list, 1, 6)
+        eq(#two, 1); eq(p2, 1); eq(two[1].id, 7)
+        local last = N.slice(list, 2, 6)
+        eq(#last, 1); eq(select(2, N.slice(list, 2, 6)), 1, "past the end stays on the last page")
+    end)
+
+    test("slice: the page is clamped both ways, and a size below one is one", function()
+        local list = {}
+        for i = 1, 3 do list[i] = note(i, "note " .. i) end
+        local _, low = N.slice(list, -4, 2)
+        eq(low, 0, "before the first")
+        local _, high = N.slice(list, 99, 2)
+        eq(high, 1, "after the last")
+        local one = N.slice(list, 0, 0)
+        eq(#one, 1, "a size of nothing is one")
+    end)
+
+    test("receive: plain strings still add, cleaned, and an empty one changes nothing", function()
+        local list, changed = N.receive({}, { "  a note  ", "", "  " }, 500)
+        eq(#list, 1); eq(list[1].text, "a note"); eq(list[1].time, 500)
+        assert(changed, "a note came in")
+        local same, quiet = N.receive(list, {}, 500)
+        eq(#same, 1); eq(quiet, false, "an empty box changes nothing")
+    end)
+
+    test("receive: an op removes one and a pin toggles one, by id", function()
+        local list = { note(4, "keep"), note(9, "pin me") }
+        list, changed = N.receive(list, { { op = "pin", id = 9 } }, 10)
+        assert(changed); eq(N.find(list, 9).pinned, true)
+        list, changed = N.receive(list, { { op = "pin", id = 9 } }, 10)
+        assert(changed); eq(N.find(list, 9).pinned, false, "a second press lets it go")
+        list, changed = N.receive(list, { { op = "remove", id = 4 } }, 10)
+        assert(changed); eq(N.find(list, 4), nil); eq(#list, 1)
+    end)
+
+    test("receive: an op without a real id, or one this list does not hold, is harmless", function()
+        local list = { note(1, "one") }
+        local same, changed = N.receive(list, {
+            { op = "remove", id = 0 },
+            { op = "pin", id = -2 },
+            { op = "sing", id = 1 },
+            { op = "remove", id = 70 },
+            "not a table",
+        }, 0)
+        eq(#same, 2); eq(same[2].text, "not a table", "a plain string is still a note")
+        eq(changed, true, "the string was still a note")
+        local box = N.receive({}, { { op = "remove", id = 5 }, { op = "pin", id = 6 } }, 0)
+        eq(#box, 0, "nothing known, nothing made")
+    end)
+
+    test("the stash's inbox: a string is something to take, and the ops are clear and remove", function()
+        local ops = S.inbox({ "https://example.org/a", { op = "clear" }, { op = "remove", id = 7 } })
+        eq(#ops, 3)
+        eq(ops[1].op, "take"); eq(ops[1].text, "https://example.org/a")
+        eq(ops[2].op, "clear")
+        eq(ops[3].op, "remove"); eq(ops[3].id, 7)
+    end)
+
+    test("the stash's inbox: an empty string, a bad id and a strange op are passed over", function()
+        local ops = S.inbox({
+            "", 4, true, { op = "take" }, { op = "clear", id = 2 },
+            { op = "remove", id = 0 }, { op = "remove", id = 3 },
+        })
+        eq(#ops, 2, "clear, whatever its id, then the one real remove")
+        eq(ops[1].op, "clear"); eq(ops[2].op, "remove"); eq(ops[2].id, 3)
+        eq(#S.inbox(nil), 0); eq(#S.inbox("words"), 0)
+    end)
+
+    test("the stash's glyph: each kind its own, and anything unknown is a file", function()
+        eq(S.glyph(0), "󰌷", "link")
+        eq(S.glyph(1), "󰋩", "image")
+        eq(S.glyph(2), "󰕧", "video")
+        eq(S.glyph(3), "󰈔", "file")
+        eq(S.glyph(4), "󰦨", "text")
+        eq(S.glyph(5), "󰎆", "audio")
+        eq(S.glyph(99), "󰈔", "past the kinds: a file")
+        eq(S.glyph(nil), "󰈔", "nothing: a file")
+    end)
+end
+
+section("the notes board and the stash's way in (D279): the scene that wears them")
+do
+    local function read(path)
+        local f = io.open(path, "r")
+        if not f then return "" end
+        local s = f:read("*a")
+        f:close()
+        return s
+    end
+    local plm = read("shell/mooi-node.plm")
+    local luau = read("shell/mooi-node.luau")
+
+    local function has(what, where, why)
+        assert(where:find(what, 1, true), (why or what) .. " is missing")
+    end
+
+    test("the notes page is six cards in two columns, with a pin and a × on each", function()
+        has("model ncard max 6", plm, "the card model")
+        has("zone box pnc", plm, "a card's zone")
+        has("on press pnc { emit nd_br(10 + c.index) }", plm, "a press copies the card's note")
+        has("zone box pnp", plm, "the pin's zone")
+        has("emit nd_npin(c.id)", plm, "a press pins")
+        has("zone box pnx", plm, "the ×'s zone")
+        has("emit nd_ndel(c.id)", plm, "a press forgets")
+        has("on scroll pns { emit nd_nsw(if(wheel > 0, -1, 1)) }", plm, "the wheel's page")
+        has("NOTES.slice(list, N.npage or 0, 6)", luau, "six cards a page")
+        has('N.panel_sub = #list .. " NOTES"', luau, "the header's count")
+    end)
+
+    test("the stash page has its three buttons, its rows and its empty state", function()
+        has("zone box ps1", plm, "From clipboard")
+        has("emit nd_sclip", plm, "From clipboard's event")
+        has("zone box ps2", plm, "Downloads")
+        has("emit nd_sdl", plm, "Downloads' event")
+        has("zone box ps3", plm, "Clear")
+        has("emit nd_sclear", plm, "Clear's event")
+        has("zone box psz", plm, "an item's zone")
+        has("zone box psx", plm, "an item's ×")
+        has("emit nd_stdel(s.id)", plm, "an item's × forgets it")
+        has("Nothing kept yet — copy something and press From clipboard", plm, "the empty state")
+        has('"stash-inbox.json"', luau, "the bar's inbox")
+        has("STASH.glyph(it.kind)", luau, "a row's kind icon")
+    end)
+
+    test("the pages' changes go through mooi's inbox files, never a command line", function()
+        has('inbox_add("notes-inbox.json", { op = "pin", id = id })', luau, "pin's op")
+        has('inbox_add("notes-inbox.json", { op = "remove", id = id })', luau, "remove's op")
+        has('pcall(sys.call, "files.write", name, json.encode(box))', luau, "the write")
+        has('wl-paste", { "--no-newline" }', luau, "the clipboard read")
+        has('inbox_add("stash-inbox.json", { op = "clear" })', luau, "clear's op")
+    end)
+
+    test("both pages are in the panel's event list", function()
+        for _, name in ipairs({ "nd_nsw", "nd_npin", "nd_ndel", "nd_sclip", "nd_sdl", "nd_sclear", "nd_stdel" }) do
+            has("event " .. name .. " ->", plm, name)
+        end
+    end)
+end

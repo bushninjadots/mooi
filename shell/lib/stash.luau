@@ -381,6 +381,30 @@ function M.decode(t)
     return out, folders
 end
 
+-- What came in on the panel's inbox (D279): plain strings are things to keep (the clipboard's
+-- text, a path, an address), a table is an op on the box (`clear`, or `remove` one item by id).
+-- Anything else is dropped. The bar decides what a string is (lib/stash.kind_of decides the kind).
+function M.inbox(box)
+    local out = {}
+    for _, e in ipairs(type(box) == "table" and box or {}) do
+        if type(e) == "string" and e ~= "" then
+            out[#out + 1] = { op = "take", text = e }
+        elseif type(e) == "table" then
+            local op = tostring(e.op or "")
+            local id = math.floor(tonumber(e.id) or 0)
+            if op == "clear" then out[#out + 1] = { op = "clear" }
+            elseif op == "remove" and id >= 1 then out[#out + 1] = { op = "remove", id = id } end
+        end
+    end
+    return out
+end
+
+-- The glyph a row wears: a link, a picture, a film, a file, text, a song; a file is the fallback.
+local GLYPHS = { "󰌷", "󰋩", "󰕧", "󰈔", "󰦨", "󰎆" }
+function M.glyph(kind)
+    return GLYPHS[math.floor(tonumber(kind) or -1) + 1] or GLYPHS[4]
+end
+
 -- What is written to the file.
 function M.encode(list, folders)
     local rows = {}

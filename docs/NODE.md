@@ -58,11 +58,20 @@ every page and as tall as the page needs. Super again, Esc, or a press on an emp
 - **Home** — a header with the time, the date, the weather (from the Nexus's weather) and the battery; a strip
   of four readings (CPU, RAM, temperature, GPU) that turn warm when high; the music (cover, song, transport, a
   seek bar; press the cover for the player); five buttons for Wi-Fi, Silent, Timer, Bluetooth and Game mode;
-  volume and brightness sliders; the three newest notices with `Clear all`; and the page icons.
-- **Calendar**, **Notes**, **Clipboard**, **Stash**, **Wallpaper** and **Power** — what the shelf's
+  volume and brightness sliders; the three newest notices with `Clear all`; and the page icons. A button's icon
+  does what it says; the Wi-Fi and Bluetooth names open their pages.
+- **Calendar**, **Clipboard** and **Power** — what the shelf's branches held, now pages
+  of the same panel.
+- **Notes** — the writing line, then six notes a page as cards in two columns: the first line, the next
+  line muted when there is more, its age, a pin lit when pinned, and the note's tag as a 3 px strip on the
+  card's left edge. A press copies; `×` on hover forgets it, the pin holds it or lets it go. The wheel or
+  ↑ ↓ pages the rest, and the header says how many there are.
+- **Stash** — three ways in without the bar's dock: `From clipboard`, `Downloads` (its newest file), and
+  `Clear` (twice within three seconds). The things kept follow, each with its kind's icon, name, detail
+  and `×`; a press opens one. An empty box says "Nothing kept yet — copy something and press From
+  clipboard".
 - **Wallpaper** — nine pictures to a page in a 3 × 3 grid, each named, the one you wear outlined and ticked.
   Back and On turn the pages (the wheel too), Random wears one at random, and All opens the full picker (Super+W).
-  branches held, now pages of the same panel.
 - **Wi-Fi** — the network in use, its strength and whether it is locked, then the networks in reach,
   strongest first: bars, a lock, and `known` for one used before. Press a known or open network to join
   it; a locked new one asks for its password in a secret line. `×` forgets a known one. The refresh

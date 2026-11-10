@@ -170,6 +170,45 @@ function M.remove(list, id)
     return list, false
 end
 
+-- One page of the board: `size` notes from `at`, clamped to what is there. Says the page
+-- actually shown (a wheel past either end stays on the last) and how many pages there are,
+-- so the panel can page without counting the list itself.
+function M.slice(list, at, size)
+    list = list or {}
+    size = math.floor(tonumber(size) or 6)
+    if size < 1 then size = 1 end
+    local pages = math.max(1, math.ceil(#list / size))
+    local page = math.floor(tonumber(at) or 0)
+    if page < 0 then page = 0 end
+    if page > pages - 1 then page = pages - 1 end
+    local out = {}
+    local first = page * size + 1
+    for i = first, math.min(#list, first + size - 1) do out[#out + 1] = list[i] end
+    return out, page, pages
+end
+
+-- What came in on the panel's inbox (D279): a string is a note to add, a table is an op on
+-- one already kept (`remove` or `pin`). Plain strings keep working, so an older bar and a new
+-- panel never disagree. Says whether anything changed.
+function M.receive(list, box, now)
+    list = list or {}
+    local changed = false
+    for _, e in ipairs(type(box) == "table" and box or {}) do
+        if type(e) == "string" then
+            local c = M.clean(e)
+            if c ~= "" then list = M.add(list, c, now); changed = true end
+        elseif type(e) == "table" then
+            local id = math.floor(tonumber(e.id) or 0)
+            local op = tostring(e.op or "")
+            if id >= 1 then
+                if op == "remove" then list = M.remove(list, id); changed = true
+                elseif op == "pin" then list = M.pin(list, id); changed = true end
+            end
+        end
+    end
+    return list, changed
+end
+
 -- The file read back: whatever is not a note is dropped, ids are made unique (a repeated or
 -- missing one gets a new number, so no note is lost), pinned first then the newest, and the list
 -- is capped. A file written by an older mooi, or by hand, never raises.

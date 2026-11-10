@@ -7359,3 +7359,34 @@ so there is nothing here to build it against or test it on.
 
 **Verified (both).** Unit 870 / 0; both scenes compile; live: `mooi self-check` answered behind 0 with this tree's
 changes noticed, and the Dashboard showed the line after `mooi refresh`.
+
+## D279 · 2026-11-10 · Notes as cards, and a Stash the Pill can fill (opencode's)
+
+The owner: "i want to improve notes layout visuals" and "stash box also". Notes was one line a row under
+its writing line; it becomes a board of six cards in two columns. Each card carries the note's first line
+in 12 bold, its next line in 11 muted when there is one, its age in 9 mono, a pin glyph that lights when
+the note is held, and the note's tag colour (none, phos, flare, ember, trace) as a 3 px strip on its left
+edge. A press copies the note as before; a `×` on hover forgets it and the pin toggles it. The wheel, or
+↑ and ↓, pages the rest; the header's right side says `N NOTES`.
+
+The Stash page was a dead end in Pill mode: with no bar dock there was nothing to drop on, and the page
+only said so. It now has three filled buttons of its own — `From clipboard` (whatever the clipboard holds,
+handed to the same path/link/text decision as a drop), `Downloads` (the newest file in `~/Downloads`), and
+`Clear`, which arms on the first press and empties the box on a second within three seconds, as Power
+does. The kept things follow as rows with their kind's glyph, name, detail and a `×`; a press opens one.
+The empty state names the way in instead of the missing dock.
+
+Both pages change the bar's files the way a new note already did: through an inbox in mooi's data folder,
+never a command line. `notes-inbox.json` now carries either a plain string (a note to add, still) or
+`{ op = "pin" | "remove", id = … }`; `stash-inbox.json` carries text to take, `{ op = "clear" }` or
+`{ op = "remove", id = … }`. `lib/notes.receive`, `lib/notes.slice`, `lib/stash.inbox` and
+`lib/stash.glyph` hold the working-out and are tested; the page asks again shortly after an op so the
+bar's answer is what it shows. The notes page is 450 px tall and the stash's 430.
+
+**Verified.** Unit 871 / 0 (the new page tests and the scene's zones); the scene compiles; the node's
+globals are still only the runtime's.
+
+**Reviewed (Claude).** Brought onto main by hand: it was made before D272–D278, so the panel's heights, models
+and the guide were merged, and its own number moved from D272 (taken by Home) to D279. One change: a note of a
+single line now wraps onto two lines of its card instead of being cut after a few words. Checked live after
+`mooi refresh`: six cards with their ages and pins, and the Stash page's three buttons over its empty state.
