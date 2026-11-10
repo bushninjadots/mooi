@@ -454,7 +454,6 @@ M.SCHEMA = {
     -- what it may unfold, how it moves and answers the pointer, where it sits — intent, not implementation
     { path = "node.on", kind = "boolean", default = true },
     { path = "node.personality", kind = "enum", values = { "organic", "minimal", "technical", "cyber" }, default = "organic" },
-    { path = "node.motion", kind = "enum", values = { "calm", "normal", "lively" }, default = "normal" },
     { path = "node.pointer", kind = "enum", values = { "off", "low", "normal", "high" }, default = "normal" },
     { path = "node.anchor", kind = "enum", values = { "left", "centre", "right" }, default = "centre" },
     { path = "node.media", kind = "boolean", default = true },

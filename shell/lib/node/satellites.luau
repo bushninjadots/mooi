@@ -18,7 +18,6 @@ function M.collect(ctx)
     if ctx.online == false then add("network", 75, "OFFLINE") end
     if ctx.mic then add("mic", 65, "MIC") end
     if ctx.cam then add("cam", 66, "CAM") end
-    if ctx.timer then add("timer", 50, tostring(ctx.timer)) end
     table.sort(out, function(a, b) return a.priority > b.priority end)
     return out
 end

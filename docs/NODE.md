@@ -66,8 +66,7 @@ marks are:
 - **Microphone** — `MIC` while an application is using the microphone.
 - **Camera** — `CAM` while a camera is open.
 
-The engine also has a timer mark, but the node shows a running timer as the capsule below, so you
-will not normally see one. The microphone and camera marks are warm, as are recording, a low battery
+A running timer has no mark: it is the capsule below. The microphone and camera marks are warm, as are recording, a low battery
 and being offline. Pressing the microphone or camera mark does nothing; the system and battery marks
 open the system cluster, and the notice mark opens the notices.
 
@@ -220,11 +219,13 @@ counting; press one to switch to it.
   move it; Set turns it on and Turn off turns it off. It re-arms for the next day after it rings.
 
 While any of them runs, the resting seed shows the capsule described above. When one finishes, the
-node becomes a card that pulses and chimes three soft notes of its own. Answer it with a click, Esc,
-Space, Return or OK. The pointer resting on it or Super will not dismiss it, and if several things
+node becomes a card that pulses and chimes three soft notes of its own. Answer it with a click on it
+(or on OK). It never takes the keyboard, so a timer that ends while you type steals no keys; the
+pointer resting on it or Super will not dismiss it, and if several things
 finish, they wait their turn, oldest first. If a time tool finishes under a fullscreen window, where
 you cannot see the node, a desktop notification says so too.
 
+The panel never takes the keyboard. Super, or a press on an empty part of the panel, folds it away.
 Everything is kept in `node-time.json` against the wall clock, so a timer survives a restart.
 
 ### The player
@@ -234,8 +235,8 @@ square or a round one, as you chose), the title and artist, and a seek bar with 
 length. Drag the bar to seek; the player is told once the drag rests.
 
 The transport is Shuffle, Back, Play or pause, Next and Repeat. Repeat cycles off, the whole playlist
-and the one track, and the track repeat is marked with a small `1`. Space plays or pauses, ← and →
-go back and forward, and Esc or Super lets the player go.
+and the one track, and the track repeat is marked with a small `1`. The player never takes the keyboard; Super, or a press
+on an empty part of the panel, lets it go.
 
 Along the floor, the music is mirrored around the middle: 32 bars, with the lower 16 mirrored, from
 the bar's own visualiser feed. The node asks for that feed only while the player is open, every three
@@ -383,9 +384,9 @@ The page also carries the three keys:
 | The Pill: workspaces | `keys.node_universe` | `SUPER + Tab` |
 | The Pill: time | `keys.node_time` | `SUPER + T` |
 
-Two older settings still exist in the file but have no row. `node.personality` (Organic by default)
+One older setting still exists in the file but has no row: `node.personality` (Organic by default)
 only seeds the look before the studio has saved one; once `node-look.json` exists, the look comes from
-it. `node.motion` (Normal by default) is no longer read by anything.
+it.
 
 If you have reduced motion turned on, the node does not breathe, whatever the look's Breathing says.
 
@@ -397,12 +398,11 @@ If you have reduced motion turned on, the node does not breathe, whatever the lo
 | Super+Space | The search line. |
 | Super+Tab | The workspaces' orbit. |
 | Super+T | The time panel. |
-| Esc | Closes the search, the orbit, the time panel, the player or the studio; answers a finished timer. |
-| Space | Plays or pauses in the player; answers a finished timer. |
-| ← and → | Previous and next in the player; turn the orbit; change the mode in the time panel; change a value in the studio. |
+| Esc | Closes the search, the orbit or the studio. |
+| ← and → | Turn the orbit; change a value in the studio. |
 | ↑ and ↓ | Move between rows in the search and the studio. |
 | Tab | The next page in the studio. |
-| Return | Takes the chosen search row; goes to the workspace in front; answers a finished timer; moves a studio row forward. |
+| Return | Takes the chosen search row; goes to the workspace in front; moves a studio row forward. |
 | Wheel | Turns the orbit. |
 | `mooi node wake` | Wakes the node. |
 | `mooi node launch` | Opens the search line. |

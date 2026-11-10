@@ -6780,3 +6780,16 @@ their own body (not on a control). This replaces D231's Esc/Space/Return for the
 changes only when a device comes or goes), so the watch starts two processes every two seconds, not three.
 
 **Verified.** Unit 745 / 0; scenes compile; `bin/mooi check` green.
+
+## D243 · 2026-11-10 · The node's user guide, and what writing it found
+
+`docs/NODE.md` (opencode's, task 6) is the node's guide: at rest, what it grows, what you open, the studio row
+by row, Settings, every key and command, privacy, and files. In review its keyboard passages were brought up to
+date with D242. Writing it against the code turned up corrections to this record. **D240:** the order is the
+saved answer first, then a `.lrc` beside the song, then LRCLIB, and the node passes no song path (it plays
+whatever MPRIS reports), so for the node it is the cache, then LRCLIB. **D226:** Super lets go of a panel you
+opened; it does not clear a passing card. **D229:** the seeds are six now (D241 added the clock). Dead code
+removed: the timer satellite (nothing passed it; a running timer is the capsule) and `node.motion` (read by
+nothing since D229; settings.json's old value is dropped on reading).
+
+**Verified.** Unit tests green; `bin/mooi check` green.

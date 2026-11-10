@@ -30,7 +30,7 @@ local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's,
 local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11 }
 -- what a press, Super or another opening lets go of (`done` is never among them: it waits to be answered)
 local HELD = { "system", "launcher", "universe", "time", "player" }
-local SAT_KIND = { music = 1, rec = 2, battery = 3, network = 4, music_rec = 5, notice = 6, mic = 7, timer = 8, cam = 9 }
+local SAT_KIND = { music = 1, rec = 2, battery = 3, network = 4, music_rec = 5, notice = 6, mic = 7, cam = 9 }   -- 8 was the timer's mark: a running timer is the seed's capsule (D231)
 
 local function read(name, kind)
     local ok, v
