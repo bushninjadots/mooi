@@ -1201,3 +1201,62 @@ do
     end)
 end
 
+section("the node's helpers (D246): terminal")
+do
+    local T = require("lib/node/terminal")
+
+    test("terminal: kitty is opened with the mooi class and -e", function()
+        eq(table.concat(T.argv("kitty", { "btop" }), " "), "kitty --class mooi-float -e btop")
+    end)
+
+    test("terminal: each known terminal gets its own arguments", function()
+        eq(table.concat(T.argv("foot", { "htop" }), " "), "foot --app-id mooi-float htop")
+        eq(table.concat(T.argv("alacritty", { "nvim" }), " "), "alacritty --class mooi-float -e nvim")
+        eq(table.concat(T.argv("wezterm", { "top" }), " "), "wezterm start --class mooi-float -- top")
+        eq(table.concat(T.argv("ghostty", { "top" }), " "), "ghostty --class=mooi-float -e top")
+        eq(table.concat(T.argv("konsole", { "top" }), " "), "konsole -e top")
+        eq(table.concat(T.argv("xterm", { "top" }), " "), "xterm -e top")
+    end)
+
+    test("terminal: an unknown terminal or a bad command has no argv", function()
+        eq(T.argv("notaterm", { "top" }), nil)
+        eq(T.argv("kitty", {}), nil)
+        eq(T.argv("kitty", "top"), nil)
+        eq(T.argv("kitty", { 1 }), nil)
+        eq(T.argv(nil, { "top" }), nil)
+    end)
+
+    test("terminal: the preferred terminal wins when it is installed", function()
+        eq(T.pick({ kitty = true, foot = true }, "foot"), "foot")
+    end)
+
+    test("terminal: an unavailable preference falls back to the list's order", function()
+        eq(T.pick({ foot = true, konsole = true }, "kitty"), "foot")
+    end)
+
+    test("terminal: no installed terminal gives nothing", function()
+        eq(T.pick({}, "kitty"), nil)
+        eq(T.pick(nil, nil), nil)
+        eq(T.pick({ notaterm = true }, "notaterm"), nil)
+    end)
+
+    test("terminal: the which command asks for every known name", function()
+        eq(table.concat(T.which_args(), " "), "sh -c command -v kitty foot alacritty wezterm ghostty konsole xterm")
+    end)
+
+    test("terminal: which output is read as a set of known names", function()
+        local have = T.parse_which("/usr/bin/kitty\n/usr/bin/foot\n/opt/mykitty\n/usr/bin/notaterm\n")
+        eq(have.kitty, true)
+        eq(have.foot, true)
+        eq(have.notaterm, nil)
+        eq(have.mykitty, nil)
+        eq(next(T.parse_which(nil)), nil)
+    end)
+
+    test("terminal: odd which output is ignored", function()
+        local have = T.parse_which("\r\n  /usr/local/bin/xterm  \r\nnot a path\n")
+        eq(have.xterm, true)
+        eq(next(T.parse_which("")), nil)
+    end)
+end
+
