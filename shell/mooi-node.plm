@@ -1433,176 +1433,180 @@ scene Node {
             zone box dnz { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "{nd_dnt}: OK"; show: nd_kind == 9 }
             on press dnz { emit nd_dn }
         }
-        // the player: the cover, the song, where in it (drag to go there), its transport, the music mirrored round
-        // the middle along its floor, and three meters on the right — volume, the screen's light, the microphone
+        // the player: the cover at the left, the song over its foot and beside it, the music a wave through
+        // the middle, where in it, its transport as icons, and three meters on the right to drag
         group { show: nd_kind == 11; opacity: nd_cf
             clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
-            let pw = nb_w - 164 - 160
-            group { clip box { from: nb_x + 16, nb_y + 16; size: 132, 132; corner: if(nd_cov == 1, 66, max(3, 14 * nd_rnd)) }
-                box { from: nb_x + 16, nb_y + 16; size: 132, 132; color: fl.well }
-                image nd_cover { at: nb_x + 16, nb_y + 16; size: 132, 132; fit: cover; show: nd_arted } }
-            text nd_title { at: nb_x + 164, nb_y + 32; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: fl.engrave; width: pw - 66; lines: 1 }
-            text nd_artist { at: nb_x + 164, nb_y + 54; anchor: left center; size: 11; family: "Share Tech Mono"; color: fl.muted; width: pw; lines: 1 }
-            box { from: nb_x + 164, nb_y + 78; size: pw, 3; corner: 1.5; color: fl.trace_dim }
-            box { from: nb_x + 164, nb_y + 78; size: pw * nd_prog, 3; corner: 1.5; color: nd_acc }
-            ellipse { at: nb_x + 164 + pw * nd_prog, nb_y + 79.5; radius: if(pkz.hover, 7, 5); color: nd_acc }
-            text nd_pos { at: nb_x + 164, nb_y + 94; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-            text nd_len { at: nb_x + 164 + pw, nb_y + 94; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
-            zone box pkz { from: nb_x + 158, nb_y + 68; size: pw + 12, 22; cursor: pointer; role: slider; label: "Where in the song"; value: "{nd_pos}"; show: nd_kind == 11 }
-            on press pkz { emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }
-            on drag pkz { emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }
+            let mx = nb_x + 172
+            let mw = nb_w - 172 - 176
+            // the cover, large, with the song and its source over the foot
+            group { clip box { from: nb_x + 16, nb_y + 16; size: 140, 140; corner: if(nd_cov == 1, 70, max(3, 14 * nd_rnd)) }
+                box { from: nb_x + 16, nb_y + 16; size: 140, 140; color: fl.well }
+                image nd_cover { at: nb_x + 16, nb_y + 16; size: 140, 140; fit: cover; show: nd_arted } }
+            box { from: nb_x + 16, nb_y + 120; size: 140, 36; corner: 10; color: fl.hull; opacity: 0.9 }
+            text nd_title { at: nb_x + 24, nb_y + 131; anchor: left center; size: 10; weight: 700; family: "Exo 2"; color: fl.engrave; width: 124; lines: 1 }
+            text nd_artist { at: nb_x + 24, nb_y + 145; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; width: 124; lines: 1 }
+            // the song beside it
+            text nd_title { at: mx, nb_y + 30; anchor: left center; size: 16; weight: 700; family: "Exo 2"; color: fl.engrave; width: mw - 58; lines: 1 }
+            text nd_artist { at: mx, nb_y + 50; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: mw - 58; lines: 1 }
+            // the page's switch
+            text if(nd_mix, "PLAYER", "MIX") { at: mx + mw, nb_y + 28; anchor: right center; align: right; size: 9; weight: 700; family: "Share Tech Mono"; color: if(pmxz.hover or nd_mix, nd_acc, fl.muted) }
+            zone box pmxz { from: mx + mw - 52, nb_y + 16; size: 54, 22; cursor: pointer; role: toggle; label: "Each app's volume"; checked: nd_mix; show: nd_kind == 11 }
+            on press pmxz { emit nd_pl(7) }
+            // the music, mirrored as a wave: the low bands meet in the middle
+            group { show: not nd_mix and not nd_lyon
+                box { from: mx + 0 * mw / 32 + 1, nb_y + 108 - nd_sp0 * 30; size: mw / 32 - 2, nd_sp0 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp0 }
+                box { from: mx + 0 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp0 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp0 }
+                box { from: mx + 1 * mw / 32 + 1, nb_y + 108 - nd_sp1 * 30; size: mw / 32 - 2, nd_sp1 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp1 }
+                box { from: mx + 1 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp1 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp1 }
+                box { from: mx + 2 * mw / 32 + 1, nb_y + 108 - nd_sp2 * 30; size: mw / 32 - 2, nd_sp2 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp2 }
+                box { from: mx + 2 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp2 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp2 }
+                box { from: mx + 3 * mw / 32 + 1, nb_y + 108 - nd_sp3 * 30; size: mw / 32 - 2, nd_sp3 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp3 }
+                box { from: mx + 3 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp3 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp3 }
+                box { from: mx + 4 * mw / 32 + 1, nb_y + 108 - nd_sp4 * 30; size: mw / 32 - 2, nd_sp4 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp4 }
+                box { from: mx + 4 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp4 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp4 }
+                box { from: mx + 5 * mw / 32 + 1, nb_y + 108 - nd_sp5 * 30; size: mw / 32 - 2, nd_sp5 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp5 }
+                box { from: mx + 5 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp5 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp5 }
+                box { from: mx + 6 * mw / 32 + 1, nb_y + 108 - nd_sp6 * 30; size: mw / 32 - 2, nd_sp6 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp6 }
+                box { from: mx + 6 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp6 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp6 }
+                box { from: mx + 7 * mw / 32 + 1, nb_y + 108 - nd_sp7 * 30; size: mw / 32 - 2, nd_sp7 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp7 }
+                box { from: mx + 7 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp7 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp7 }
+                box { from: mx + 8 * mw / 32 + 1, nb_y + 108 - nd_sp8 * 30; size: mw / 32 - 2, nd_sp8 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp8 }
+                box { from: mx + 8 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp8 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp8 }
+                box { from: mx + 9 * mw / 32 + 1, nb_y + 108 - nd_sp9 * 30; size: mw / 32 - 2, nd_sp9 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp9 }
+                box { from: mx + 9 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp9 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp9 }
+                box { from: mx + 10 * mw / 32 + 1, nb_y + 108 - nd_sp10 * 30; size: mw / 32 - 2, nd_sp10 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp10 }
+                box { from: mx + 10 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp10 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp10 }
+                box { from: mx + 11 * mw / 32 + 1, nb_y + 108 - nd_sp11 * 30; size: mw / 32 - 2, nd_sp11 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp11 }
+                box { from: mx + 11 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp11 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp11 }
+                box { from: mx + 12 * mw / 32 + 1, nb_y + 108 - nd_sp12 * 30; size: mw / 32 - 2, nd_sp12 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp12 }
+                box { from: mx + 12 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp12 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp12 }
+                box { from: mx + 13 * mw / 32 + 1, nb_y + 108 - nd_sp13 * 30; size: mw / 32 - 2, nd_sp13 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp13 }
+                box { from: mx + 13 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp13 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp13 }
+                box { from: mx + 14 * mw / 32 + 1, nb_y + 108 - nd_sp14 * 30; size: mw / 32 - 2, nd_sp14 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp14 }
+                box { from: mx + 14 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp14 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp14 }
+                box { from: mx + 15 * mw / 32 + 1, nb_y + 108 - nd_sp15 * 30; size: mw / 32 - 2, nd_sp15 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp15 }
+                box { from: mx + 15 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp15 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp15 }
+                box { from: mx + 16 * mw / 32 + 1, nb_y + 108 - nd_sp16 * 30; size: mw / 32 - 2, nd_sp16 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp16 }
+                box { from: mx + 16 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp16 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp16 }
+                box { from: mx + 17 * mw / 32 + 1, nb_y + 108 - nd_sp17 * 30; size: mw / 32 - 2, nd_sp17 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp17 }
+                box { from: mx + 17 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp17 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp17 }
+                box { from: mx + 18 * mw / 32 + 1, nb_y + 108 - nd_sp18 * 30; size: mw / 32 - 2, nd_sp18 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp18 }
+                box { from: mx + 18 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp18 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp18 }
+                box { from: mx + 19 * mw / 32 + 1, nb_y + 108 - nd_sp19 * 30; size: mw / 32 - 2, nd_sp19 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp19 }
+                box { from: mx + 19 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp19 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp19 }
+                box { from: mx + 20 * mw / 32 + 1, nb_y + 108 - nd_sp20 * 30; size: mw / 32 - 2, nd_sp20 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp20 }
+                box { from: mx + 20 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp20 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp20 }
+                box { from: mx + 21 * mw / 32 + 1, nb_y + 108 - nd_sp21 * 30; size: mw / 32 - 2, nd_sp21 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp21 }
+                box { from: mx + 21 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp21 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp21 }
+                box { from: mx + 22 * mw / 32 + 1, nb_y + 108 - nd_sp22 * 30; size: mw / 32 - 2, nd_sp22 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp22 }
+                box { from: mx + 22 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp22 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp22 }
+                box { from: mx + 23 * mw / 32 + 1, nb_y + 108 - nd_sp23 * 30; size: mw / 32 - 2, nd_sp23 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp23 }
+                box { from: mx + 23 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp23 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp23 }
+                box { from: mx + 24 * mw / 32 + 1, nb_y + 108 - nd_sp24 * 30; size: mw / 32 - 2, nd_sp24 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp24 }
+                box { from: mx + 24 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp24 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp24 }
+                box { from: mx + 25 * mw / 32 + 1, nb_y + 108 - nd_sp25 * 30; size: mw / 32 - 2, nd_sp25 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp25 }
+                box { from: mx + 25 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp25 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp25 }
+                box { from: mx + 26 * mw / 32 + 1, nb_y + 108 - nd_sp26 * 30; size: mw / 32 - 2, nd_sp26 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp26 }
+                box { from: mx + 26 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp26 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp26 }
+                box { from: mx + 27 * mw / 32 + 1, nb_y + 108 - nd_sp27 * 30; size: mw / 32 - 2, nd_sp27 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp27 }
+                box { from: mx + 27 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp27 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp27 }
+                box { from: mx + 28 * mw / 32 + 1, nb_y + 108 - nd_sp28 * 30; size: mw / 32 - 2, nd_sp28 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp28 }
+                box { from: mx + 28 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp28 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp28 }
+                box { from: mx + 29 * mw / 32 + 1, nb_y + 108 - nd_sp29 * 30; size: mw / 32 - 2, nd_sp29 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp29 }
+                box { from: mx + 29 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp29 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp29 }
+                box { from: mx + 30 * mw / 32 + 1, nb_y + 108 - nd_sp30 * 30; size: mw / 32 - 2, nd_sp30 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp30 }
+                box { from: mx + 30 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp30 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp30 }
+                box { from: mx + 31 * mw / 32 + 1, nb_y + 108 - nd_sp31 * 30; size: mw / 32 - 2, nd_sp31 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.3 + 0.55 * nd_sp31 }
+                box { from: mx + 31 * mw / 32 + 1, nb_y + 109; size: mw / 32 - 2, nd_sp31 * 30 + 1; corner: 1; color: nd_acc; opacity: 0.18 + 0.4 * nd_sp31 }
+            }
+            // the words, in time
+            group { show: nd_lyon
+                text nd_lyc { at: mx, nb_y + 100; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: nd_acc; width: mw; lines: 1 }
+                text nd_lyn { at: mx, nb_y + 120; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted; width: mw; lines: 1 } }
+            // where in the song, and its two times
             group { show: not nd_mix
-                group { pivot: nb_x + 164 + 18, nb_y + 127; scale: if(pbz1.hover, 1.1, 1)
-                    ellipse { at: nb_x + 164 + 18, nb_y + 127; radius: 17; color: nd_acc; opacity: if(nd_shuf, 0.22, if(pbz1.hover, 0.12, 0)) }
-                    text "⤮" { at: nb_x + 164 + 18, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(nd_shuf, nd_acc, fl.engrave) }
-                }
-                zone box pbz1 { from: nb_x + 164 + 18 - 17, nb_y + 127 - 17; size: 34, 34; corner: 17; cursor: pointer; role: button; label: "Shuffle"; show: nd_kind == 11 }
+                box { from: mx, nb_y + 154; size: mw, 3; corner: 1.5; color: fl.trace_dim }
+                box { from: mx, nb_y + 154; size: mw * nd_prog, 3; corner: 1.5; color: nd_acc }
+                ellipse { at: mx + mw * nd_prog, nb_y + 155.5; radius: if(pkz.hover, 6, 4); color: nd_acc }
+                text nd_pos { at: mx, nb_y + 170; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                text nd_len { at: mx + mw, nb_y + 170; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                zone box pkz { from: mx - 6, nb_y + 144; size: mw + 12, 22; cursor: pointer; role: slider; label: "Where in the song"; value: "{nd_pos}"; show: nd_kind == 11 and not nd_mix }
+                on press pkz { emit nd_seek(round(clamp((pointer.x - mx) / mw, 0, 1) * 1000)) }
+                on drag pkz { emit nd_seek(round(clamp((pointer.x - mx) / mw, 0, 1) * 1000)) }
+            }
+            group { show: not nd_mix
+                text "󰒟" { at: mx + 24 + (mw - 48) * 0.0000, nb_y + 202; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: if(nd_shuf, nd_acc, if(pbz1.hover, fl.engrave, fl.muted)) }
+                box { from: mx + 24 + (mw - 48) * 0.0000 - 15, nb_y + 192; size: 30, 2; corner: 1; color: nd_acc; opacity: if(nd_shuf, 0.85, 0); show: nd_shuf }
+                zone box pbz1 { from: mx + 24 + (mw - 48) * 0.0000 - 16, nb_y + 184; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "Shuffle"; show: nd_kind == 11 and not nd_mix }
                 on press pbz1 { emit nd_pl(1) }
-                group { pivot: nb_x + 164 + 62, nb_y + 127; scale: if(pbz2.hover, 1.1, 1)
-                    ellipse { at: nb_x + 164 + 62, nb_y + 127; radius: 17; color: nd_acc; opacity: if(false, 0.22, if(pbz2.hover, 0.12, 0)) }
-                    box { from: nb_x + 164 + 54, nb_y + 120; size: 2.5, 14; corner: 1; color: fl.engrave }
-                    path { at: nb_x + 164 + 64, nb_y + 127; move 5, -7; line -5, 0; line 5, 7; close; color: fl.engrave }
-                }
-                zone box pbz2 { from: nb_x + 164 + 62 - 17, nb_y + 127 - 17; size: 34, 34; corner: 17; cursor: pointer; role: button; label: "Back"; show: nd_kind == 11 }
+                text "󰒮" { at: mx + 24 + (mw - 48) * 0.2500, nb_y + 202; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: if(false, nd_acc, if(pbz2.hover, fl.engrave, fl.muted)) }
+                box { from: mx + 24 + (mw - 48) * 0.2500 - 15, nb_y + 192; size: 30, 2; corner: 1; color: nd_acc; opacity: if(false, 0.85, 0); show: false }
+                zone box pbz2 { from: mx + 24 + (mw - 48) * 0.2500 - 16, nb_y + 184; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "Back"; show: nd_kind == 11 and not nd_mix }
                 on press pbz2 { emit nd_pl(2) }
-                // play: the song's progress a ring round it
-                arc { at: nb_x + 164 + 116, nb_y + 127; radius: 26; span: nd_prog * 360deg; rotate: nd_prog * 180deg; width: 2.5; color: nd_acc; opacity: 0.9 }
-                arc { at: nb_x + 164 + 116, nb_y + 127; radius: 26; span: 360deg; width: 1; color: fl.trace_dim; opacity: 0.6 }
-                group { pivot: nb_x + 164 + 116, nb_y + 127; scale: if(pbz3.hover, 1.1, 1)
-                    ellipse { at: nb_x + 164 + 116, nb_y + 127; radius: 22; color: nd_acc; opacity: 0.92 }
-                    path { at: nb_x + 164 + 118, nb_y + 127; move -6, -9; line 9, 0; line -6, 9; close; color: fl.ground; show: not nd_playing }
-                    box { from: nb_x + 164 + 109.5, nb_y + 119; size: 4.5, 16; corner: 1; color: fl.ground; show: nd_playing }
-                    box { from: nb_x + 164 + 118, nb_y + 119; size: 4.5, 16; corner: 1; color: fl.ground; show: nd_playing }
-                }
-                zone box pbz3 { from: nb_x + 164 + 116 - 22, nb_y + 127 - 22; size: 44, 44; corner: 22; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 11 }
+                ellipse { at: mx + 24 + (mw - 48) * 0.5000, nb_y + 202; radius: 19; color: nd_acc; opacity: 0.92; show: not nd_playing }
+                text "󰐊" { at: mx + 24 + (mw - 48) * 0.5000, nb_y + 202; anchor: center; align: center; size: 18; family: "CaskaydiaCove Nerd Font"; color: fl.ground; show: not nd_playing }
+                text "󰏤" { at: mx + 24 + (mw - 48) * 0.5000, nb_y + 202; anchor: center; align: center; size: 18; family: "CaskaydiaCove Nerd Font"; color: fl.ground; show: nd_playing }
+                zone box pbz3 { from: mx + 24 + (mw - 48) * 0.5000 - 16, nb_y + 184; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 11 and not nd_mix }
                 on press pbz3 { emit nd_pl(3) }
-                group { pivot: nb_x + 164 + 170, nb_y + 127; scale: if(pbz4.hover, 1.1, 1)
-                    ellipse { at: nb_x + 164 + 170, nb_y + 127; radius: 17; color: nd_acc; opacity: if(false, 0.22, if(pbz4.hover, 0.12, 0)) }
-                    path { at: nb_x + 164 + 168, nb_y + 127; move -5, -7; line 5, 0; line -5, 7; close; color: fl.engrave }
-                    box { from: nb_x + 164 + 175.5, nb_y + 120; size: 2.5, 14; corner: 1; color: fl.engrave }
-                }
-                zone box pbz4 { from: nb_x + 164 + 170 - 17, nb_y + 127 - 17; size: 34, 34; corner: 17; cursor: pointer; role: button; label: "Next"; show: nd_kind == 11 }
+                text "󰒭" { at: mx + 24 + (mw - 48) * 0.7500, nb_y + 202; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: if(false, nd_acc, if(pbz4.hover, fl.engrave, fl.muted)) }
+                box { from: mx + 24 + (mw - 48) * 0.7500 - 15, nb_y + 192; size: 30, 2; corner: 1; color: nd_acc; opacity: if(false, 0.85, 0); show: false }
+                zone box pbz4 { from: mx + 24 + (mw - 48) * 0.7500 - 16, nb_y + 184; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "Next"; show: nd_kind == 11 and not nd_mix }
                 on press pbz4 { emit nd_pl(4) }
-                group { pivot: nb_x + 164 + 214, nb_y + 127; scale: if(pbz5.hover, 1.1, 1)
-                    ellipse { at: nb_x + 164 + 214, nb_y + 127; radius: 17; color: nd_acc; opacity: if(nd_loop > 0, 0.22, if(pbz5.hover, 0.12, 0)) }
-                    text "⟲" { at: nb_x + 164 + 214, nb_y + 127; anchor: center; align: center; size: 15; family: "Exo 2"; color: if(nd_loop > 0, nd_acc, fl.engrave) }
-                }
-                zone box pbz5 { from: nb_x + 164 + 214 - 17, nb_y + 127 - 17; size: 34, 34; corner: 17; cursor: pointer; role: button; label: "Repeat"; show: nd_kind == 11 }
+                text "󰑖" { at: mx + 24 + (mw - 48) * 1.0000, nb_y + 202; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: if(nd_loop > 0, nd_acc, if(pbz5.hover, fl.engrave, fl.muted)) }
+                box { from: mx + 24 + (mw - 48) * 1.0000 - 15, nb_y + 192; size: 30, 2; corner: 1; color: nd_acc; opacity: if(nd_loop > 0, 0.85, 0); show: nd_loop > 0 }
+                zone box pbz5 { from: mx + 24 + (mw - 48) * 1.0000 - 16, nb_y + 184; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "Repeat"; show: nd_kind == 11 and not nd_mix }
                 on press pbz5 { emit nd_pl(5) }
-                text "1" { at: nb_x + 164 + 226, nb_y + 116; anchor: center; size: 8; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_loop == 2 }
-                // the music, mirrored: the low bands meet in the middle
-                group { show: not nd_lyon
-                    box { from: nb_x + 164 + 0 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp0 * 34; size: pw / 32 - 2, nd_sp0 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp0 }
-                    box { from: nb_x + 164 + 1 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp1 * 34; size: pw / 32 - 2, nd_sp1 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp1 }
-                    box { from: nb_x + 164 + 2 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp2 * 34; size: pw / 32 - 2, nd_sp2 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp2 }
-                    box { from: nb_x + 164 + 3 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp3 * 34; size: pw / 32 - 2, nd_sp3 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp3 }
-                    box { from: nb_x + 164 + 4 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp4 * 34; size: pw / 32 - 2, nd_sp4 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp4 }
-                    box { from: nb_x + 164 + 5 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp5 * 34; size: pw / 32 - 2, nd_sp5 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp5 }
-                    box { from: nb_x + 164 + 6 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp6 * 34; size: pw / 32 - 2, nd_sp6 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp6 }
-                    box { from: nb_x + 164 + 7 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp7 * 34; size: pw / 32 - 2, nd_sp7 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp7 }
-                    box { from: nb_x + 164 + 8 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp8 * 34; size: pw / 32 - 2, nd_sp8 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp8 }
-                    box { from: nb_x + 164 + 9 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp9 * 34; size: pw / 32 - 2, nd_sp9 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp9 }
-                    box { from: nb_x + 164 + 10 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp10 * 34; size: pw / 32 - 2, nd_sp10 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp10 }
-                    box { from: nb_x + 164 + 11 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp11 * 34; size: pw / 32 - 2, nd_sp11 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp11 }
-                    box { from: nb_x + 164 + 12 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp12 * 34; size: pw / 32 - 2, nd_sp12 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp12 }
-                    box { from: nb_x + 164 + 13 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp13 * 34; size: pw / 32 - 2, nd_sp13 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp13 }
-                    box { from: nb_x + 164 + 14 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp14 * 34; size: pw / 32 - 2, nd_sp14 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp14 }
-                    box { from: nb_x + 164 + 15 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp15 * 34; size: pw / 32 - 2, nd_sp15 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp15 }
-                    box { from: nb_x + 164 + 16 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp16 * 34; size: pw / 32 - 2, nd_sp16 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp16 }
-                    box { from: nb_x + 164 + 17 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp17 * 34; size: pw / 32 - 2, nd_sp17 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp17 }
-                    box { from: nb_x + 164 + 18 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp18 * 34; size: pw / 32 - 2, nd_sp18 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp18 }
-                    box { from: nb_x + 164 + 19 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp19 * 34; size: pw / 32 - 2, nd_sp19 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp19 }
-                    box { from: nb_x + 164 + 20 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp20 * 34; size: pw / 32 - 2, nd_sp20 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp20 }
-                    box { from: nb_x + 164 + 21 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp21 * 34; size: pw / 32 - 2, nd_sp21 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp21 }
-                    box { from: nb_x + 164 + 22 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp22 * 34; size: pw / 32 - 2, nd_sp22 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp22 }
-                    box { from: nb_x + 164 + 23 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp23 * 34; size: pw / 32 - 2, nd_sp23 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp23 }
-                    box { from: nb_x + 164 + 24 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp24 * 34; size: pw / 32 - 2, nd_sp24 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp24 }
-                    box { from: nb_x + 164 + 25 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp25 * 34; size: pw / 32 - 2, nd_sp25 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp25 }
-                    box { from: nb_x + 164 + 26 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp26 * 34; size: pw / 32 - 2, nd_sp26 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp26 }
-                    box { from: nb_x + 164 + 27 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp27 * 34; size: pw / 32 - 2, nd_sp27 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp27 }
-                    box { from: nb_x + 164 + 28 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp28 * 34; size: pw / 32 - 2, nd_sp28 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp28 }
-                    box { from: nb_x + 164 + 29 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp29 * 34; size: pw / 32 - 2, nd_sp29 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp29 }
-                    box { from: nb_x + 164 + 30 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp30 * 34; size: pw / 32 - 2, nd_sp30 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp30 }
-                    box { from: nb_x + 164 + 31 * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp31 * 34; size: pw / 32 - 2, nd_sp31 * 34 + 1; corner: 1; color: nd_acc; opacity: 0.35 + 0.4 * nd_sp31 }
-                }
-                // the words, in time: the line sung now, lit, and the next one under it
-                group { show: nd_lyon
-                    text nd_lyc { at: nb_x + 164, nb_y + 164; anchor: left center; size: 13; weight: 600; family: "Exo 2"; color: nd_acc; width: pw; lines: 1 }
-                    text nd_lyn { at: nb_x + 164, nb_y + 183; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted; width: pw; lines: 1 } }
+                text "1" { at: mx + 24 + (mw - 48) * 1, nb_y + 220; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_loop == 2 }
             }
             group { show: nd_mix
                 for a in mx {
-                    let my = nb_y + 104 + a.index * 24
-                    text a.name { at: nb_x + 164, my + 8; anchor: left center; size: 10; family: "Exo 2"; color: if(a.muted, fl.muted, fl.engrave); width: 110; lines: 1 }
-                    box { from: nb_x + 280, my + 6; size: pw - 150, 4; corner: 2; color: fl.trace_dim }
-                    box { from: nb_x + 280, my + 6; size: (pw - 150) * a.vol, 4; corner: 2; color: if(a.muted, fl.trace_lit, nd_acc) }
-                    zone box mxz { from: nb_x + 274, my - 2; size: pw - 138, 20; cursor: ew_resize; role: slider; label: "{a.name}"; value: a.vol; show: nd_kind == 11 and nd_mix }
-                    on press mxz { emit nd_mx(a.index * 2000 + round(clamp((pointer.x - nb_x - 280) / (pw - 150), 0, 1) * 1000)) }
-                    on drag mxz { emit nd_mx(a.index * 2000 + round(clamp((pointer.x - nb_x - 280) / (pw - 150), 0, 1) * 1000)) }
-                    text if(a.muted, "MUTED", "MUTE") { at: nb_x + 164 + pw, my + 8; anchor: right center; align: right; size: 8; weight: 700; family: "Share Tech Mono"; color: if(a.muted, fl.ember, if(mxmz.hover, fl.engrave, fl.muted)) }
-                    zone box mxmz { from: nb_x + 164 + pw - 40, my - 2; size: 42, 20; cursor: pointer; role: toggle; label: "Mute {a.name}"; checked: a.muted; show: nd_kind == 11 and nd_mix }
+                    let my = nb_y + 84 + a.index * 26
+                    text a.name { at: mx, my + 9; anchor: left center; size: 11; family: "Exo 2"; color: if(a.muted, fl.muted, fl.engrave); width: 96; lines: 1 }
+                    box { from: mx + 104, my + 7; size: mw - 160, 4; corner: 2; color: fl.trace_dim }
+                    box { from: mx + 104, my + 7; size: (mw - 160) * a.vol, 4; corner: 2; color: if(a.muted, fl.trace_lit, nd_acc) }
+                    zone box mxz { from: mx + 98, my - 2; size: mw - 148, 22; cursor: ew_resize; role: slider; label: "{a.name}"; value: a.vol; show: nd_kind == 11 and nd_mix }
+                    on press mxz { emit nd_mx(a.index * 2000 + round(clamp((pointer.x - mx - 104) / (mw - 160), 0, 1) * 1000)) }
+                    on drag mxz { emit nd_mx(a.index * 2000 + round(clamp((pointer.x - mx - 104) / (mw - 160), 0, 1) * 1000)) }
+                    text if(a.muted, "MUTED", "MUTE") { at: mx + mw, my + 9; anchor: right center; align: right; size: 8; weight: 700; family: "Share Tech Mono"; color: if(a.muted, fl.ember, if(mxmz.hover, fl.engrave, fl.muted)) }
+                    zone box mxmz { from: mx + mw - 42, my - 2; size: 44, 22; cursor: pointer; role: toggle; label: "Mute {a.name}"; checked: a.muted; show: nd_kind == 11 and nd_mix }
                     on press mxmz { emit nd_mxm(a.index) }
                 }
-                text "NOTHING ELSE PLAYS" { at: nb_x + 164, nb_y + 112; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: mx.count == 0 }
+                text "NOTHING ELSE PLAYS" { at: mx, nb_y + 94; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: mx.count == 0 }
             }
-            // the page's switch
-            text if(nd_mix, "PLAYER", "MIX") { at: nb_x + 164 + pw, nb_y + 32; anchor: right center; align: right; size: 9; weight: 700; family: "Share Tech Mono"; color: if(pmxz.hover or nd_mix, nd_acc, fl.muted) }
-            zone box pmxz { from: nb_x + 164 + pw - 56, nb_y + 21; size: 58, 22; cursor: pointer; role: toggle; label: "Each app's volume"; checked: nd_mix; show: nd_kind == 11 }
-            on press pmxz { emit nd_pl(7) }
+            box { from: nb_x + nb_w - 160, nb_y + 14; size: 146, nb_h - 28; corner: 16 * max(0.3, nd_rnd); color: fl.well }
+            box { from: nb_x + nb_w - 160, nb_y + 14; size: 146, nb_h - 28; corner: 16 * max(0.3, nd_rnd); stroke: 1; color: fl.trace_dim }
+            text "LEVELS" { at: nb_x + nb_w - 87, nb_y + 30; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted }
             group { show: true
-                box { from: nb_x + nb_w - 136, nb_y + 154; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(0 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(0 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 142; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(1 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(1 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 130; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(2 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(2 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 118; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(3 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(3 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 106; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(4 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(4 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 94; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(5 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(5 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 82; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(6 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(6 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 70; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(7 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(7 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 58; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(8 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(8 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 46; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(9 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(9 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 34; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(10 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(10 < round(nd_vol * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 136, nb_y + 22; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(11 < round(nd_vol * 12), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(11 < round(nd_vol * 12), 0.95, 0.5) }
-                text "VOL" { at: nb_x + nb_w - 136 + 15, nb_y + 178; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(0 == 2 and nd_micm, fl.ember, fl.muted) }
-                zone box pmz0 { from: nb_x + nb_w - 136 - 4, nb_y + 18; size: 38, 148; cursor: ns_resize; role: slider; label: "Vol"; value: nd_vol; show: nd_kind == 11 }
-                on press pmz0 { emit nd_mt(0 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
-                on drag pmz0 { emit nd_mt(0 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
+                repeat sg0 in 0..10 {
+                    box { from: nb_x + nb_w - 146 + 0 * 42, nb_y + 154 - sg0 * 11; size: 28, 8; corner: 2 * max(0.3, nd_rnd); color: if(sg0 < round(nd_vol * 10), if(0 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(sg0 < round(nd_vol * 10), 0.95, 0.45) }
+                }
+                text "󰕾" { at: nb_x + nb_w - 146 + 0 * 42 + 14, nb_y + 188; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: if(0 == 2 and nd_micm, fl.ember, fl.muted) }
+                text "VOL" { at: nb_x + nb_w - 146 + 0 * 42 + 14, nb_y + 204; anchor: center; align: center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                zone box pmz0 { from: nb_x + nb_w - 146 + 0 * 42 - 4, nb_y + 38; size: 36, 134; cursor: ns_resize; role: slider; label: "Vol"; value: nd_vol; show: nd_kind == 11 }
+                on press pmz0 { emit nd_mt(0 * 2000 + round(clamp((nb_y + 166 - pointer.y) / 116, 0, 1) * 1000)) }
+                on drag pmz0 { emit nd_mt(0 * 2000 + round(clamp((nb_y + 166 - pointer.y) / 116, 0, 1) * 1000)) }
             }
             group { show: nd_hasbri
-                box { from: nb_x + nb_w - 92, nb_y + 154; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(0 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(0 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 142; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(1 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(1 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 130; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(2 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(2 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 118; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(3 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(3 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 106; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(4 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(4 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 94; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(5 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(5 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 82; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(6 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(6 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 70; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(7 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(7 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 58; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(8 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(8 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 46; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(9 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(9 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 34; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(10 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(10 < round(nd_bri * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 92, nb_y + 22; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(11 < round(nd_bri * 12), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(11 < round(nd_bri * 12), 0.95, 0.5) }
-                text "LIGHT" { at: nb_x + nb_w - 92 + 15, nb_y + 178; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(1 == 2 and nd_micm, fl.ember, fl.muted) }
-                zone box pmz1 { from: nb_x + nb_w - 92 - 4, nb_y + 18; size: 38, 148; cursor: ns_resize; role: slider; label: "Light"; value: nd_bri; show: nd_kind == 11 }
-                on press pmz1 { emit nd_mt(1 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
-                on drag pmz1 { emit nd_mt(1 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
+                repeat sg1 in 0..10 {
+                    box { from: nb_x + nb_w - 146 + 1 * 42, nb_y + 154 - sg1 * 11; size: 28, 8; corner: 2 * max(0.3, nd_rnd); color: if(sg1 < round(nd_bri * 10), if(1 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(sg1 < round(nd_bri * 10), 0.95, 0.45) }
+                }
+                text "󰃟" { at: nb_x + nb_w - 146 + 1 * 42 + 14, nb_y + 188; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: if(1 == 2 and nd_micm, fl.ember, fl.muted) }
+                text "LIGHT" { at: nb_x + nb_w - 146 + 1 * 42 + 14, nb_y + 204; anchor: center; align: center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                zone box pmz1 { from: nb_x + nb_w - 146 + 1 * 42 - 4, nb_y + 38; size: 36, 134; cursor: ns_resize; role: slider; label: "Light"; value: nd_bri; show: nd_kind == 11 }
+                on press pmz1 { emit nd_mt(1 * 2000 + round(clamp((nb_y + 166 - pointer.y) / 116, 0, 1) * 1000)) }
+                on drag pmz1 { emit nd_mt(1 * 2000 + round(clamp((nb_y + 166 - pointer.y) / 116, 0, 1) * 1000)) }
             }
             group { show: true
-                box { from: nb_x + nb_w - 48, nb_y + 154; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(0 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(0 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 142; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(1 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(1 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 130; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(2 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(2 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 118; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(3 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(3 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 106; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(4 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(4 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 94; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(5 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(5 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 82; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(6 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(6 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 70; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(7 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(7 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 58; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(8 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(8 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 46; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(9 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(9 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 34; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(10 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(10 < round(nd_mic * 12), 0.95, 0.5) }
-                box { from: nb_x + nb_w - 48, nb_y + 22; size: 30, 9; corner: 2 * max(0.3, nd_rnd); color: if(11 < round(nd_mic * 12), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(11 < round(nd_mic * 12), 0.95, 0.5) }
-                text "MIC" { at: nb_x + nb_w - 48 + 15, nb_y + 178; anchor: center; align: center; size: 8; weight: 700; family: "Share Tech Mono"; color: if(2 == 2 and nd_micm, fl.ember, fl.muted) }
-                zone box pmz2 { from: nb_x + nb_w - 48 - 4, nb_y + 18; size: 38, 148; cursor: ns_resize; role: slider; label: "Mic"; value: nd_mic; show: nd_kind == 11 }
-                on press pmz2 { emit nd_mt(2 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
-                on drag pmz2 { emit nd_mt(2 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000)) }
-                zone box pmmz { from: nb_x + nb_w - 48 - 4, nb_y + 170; size: 38, 18; cursor: pointer; role: toggle; label: "Mute the microphone"; checked: nd_micm; show: nd_kind == 11 }
+                repeat sg2 in 0..10 {
+                    box { from: nb_x + nb_w - 146 + 2 * 42, nb_y + 154 - sg2 * 11; size: 28, 8; corner: 2 * max(0.3, nd_rnd); color: if(sg2 < round(nd_mic * 10), if(2 == 2 and nd_micm, fl.trace_lit, nd_acc), fl.trace_dim); opacity: if(sg2 < round(nd_mic * 10), 0.95, 0.45) }
+                }
+                text "󰍬" { at: nb_x + nb_w - 146 + 2 * 42 + 14, nb_y + 188; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: if(2 == 2 and nd_micm, fl.ember, fl.muted) }
+                text "MIC" { at: nb_x + nb_w - 146 + 2 * 42 + 14, nb_y + 204; anchor: center; align: center; size: 7; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                zone box pmz2 { from: nb_x + nb_w - 146 + 2 * 42 - 4, nb_y + 38; size: 36, 134; cursor: ns_resize; role: slider; label: "Mic"; value: nd_mic; show: nd_kind == 11 }
+                on press pmz2 { emit nd_mt(2 * 2000 + round(clamp((nb_y + 166 - pointer.y) / 116, 0, 1) * 1000)) }
+                on drag pmz2 { emit nd_mt(2 * 2000 + round(clamp((nb_y + 166 - pointer.y) / 116, 0, 1) * 1000)) }
+                zone box pmmz { from: nb_x + nb_w - 146 + 2 * 42 - 4, nb_y + 178; size: 36, 34; cursor: pointer; role: toggle; label: "Mute the microphone"; checked: nd_micm; show: nd_kind == 11 }
                 on press pmmz { emit nd_pl(6) }
             }
         }

@@ -6616,7 +6616,7 @@ do
     end)
     test("meters and sliders: a stride of 2000, so a full one is never the next at zero", function()
         local p = read("shell/mooi-node.plm")
-        assert(p:find("emit nd_mt(2 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000))", 1, true))
+        assert(p:find("emit nd_mt(2 * 2000 + round(clamp((nb_y + 166 - pointer.y) / 116, 0, 1) * 1000))", 1, true))
         local l = read("shell/mooi-node.luau")
         assert(l:find("local m, f = v // 2000, math.min(1000, v % 2000) / 1000", 1, true))
         assert(l:find("local row = v // 2000", 1, true))
@@ -6708,10 +6708,12 @@ do
         assert(l:find('if kind == "media" and look.music_form ~= "capsule" then bkind = "media_" .. look.music_form end', 1, true))
         assert(l:find('if N.kind == "media" and N.look.music_form ~= "capsule" then return true end', 1, true), "the bands read only while drawn")
     end)
-    test("the transport is drawn, play the larger with the song's progress a ring round it", function()
+    test("the transport is five icons, play the larger; no ring is drawn round it (D262)", function()
         local p = read("shell/mooi-node.plm")
-        assert(p:find("span: nd_prog * 360deg; rotate: nd_prog * 180deg", 1, true))
-        assert(p:find("show: not nd_playing }", 1, true) and p:find("show: nd_playing }", 1, true), "play, or pause")
+        for code = 1, 5 do assert(p:find("zone box pbz" .. code, 1, true), "transport " .. code) end
+        assert(p:find('text "󰒟"', 1, true) and p:find('text "󰒮"', 1, true) and p:find('text "󰒭"', 1, true) and p:find('text "󰑖"', 1, true))
+        assert(p:find('text "󰐊"', 1, true) and p:find('text "󰏤"', 1, true), "play, or pause")
+        eq(p:find("span: nd_prog * 360deg", 1, true), nil, "the song's progress is the seek bar, not a ring")
     end)
 end
 
@@ -6974,6 +6976,17 @@ do
         assert(l:find('if k == "panel" then N.panel = "home" end', 1, true))
         assert(not l:find('"system", "launcher" }', 1, true), "no preview of a kind that is gone")
         assert(read("tools/gen-node.py"):find('"Rail", "Panel", "Search", "Tour"', 1, true))
+    end)
+end
+
+section("the player's wave, reviewed (D262 fix)")
+do
+    test("the wave draws every one of the 32 mirrored bands, so its centre is the middle", function()
+        local f = assert(io.open("shell/mooi-node.plm")); local p = f:read("a"); f:close()
+        assert(p:find("nb_y + 108 - nd_sp31 * 30", 1, true), "the last band is drawn")
+        assert(not p:find("mw / 28", 1, true))
+        local l = assert(io.open("shell/mooi-node.luau")):read("a")
+        assert(l:find("local m = MK.mirrored(bands, 32)", 1, true))
     end)
 end
 
