@@ -1308,11 +1308,15 @@ N.show_identity = function()
     local id = type(nx.identity) == "table" and nx.identity or {}
     local who = HM.identity(id.name, N.host, id.avatar)
     text.nd_hname, text.nd_hwho, text.nd_hinit = who.name, who.host, who.initial
-    text.nd_face = who.avatar ~= "" and (HOME_FOLDER .. "/" .. who.avatar) or ""
+    local function there(name)
+        local ok, yes = pcall(sys.ask, "files.exists", name)
+        return ok and yes == true
+    end
+    text.nd_face = HM.face(HOME_FOLDER, who.avatar, there)
     fact.nd_face_on = text.nd_face ~= ""
 end
 N.show_identity()
-run("hostname", {}, function(out)
+pcall(run, "hostname", {}, function(out)
     N.host = (tostring(out or ""):gsub("^%s+", ""):gsub("%s+$", ""))
     N.show_identity()
     render()
