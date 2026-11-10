@@ -1185,7 +1185,7 @@ lock_picture() {
 lock_files() {
     local d="${XDG_DATA_HOME:-$HOME/.local/share}/pleamar/$lock_name"
     mkdir -p "$d" || return 1
-    for f in palette.json settings.json wall.json; do
+    for f in palette.json settings.json wall.json nexus-weather.json; do
         [ -f "$folder/$f" ] && cp -f "$folder/$f" "$d/$f" 2>/dev/null
     done
     # How many tries are left before PAM locks the login: the scene can only ask whether a password

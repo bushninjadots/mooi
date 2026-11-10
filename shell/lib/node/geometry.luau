@@ -37,6 +37,8 @@ function M.body(kind, scr, anchor, shape, data)
     else x = (W - w) / 2 end
     x = clamp(x, 0, W - w)
     local r = math.min(w, h) / 2 * clamp(tonumber(shape.round) or 1, 0, 1)
+    -- a panel (taller than a capsule) keeps rounded corners, never a stadium that clips its own corners (D258)
+    if h > 60 then r = math.min(r, 22) end
     return { x = x, y = tonumber(shape.top) or M.TOP, w = w, h = h, r = r }
 end
 

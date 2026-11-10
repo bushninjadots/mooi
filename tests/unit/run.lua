@@ -6703,7 +6703,7 @@ do
         local st = ST.new(); ST.hold(st, "shelf"); eq(ST.current(st, 0, {}), "shelf")
     end)
     test("the branches: a month, notes (written through `mooi note`), the stash, the wallpaper (worn through `mooi wall apply`)", function()
-        assert(l:find('run("mooi", { "note", t }', 1, true), "never written over the bar's own file")
+        assert(l:find('"notes-inbox.json"', 1, true), "never written over the bar's own file (D258: through its inbox)")
         assert(l:find('run("mooi", { "wall", "apply", it.path }', 1, true))
         assert(l:find('run("xdg-open", { N.branch_items[i] }', 1, true))
         local CAL = require("lib/calendar"); eq(#CAL.month(2026, 11, { y = 2026, m = 11, d = 10 }).cells, 42)
@@ -6742,7 +6742,7 @@ do
         local LK = require("lib/node/look")
         eq(LK.preset("organic").sys_style, "spokes"); eq(LK.facts(LK.normalise({ sys_style = "graphs" })).nd_sys, 2)
         assert(l:find('run("hyprctl", { "dispatch", HY.exec(table.concat(argv, " ")) }', 1, true))
-        assert(l:find('run(t, { "--version" }', 1, true), "the terminal found by asking, no shell")
+        assert(l:find('run(t, { t == "xterm" and "-version" or "--version" }', 1, true), "the terminal found by asking, no shell")
         local p = read("shell/mooi-node.plm")
         assert(p:find("on press syz1 { emit nd_sys(p.index) }", 1, true) and p:find("p.h19 * 32", 1, true))
     end)
@@ -6871,6 +6871,48 @@ do
         eq(table.concat(LK.normalise({ modules = { "clock", "bogus", "clock", "date" } }).modules, ","), "clock,date")
         local p = read("shell/mooi-node.plm")
         assert(p:find("on press mdx { emit nd_md(m.index * 10 + 9) }", 1, true) and p:find("on press maz { emit nd_md(100 + a.index) }", 1, true))
+    end)
+end
+
+section("the node: what the second review found (D258)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local LK = require("lib/node/look")
+    test("the studio's tabs are the look's pages, one for one, in order — and every choice has a chip", function()
+        local p = read("shell/mooi-node.plm")
+        local at = 0
+        for i, t in ipairs(LK.TABS) do
+            local s = p:find('zone box stt' .. (i - 1) .. ' {[^}]*label: "' .. t .. '"')
+            assert(s, t .. " has its chip, the " .. i .. "th"); assert(s > at, "in order"); at = s
+        end
+        assert(not p:find("zone box stt" .. #LK.TABS .. " ", 1, true), "no chip more than the pages")
+        for _, tab in ipairs(LK.TABS) do
+            for _, row in ipairs(LK.SCHEMA[tab] or {}) do
+                if row.values then assert(#row.values <= 7, row.key .. ": seven chips at most") end
+            end
+        end
+        assert(p:find("on press sko6 {", 1, true), "a seventh chip (BMO, the seventh seed)")
+    end)
+    test("a panel's corners never become a stadium that clips its title", function()
+        local G = require("lib/node/geometry")
+        local b = G.body("branch", { w = 1920 }, "centre", LK.shape(LK.preset("organic")), {})
+        assert(b.r <= 22, "branch corner " .. b.r)
+    end)
+    test("the word clock rounds at the half minute; a note never goes on a command line; xterm asked its own way", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find("CS.words(t.hour, t.min + (t.sec >= 30 and 1 or 0))", 1, true))
+        assert(l:find('pcall(sys.call, "files.write", "notes-inbox.json", json.encode(box))', 1, true))
+        assert(not l:find('run("mooi", { "note"', 1, true))
+        assert(read("shell/notes.luau"):find('pcall(sys.watch, "files:notes-inbox.json", inbox)', 1, true))
+        assert(l:find('run(t, { t == "xterm" and "-version" or "--version" }', 1, true))
+        assert(l:find("if not t then N.term = nil; go(nil); return end", 1, true), "a failure is not remembered")
+        assert(l:find('if kind ~= "notice" then N.nc_open = nil end', 1, true))
+    end)
+    test("the lock: an auth service that raises is neither a way in nor a jam; its weather is copied beside it", function()
+        local l = read("shell/mooi-lock.luau")
+        assert(l:find('local asked, ok = pcall(sys.ask, "auth.check", pw)', 1, true))
+        assert(l:find("ok = ok == true", 1, true), "only a true answer unlocks")
+        assert(read("bin/mooi"):find("for f in palette.json settings.json wall.json nexus-weather.json; do", 1, true))
     end)
 end
 

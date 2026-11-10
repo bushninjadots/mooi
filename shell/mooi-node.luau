@@ -282,7 +282,8 @@ local function clock_draw()
     if style == "pixel" then model.ck = CF.cells(s)
     elseif style == "digital" then text.nd_ckd = CS.digital(t.hour, t.min, true)
     elseif style == "analog" then local a = CS.analog(t.hour, t.min, 0); fact.nd_ckh, fact.nd_ckm = a.hour, a.minute
-    elseif style == "words" then text.nd_ckw = CS.words(t.hour, t.min)
+    -- the words round to the nearest five minutes at the half minute (10:02:30 is "five past"), so the seconds count
+    elseif style == "words" then text.nd_ckw = CS.words(t.hour, t.min + (t.sec >= 30 and 1 or 0))
     elseif style == "binary" then
         local b = CS.binary(t.hour, t.min)
         for i = 1, 6 do fact["nd_cb" .. (i - 1)] = b.h[i] == true; fact["nd_cb" .. (i + 5)] = b.m[i] == true end
@@ -290,7 +291,9 @@ local function clock_draw()
 end
 every(5000, function()
     if N.look.seed ~= "clock" then clock_str = nil; return end
-    if os.date("%H:%M") ~= clock_str then clock_draw() end
+    -- words turn at the half minute; the others on the minute
+    local key = N.look.clock_style == "words" and os.date("%H:%M") .. (tonumber(os.date("%S")) >= 30 and "+" or "") or os.date("%H:%M")
+    if key ~= clock_str then clock_draw(); clock_str = key end
 end)
 N.clock_now = function() clock_str = nil; if N.look.seed == "clock" then clock_draw() end end
 N.clock_now()
@@ -453,6 +456,8 @@ render = function()
     local geo = notch and json.encode({ x = math.floor(b.x + 0.5), w = math.floor(b.w + 0.5), h = math.floor(b.h + 0.5), r = math.floor(math.min(14, b.h / 2 + 4)) }) or "{}"
     if geo ~= N.node_geo then N.node_geo = geo; pcall(sys.call, "files.write", "node-geo.json", geo) end
     if kind == "media" then show_media(b) end
+    -- an opened card belongs to the notices: when they fold (something above them took the node) it is let go
+    if kind ~= "notice" then N.nc_open = nil end
     if kind == "notice" then
         N.notice_list = (studio and #N.notices == 0) and SAMPLE_NOTICES or nil
         show_notices(b)
@@ -1351,7 +1356,13 @@ on("nd_br", function(v)
     elseif v == 90 and k == 2 then
         local t = (N.nq or ""):gsub("^%s+", ""):gsub("%s+$", "")
         if t ~= "" then
-            run("mooi", { "note", t }, function() after(200, function() if N.branch == 2 then show_notes() end end) end)
+            -- into the bar's inbox, a file in mooi's own data folder (only its owner can read it), never on a
+            -- command line where every process could see it (D258); the bar adds it to its notes
+            local box = read("notes-inbox.json", "json")
+            box = type(box) == "table" and box or {}
+            box[#box + 1] = t
+            pcall(sys.call, "files.write", "notes-inbox.json", json.encode(box))
+            after(400, function() if N.branch == 2 then show_notes() end end)
             N.nq, text.nd_nq = "", ""
         end
     elseif v >= 10 and v < 30 then
@@ -1372,13 +1383,15 @@ end)
 -- once by asking each its version (no shell), and started through Hyprland so it is a window like any other ──
 local TERMS = { "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm" }
 local function with_terminal(go)
-    if N.term ~= nil then go(N.term or nil); return end
+    if N.term then go(N.term); return end
     local i = 0
     local function try()
         i = i + 1
         local t = TERMS[i]
-        if not t then N.term = false; go(nil); return end
-        run(t, { "--version" }, function(_, code) if code == 0 then N.term = t; go(t) else try() end end)
+        -- none answered: nothing remembered, so a terminal installed later is found on the next press
+        if not t then N.term = nil; go(nil); return end
+        -- xterm answers only its own single-dash flag
+        run(t, { t == "xterm" and "-version" or "--version" }, function(_, code) if code == 0 then N.term = t; go(t) else try() end end)
     end
     try()
 end

@@ -6979,3 +6979,26 @@ date, battery, CPU, memory, volume, weather and notices, six at most in the pill
 modules they had switched on. Saved looks keep their modules too.
 
 **Verified.** Unit 827 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.
+
+## D258 · 2026-11-10 · What opencode's second review found
+
+opencode (task 10, read-only) reviewed D245–D257. All nine findings were real, and all are fixed:
+- **The studio's tabs were out of step:** the generator had six, the look seven (Rest, D248), so every page
+  after the first showed the next page's rows and Parts could not be reached. The generator lists all seven,
+  and a test now holds the two lists together.
+- **BMO could not be picked:** the choice rows drew six chips for the seed's seven choices. They draw seven
+  now, and a test holds the chips to the choices.
+- **Panels with a full roundness became stadiums** (a 560 × 270 branch had a 135 px corner) that clipped
+  their own titles and controls. A panel's corner is capped at 22 px.
+- **The word clock** turned on the minute but rounds at the half minute, so it was wrong for up to 30 s.
+- **Notes went on a command line** (`mooi note …`, visible to every process). They now go into an inbox file in
+  mooi's own folder, which only its owner can read, and the bar adds them. A stash item opened by
+  `xdg-open` still names its path or link as an argument, which opening it requires.
+- **The terminal probe** asked xterm for `--version` (it takes `-version`), and remembered failing for good.
+  A failure is now forgotten, so a terminal installed later is found.
+- **An opened notice card** could outlive its notices and pin the next one open. It is let go when they fold.
+- **The lock's weather chip** could never appear: the weather was not copied beside the lock. It is now.
+- **The lock's check could jam:** an auth service that raised left it waiting for good. The check is wrapped,
+  an error is a failed check (never a way in), and the next try asks again.
+
+**Verified.** Unit tests green (four new); scenes compile; `bin/mooi check` green.

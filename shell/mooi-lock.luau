@@ -225,9 +225,17 @@ on("tryauth", function()
     fact.authing, fact.wrong = true, false
     text.status = "VERIFYING…"
 
-    local ok = sys.ask("auth.check", pw)
+    -- an auth service that raises is never a way in, and never a way to jam the lock: the check is a failed
+    -- one, the field clears, and the next try asks again (D258)
+    local asked, ok = pcall(sys.ask, "auth.check", pw)
     fact.authing = false
     text.password = ""
+    if not asked then
+        text.status = "COULD NOT CHECK · TRY AGAIN"
+        after(1600, function() if text.status == "COULD NOT CHECK · TRY AGAIN" then text.status = "" end end)
+        return
+    end
+    ok = ok == true
 
     if ok then
         lockout.used = 0

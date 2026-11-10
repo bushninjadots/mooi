@@ -39,7 +39,7 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_sys", 0, "the system as: 0 spokes · 1 rings · 2 graphs"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_rxl", 1, "reactions: 0 off · 1 subtle · 2 lively"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "System", "Search", "Tour"]
-TABS = ["Presets", "Shape", "Surface", "Motion", "Music", "Parts"]
+TABS = ["Presets", "Rest", "Shape", "Surface", "Motion", "Music", "Parts"]   # lib/node/look M.TABS, in its order (a test holds them together)
 MONO = '"Share Tech Mono"'
 SANS = '"Exo 2"'
 
@@ -117,7 +117,7 @@ def scene():
           '    fact nd_kr = 0        // the row the keyboard is on',
           '    fact nd_pv = 0        // the preview: ' + " · ".join(f"{i} {t}" for i, t in enumerate(PREVIEW)),
           '    text nd_lookname = "Organic"',
-          '    model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text }',
+          '    model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text; o6: text }',
           '    model ps max 4 { name: text; desc: text; on: bool; sw: number; sh: number; sr: number; seed: number }',
           '    model sl max 3 { label: text; full: bool }',
           '    model md max 6 { label: text }     // D257: the modules in the pill, in order',
@@ -372,14 +372,14 @@ def studio_deck():
           f'{d}                ellipse {{ at: tx + 380 * r.frac, ry + 23; radius: if(skz.hover, 9, 7); color: nd_acc }} }}',
           f'{d}            text r.value {{ at: st_x + 916, ry + 23; anchor: right center; align: right; size: 11; weight: 700; family: {MONO}; color: fl.engrave; width: 90; lines: 1 }}',
           f'{d}        }}']
-    for j in range(6):
-        x = f"tx + {j * 78}"
+    for j in range(7):
+        x = f"tx + {j * 69}"
         L += [f'{d}        group {{ show: r.kind == 1 and r.n > {j}',
-              f'{d}            box {{ from: {x}, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == {j}, 0.9, if(sko{j}.hover, 0.16, 0)) }}',
-              f'{d}            box {{ from: {x}, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == {j}, nd_acc, fl.trace_lit) }}',
-              f'{d}            text r.o{j} {{ at: {x} + 36, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: {MONO}; color: if(r.sel == {j}, fl.ground, fl.engrave); width: 68; lines: 1 }}',
+              f'{d}            box {{ from: {x}, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == {j}, 0.9, if(sko{j}.hover, 0.16, 0)) }}',
+              f'{d}            box {{ from: {x}, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == {j}, nd_acc, fl.trace_lit) }}',
+              f'{d}            text r.o{j} {{ at: {x} + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: {MONO}; color: if(r.sel == {j}, fl.ground, fl.engrave); width: 60; lines: 1 }}',
               f'{d}        }}',
-              f'{d}        zone box sko{j} {{ from: {x}, ry + 9; size: 72, 28; cursor: pointer; role: item; label: "{{r.label}}: {{r.o{j}}}"; selected: r.sel == {j}; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > {j} }}',
+              f'{d}        zone box sko{j} {{ from: {x}, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{{r.label}}: {{r.o{j}}}"; selected: r.sel == {j}; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > {j} }}',
               f'{d}        on press sko{j} {{ emit nd_so(r.index * 10 + {j}) }}']
     L += [f'{d}    }}',
           f'{d}    zone box skz {{ from: tx - 12, ry + 4; size: 404, 38; cursor: grab; role: slider; label: "{{r.label}}"; value: "{{r.value}}"; show: nd_studio and nd_tab > 0 and r.kind == 0 }}',

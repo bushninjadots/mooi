@@ -216,7 +216,7 @@ function M.rows(t, tab)
         local word, frac, sel = M.shown(t, row)
         local r = { kind = row.values and 1 or 0, label = row.label, desc = row.desc, value = word, frac = frac, sel = sel,
                     n = row.values and #row.values or 0 }
-        for j = 0, 5 do r["o" .. j] = row.names and row.names[j + 1] or "" end
+        for j = 0, 6 do r["o" .. j] = row.names and row.names[j + 1] or "" end
         out[i] = r
     end
     return out

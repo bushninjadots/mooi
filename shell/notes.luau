@@ -127,6 +127,19 @@ return function(ctx)
     end)
     on("submit:pk_qn", function() add() end)
     on("qn_add", function() add() end)
+    -- D258: notes written on the node arrive in an inbox file (never on a command line); each is added, the box emptied
+    local function inbox()
+        local ok, box = pcall(sys.ask, "files.read", "notes-inbox.json", "json")
+        if not ok or type(box) ~= "table" or #box == 0 then return end
+        for _, t in ipairs(box) do
+            local c = pad.clean(tostring(t or ""))
+            if c ~= "" then items = pad.add(items, c, now_s()) end
+        end
+        pcall(sys.call, "files.write", "notes-inbox.json", "[]")
+        save(); show()
+    end
+    pcall(sys.watch, "files:notes-inbox.json", inbox)
+    inbox()
     -- D86: a note's colour (its stripe, pressed), its tick, and the search
     on("qn_tag", function(v)
         local id = math.floor(tonumber(v) or -1)

@@ -425,11 +425,11 @@ scene Node {
     fact nd_studio = false
     prop nd_stf = 0 ~nd.aux
     follow nd_stf = if(nd_studio, 1, 0)
-    fact nd_tab = 0       // 0 Presets · 1 Shape · 2 Surface · 3 Motion · 4 Music · 5 Parts
+    fact nd_tab = 0       // 0 Presets · 1 Rest · 2 Shape · 3 Surface · 4 Motion · 5 Music · 6 Parts
     fact nd_kr = 0        // the row the keyboard is on
     fact nd_pv = 0        // the preview: 0 Rest · 1 Music · 2 Notice · 3 Volume · 4 Rail · 5 System · 6 Search · 7 Tour
     text nd_lookname = "Organic"
-    model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text }
+    model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text; o6: text }
     model ps max 4 { name: text; desc: text; on: bool; sw: number; sh: number; sr: number; seed: number }
     model sl max 3 { label: text; full: bool }
     model md max 6 { label: text }     // D257: the modules in the pill, in order
@@ -1526,26 +1526,30 @@ scene Node {
             box { from: st_x + 20 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 0 }
             zone box stt0 { from: st_x + 20, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Presets"; selected: nd_tab == 0; show: nd_studio }
             on press stt0 { emit nd_tab(0) }
-            text "Shape" { at: st_x + 99 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
+            text "Rest" { at: st_x + 99 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
             box { from: st_x + 99 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 1 }
-            zone box stt1 { from: st_x + 99, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Shape"; selected: nd_tab == 1; show: nd_studio }
+            zone box stt1 { from: st_x + 99, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Rest"; selected: nd_tab == 1; show: nd_studio }
             on press stt1 { emit nd_tab(1) }
-            text "Surface" { at: st_x + 178 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
+            text "Shape" { at: st_x + 178 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
             box { from: st_x + 178 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 2 }
-            zone box stt2 { from: st_x + 178, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Surface"; selected: nd_tab == 2; show: nd_studio }
+            zone box stt2 { from: st_x + 178, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Shape"; selected: nd_tab == 2; show: nd_studio }
             on press stt2 { emit nd_tab(2) }
-            text "Motion" { at: st_x + 257 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 3, 700, 500); family: "Exo 2"; color: if(nd_tab == 3, fl.engrave, fl.muted) }
+            text "Surface" { at: st_x + 257 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 3, 700, 500); family: "Exo 2"; color: if(nd_tab == 3, fl.engrave, fl.muted) }
             box { from: st_x + 257 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 3 }
-            zone box stt3 { from: st_x + 257, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Motion"; selected: nd_tab == 3; show: nd_studio }
+            zone box stt3 { from: st_x + 257, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Surface"; selected: nd_tab == 3; show: nd_studio }
             on press stt3 { emit nd_tab(3) }
-            text "Music" { at: st_x + 336 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 4, 700, 500); family: "Exo 2"; color: if(nd_tab == 4, fl.engrave, fl.muted) }
+            text "Motion" { at: st_x + 336 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 4, 700, 500); family: "Exo 2"; color: if(nd_tab == 4, fl.engrave, fl.muted) }
             box { from: st_x + 336 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 4 }
-            zone box stt4 { from: st_x + 336, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Music"; selected: nd_tab == 4; show: nd_studio }
+            zone box stt4 { from: st_x + 336, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Motion"; selected: nd_tab == 4; show: nd_studio }
             on press stt4 { emit nd_tab(4) }
-            text "Parts" { at: st_x + 415 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 5, 700, 500); family: "Exo 2"; color: if(nd_tab == 5, fl.engrave, fl.muted) }
+            text "Music" { at: st_x + 415 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 5, 700, 500); family: "Exo 2"; color: if(nd_tab == 5, fl.engrave, fl.muted) }
             box { from: st_x + 415 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 5 }
-            zone box stt5 { from: st_x + 415, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Parts"; selected: nd_tab == 5; show: nd_studio }
+            zone box stt5 { from: st_x + 415, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Music"; selected: nd_tab == 5; show: nd_studio }
             on press stt5 { emit nd_tab(5) }
+            text "Parts" { at: st_x + 494 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 6, 700, 500); family: "Exo 2"; color: if(nd_tab == 6, fl.engrave, fl.muted) }
+            box { from: st_x + 494 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 6 }
+            zone box stt6 { from: st_x + 494, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Parts"; selected: nd_tab == 6; show: nd_studio }
+            on press stt6 { emit nd_tab(6) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; color: nd_acc; opacity: if(false, 0.9, if(stc3.hover, 0.18, 0)) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; stroke: 1; color: if(false, nd_acc, fl.trace_lit) }
             text "RESET" { at: st_x + 940 - 24 - 336 + 100 / 2, st_dy + 22 + 30 / 2; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(false, fl.ground, fl.engrave) }
@@ -1655,47 +1659,54 @@ scene Node {
                         text r.value { at: st_x + 916, ry + 23; anchor: right center; align: right; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: 90; lines: 1 }
                     }
                     group { show: r.kind == 1 and r.n > 0
-                        box { from: tx + 0, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 0, 0.9, if(sko0.hover, 0.16, 0)) }
-                        box { from: tx + 0, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 0, nd_acc, fl.trace_lit) }
-                        text r.o0 { at: tx + 0 + 36, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 0, fl.ground, fl.engrave); width: 68; lines: 1 }
+                        box { from: tx + 0, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 0, 0.9, if(sko0.hover, 0.16, 0)) }
+                        box { from: tx + 0, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 0, nd_acc, fl.trace_lit) }
+                        text r.o0 { at: tx + 0 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 0, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko0 { from: tx + 0, ry + 9; size: 72, 28; cursor: pointer; role: item; label: "{r.label}: {r.o0}"; selected: r.sel == 0; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 0 }
+                    zone box sko0 { from: tx + 0, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o0}"; selected: r.sel == 0; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 0 }
                     on press sko0 { emit nd_so(r.index * 10 + 0) }
                     group { show: r.kind == 1 and r.n > 1
-                        box { from: tx + 78, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 1, 0.9, if(sko1.hover, 0.16, 0)) }
-                        box { from: tx + 78, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 1, nd_acc, fl.trace_lit) }
-                        text r.o1 { at: tx + 78 + 36, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 1, fl.ground, fl.engrave); width: 68; lines: 1 }
+                        box { from: tx + 69, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 1, 0.9, if(sko1.hover, 0.16, 0)) }
+                        box { from: tx + 69, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 1, nd_acc, fl.trace_lit) }
+                        text r.o1 { at: tx + 69 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 1, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko1 { from: tx + 78, ry + 9; size: 72, 28; cursor: pointer; role: item; label: "{r.label}: {r.o1}"; selected: r.sel == 1; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 1 }
+                    zone box sko1 { from: tx + 69, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o1}"; selected: r.sel == 1; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 1 }
                     on press sko1 { emit nd_so(r.index * 10 + 1) }
                     group { show: r.kind == 1 and r.n > 2
-                        box { from: tx + 156, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 2, 0.9, if(sko2.hover, 0.16, 0)) }
-                        box { from: tx + 156, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 2, nd_acc, fl.trace_lit) }
-                        text r.o2 { at: tx + 156 + 36, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 2, fl.ground, fl.engrave); width: 68; lines: 1 }
+                        box { from: tx + 138, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 2, 0.9, if(sko2.hover, 0.16, 0)) }
+                        box { from: tx + 138, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 2, nd_acc, fl.trace_lit) }
+                        text r.o2 { at: tx + 138 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 2, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko2 { from: tx + 156, ry + 9; size: 72, 28; cursor: pointer; role: item; label: "{r.label}: {r.o2}"; selected: r.sel == 2; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 2 }
+                    zone box sko2 { from: tx + 138, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o2}"; selected: r.sel == 2; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 2 }
                     on press sko2 { emit nd_so(r.index * 10 + 2) }
                     group { show: r.kind == 1 and r.n > 3
-                        box { from: tx + 234, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 3, 0.9, if(sko3.hover, 0.16, 0)) }
-                        box { from: tx + 234, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 3, nd_acc, fl.trace_lit) }
-                        text r.o3 { at: tx + 234 + 36, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 3, fl.ground, fl.engrave); width: 68; lines: 1 }
+                        box { from: tx + 207, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 3, 0.9, if(sko3.hover, 0.16, 0)) }
+                        box { from: tx + 207, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 3, nd_acc, fl.trace_lit) }
+                        text r.o3 { at: tx + 207 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 3, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko3 { from: tx + 234, ry + 9; size: 72, 28; cursor: pointer; role: item; label: "{r.label}: {r.o3}"; selected: r.sel == 3; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 3 }
+                    zone box sko3 { from: tx + 207, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o3}"; selected: r.sel == 3; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 3 }
                     on press sko3 { emit nd_so(r.index * 10 + 3) }
                     group { show: r.kind == 1 and r.n > 4
-                        box { from: tx + 312, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 4, 0.9, if(sko4.hover, 0.16, 0)) }
-                        box { from: tx + 312, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 4, nd_acc, fl.trace_lit) }
-                        text r.o4 { at: tx + 312 + 36, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 4, fl.ground, fl.engrave); width: 68; lines: 1 }
+                        box { from: tx + 276, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 4, 0.9, if(sko4.hover, 0.16, 0)) }
+                        box { from: tx + 276, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 4, nd_acc, fl.trace_lit) }
+                        text r.o4 { at: tx + 276 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 4, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko4 { from: tx + 312, ry + 9; size: 72, 28; cursor: pointer; role: item; label: "{r.label}: {r.o4}"; selected: r.sel == 4; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 4 }
+                    zone box sko4 { from: tx + 276, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o4}"; selected: r.sel == 4; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 4 }
                     on press sko4 { emit nd_so(r.index * 10 + 4) }
                     group { show: r.kind == 1 and r.n > 5
-                        box { from: tx + 390, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 5, 0.9, if(sko5.hover, 0.16, 0)) }
-                        box { from: tx + 390, ry + 9; size: 72, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 5, nd_acc, fl.trace_lit) }
-                        text r.o5 { at: tx + 390 + 36, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 5, fl.ground, fl.engrave); width: 68; lines: 1 }
+                        box { from: tx + 345, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 5, 0.9, if(sko5.hover, 0.16, 0)) }
+                        box { from: tx + 345, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 5, nd_acc, fl.trace_lit) }
+                        text r.o5 { at: tx + 345 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 5, fl.ground, fl.engrave); width: 60; lines: 1 }
                     }
-                    zone box sko5 { from: tx + 390, ry + 9; size: 72, 28; cursor: pointer; role: item; label: "{r.label}: {r.o5}"; selected: r.sel == 5; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 5 }
+                    zone box sko5 { from: tx + 345, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o5}"; selected: r.sel == 5; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 5 }
                     on press sko5 { emit nd_so(r.index * 10 + 5) }
+                    group { show: r.kind == 1 and r.n > 6
+                        box { from: tx + 414, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); color: nd_acc; opacity: if(r.sel == 6, 0.9, if(sko6.hover, 0.16, 0)) }
+                        box { from: tx + 414, ry + 9; size: 64, 28; corner: 14 * max(0.3, nd_rnd); stroke: 1; color: if(r.sel == 6, nd_acc, fl.trace_lit) }
+                        text r.o6 { at: tx + 414 + 32, ry + 23; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.sel == 6, fl.ground, fl.engrave); width: 60; lines: 1 }
+                    }
+                    zone box sko6 { from: tx + 414, ry + 9; size: 64, 28; cursor: pointer; role: item; label: "{r.label}: {r.o6}"; selected: r.sel == 6; show: nd_studio and nd_tab > 0 and r.kind == 1 and r.n > 6 }
+                    on press sko6 { emit nd_so(r.index * 10 + 6) }
                 }
                 zone box skz { from: tx - 12, ry + 4; size: 404, 38; cursor: grab; role: slider; label: "{r.label}"; value: "{r.value}"; show: nd_studio and nd_tab > 0 and r.kind == 0 }
                 on press skz { emit nd_sk(r.index * 2000 + round(clamp((pointer.x - tx) / 380, 0, 1) * 1000)) }
