@@ -7816,7 +7816,7 @@ Step one of the spec's settings overhaul (§2):
 - Pages are numbered by their place, so the generated index now also says each page's number by its label
   (`settings_index.tabs`); the Subsurface's Settings hub looks its pages up by label rather than by number.
 - Every "Settings → …" in the shell's own words, the docs and the generators names the new pages.
-Next: the words of every row (D301) and hiding rows that cannot apply (D302).
+Next: the words of every row (D302) and hiding rows that cannot apply (D303).
 
 **Verified.** Gate green (unit 940 / 0); every scene compiles. Live: the window shows the six sections and the
 merged Notifications page with its pop-ups card first.

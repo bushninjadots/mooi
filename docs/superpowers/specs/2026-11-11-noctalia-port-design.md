@@ -37,10 +37,10 @@ overhaul, in steps:
 1. **The map** (D300): the sidebar regrouped into Noctalia-like sections, in an order a newcomer follows —
    Appearance, Bar, Pill, Dock, Side panels, Desktop & widgets, Wallpaper, Windows, Effects, Notifications, Lock &
    idle, Power, Sound & display, Keys, Apps, System. Pages that are one feature's knobs become groups of its section.
-2. **The words** (D301, with opencode): every label one to three plain words; every description one line, saying
+2. **The words** (D302, with opencode): every label one to three plain words; every description one line, saying
    what it changes, in what unit, and what "off" means; mooi's private names explained once (a page subtitle) and
    never used as labels.
-3. **Hide, don't dim** (D302): rows whose condition fails are folded away with the space they took.
+3. **Hide, don't dim** (D303): rows whose condition fails are folded away with the space they took.
 
 ## 3. Ports from Noctalia (refining what mooi has)
 
