@@ -7519,17 +7519,25 @@ inset with the picture or initial, the display name and the hostname.
 A press on the card opens an editor in place. The display name becomes a text field; the picture gets a camera
 badge and a press opens a file chooser (`zenity`), then `mooi identity avatar` imports what was chosen. Return, or
 the check at the card's right, saves; Escape closes the editor before it would close the panel, and opening Home
-again starts closed. A blank name is refused (`lib/node/home.name` trims, drops control characters, caps at 48 and
-returns nil when nothing is left), a failed write leaves the editor open, and a cancelled chooser or failed import
-changes nothing.
+again starts closed. A blank name is refused (`lib/node/home.name` trims, drops control characters, caps at 48
+bytes on a whole-character boundary and returns nil when nothing is left), a failed write leaves the editor open,
+and a cancelled chooser or failed import changes nothing.
+
+The editor is a page you type into, so Home joins Notes and the shortcut filter in the scene's keyboard claim
+(`lib/node/home.typing`); focus follows the claim, and the card itself catches presses while editing so a press
+beside the field does not fold the panel away. The file chooser is an ordinary window, so while it is up the
+node's surface steps out of its way (`nd_hpick`, `open: not nd_hpick`), giving zenity the keyboard and the front;
+every path back from it — chosen, cancelled, failed to start — brings the node back. The name is UTF-8-safe: a
+2-, 3- or 4-byte character is either kept whole or dropped whole at the cap, and the initial is one whole letter.
 
 The name is written the safe way: the raw settings document is copied, only `nexus.identity.name` is changed in the
 copy, and `lib/settingsfile.save` re-reads the file and lays that leaf over what is there — never a command line,
 and never a whole-file rewrite that could revert another program's change. After a save the settings are re-read and
-the card redrawn. The scene gained `nd_hopen`, `nd_hsave`, `nd_hpic` and `nd_hdone`, the `nd_hedit` fact, the `nd_hn`
-field and the `phz`/`pha`/`phd` zones; `zenity` joined the scene's permitted commands.
+the card redrawn. The scene gained `nd_hopen`, `nd_hsave`, `nd_hpic` and `nd_hdone`, the `nd_hedit` and `nd_hpick`
+facts, the `nd_hn` field and the `phz`/`phc`/`pha`/`phd` zones; `zenity` joined the scene's permitted commands.
 
-**Verified.** Unit 892 / 0 (the name validator, the moved offsets, the editor's scene and guards, and every command
-the logic runs being declared); the scene compiles (781 properties, 337 zones); `luau-ops`, the gate and the node's
-globals check pass.
-
+**Verified.** Unit 896 / 0 (the name validator and its multibyte cases, the keyboard decision, the moved offsets,
+the editor's scene and guards, and every command the logic runs being declared); the scene compiles (781
+properties, 338 zones); `luau-ops`, the gate and the node's globals check pass. Checked live on the running
+desktop: the card opens the field, typed text appears, Escape cancels without closing the panel, Return saves an
+unchanged name, and the picture chooser opens above the full-screen node and gives the node back when cancelled.

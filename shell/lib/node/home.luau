@@ -50,12 +50,40 @@ local function trim(s)
     return s
 end
 
--- the name the inline editor will keep: trimmed, no control characters, nothing for nothing, 48 at most
+-- the first whole UTF-8 character (a name's initial, even in a script of two, three or four bytes)
+local function first_char(s)
+    local b = string.byte(s, 1)
+    if not b then return "" end
+    local n = 1
+    if b >= 0xF0 then n = 4 elseif b >= 0xE0 then n = 3 elseif b >= 0xC0 then n = 2 end
+    return string.sub(s, 1, math.min(n, #s))
+end
+
+-- the longest whole-character prefix within `limit` bytes: never leaves half a character in the settings
+local function clip(s, limit)
+    if #s <= limit then return s end
+    local cut = limit
+    while cut > 0 do
+        local b = string.byte(s, cut + 1)
+        if not b or b < 0x80 or b >= 0xC0 then break end
+        cut = cut - 1
+    end
+    return string.sub(s, 1, cut)
+end
+
+-- the name the inline editor will keep: trimmed, no control characters, nothing for nothing, 48 bytes at most
 function M.name(value)
     value = trim(value):gsub("%c", "")
     value = trim(value)
     if value == "" then return nil end
-    return string.sub(value, 1, 48)
+    return clip(value, 48)
+end
+
+-- whether a panel page should be holding the keyboard: notes and the shortcut filter always, Home only while
+-- its profile editor is open and no picture chooser has stepped in front
+function M.typing(panel, edit, pick)
+    if panel == "notes" or panel == "keys" then return true end
+    return panel == "home" and edit == true and not pick
 end
 
 -- the profile card's words: the display name (never empty), the hostname, the picture's file, and the letter
@@ -65,7 +93,7 @@ function M.identity(name, host, avatar)
     if name == "" then name = "mooi" end
     host = trim(host)
     avatar = trim(avatar)
-    return { name = name, host = host, avatar = avatar, initial = string.upper(string.sub(name, 1, 1)) }
+    return { name = name, host = host, avatar = avatar, initial = string.upper(first_char(name)) }
 end
 
 -- the picture's path, or "" when there is no name or the file is not there (then the card keeps the initial)

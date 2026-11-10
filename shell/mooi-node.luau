@@ -455,7 +455,7 @@ render = function()
     if changed and N.wants_bands and N.wants_bands() then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
     -- the keyboard only for what is opened to be typed into: the time panel, the player and a finish card never
     -- take it, so a timer that ends while you type steals no keys
-    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "panel" and (N.panel == "notes" or N.panel == "keys"))
+    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "panel" and HM.typing(N.panel, N.hedit, N.hpick))
     set_body(b, changed and LK.overshoot(look) or 0)
     -- D257: a notch at rest is a piece of the frame's body (the frame draws it, joined to its band); the node
     -- only says where it is, and draws what is inside
@@ -1319,12 +1319,19 @@ N.show_identity = function()
     fact.nd_face_on = text.nd_face ~= ""
 end
 N.show_identity()
-N.hedit, N.hn = false, ""
+N.hedit, N.hn, N.hpick = false, "", false
 
 local function close_editor()
     N.hedit, fact.nd_hedit, N.hn, text.nd_hn = false, false, "", ""
 end
 N.close_editor = close_editor
+
+-- the file chooser is a normal window: while it is up the node's surface steps away, so the dialog is above
+-- it and keeps the keyboard. Every path back from zenity gives the node back.
+local function finish_pick()
+    N.hpick, fact.nd_hpick = false, false
+    render()
+end
 
 local function save_name()
     local name = HM.name(N.hn)
@@ -1358,8 +1365,11 @@ on("text:nd_hn", function(v) N.hn = tostring(v or "") end)
 on("nd_hsave", function() save_name() end)
 on("nd_hdone", function() save_name() end)
 on("nd_hpic", function()
-    pcall(run, "zenity", { "--file-selection", "--title=Choose your profile picture",
+    N.hpick, fact.nd_hpick = true, true
+    render()
+    local ok = pcall(run, "zenity", { "--file-selection", "--title=Choose your profile picture",
         "--file-filter=Images | *.png *.jpg *.jpeg *.webp *.avif" }, function(out, code)
+        finish_pick()
         local path = tostring(out or ""):gsub("%s+$", "")
         if code ~= 0 or path == "" then return end
         run("mooi", { "identity", "avatar", path }, function(_, done)
@@ -1369,6 +1379,7 @@ on("nd_hpic", function()
             render()
         end)
     end)
+    if not ok then finish_pick() end
 end)
 
 pcall(run, "hostname", {}, function(out)

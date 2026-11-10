@@ -614,6 +614,7 @@ scene Node {
     fact nd_face_on = false
     text nd_hn = ""
     fact nd_hedit = false
+    fact nd_hpick = false
     text nd_hclock = ""
     text nd_hdate = ""
     text nd_hwg = ""
@@ -757,6 +758,7 @@ scene Node {
     surface node {
         size: full, full
         anchor: top
+        open: not nd_hpick
         level: top, overlay while nd_kind == 7 or nd_studio
         // -1: over every other bar's strip, not pushed below it (it sat on the windows' line, D245)
         reserve: -1
@@ -1115,13 +1117,15 @@ scene Node {
                 text "󰌢" { at: nb_x + nb_w - 30, nb_y + 107; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: fl.muted; opacity: 0.7; show: not nd_hedit }
                 zone box phz { from: nb_x + 14, nb_y + 78; size: nb_w - 28, 58; corner: 14; cursor: pointer; role: button; label: "Edit your profile"; show: nd_kind == 13 and nd_pgp == 0 and not nd_hedit }
                 on press phz { emit nd_hopen }
+                zone box phc { from: nb_x + 14, nb_y + 78; size: nb_w - 28, 58; corner: 14; cursor: pointer; role: button; label: "Edit your profile"; show: nd_kind == 13 and nd_pgp == 0 and nd_hedit }
+                on press phc { focus nd_hn }
                 zone box pha { from: nb_x + 27, nb_y + 87; size: 40, 40; corner: 20; cursor: pointer; role: button; label: "Choose your profile picture"; show: nd_kind == 13 and nd_pgp == 0 and nd_hedit }
                 on press pha { emit nd_hpic }
                 zone box phd { from: nb_x + nb_w - 44, nb_y + 86; size: 28, 28; corner: 14; cursor: pointer; role: button; label: "Save your profile"; show: nd_kind == 13 and nd_pgp == 0 and nd_hedit }
                 on press phd { emit nd_hdone }
             }
             on submit nd_hn { emit nd_hsave }
-            on change nd_hedit while nd_hedit and nd_kind == 13 and nd_pgp == 0 { focus nd_hn }
+            on change nd_kb while nd_kb and nd_kind == 13 and nd_pgp == 0 and nd_hedit { focus nd_hn }
             group { show: nd_pgp == 0
                 text nd_hclock { at: nb_x + 24, nb_y + 34; anchor: left center; size: 30; weight: 700; family: "Exo 2"; color: fl.engrave }
                 text nd_hdate { at: nb_x + 26, nb_y + 60; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 220; lines: 1 }
