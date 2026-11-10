@@ -6779,6 +6779,25 @@ do
     end)
 end
 
+section("the lock grows from the Pill (D254)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("a pill drops and unfolds into the card as the lock is held; the wallpaper blurs in with it", function()
+        local p = read("shell/mooi-lock.plm")
+        assert(p:find("scale: mix(0.05, 1, appear), mix(0.04, 1, appear)", 1, true))
+        assert(p:find("blur: lk_blur * (0.25 + 0.75 * appear)", 1, true))
+    end)
+    test("what can be pressed still exists only while the compositor holds the lock; power still takes two presses", function()
+        local p = read("shell/mooi-lock.plm")
+        for _, z in ipairs({ "tp_prev", "tp_play", "tp_next", "rbt", "pwr" }) do
+            assert(p:find("zone box " .. z .. " {[^}]*show: lock.held }"), z)
+        end
+        assert(p:find('placeholder: "PASSWORD"; secret: true', 1, true), "the field is secret")
+        local l = read("shell/mooi-lock.luau")
+        assert(l:find('text.greet = part', 1, true) and l:find('"files.read", "nexus-weather.json", "json"', 1, true))
+    end)
+end
+
 section("the node: what a review of its logic found (D244)")
 do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end

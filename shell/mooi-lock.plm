@@ -83,6 +83,9 @@ scene MooiLock {
     text status = ""            // VERIFYING… · INCORRECT · UNLOCKED; empty is the quiet state
     text tries = ""              // how many attempts PAM has left before it locks the login
     text who = ""                // whose screen this is: the name the session runs as
+    text greet = ""              // D254: good morning, …
+    fact lk_wx = false           // D254: there is a weather reading
+    text lk_weather = ""
     text picpath = ""            // the profile picture `mooi lock` copied beside this scene…
     text banpath = ""            // …and its banner, each named by its whole path
     text pwr_label = "POWER OFF"
@@ -169,7 +172,8 @@ scene MooiLock {
         group {
             show: has_wall
             opacity: 42%
-            blur: lk_blur
+            // D254: it blurs in as the card unfolds
+            blur: lk_blur * (0.25 + 0.75 * appear)
             image wall { at: ox - 80, oy - 80; size: w + 160, h + 160 }
         }
         box { from: ox, oy; size: w, h; color: lk_ground; opacity: lk_dim }
@@ -209,132 +213,111 @@ scene MooiLock {
             at: ox + w - 28, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
             color: lk_trace_dim; outline: 2, lk_ground
         }
-        // the battery, and what waits for you: the two things worth knowing before you type it in
-        text "{round(lk_batt_pct), 0}%" {
-            at: ox + w - 96, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
-            color: mix(lk_muted, lk_ember, if(lk_batt_pct < 15 and not lk_charging, 1, 0)); outline: 2, lk_ground
-            show: lk_batt and not lk_charging
-        }
-        text "{round(lk_batt_pct), 0}% · CHARGING" {
-            at: ox + w - 96, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
-            color: lk_muted; outline: 2, lk_ground
-            show: lk_batt and lk_charging
-        }
-        text "{lk_notes, 0} WAITING" {
-            at: ox + w - 208, oy + 24; anchor: right center; size: 10; weight: 700; family: "Share Tech Mono"
-            color: lk_ember; outline: 2, lk_ground
-            show: lk_notes > 0
-        }
-
-        // The clock: the shell's instrument, not a poster.
+        // ── D254: the card, grown from the Pill ──────────────────────────────────────
+        // A small pill drops from the top of the screen and unfolds into the card while the wallpaper blurs in
+        // behind it (`appear`, as the compositor confirms the lock). Its halves: the time, a greeting and what
+        // plays; the person and the password in a pill. Along its foot: the battery, what waits, the weather, and
+        // the power, which still takes two presses. Everything that can be pressed exists only while the
+        // compositor holds the lock (lock.held), as before.
+        let cw = 880
+        let ch = 380
+        let gx = 0 - cw / 2
+        let gy = 0 - ch / 2
+        let inner = clamp(appear * 2 - 1, 0, 1)
         group {
-            glow: 22, 45%, lk_phos
-            opacity: appear
-            text tick.time { at: 0, -136; anchor: center; size: 96; weight: 700; family: "Share Tech Mono"; color: lk_phos }
-            text tick.date { at: 0, -70; anchor: center; size: 12; weight: 700; family: "Share Tech Mono"; color: lk_muted }
-            // what was playing when the screen went dark: one line, quietly, above the name
-            text lk_track {
-                at: 0, -44; anchor: center; size: 11; family: "Share Tech Mono"
-                color: lk_trace; width: 660; lines: 1; align: center
-                show: lk_track_on
+            move: 0, (oy + 24 - gy) * (1 - appear)
+            pivot: 0, gy
+            scale: mix(0.05, 1, appear), mix(0.04, 1, appear)
+            group { glow: 30, 0.35, #000000
+                box { from: gx, gy; size: cw, ch; corner: 22; color: lk_hull; opacity: 92% } }
+            box { from: gx, gy; size: cw, ch; corner: 22; stroke: 1; color: lk_trace_dim; opacity: 70% }
+        }
+        let px0 = 6 + (cw / 2 - 22) / 2
+        let by = gy + ch - 40
+        group {
+            opacity: inner
+            // the left half: the time, the date, a greeting, what plays
+            box { from: gx + 16, gy + 16; size: cw / 2 - 22, ch - 86; corner: 16; color: lk_steel_900; opacity: 70% }
+            box { from: gx + 16, gy + 16; size: cw / 2 - 22, ch - 86; corner: 16; stroke: 1; color: lk_trace_dim; opacity: 60% }
+            group {
+                glow: 18, 40%, lk_phos
+                text tick.time { at: gx + cw / 4 + 5, gy + 74; anchor: center; size: 58; weight: 700; family: "Share Tech Mono"; color: lk_phos }
             }
-            // the music's bands, under the track: what is playing, moving, rather than a word for it
+            text tick.date { at: gx + cw / 4 + 5, gy + 120; anchor: center; size: 13; weight: 700; family: "Share Tech Mono"; color: lk_muted }
+            text greet { at: gx + cw / 4 + 5, gy + 144; anchor: center; size: 10; family: "Share Tech Mono"; color: lk_trace; width: cw / 2 - 60; lines: 1; align: center }
+            // what plays, and its three keys: the song changes hands without the password
             group {
                 show: lk_track_on
-                opacity: appear * 0.9
-                viz.Spectrum(-160, -32, 320, 26, lk_trace_dim, lk_phos, not lk_playing)
+                box { from: gx + 36, gy + 166; size: cw / 2 - 62, 108; corner: 14; color: lk_hull; opacity: 85% }
+                box { from: gx + 36, gy + 166; size: cw / 2 - 62, 108; corner: 14; stroke: 1; color: lk_trace_dim; opacity: 55% }
+                text lk_track { at: gx + 54, gy + 186; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: lk_phos; width: cw / 2 - 100; lines: 1 }
+                group { opacity: 0.9
+                    viz.Spectrum(gx + 54, gy + 200, cw / 2 - 98, 26, lk_trace_dim, lk_phos, not lk_playing) }
+                let tx = gx + cw / 4 + 5
+                text "◀◀" { at: tx - 48, gy + 250; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(tp_prev.hover, lk_phos, lk_muted) }
+                ellipse { at: tx, gy + 250; radius: 15; color: lk_phos; opacity: 90% }
+                text pick(lk_playing, "⏸", "▶") { at: tx, gy + 250; anchor: center; size: 12; weight: 700; family: "Share Tech Mono"; color: lk_ground }
+                text "▶▶" { at: tx + 48, gy + 250; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(tp_next.hover, lk_phos, lk_muted) }
+                zone box tp_prev { from: tx - 66, gy + 236; size: 36, 28; cursor: pointer; role: button; label: "PREVIOUS TRACK"; show: lock.held }
+                on press tp_prev { emit lk_prev }
+                zone box tp_play { from: tx - 16, gy + 235; size: 32, 30; corner: 15; cursor: pointer; role: button; label: "PLAY OR PAUSE"; show: lock.held }
+                on press tp_play { emit lk_toggle }
+                zone box tp_next { from: tx + 30, gy + 236; size: 36, 28; cursor: pointer; role: button; label: "NEXT TRACK"; show: lock.held }
+                on press tp_next { emit lk_next }
             }
-        }
-
-        // Whose screen this is, above the plate: the name the session runs as, so the password
-        // being asked for has an owner.
-        text who {
-            at: 0, 16; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"
-            color: lk_muted
-        }
-
-        // The password: a plate cut like the shell's, and the field itself, never the password.
-        group {
-            move: shake, 0
-            opacity: appear
-            // a one-pixel frame, drawn as a box a size larger: a box takes one colour, and mooi's
-            // plates are a dark fill inside a faint trace, not a filled border
-            box { at: 0, 56; size: 380, 48; corner: 2; color: lk_trace_dim; opacity: 45% }
-            box { at: 0, 56; size: 378, 46; corner: 2; color: lk_steel_900; opacity: 88% }
-            input password {
-                at: -172, 47; width: 344; size: 14; weight: 700
-                family: "Share Tech Mono"; color: lk_phos; selection: lk_hull
-                placeholder: "PASSWORD"; secret: true
+            // the right half: the person, and the password in a pill
+            box { from: 6, gy + 16; size: cw / 2 - 22, ch - 86; corner: 16; color: lk_steel_900; opacity: 70% }
+            box { from: 6, gy + 16; size: cw / 2 - 22, ch - 86; corner: 16; stroke: 1; color: lk_trace_dim; opacity: 60% }
+            group {
+                show: has_pic and lk_av_on
+                group { clip box { from: px0 - 46, gy + 34; size: 92, 92; corner: 46 }
+                    image lockpic { at: px0 - 46, gy + 34; size: 92, 92; fit: cover } }
+                box { from: px0 - 46, gy + 34; size: 92, 92; corner: 46; stroke: 1.5; color: lk_trace; opacity: 70% }
             }
-        }
-
-        // What it is doing, under the plate.
-        text status {
-            at: 0, 96; anchor: center; size: 11; weight: 700; family: "Share Tech Mono"
-            color: mix(mix(lk_muted, lk_ember, wrong), lk_phos, right)
-        }
-        text "TRY AGAIN" {
-            at: 0, 116; anchor: center; size: 10; family: "Share Tech Mono"
-            color: lk_ember; opacity: 70%; show: wrong
-        }
-        // How many attempts are left before PAM locks the login: the system's count, said plainly,
-        // because a lock that refuses a good password without a word looks broken (it did).
-        text tries {
-            at: 0, 134; anchor: center; size: 9; family: "Share Tech Mono"
-            color: lk_ember; opacity: 55%
-        }
-
-        // ── The transport: the song changes hands without the password ───────
-        // Three keys on the glass for whatever is playing (`media.*`): a locked door does not have to
-        // stop the music. They are drawn only while a player has something on it, and only while the
-        // compositor holds the lock, like the power buttons below.
-        group {
-            show: lk_track_on and lock.held
-            opacity: appear
-            box { at: -60, 190; size: 40, 30; corner: 2; color: lk_trace_dim; opacity: 35% }
-            box { at: -60, 190; size: 38, 28; corner: 2; color: lk_steel_900; opacity: 85% }
-            text "◀◀" { at: -60, 190; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_muted; outline: 2, lk_ground }
-            box { at: 0, 190; size: 40, 30; corner: 2; color: lk_trace_dim; opacity: 45% }
-            box { at: 0, 190; size: 38, 28; corner: 2; color: lk_steel_900; opacity: 85% }
-            text pick(lk_playing, "⏸", "▶") { at: 0, 190; anchor: center; size: 13; weight: 700; family: "Share Tech Mono"; color: lk_phos; outline: 2, lk_ground }
-            box { at: 60, 190; size: 40, 30; corner: 2; color: lk_trace_dim; opacity: 35% }
-            box { at: 60, 190; size: 38, 28; corner: 2; color: lk_steel_900; opacity: 85% }
-            text "▶▶" { at: 60, 190; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_muted; outline: 2, lk_ground }
-            zone box tp_prev { from: -80, 175; size: 40, 30; cursor: pointer; role: button; label: "PREVIOUS TRACK"; show: lock.held }
-            on press tp_prev { emit lk_prev }
-            zone box tp_play { from: -20, 175; size: 40, 30; cursor: pointer; role: button; label: "PLAY OR PAUSE"; show: lock.held }
-            on press tp_play { emit lk_toggle }
-            zone box tp_next { from: 40, 175; size: 40, 30; cursor: pointer; role: button; label: "NEXT TRACK"; show: lock.held }
-            on press tp_next { emit lk_next }
-        }
-
-        // ── Power, at the foot: one press arms, the second does it ───────────
-        // A slipped click on the last row of pixels should not end the session, and nothing here
-        // can be undone. The buttons exist only while the compositor is holding the lock, so a
-        // press before it does nothing.
-        let by = floor(h / 2) - 46
-        group {
-            opacity: appear
-            box { at: -76, by; size: 122, 34; corner: 2; color: lk_trace_dim; opacity: 40% }
-            box { at: -76, by; size: 120, 32; corner: 2; color: lk_steel_900; opacity: 88% }
-            text pwr_label {
-                at: -76, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"
-                color: mix(lk_muted, lk_ember, armed == 1)
+            group {
+                show: not (has_pic and lk_av_on)
+                box { from: px0 - 46, gy + 34; size: 92, 92; corner: 46; color: lk_hull }
+                box { from: px0 - 46, gy + 34; size: 92, 92; corner: 46; stroke: 1.5; color: lk_trace_dim }
+                text "MOOI" { at: px0, gy + 80; anchor: center; size: 12; weight: 700; family: "Share Tech Mono"; color: lk_muted }
             }
-            box { at: 76, by; size: 122, 34; corner: 2; color: lk_trace_dim; opacity: 40% }
-            box { at: 76, by; size: 120, 32; corner: 2; color: lk_steel_900; opacity: 88% }
-            text rbt_label {
-                at: 76, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"
-                color: mix(lk_muted, lk_ember, armed == 2)
+            text who { at: px0, gy + 148; anchor: center; size: 15; weight: 700; family: "Share Tech Mono"; color: lk_phos }
+            group {
+                move: shake, 0
+                box { from: px0 - 170, gy + 168; size: 340, 42; corner: 21; color: lk_hull; opacity: 92% }
+                box { from: px0 - 170, gy + 168; size: 340, 42; corner: 21; stroke: 1; color: mix(mix(lk_trace_dim, lk_ember, wrong), lk_phos, right) }
+                input password {
+                    at: px0 - 150, gy + 180; width: 300; size: 14; weight: 700
+                    family: "Share Tech Mono"; color: lk_phos; selection: lk_hull
+                    placeholder: "PASSWORD"; secret: true
+                }
             }
-            text pwr_note {
-                at: 0, by - 34; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"
-                color: lk_ember
-            }
-            zone box pwr { from: -136, by - 16; size: 120, 32; cursor: pointer; role: button; label: "POWER OFF: press twice"; show: lock.held }
-            on press pwr { emit pwr_off }
-            zone box rbt { from: 16, by - 16; size: 120, 32; cursor: pointer; role: button; label: "REBOOT: press twice"; show: lock.held }
+            text status { at: px0, gy + 228; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(mix(lk_muted, lk_ember, wrong), lk_phos, right) }
+            text "TRY AGAIN" { at: px0, gy + 246; anchor: center; size: 9; family: "Share Tech Mono"; color: lk_ember; opacity: 70%; show: wrong }
+            // how many attempts are left before PAM locks the login: said plainly, a lock that refuses a good
+            // password without a word looks broken (it did)
+            text tries { at: px0, gy + 262; anchor: center; size: 9; family: "Share Tech Mono"; color: lk_ember; opacity: 60% }
+            text "RETURN TO UNLOCK  ·  ESC TO CLEAR" { at: px0, gy + 276; anchor: center; size: 8; family: "Share Tech Mono"; color: lk_muted; opacity: 70%; show: not wrong and not authing and not right }
+
+            // the foot: the battery, what waits, the weather; the power on the right
+            box { from: gx + 16, by - 17; size: 118, 34; corner: 17; color: lk_steel_900; opacity: 80%; show: lk_batt }
+            text "{round(lk_batt_pct), 0}%" { at: gx + 75, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(lk_muted, lk_ember, if(lk_batt_pct < 15, 1, 0)); show: lk_batt and not lk_charging }
+            text "{round(lk_batt_pct), 0}% · ON" { at: gx + 75, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_phos; show: lk_batt and lk_charging }
+            box { from: gx + 142, by - 17; size: 128, 34; corner: 17; color: lk_steel_900; opacity: 80%; show: lk_notes > 0 }
+            text "{lk_notes, 0} WAITING" { at: gx + 206, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_ember; show: lk_notes > 0 }
+            box { from: gx + 278, by - 17; size: 150, 34; corner: 17; color: lk_steel_900; opacity: 80%; show: lk_wx }
+            text lk_weather { at: gx + 353, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: lk_muted; width: 140; lines: 1; align: center; show: lk_wx }
+            // power: one press arms (it asks), the second does it — a slipped click ends nothing
+            text pwr_note { at: px0, by - 34; anchor: center; size: 9; weight: 700; family: "Share Tech Mono"; color: lk_ember }
+            box { from: cw / 2 - 16 - 250, by - 17; size: 120, 34; corner: 17; color: if(armed == 2, lk_ember, lk_steel_900); opacity: if(armed == 2, 0.35, 0.8) }
+            box { from: cw / 2 - 16 - 250, by - 17; size: 120, 34; corner: 17; stroke: 1; color: if(armed == 2, lk_ember, lk_trace_dim) }
+            text rbt_label { at: cw / 2 - 16 - 190, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(lk_muted, lk_ember, armed == 2) }
+            box { from: cw / 2 - 16 - 122, by - 17; size: 122, 34; corner: 17; color: if(armed == 1, lk_ember, lk_steel_900); opacity: if(armed == 1, 0.35, 0.8) }
+            box { from: cw / 2 - 16 - 122, by - 17; size: 122, 34; corner: 17; stroke: 1; color: if(armed == 1, lk_ember, lk_trace_dim) }
+            text pwr_label { at: cw / 2 - 16 - 61, by; anchor: center; size: 10; weight: 700; family: "Share Tech Mono"; color: mix(lk_muted, lk_ember, armed == 1) }
+            zone box rbt { from: cw / 2 - 16 - 250, by - 17; size: 120, 34; corner: 17; cursor: pointer; role: button; label: "REBOOT: press twice"; show: lock.held }
             on press rbt { emit rbt }
+            zone box pwr { from: cw / 2 - 16 - 122, by - 17; size: 122, 34; corner: 17; cursor: pointer; role: button; label: "POWER OFF: press twice"; show: lock.held }
+            on press pwr { emit pwr_off }
         }
         text "LOCKING" {
             at: 0, 0; anchor: center; size: 12; weight: 700; family: "Share Tech Mono"

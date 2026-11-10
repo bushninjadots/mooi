@@ -94,6 +94,27 @@ local function whoami()
 end
 whoami()
 
+-- D254: a greeting by the hour, and the weather the Nexus last read (nexus-weather.json), for the card's chips
+local function greet()
+    local h = tonumber(os.date("%H")) or 12
+    local part = h < 5 and "GOOD NIGHT" or h < 12 and "GOOD MORNING" or h < 18 and "GOOD AFTERNOON" or "GOOD EVENING"
+    text.greet = part .. ((text.who ~= nil and text.who ~= "") and (", " .. text.who) or "")
+end
+greet()
+every(60000, greet)
+local WMO = { [0] = "CLEAR", [1] = "FAIR", [2] = "CLOUDY", [3] = "OVERCAST", [45] = "FOG", [48] = "FOG", [51] = "DRIZZLE",
+              [53] = "DRIZZLE", [55] = "DRIZZLE", [61] = "RAIN", [63] = "RAIN", [65] = "HEAVY RAIN", [71] = "SNOW",
+              [73] = "SNOW", [75] = "SNOW", [80] = "SHOWERS", [81] = "SHOWERS", [82] = "SHOWERS", [95] = "STORM" }
+local function weather()
+    local ok, w = pcall(sys.ask, "files.read", "nexus-weather.json", "json")
+    local cur = ok and type(w) == "table" and type(w.answer) == "table" and w.answer.current or nil
+    local t = type(cur) == "table" and tonumber(cur.temperature_2m) or nil
+    fact.lk_wx = t ~= nil
+    if t then text.lk_weather = math.floor(t + 0.5) .. "°  " .. (WMO[tonumber(cur.weather_code) or -1] or "") end
+end
+weather()
+pcall(sys.watch, "files:nexus-weather.json", weather)
+
 -- The pictures on the lock (D161): the Nexus's banner (a strip along the top) and its profile
 -- picture (a plate above the clock), both copied beside this scene by `mooi lock`; `identity.json`
 -- names the two copies.

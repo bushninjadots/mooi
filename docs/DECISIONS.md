@@ -6916,4 +6916,21 @@ one BMO, not two. He is quiet: no lines, only his face. He blinks, his eyes foll
 is the seed, so a pointer moving past costs no frames otherwise), he sings to music, and he falls asleep left
 alone.
 
-**Verified.** Unit 793 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.
+**Verified.** Unit 791 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.
+
+## D254 · 2026-11-10 · The lock grows from the Pill
+
+Ideas from ChillPill-Shell's lock screen (LUCKYS1NGHH/ChillPill-Shell), which the owner liked, in mooi's own
+drawing. Everything grows from the Pill: as the compositor confirms the lock, a small pill drops from the top of
+the screen and unfolds into a card, while the wallpaper blurs in behind it. The card has two halves:
+- **Left:** the time, the date, a greeting by the hour ("GOOD EVENING, …"), and what plays, with its
+  spectrum and three keys.
+- **Right:** a round picture (the Nexus's, or a plain MOOI disc), the name, and the password in a pill, with
+  the status, the attempts PAM has left, and "RETURN TO UNLOCK · ESC TO CLEAR".
+
+Along its foot: the battery, the notices waiting, the weather the Nexus last read (`nexus-weather.json`), and
+reboot and power off, each still two presses. Nothing about the lock's safety changed: ext-session-lock, PAM
+in the logic, Esc only clears, and every control exists only while the compositor holds the lock.
+
+**Verified.** Unit tests green; both lock files compile and parse. Not seen live: testing it means locking the
+owner's session, so the owner's own `mooi lock` is the first look.
