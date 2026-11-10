@@ -6906,3 +6906,14 @@ but the GPU waited. The breath now stops when the look's breathing is 0, and the
 second instead of 20 (a two-second breath needs no more). A running timer's capsule still gets its full rate.
 
 **Verified.** Unit 792 / 0; scenes compile; `bin/mooi check` green. The report is to be repeated after this lands.
+
+## D253 · 2026-11-10 · BMO as the seed, quietly
+
+The owner asked for a non-intrusive BMO. A seventh seed in the studio, **BMO**: at rest, his face on a small
+screen (the bar's own `ui/bmoface.plm` at three fifths of its size). He has the same expression the bar's BMO
+has, worked out from `bmo-shared.json` with the bar's libraries (`lib/bmostate`, `lib/pillface`), so there is
+one BMO, not two. He is quiet: no lines, only his face. He blinks, his eyes follow the pointer (only while he
+is the seed, so a pointer moving past costs no frames otherwise), he sings to music, and he falls asleep left
+alone.
+
+**Verified.** Unit 793 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.

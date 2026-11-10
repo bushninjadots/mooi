@@ -6763,6 +6763,21 @@ do
     end)
 end
 
+section("BMO as the seed (D253)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("the bar's own face, worked out from the shared state; his eyes follow only while he is shown", function()
+        local LK = require("lib/node/look")
+        eq(LK.facts(LK.normalise({ seed = "bmo" })).nd_seed, 6)
+        local p = read("shell/mooi-node.plm")
+        assert(p:find('import "ui/bmoface.plm"', 1, true))
+        assert(p:find("follow pb_lx = if(nd_kind == 0 and nd_seed == 6,", 1, true), "no frames for a pointer moving past a seed that is not BMO")
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('local doc = read("bmo-shared.json", "json")', 1, true) and l:find("local v = BMOST.view(st, os.time(), music)", 1, true))
+        assert(not l:find("pb_say", 1, true), "quiet: no lines")
+    end)
+end
+
 section("the node: what a review of its logic found (D244)")
 do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end

@@ -28,7 +28,7 @@ M.SCHEMA = {
         choice("m_music", "Music", "What plays, while something does", { "off", "on" }, { "Off", "On" }),
     },
     Shape = {
-        choice("seed", "Seed", "What rests at the top while nothing happens", { "line", "dot", "ring", "twin", "bar", "clock" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock" }),
+        choice("seed", "Seed", "What rests at the top while nothing happens", { "line", "dot", "ring", "twin", "bar", "clock", "bmo" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock", "BMO" }),
         range("seed_w", "Seed width", "How long the resting seed is", 6, 80, " px"),
         range("seed_h", "Seed height", "How thick it is", 2, 16, " px"),
         range("round", "Roundness", "From square corners to a full capsule", 0, 100, "%"),
@@ -246,7 +246,7 @@ function M.facts(t)
     local function ix(list, v) return (index_of(list, v) or 1) - 1 end
     return {
         nd_np = ix(M.PRESETS, t.style), nd_sp = M.spring_index(t), nd_gs = ix(M.GROWTHS, t.growth),
-        nd_seed = ix({ "line", "dot", "ring", "twin", "bar", "clock" }, t.seed), nd_rnd = t.round / 100,
+        nd_seed = ix({ "line", "dot", "ring", "twin", "bar", "clock", "bmo" }, t.seed), nd_rnd = t.round / 100,
         nd_tex = ix({ "solid", "hollow", "segmented", "scan", "dotted" }, t.texture), nd_fill = t.fill / 100,
         nd_ol = t.outline / 10, nd_gw = t.glow / 100, nd_ac = ix(COLOURS, t.accent), nd_gc = ix(COLOURS, t.glow_colour),
         nd_stg = t.stagger / 100, nd_bd = t.breath / 100, nd_mu = t.music / 100,
@@ -264,6 +264,8 @@ function M.shape(t)
     if t.seed == "dot" or t.seed == "ring" then w = math.max(h, math.min(w, 16)); h = w end
     -- the clock (D241): its matrix sets its size — 29 cells of 2 px across, 7 down, and a little air round it
     if t.seed == "clock" then w, h = 29 * 2 + 16, 7 * 2 + 8 end
+    -- BMO (D253): his face at three fifths of the bar's, on a small screen of its own
+    if t.seed == "bmo" then w, h = 40, 28 end
     return { seed_w = w, seed_h = h, round = t.round / 100, top = t.top }
 end
 

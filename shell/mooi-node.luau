@@ -28,6 +28,8 @@ local STASH = require("lib/stash")
 local CH = require("lib/node/cliphist")
 local HI = require("lib/node/history")
 local TM = require("lib/node/terminal")
+local BMOST = require("lib/bmostate")
+local PF = require("lib/pillface")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
@@ -67,6 +69,7 @@ N.look = look_now()
 local function apply_look()
     for k, v in pairs(LK.facts(N.look)) do fact[k] = v end
     if N.clock_now then N.clock_now() end
+    if N.bmo_show then N.bmo_show() end
 end
 apply_look()
 -- written a moment after the last change (a slider dragged writes once, when it rests)
@@ -1078,6 +1081,26 @@ on("nd_wheel", function(v)
     local to = math.max(0, math.min(1, (N.vol or 0.5) + d))
     pcall(sys.call, "audio.volume", to)
 end)
+
+-- ── BMO as the seed (D253): the bar owns BMO and keeps his state in bmo-shared.json; the node only wears his face,
+-- worked out the way the bar does (lib/bmostate, lib/pillface), quiet — no lines ──
+local function bmo_show()
+    if N.look.seed ~= "bmo" then return end
+    local doc = read("bmo-shared.json", "json")
+    local st = BMOST.normalise(type(doc) == "table" and doc or {}, os.time())
+    local music = N.media.playing and N.media.title ~= ""
+    local v = BMOST.view(st, os.time(), music)
+    local f = PF.numbers(v.face)
+    fact.pb_ew, fact.pb_eh, fact.pb_lid, fact.pb_brow, fact.pb_bron = f.ew, f.eh, f.lid, f.brow, f.bron
+    fact.pb_tg = f.tg or 0
+    fact.pb_sing = v.face == "singing"
+    fact.pb_asleep = v.face == "asleep"
+    fact.pb_sql, fact.pb_sqr, fact.pb_mc, fact.pb_mo, fact.pb_mw, fact.pb_bl = f.sql, f.sqr, f.mc, f.mo, f.mw, f.bl
+end
+N.bmo_show = bmo_show
+pcall(sys.watch, "files:bmo-shared.json", bmo_show)
+-- his face changes with time too (a reaction ends, he gets sleepy): looked at every ten seconds while he is the seed
+every(10000, bmo_show)
 
 -- ── the shelf and its branches (D247): Super grows side pills out of the node — what you reach often — and each
 -- grows its own panel under it. The node holds what has the focus and the time ──
