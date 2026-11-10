@@ -6756,7 +6756,7 @@ do
         assert(l:find('run("xdg-open", { N.panel_items[i] }', 1, true))
         local CAL = require("lib/calendar"); eq(#CAL.month(2026, 11, { y = 2026, m = 11, d = 10 }).cells, 42)
         local p = read("shell/mooi-node.plm")
-        assert(p:find("model cal max 42 {", 1, true) and p:find("model wl max 7 { img: image 112, 63; on: bool }", 1, true))
+        assert(p:find("model cal max 42 {", 1, true) and p:find("model wl max 9 { img: image 152, 86; on: bool; name: text }", 1, true))
         assert(p:find('emit nd_br(90)', 1, true))
     end)
 end

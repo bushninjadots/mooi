@@ -39,6 +39,7 @@ local KS = require("lib/node/keysheet")
 local SSH = require("lib/node/ssh")
 local PK = require("lib/node/pkgs")
 local SX = require("lib/node/sysextra")
+local HM = require("lib/node/home")
 local DESK = require("lib/desktop")
 
 local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, panel = 13 }
@@ -1313,6 +1314,32 @@ local function show_panel_home(b)
     model.pn = rows
     fact.nd_ncn = #rows
     fact.nd_vol = N.vol or 0
+    -- D272: the header — the time, the date, the weather and the battery — and a strip of the machine's readings
+    text.nd_hclock = os.date("%H:%M")
+    text.nd_hdate = HM.date(os.time())
+    local w = read("nexus-weather.json", "json")
+    text.nd_hwg, text.nd_hwt = HM.weather_line(type(w) == "table" and type(w.answer) == "table" and w.answer.current or nil)
+    text.nd_hbat = HM.battery(N.bat, N.charging)
+    local f = type(N.feed.resources) == "table" and N.feed.resources or {}
+    local function pct(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v * 100 or v end
+    local cpu, mem, temp = pct(f.cpu), pct(f.mem), tonumber(f.temp)
+    local strip = {
+        { HM.reading("CPU", cpu), (cpu or 0) / 100, (cpu or 0) > 85 },
+        { HM.reading("RAM", mem), (mem or 0) / 100, (mem or 0) > 90 },
+        { HM.reading("TEMP", temp, "°"), math.min(1, (temp or 0) / 100), (temp or 0) > 85 },
+        { HM.reading("GPU", N.gpu), (N.gpu or 0) / 100, (N.gpu or 0) > 90 },
+    }
+    for i, it in ipairs(strip) do
+        text["nd_hs" .. i] = it[1]
+        fact["nd_hf" .. i] = math.max(0, math.min(1, it[2]))
+        fact["nd_hh" .. i] = it[3]
+    end
+    -- the light from its own service (D265's watch), so the slider is there whether or not the player has opened
+    fact.nd_hasbri = N.light ~= nil
+    if N.light and not N.bri_drag then fact.nd_bri = N.light end
+    -- game mode (D266): on while its file is there
+    N.game = read("game-mode.json") ~= nil
+    fact.nd_game = N.game
 end
 
 local function show_calendar()
@@ -1360,16 +1387,21 @@ local function show_walls()
         local cur = read("wall.json", "json")
         local src = type(cur) == "table" and cur.source or ""
         N.wl_at = 1
-        for i, it in ipairs(N.walls) do if it.path == src then N.wl_at = math.max(1, i - 3) end end
+        -- (D273) on the page of nine that holds the one you wear
+        for i, it in ipairs(N.walls) do if it.path == src then N.wl_at = ((i - 1) // 9) * 9 + 1 end end
         N.wl_worn = src
     end
     local rows = {}
-    for k = 0, 6 do
+    for k = 0, 8 do
         local it = N.walls[N.wl_at + k]
-        if it then rows[#rows + 1] = { img = it.thumb, on = it.path == N.wl_worn } end
+        if it then
+            local name = tostring(it.path):match("([^/]+)$") or ""
+            rows[#rows + 1] = { img = it.thumb, on = it.path == N.wl_worn, name = (name:gsub("%.[%w]+$", "")) }
+        end
     end
     model.wl = rows
-    N.panel_sub = (#N.walls > 0) and (N.wl_at .. "–" .. math.min(#N.walls, N.wl_at + 6) .. " OF " .. #N.walls) or "NO PICTURES INDEXED YET"
+    local pages = math.max(1, math.ceil(#N.walls / 9))
+    N.panel_sub = (#N.walls > 0) and ("PAGE " .. ((N.wl_at - 1) // 9 + 1) .. " OF " .. pages .. "  ·  " .. #N.walls .. " PICTURES") or "NO PICTURES INDEXED YET"
 end
 local function show_clipboard()
     N.panel_items = {}
@@ -1546,7 +1578,7 @@ open_panel = function(page)
     N.panel_sub, N.panel_shown = "", nil
     if N.panel == "notes" then text.nd_nq = "" end
     if N.panel == "keys" then N.kq, N.ksc, text.nd_kq = "", 0, ""; load_keys() end
-    if N.panel == "system" and N.poll_extra then N.poll_extra() end
+    if (N.panel == "system" or N.panel == "home") and N.poll_extra then N.poll_extra() end
     if N.panel == "wifi" then N.wifi_ssid, fact.nd_wsel, text.nd_wpw, fact.nd_werron = "", 0, "", false end
     ST.hold(N.st, "panel")
     panel_state()
@@ -1592,7 +1624,9 @@ local function poll_extra()
     end
 end
 N.poll_extra = poll_extra
-every(2000, function() if N.kind == "panel" and N.panel == "system" then poll_extra() end end)
+-- (D272: Home shows the GPU too, and its clock turns with the minute while it is open)
+every(2000, function() if N.kind == "panel" and (N.panel == "system" or N.panel == "home") then poll_extra() end end)
+every(15000, function() if N.kind == "panel" and N.panel == "home" then render() end end)
 
 -- ── a reading pressed (D249): btop, in the owner's terminal — the first of the usual ones that answers, found
 -- once by asking each its version (no shell), and started through Hyprland so it is a window like any other ──
@@ -1977,6 +2011,11 @@ on("nd_ptog", function(v)
         N.bt_on = not (N.bt_on == true)
         pcall(sys.call, "bluetooth.power", N.bt_on)
         render()
+    elseif v == 5 then
+        -- D272: game mode from Home; the gauge says which way it went, and the button follows the file
+        N.game = not N.game
+        fact.nd_game = N.game
+        run("mooi", { "game-mode" }, function() if N.kind == "panel" then render() end end)
     end
 end)
 -- the radios' pages (D263): join, forget, look again; connect or leave a device
@@ -2037,7 +2076,21 @@ on("nd_br", function(v)
     if v == 1 or v == 2 then
         local d = v == 1 and -1 or 1
         if page == "calendar" and N.cal then N.cal.y, N.cal.m = CAL.shift(N.cal.y, N.cal.m, d); N.panel_shown = nil
-        elseif page == "wallpaper" and N.walls then N.wl_at = math.max(1, math.min(math.max(1, #N.walls - 6), N.wl_at + d * 7)); N.panel_shown = nil end
+        elseif page == "wallpaper" and N.walls and #N.walls > 0 then
+            -- (D273) a page of nine at a time, round from the last back to the first
+            local pages = math.ceil(#N.walls / 9)
+            local pg = ((N.wl_at - 1) // 9 + d) % pages
+            N.wl_at = pg * 9 + 1
+            N.panel_shown = nil
+        end
+    elseif (v == 91 or v == 92) and page == "wallpaper" then
+        -- Random wears one at random with the picker's own choices; All opens the picker (Super+W)
+        if v == 91 then
+            run("mooi", { "wall", "next" }, function() N.walls = nil; if N.panel == "wallpaper" then N.panel_shown = nil; render() end end)
+        else
+            for _, k in ipairs(HELD) do ST.release(N.st, k) end
+            run("mooi", { "walls" }, function() end)
+        end
     elseif v == 90 and page == "notes" then
         local t = (N.nq or ""):gsub("^%s+", ""):gsub("%s+$", "")
         if t ~= "" then

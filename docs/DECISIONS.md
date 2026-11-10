@@ -7247,3 +7247,26 @@ holding anything, and pressing it again closes it, as Esc does.
 **Verified.** Unit 858 / 0; scenes compile; live after `mooi refresh`: a simulated hold (`mooi reveal down`, 1.5 s)
 opened nothing and its release opened the Pill's panel; Super+Alt+U's command opened the Overview's canvas and the
 second press closed it, the windows sliding back.
+
+## D272 · 2026-11-10 · The panel's Home tells more
+
+The owner: "the home screen of it needs better, more info". Home had a band of empty space where the brightness
+slider should have been: it learned of the backlight only from the player. It now opens with a header — the time
+and the date on the left, the weather (the Nexus's weather file, as a glyph and a word) and the battery on the
+right — and a strip of four readings, CPU, RAM, temperature and GPU, each with a thin bar that turns warm when high.
+The toggles are five: Game mode (D266) joins Wi-Fi, Silent, Timer and Bluetooth. The brightness slider comes from
+the brightness service the gauge already watches, so it is there whenever the machine has a backlight. A paused
+song keeps its transport, and `Clear all` hides when there is nothing to clear. The clock turns while Home is open
+(a render every 15 s, only then), and the GPU is read while Home or System shows. Home is 660 px tall.
+`lib/node/home` holds the header's words.
+
+## D273 · 2026-11-10 · The panel's Wallpaper page: a grid to choose from
+
+The owner: "wallpaper picker isn't changed and fixed". The page was a strip of seven 60-pixel thumbnails over an
+empty card, and its page arrows sat on top of the count. It is now nine pictures to a page in a 3 × 3 grid, each
+with its name under it, the one you wear outlined and ticked, and the page that holds it opened first. Under the
+grid: Back and On (round from the last page to the first; the wheel too), Random (`mooi wall next`) and All, which
+opens the full picker. The header says `PAGE n OF m · N PICTURES`.
+
+**Verified (both).** Unit 860 / 0; the scene compiles; live after `mooi refresh`: Home with all its parts and both
+sliders; the Wallpaper grid on the worn picture's page.

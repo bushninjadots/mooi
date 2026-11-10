@@ -597,10 +597,29 @@ scene Node {
     fact nd_btdis = false
     model cal max 42 { d: text; muted: bool; today: bool; weekend: bool }
     model br max 7 { label: text; detail: text; pinned: bool }
-    model wl max 7 { img: image 112, 63; on: bool }
+    model wl max 9 { img: image 152, 86; on: bool; name: text }
     text nd_nq = ""
     // the shortcut sheet (D267): ten rows of what Hyprland has bound, a filter, how many more below
     model kb max 10 { keys: text; what: text }
+    // the Home header (D272): the time, the date, the weather, the battery, four readings, game mode
+    text nd_hclock = ""
+    text nd_hdate = ""
+    text nd_hwg = ""
+    text nd_hwt = ""
+    text nd_hbat = ""
+    text nd_hs1 = ""
+    text nd_hs2 = ""
+    text nd_hs3 = ""
+    text nd_hs4 = ""
+    fact nd_hf1 = 0
+    fact nd_hh1 = false
+    fact nd_hf2 = 0
+    fact nd_hh2 = false
+    fact nd_hf3 = 0
+    fact nd_hh3 = false
+    fact nd_hf4 = 0
+    fact nd_hh4 = false
+    fact nd_game = false
     text nd_kq = ""
     fact nd_kmore = 0
     // BMO as the seed (D253): the bar's own face (ui/bmoface.plm), his expression from bmo-shared.json
@@ -1054,99 +1073,128 @@ scene Node {
             zone box pcz { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "Close the panel"; show: nd_kind == 13 }
             on press pcz { emit nd_pclose }
             group { show: nd_pgp == 0
+                text nd_hclock { at: nb_x + 24, nb_y + 34; anchor: left center; size: 30; weight: 700; family: "Exo 2"; color: fl.engrave }
+                text nd_hdate { at: nb_x + 26, nb_y + 60; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 220; lines: 1 }
+                text nd_hwg { at: nb_x + nb_w - 24, nb_y + 28; anchor: right center; align: right; size: 18; family: "CaskaydiaCove Nerd Font"; color: nd_acc }
+                text nd_hwt { at: nb_x + nb_w - 50, nb_y + 28; anchor: right center; align: right; size: 11; family: "Exo 2"; color: fl.engrave; width: 200; lines: 1 }
+                text nd_hbat { at: nb_x + nb_w - 24, nb_y + 58; anchor: right center; align: right; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.muted; width: 120; lines: 1 }
+                box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8), nb_y + 78; size: (nb_w - 52) / 4, 34; corner: 10; color: fl.well }
+                text nd_hs1 { at: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_hh1, fl.ember, fl.engrave); width: (nb_w - 52) / 4 - 16; lines: 1 }
+                box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: (nb_w - 52) / 4 - 20, 2; corner: 1; color: fl.trace_dim }
+                box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf1, 2; corner: 1; color: if(nd_hh1, fl.ember, nd_acc) }
+                box { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8), nb_y + 78; size: (nb_w - 52) / 4, 34; corner: 10; color: fl.well }
+                text nd_hs2 { at: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_hh2, fl.ember, fl.engrave); width: (nb_w - 52) / 4 - 16; lines: 1 }
+                box { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: (nb_w - 52) / 4 - 20, 2; corner: 1; color: fl.trace_dim }
+                box { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf2, 2; corner: 1; color: if(nd_hh2, fl.ember, nd_acc) }
+                box { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8), nb_y + 78; size: (nb_w - 52) / 4, 34; corner: 10; color: fl.well }
+                text nd_hs3 { at: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_hh3, fl.ember, fl.engrave); width: (nb_w - 52) / 4 - 16; lines: 1 }
+                box { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: (nb_w - 52) / 4 - 20, 2; corner: 1; color: fl.trace_dim }
+                box { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf3, 2; corner: 1; color: if(nd_hh3, fl.ember, nd_acc) }
+                box { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8), nb_y + 78; size: (nb_w - 52) / 4, 34; corner: 10; color: fl.well }
+                text nd_hs4 { at: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 92; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_hh4, fl.ember, fl.engrave); width: (nb_w - 52) / 4 - 16; lines: 1 }
+                box { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: (nb_w - 52) / 4 - 20, 2; corner: 1; color: fl.trace_dim }
+                box { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 103; size: ((nb_w - 52) / 4 - 20) * nd_hf4, 2; corner: 1; color: if(nd_hh4, fl.ember, nd_acc) }
+            }
+            group { show: nd_pgp == 0
                 // the media card: a 64 px cover, the song, its transport, and the seek bar along its foot
-                box { from: nb_x + 14, nb_y + 14; size: nb_w - 28, 112; corner: 14; color: fl.well }
-                group { clip box { from: nb_x + 26, nb_y + 14 + 12; size: 64, 64; corner: 10 }
-                    box { from: nb_x + 26, nb_y + 14 + 12; size: 64, 64; color: fl.hull_raised }
-                    image nd_cover { at: nb_x + 26, nb_y + 14 + 12; size: 64, 64; fit: cover; show: nd_arted } }
-                zone box pcover { from: nb_x + 26, nb_y + 14 + 12; size: 64, 64; corner: 10; cursor: pointer; role: button; label: "Open the player"; show: nd_kind == 13 and nd_pgp == 0 }
+                box { from: nb_x + 14, nb_y + 124; size: nb_w - 28, 112; corner: 14; color: fl.well }
+                group { clip box { from: nb_x + 26, nb_y + 124 + 12; size: 64, 64; corner: 10 }
+                    box { from: nb_x + 26, nb_y + 124 + 12; size: 64, 64; color: fl.hull_raised }
+                    image nd_cover { at: nb_x + 26, nb_y + 124 + 12; size: 64, 64; fit: cover; show: nd_arted } }
+                zone box pcover { from: nb_x + 26, nb_y + 124 + 12; size: 64, 64; corner: 10; cursor: pointer; role: button; label: "Open the player"; show: nd_kind == 13 and nd_pgp == 0 }
                 on press pcover { emit nd_popen }
-                text nd_title { at: nb_x + 102, nb_y + 14 + 26; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave; width: nb_w - 320; lines: 1; show: nd_playing or nd_paused }
-                text nd_artist { at: nb_x + 102, nb_y + 14 + 46; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: nb_w - 320; lines: 1; show: nd_playing or nd_paused }
-                text "Nothing playing" { at: nb_x + 102, nb_y + 14 + 38; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; show: not (nd_playing or nd_paused) }
-                text "󰒮" { at: nb_x + nb_w - 146, nb_y + 14 + 58; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(pm1.hover, nd_acc, fl.engrave); show: nd_playing }
-                zone box pm1 { from: nb_x + nb_w - 146 - 16, nb_y + 14 + 42; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "Back"; show: nd_kind == 13 and nd_pgp == 0 and (nd_playing or nd_paused) }
+                text nd_title { at: nb_x + 102, nb_y + 124 + 26; anchor: left center; size: 14; weight: 700; family: "Exo 2"; color: fl.engrave; width: nb_w - 320; lines: 1; show: nd_playing or nd_paused }
+                text nd_artist { at: nb_x + 102, nb_y + 124 + 46; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; width: nb_w - 320; lines: 1; show: nd_playing or nd_paused }
+                text "Nothing playing" { at: nb_x + 102, nb_y + 124 + 38; anchor: left center; size: 12; family: "Exo 2"; color: fl.muted; show: not (nd_playing or nd_paused) }
+                text "󰒮" { at: nb_x + nb_w - 146, nb_y + 124 + 58; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(pm1.hover, nd_acc, fl.engrave); show: nd_playing or nd_paused }
+                zone box pm1 { from: nb_x + nb_w - 146 - 16, nb_y + 124 + 42; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "Back"; show: nd_kind == 13 and nd_pgp == 0 and (nd_playing or nd_paused) }
                 on press pm1 { emit nd_media(1) }
-                text "󰒭" { at: nb_x + nb_w - 50, nb_y + 14 + 58; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(pm3.hover, nd_acc, fl.engrave); show: nd_playing }
-                zone box pm3 { from: nb_x + nb_w - 50 - 16, nb_y + 14 + 42; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "Next"; show: nd_kind == 13 and nd_pgp == 0 and (nd_playing or nd_paused) }
+                text "󰒭" { at: nb_x + nb_w - 50, nb_y + 124 + 58; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(pm3.hover, nd_acc, fl.engrave); show: nd_playing or nd_paused }
+                zone box pm3 { from: nb_x + nb_w - 50 - 16, nb_y + 124 + 42; size: 32, 32; corner: 16; cursor: pointer; role: button; label: "Next"; show: nd_kind == 13 and nd_pgp == 0 and (nd_playing or nd_paused) }
                 on press pm3 { emit nd_media(3) }
                 // play, in a filled accent circle
-                ellipse { at: nb_x + nb_w - 98, nb_y + 14 + 58; radius: 18; color: nd_acc; opacity: 0.92; show: nd_playing }
-                text "󰐊" { at: nb_x + nb_w - 98, nb_y + 14 + 58; anchor: center; align: center; size: 17; family: "CaskaydiaCove Nerd Font"; color: fl.ground; show: nd_paused }
-                text "󰏤" { at: nb_x + nb_w - 98, nb_y + 14 + 58; anchor: center; align: center; size: 17; family: "CaskaydiaCove Nerd Font"; color: fl.ground; show: nd_playing }
-                zone box pm2 { from: nb_x + nb_w - 116, nb_y + 14 + 40; size: 36, 36; corner: 18; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 13 and nd_pgp == 0 and (nd_playing or nd_paused) }
+                ellipse { at: nb_x + nb_w - 98, nb_y + 124 + 58; radius: 18; color: nd_acc; opacity: 0.92; show: nd_playing or nd_paused }
+                text "󰐊" { at: nb_x + nb_w - 98, nb_y + 124 + 58; anchor: center; align: center; size: 17; family: "CaskaydiaCove Nerd Font"; color: fl.ground; show: nd_paused }
+                text "󰏤" { at: nb_x + nb_w - 98, nb_y + 124 + 58; anchor: center; align: center; size: 17; family: "CaskaydiaCove Nerd Font"; color: fl.ground; show: nd_playing }
+                zone box pm2 { from: nb_x + nb_w - 116, nb_y + 124 + 40; size: 36, 36; corner: 18; cursor: pointer; role: button; label: "Play or pause"; show: nd_kind == 13 and nd_pgp == 0 and (nd_playing or nd_paused) }
                 on press pm2 { emit nd_media(2) }
                 // where in it, along the card’s foot, and the two times under it
-                box { from: nb_x + 26, nb_y + 14 + 91; size: nb_w - 52, 3; corner: 1.5; color: fl.trace_dim }
-                box { from: nb_x + 26, nb_y + 14 + 91; size: (nb_w - 52) * nd_prog, 3; corner: 1.5; color: nd_acc }
-                ellipse { at: nb_x + 26 + (nb_w - 52) * nd_prog, nb_y + 14 + 92.5; radius: if(pseek.hover, 6, 4); color: nd_acc }
-                text nd_hompos { at: nb_x + 26, nb_y + 14 + 105; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
-                text nd_homlen { at: nb_x + nb_w - 26, nb_y + 14 + 105; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
-                zone box pseek { from: nb_x + 20, nb_y + 14 + 82; size: nb_w - 40, 22; cursor: pointer; role: slider; label: "Where in the song"; value: "{nd_hompos}"; show: nd_kind == 13 and nd_pgp == 0 }
+                box { from: nb_x + 26, nb_y + 124 + 91; size: nb_w - 52, 3; corner: 1.5; color: fl.trace_dim }
+                box { from: nb_x + 26, nb_y + 124 + 91; size: (nb_w - 52) * nd_prog, 3; corner: 1.5; color: nd_acc }
+                ellipse { at: nb_x + 26 + (nb_w - 52) * nd_prog, nb_y + 124 + 92.5; radius: if(pseek.hover, 6, 4); color: nd_acc }
+                text nd_hompos { at: nb_x + 26, nb_y + 124 + 105; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                text nd_homlen { at: nb_x + nb_w - 26, nb_y + 124 + 105; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                zone box pseek { from: nb_x + 20, nb_y + 124 + 82; size: nb_w - 40, 22; cursor: pointer; role: slider; label: "Where in the song"; value: "{nd_hompos}"; show: nd_kind == 13 and nd_pgp == 0 }
                 on press pseek { emit nd_seek(round(clamp((pointer.x - nb_x - 26) / (nb_w - 52), 0, 1) * 1000)) }
                 on drag pseek { emit nd_seek(round(clamp((pointer.x - nb_x - 26) / (nb_w - 52), 0, 1) * 1000)) }
             }
             group { show: nd_pgp == 0
-                box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; color: nd_acc; opacity: if(nd_wifi, 0.2, if(pt1.hover, 0.12, 0.05)) }
-                box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; stroke: 1; color: if(nd_wifi, nd_acc, fl.trace_dim); opacity: if(nd_wifi, 0.9, 0.7) }
-                text if(nd_wifi, "󰖩", "󰖪") { at: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + (nb_w - 52) / 4 / 2, nb_y + 153; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(nd_wifi, nd_acc, fl.engrave) }
-                text nd_wifin { at: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + (nb_w - 52) / 4 / 2, nb_y + 170; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_wifi, nd_acc, fl.muted); width: (nb_w - 52) / 4 - 8; lines: 1 }
-                zone box pt1 { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; cursor: pointer; role: toggle; label: "Wi-Fi"; checked: nd_wifi; show: nd_kind == 13 and nd_pgp == 0 }
+                box { from: nb_x + 14 + 0 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; color: nd_acc; opacity: if(nd_wifi, 0.2, if(pt1.hover, 0.12, 0.05)) }
+                box { from: nb_x + 14 + 0 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; stroke: 1; color: if(nd_wifi, nd_acc, fl.trace_dim); opacity: if(nd_wifi, 0.9, 0.7) }
+                text if(nd_wifi, "󰖩", "󰖪") { at: nb_x + 14 + 0 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 263; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(nd_wifi, nd_acc, fl.engrave) }
+                text nd_wifin { at: nb_x + 14 + 0 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 280; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_wifi, nd_acc, fl.muted); width: (nb_w - 60) / 5 - 8; lines: 1 }
+                zone box pt1 { from: nb_x + 14 + 0 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; cursor: pointer; role: toggle; label: "Wi-Fi"; checked: nd_wifi; show: nd_kind == 13 and nd_pgp == 0 }
                 on press pt1 { emit nd_ptog(1) }
-                zone box pt1n { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + 6, nb_y + 158; size: (nb_w - 52) / 4 - 12, 18; corner: 8; cursor: pointer; role: button; label: "Wi-Fi settings"; show: nd_kind == 13 and nd_pgp == 0 }
+                zone box pt1n { from: nb_x + 14 + 0 * ((nb_w - 60) / 5 + 8) + 6, nb_y + 268; size: (nb_w - 60) / 5 - 12, 18; corner: 8; cursor: pointer; role: button; label: "Wi-Fi settings"; show: nd_kind == 13 and nd_pgp == 0 }
                 on press pt1n { emit nd_pg(7) }
-                box { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; color: nd_acc; opacity: if(nd_dnd_on, 0.2, if(pt2.hover, 0.12, 0.05)) }
-                box { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; stroke: 1; color: if(nd_dnd_on, nd_acc, fl.trace_dim); opacity: if(nd_dnd_on, 0.9, 0.7) }
-                text if(nd_dnd_on, "󰂛", "󰂚") { at: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8) + (nb_w - 52) / 4 / 2, nb_y + 153; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(nd_dnd_on, nd_acc, fl.engrave) }
-                text "Silent" { at: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8) + (nb_w - 52) / 4 / 2, nb_y + 170; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_dnd_on, nd_acc, fl.muted); width: (nb_w - 52) / 4 - 8; lines: 1 }
-                zone box pt2 { from: nb_x + 14 + 1 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; cursor: pointer; role: toggle; label: "Silent"; checked: nd_dnd_on; show: nd_kind == 13 and nd_pgp == 0 }
+                box { from: nb_x + 14 + 1 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; color: nd_acc; opacity: if(nd_dnd_on, 0.2, if(pt2.hover, 0.12, 0.05)) }
+                box { from: nb_x + 14 + 1 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; stroke: 1; color: if(nd_dnd_on, nd_acc, fl.trace_dim); opacity: if(nd_dnd_on, 0.9, 0.7) }
+                text if(nd_dnd_on, "󰂛", "󰂚") { at: nb_x + 14 + 1 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 263; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(nd_dnd_on, nd_acc, fl.engrave) }
+                text "Silent" { at: nb_x + 14 + 1 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 280; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_dnd_on, nd_acc, fl.muted); width: (nb_w - 60) / 5 - 8; lines: 1 }
+                zone box pt2 { from: nb_x + 14 + 1 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; cursor: pointer; role: toggle; label: "Silent"; checked: nd_dnd_on; show: nd_kind == 13 and nd_pgp == 0 }
                 on press pt2 { emit nd_ptog(2) }
-                box { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; color: nd_acc; opacity: if(nd_tmr_on, 0.2, if(pt3.hover, 0.12, 0.05)) }
-                box { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; stroke: 1; color: if(nd_tmr_on, nd_acc, fl.trace_dim); opacity: if(nd_tmr_on, 0.9, 0.7) }
-                text "󰔛" { at: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8) + (nb_w - 52) / 4 / 2, nb_y + 153; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(nd_tmr_on, nd_acc, fl.engrave) }
-                text if(nd_tmr_on, nd_capt, "Timer") { at: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8) + (nb_w - 52) / 4 / 2, nb_y + 170; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_tmr_on, nd_acc, fl.muted); width: (nb_w - 52) / 4 - 8; lines: 1 }
-                zone box pt3 { from: nb_x + 14 + 2 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; cursor: pointer; role: toggle; label: "Timer"; checked: nd_tmr_on; show: nd_kind == 13 and nd_pgp == 0 }
+                box { from: nb_x + 14 + 2 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; color: nd_acc; opacity: if(nd_tmr_on, 0.2, if(pt3.hover, 0.12, 0.05)) }
+                box { from: nb_x + 14 + 2 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; stroke: 1; color: if(nd_tmr_on, nd_acc, fl.trace_dim); opacity: if(nd_tmr_on, 0.9, 0.7) }
+                text "󰔛" { at: nb_x + 14 + 2 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 263; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(nd_tmr_on, nd_acc, fl.engrave) }
+                text if(nd_tmr_on, nd_capt, "Timer") { at: nb_x + 14 + 2 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 280; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_tmr_on, nd_acc, fl.muted); width: (nb_w - 60) / 5 - 8; lines: 1 }
+                zone box pt3 { from: nb_x + 14 + 2 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; cursor: pointer; role: toggle; label: "Timer"; checked: nd_tmr_on; show: nd_kind == 13 and nd_pgp == 0 }
                 on press pt3 { emit nd_ptog(3) }
-                box { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; color: nd_acc; opacity: if(nd_bt, 0.2, if(pt4.hover, 0.12, 0.05)) }
-                box { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; stroke: 1; color: if(nd_bt, nd_acc, fl.trace_dim); opacity: if(nd_bt, 0.9, 0.7) }
-                text if(nd_bt, "󰂯", "󰂲") { at: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + (nb_w - 52) / 4 / 2, nb_y + 153; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(nd_bt, nd_acc, fl.engrave) }
-                text if(nd_bt, "On", "Off") { at: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + (nb_w - 52) / 4 / 2, nb_y + 170; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_bt, nd_acc, fl.muted); width: (nb_w - 52) / 4 - 8; lines: 1 }
-                zone box pt4 { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8), nb_y + 138; size: (nb_w - 52) / 4, 40; corner: 12; cursor: pointer; role: toggle; label: "Bluetooth"; checked: nd_bt; show: nd_kind == 13 and nd_pgp == 0 }
+                box { from: nb_x + 14 + 3 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; color: nd_acc; opacity: if(nd_bt, 0.2, if(pt4.hover, 0.12, 0.05)) }
+                box { from: nb_x + 14 + 3 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; stroke: 1; color: if(nd_bt, nd_acc, fl.trace_dim); opacity: if(nd_bt, 0.9, 0.7) }
+                text if(nd_bt, "󰂯", "󰂲") { at: nb_x + 14 + 3 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 263; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(nd_bt, nd_acc, fl.engrave) }
+                text if(nd_bt, "On", "Off") { at: nb_x + 14 + 3 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 280; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_bt, nd_acc, fl.muted); width: (nb_w - 60) / 5 - 8; lines: 1 }
+                zone box pt4 { from: nb_x + 14 + 3 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; cursor: pointer; role: toggle; label: "Bluetooth"; checked: nd_bt; show: nd_kind == 13 and nd_pgp == 0 }
                 on press pt4 { emit nd_ptog(4) }
-                zone box pt4n { from: nb_x + 14 + 3 * ((nb_w - 52) / 4 + 8) + 6, nb_y + 158; size: (nb_w - 52) / 4 - 12, 18; corner: 8; cursor: pointer; role: button; label: "Bluetooth settings"; show: nd_kind == 13 and nd_pgp == 0 }
+                zone box pt4n { from: nb_x + 14 + 3 * ((nb_w - 60) / 5 + 8) + 6, nb_y + 268; size: (nb_w - 60) / 5 - 12, 18; corner: 8; cursor: pointer; role: button; label: "Bluetooth settings"; show: nd_kind == 13 and nd_pgp == 0 }
                 on press pt4n { emit nd_pg(8) }
+                box { from: nb_x + 14 + 4 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; color: nd_acc; opacity: if(nd_game, 0.2, if(pt5.hover, 0.12, 0.05)) }
+                box { from: nb_x + 14 + 4 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; stroke: 1; color: if(nd_game, nd_acc, fl.trace_dim); opacity: if(nd_game, 0.9, 0.7) }
+                text "󰊴" { at: nb_x + 14 + 4 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 263; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: if(nd_game, nd_acc, fl.engrave) }
+                text if(nd_game, "Game on", "Game") { at: nb_x + 14 + 4 * ((nb_w - 60) / 5 + 8) + (nb_w - 60) / 5 / 2, nb_y + 280; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_game, nd_acc, fl.muted); width: (nb_w - 60) / 5 - 8; lines: 1 }
+                zone box pt5 { from: nb_x + 14 + 4 * ((nb_w - 60) / 5 + 8), nb_y + 248; size: (nb_w - 60) / 5, 40; corner: 12; cursor: pointer; role: toggle; label: "Game mode"; checked: nd_game; show: nd_kind == 13 and nd_pgp == 0 }
+                on press pt5 { emit nd_ptog(5) }
             }
             group { show: nd_pgp == 0
-                text "󰕾" { at: nb_x + 26, nb_y + 190 + 20; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: fl.engrave }
-                text "Volume" { at: nb_x + 42, nb_y + 190 + 20; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
-                box { from: nb_x + 104, nb_y + 190 + 19; size: nb_w - 170, 3; corner: 1.5; color: fl.trace_dim }
-                box { from: nb_x + 104, nb_y + 190 + 19; size: (nb_w - 170) * nd_vol, 3; corner: 1.5; color: nd_acc }
-                ellipse { at: nb_x + 104 + (nb_w - 170) * nd_vol, nb_y + 190 + 20.5; radius: if(pvz.hover, 6, 4); color: nd_acc }
-                text "{round(nd_vol * 100)}%" { at: nb_x + nb_w - 26, nb_y + 190 + 20; anchor: right center; align: right; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                zone box pvz { from: nb_x + 90, nb_y + 190 + 4; size: nb_w - 122, 32; cursor: ew_resize; role: slider; label: "Volume"; value: round(nd_vol * 100); show: nd_kind == 13 and nd_pgp == 0 }
+                text "󰕾" { at: nb_x + 26, nb_y + 300 + 20; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: fl.engrave }
+                text "Volume" { at: nb_x + 42, nb_y + 300 + 20; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                box { from: nb_x + 104, nb_y + 300 + 19; size: nb_w - 170, 3; corner: 1.5; color: fl.trace_dim }
+                box { from: nb_x + 104, nb_y + 300 + 19; size: (nb_w - 170) * nd_vol, 3; corner: 1.5; color: nd_acc }
+                ellipse { at: nb_x + 104 + (nb_w - 170) * nd_vol, nb_y + 300 + 20.5; radius: if(pvz.hover, 6, 4); color: nd_acc }
+                text "{round(nd_vol * 100)}%" { at: nb_x + nb_w - 26, nb_y + 300 + 20; anchor: right center; align: right; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                zone box pvz { from: nb_x + 90, nb_y + 300 + 4; size: nb_w - 122, 32; cursor: ew_resize; role: slider; label: "Volume"; value: round(nd_vol * 100); show: nd_kind == 13 and nd_pgp == 0 }
                 on press pvz { emit nd_mt(0 * 2000 + round(clamp((pointer.x - nb_x - 104) / (nb_w - 170), 0, 1) * 1000)) }
                 on drag pvz { emit nd_mt(0 * 2000 + round(clamp((pointer.x - nb_x - 104) / (nb_w - 170), 0, 1) * 1000)) }
             }
             group { show: nd_pgp == 0 and nd_hasbri
-                text "󰃟" { at: nb_x + 26, nb_y + 234 + 20; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: fl.engrave }
-                text "Brightness" { at: nb_x + 42, nb_y + 234 + 20; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
-                box { from: nb_x + 104, nb_y + 234 + 19; size: nb_w - 170, 3; corner: 1.5; color: fl.trace_dim }
-                box { from: nb_x + 104, nb_y + 234 + 19; size: (nb_w - 170) * nd_bri, 3; corner: 1.5; color: nd_acc }
-                ellipse { at: nb_x + 104 + (nb_w - 170) * nd_bri, nb_y + 234 + 20.5; radius: if(plz.hover, 6, 4); color: nd_acc }
-                text "{round(nd_bri * 100)}%" { at: nb_x + nb_w - 26, nb_y + 234 + 20; anchor: right center; align: right; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
-                zone box plz { from: nb_x + 90, nb_y + 234 + 4; size: nb_w - 122, 32; cursor: ew_resize; role: slider; label: "Brightness"; value: round(nd_bri * 100); show: nd_kind == 13 and nd_pgp == 0 and nd_hasbri }
+                text "󰃟" { at: nb_x + 26, nb_y + 344 + 20; anchor: center; align: center; size: 16; family: "CaskaydiaCove Nerd Font"; color: fl.engrave }
+                text "Brightness" { at: nb_x + 42, nb_y + 344 + 20; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                box { from: nb_x + 104, nb_y + 344 + 19; size: nb_w - 170, 3; corner: 1.5; color: fl.trace_dim }
+                box { from: nb_x + 104, nb_y + 344 + 19; size: (nb_w - 170) * nd_bri, 3; corner: 1.5; color: nd_acc }
+                ellipse { at: nb_x + 104 + (nb_w - 170) * nd_bri, nb_y + 344 + 20.5; radius: if(plz.hover, 6, 4); color: nd_acc }
+                text "{round(nd_bri * 100)}%" { at: nb_x + nb_w - 26, nb_y + 344 + 20; anchor: right center; align: right; size: 10; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+                zone box plz { from: nb_x + 90, nb_y + 344 + 4; size: nb_w - 122, 32; cursor: ew_resize; role: slider; label: "Brightness"; value: round(nd_bri * 100); show: nd_kind == 13 and nd_pgp == 0 and nd_hasbri }
                 on press plz { emit nd_mt(1 * 2000 + round(clamp((pointer.x - nb_x - 104) / (nb_w - 170), 0, 1) * 1000)) }
                 on drag plz { emit nd_mt(1 * 2000 + round(clamp((pointer.x - nb_x - 104) / (nb_w - 170), 0, 1) * 1000)) }
             }
             group { show: nd_pgp == 0
-                text "Notifications ({nd_ncn, 0})" { at: nb_x + 26, nb_y + 298; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: fl.engrave }
-                box { from: nb_x + nb_w - 98, nb_y + 288; size: 72, 22; corner: 11; stroke: 1; color: if(pclz.hover, nd_acc, fl.trace_dim) }
-                text "Clear all" { at: nb_x + nb_w - 62, nb_y + 299; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(pclz.hover, nd_acc, fl.muted); width: 66; lines: 1; show: nd_ncn > 0 }
-                zone box pclz { from: nb_x + nb_w - 98, nb_y + 288; size: 72, 22; corner: 11; cursor: pointer; role: button; label: "Clear all notifications"; show: nd_kind == 13 and nd_pgp == 0 and nd_ncn > 0 }
+                text "Notifications ({nd_ncn, 0})" { at: nb_x + 26, nb_y + 406; anchor: left center; size: 11; weight: 700; family: "Exo 2"; color: fl.engrave }
+                box { from: nb_x + nb_w - 98, nb_y + 396; size: 72, 22; corner: 11; stroke: 1; color: if(pclz.hover, nd_acc, fl.trace_dim); show: nd_ncn > 0 }
+                text "Clear all" { at: nb_x + nb_w - 62, nb_y + 407; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(pclz.hover, nd_acc, fl.muted); width: 66; lines: 1; show: nd_ncn > 0 }
+                zone box pclz { from: nb_x + nb_w - 98, nb_y + 396; size: 72, 22; corner: 11; cursor: pointer; role: button; label: "Clear all notifications"; show: nd_kind == 13 and nd_pgp == 0 and nd_ncn > 0 }
                 on press pclz { emit nd_pclear }
-                text "No notifications" { at: nb_x + 26, nb_y + 322; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: pn.count == 0 }
+                text "No notifications" { at: nb_x + 26, nb_y + 430; anchor: left center; size: 11; family: "Exo 2"; color: fl.muted; show: pn.count == 0 }
                 for n in pn {
-                    let ny = nb_y + 313 + n.index * 58
+                    let ny = nb_y + 421 + n.index * 58
                     box { from: nb_x + 14, ny; size: nb_w - 28, 52; corner: 12; color: fl.well; opacity: if(pnz.hover, 0.95, 0.7) }
                     text n.icon { at: nb_x + 34, ny + 26; anchor: center; align: center; size: 15; family: "CaskaydiaCove Nerd Font"; color: nd_acc }
                     text n.app { at: nb_x + 50, ny + 17; anchor: left center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; width: nb_w - 190; lines: 1 }
@@ -1182,11 +1230,11 @@ scene Node {
                         text d.d { at: cx, nb_y + 94 + rw * 28; anchor: center; align: center; size: 11; weight: if(d.today, 700, 500); family: "Share Tech Mono"; color: if(d.today, fl.ground, if(d.muted, fl.trace_lit, if(d.weekend, nd_acc, fl.engrave))) }
                     }
                 }
-                text "‹" { at: nb_x + nb_w - 70, nb_y + 27; anchor: center; size: 16; family: "Exo 2"; color: if(prz1.hover, nd_acc, fl.engrave); show: nd_pgp == 1 or nd_pgp == 5 }
-                zone box prz1 { from: nb_x + nb_w - 82, nb_y + 12; size: 24, 30; cursor: pointer; role: button; label: "Back"; show: nd_kind == 13 and (nd_pgp == 1 or nd_pgp == 5) }
+                text "‹" { at: nb_x + nb_w - 70, nb_y + 27; anchor: center; size: 16; family: "Exo 2"; color: if(prz1.hover, nd_acc, fl.engrave); show: nd_pgp == 1 }
+                zone box prz1 { from: nb_x + nb_w - 82, nb_y + 12; size: 24, 30; cursor: pointer; role: button; label: "Back"; show: nd_kind == 13 and nd_pgp == 1 }
                 on press prz1 { emit nd_br(1) }
-                text "›" { at: nb_x + nb_w - 40, nb_y + 27; anchor: center; size: 16; family: "Exo 2"; color: if(prz2.hover, nd_acc, fl.engrave); show: nd_pgp == 1 or nd_pgp == 5 }
-                zone box prz2 { from: nb_x + nb_w - 52, nb_y + 12; size: 24, 30; cursor: pointer; role: button; label: "On"; show: nd_kind == 13 and (nd_pgp == 1 or nd_pgp == 5) }
+                text "›" { at: nb_x + nb_w - 40, nb_y + 27; anchor: center; size: 16; family: "Exo 2"; color: if(prz2.hover, nd_acc, fl.engrave); show: nd_pgp == 1 }
+                zone box prz2 { from: nb_x + nb_w - 52, nb_y + 12; size: 24, 30; cursor: pointer; role: button; label: "On"; show: nd_kind == 13 and nd_pgp == 1 }
                 on press prz2 { emit nd_br(2) }
                 group { show: nd_pgp == 2
                     box { from: nb_x + 16, nb_y + 58; size: nb_w - 32, 32; corner: 16 * max(0.3, nd_rnd); color: fl.well }
@@ -1221,15 +1269,42 @@ scene Node {
                 }
                 group { show: nd_pgp == 5
                     for w in wl {
-                        let wx = nb_x + 16 + w.index * ((nb_w - 32) / 7)
-                        let ww = (nb_w - 32) / 7 - 6
-                        group { clip box { from: wx, nb_y + 66; size: ww, ww * 0.5625; corner: 6 * nd_rnd }
-                            image w.img { at: wx, nb_y + 66; size: ww, ww * 0.5625; fit: cover } }
-                        box { from: wx, nb_y + 66; size: ww, ww * 0.5625; corner: 6 * nd_rnd; stroke: if(w.on, 2, 1); color: if(w.on, nd_acc, if(pwlz.hover, fl.trace_lit, fl.trace_dim)) }
-                        zone box pwlz { from: wx, nb_y + 66; size: ww, ww * 0.5625; cursor: pointer; role: item; label: "Wear this picture"; show: nd_kind == 13 and nd_pgp == 5 }
+                        let wcol = w.index - floor(w.index / 3) * 3
+                        let wrow = floor(w.index / 3)
+                        let ww = (nb_w - 52) / 3
+                        let wx = nb_x + 16 + wcol * (ww + 10)
+                        let wy = nb_y + 58 + wrow * (ww * 0.5625 + 26)
+                        group { clip box { from: wx, wy; size: ww, ww * 0.5625; corner: 10 * max(0.4, nd_rnd) }
+                            box { from: wx, wy; size: ww, ww * 0.5625; color: fl.hull_raised }
+                            image w.img { at: wx, wy; size: ww, ww * 0.5625; fit: cover } }
+                        box { from: wx, wy; size: ww, ww * 0.5625; corner: 10 * max(0.4, nd_rnd); stroke: if(w.on, 2.5, 1); color: if(w.on, nd_acc, if(pwlz.hover, fl.trace_lit, fl.trace_dim)) }
+                        text "󰄬" { at: wx + ww - 14, wy + 14; anchor: center; size: 12; family: "CaskaydiaCove Nerd Font"; color: nd_acc; show: w.on }
+                        text w.name { at: wx + 2, wy + ww * 0.5625 + 11; anchor: left center; size: 9; family: "Share Tech Mono"; color: if(w.on, nd_acc, fl.muted); width: ww - 4; lines: 1 }
+                        zone box pwlz { from: wx, wy; size: ww, ww * 0.5625; corner: 10; cursor: pointer; role: item; label: "Wear {w.name}"; show: nd_kind == 13 and nd_pgp == 5 }
                         on press pwlz { emit nd_br(10 + w.index) }
                         on scroll pwlz { emit nd_br(if(wheel > 0, 1, 2)) }
                     }
+                    text "No pictures indexed yet — open the picker once (Super+W)" { at: nb_x + nb_w / 2, nb_y + 140; anchor: center; align: center; size: 11; family: "Exo 2"; color: fl.muted; show: wl.count == 0 }
+                    box { from: nb_x + 14, nb_y + 402; size: 70, 32; corner: 10; color: nd_acc; opacity: if(pwb1.hover, 0.16, 0.06) }
+                    box { from: nb_x + 14, nb_y + 402; size: 70, 32; corner: 10; stroke: 1; color: if(pwb1.hover, nd_acc, fl.trace_dim) }
+                    text "󰁍  Back" { at: nb_x + 14 + 70 / 2, nb_y + 418; anchor: center; align: center; size: 10; weight: 700; family: "CaskaydiaCove Nerd Font"; color: if(pwb1.hover, nd_acc, fl.engrave) }
+                    zone box pwb1 { from: nb_x + 14, nb_y + 402; size: 70, 32; corner: 10; cursor: pointer; role: button; label: "Back"; show: nd_kind == 13 and nd_pgp == 5 }
+                    on press pwb1 { emit nd_br(1) }
+                    box { from: nb_x + 92, nb_y + 402; size: 70, 32; corner: 10; color: nd_acc; opacity: if(pwb2.hover, 0.16, 0.06) }
+                    box { from: nb_x + 92, nb_y + 402; size: 70, 32; corner: 10; stroke: 1; color: if(pwb2.hover, nd_acc, fl.trace_dim) }
+                    text "󰁔  On" { at: nb_x + 92 + 70 / 2, nb_y + 418; anchor: center; align: center; size: 10; weight: 700; family: "CaskaydiaCove Nerd Font"; color: if(pwb2.hover, nd_acc, fl.engrave) }
+                    zone box pwb2 { from: nb_x + 92, nb_y + 402; size: 70, 32; corner: 10; cursor: pointer; role: button; label: "On"; show: nd_kind == 13 and nd_pgp == 5 }
+                    on press pwb2 { emit nd_br(2) }
+                    box { from: nb_x + nb_w - 232, nb_y + 402; size: 100, 32; corner: 10; color: nd_acc; opacity: if(pwb3.hover, 0.16, 0.06) }
+                    box { from: nb_x + nb_w - 232, nb_y + 402; size: 100, 32; corner: 10; stroke: 1; color: if(pwb3.hover, nd_acc, fl.trace_dim) }
+                    text "󰒝  Random" { at: nb_x + nb_w - 232 + 100 / 2, nb_y + 418; anchor: center; align: center; size: 10; weight: 700; family: "CaskaydiaCove Nerd Font"; color: if(pwb3.hover, nd_acc, fl.engrave) }
+                    zone box pwb3 { from: nb_x + nb_w - 232, nb_y + 402; size: 100, 32; corner: 10; cursor: pointer; role: button; label: "Random"; show: nd_kind == 13 and nd_pgp == 5 }
+                    on press pwb3 { emit nd_br(91) }
+                    box { from: nb_x + nb_w - 124, nb_y + 402; size: 110, 32; corner: 10; color: nd_acc; opacity: if(pwb4.hover, 0.16, 0.06) }
+                    box { from: nb_x + nb_w - 124, nb_y + 402; size: 110, 32; corner: 10; stroke: 1; color: if(pwb4.hover, nd_acc, fl.trace_dim) }
+                    text "󰸉  All" { at: nb_x + nb_w - 124 + 110 / 2, nb_y + 418; anchor: center; align: center; size: 10; weight: 700; family: "CaskaydiaCove Nerd Font"; color: if(pwb4.hover, nd_acc, fl.engrave) }
+                    zone box pwb4 { from: nb_x + nb_w - 124, nb_y + 402; size: 110, 32; corner: 10; cursor: pointer; role: button; label: "All"; show: nd_kind == 13 and nd_pgp == 5 }
+                    on press pwb4 { emit nd_br(92) }
                 }
                 group { show: nd_pgp == 6
                     for p in sy {

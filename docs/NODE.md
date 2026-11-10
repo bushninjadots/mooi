@@ -55,10 +55,13 @@ broken outline that glitches when it changes.
 Super, or a press on the resting pill, grows one panel straight down out of it. It is 500 pixels wide on
 every page and as tall as the page needs. Super again, Esc, or a press on an empty part of it lets it go.
 
-- **Home** — the music (cover, song, transport, a seek bar; press the cover for the player), four buttons
-  for Wi-Fi, Silent, Timer and Bluetooth, volume and brightness sliders, the three newest notices with
-  `Clear all`, and the page icons. A button's icon does what it says; its name opens the radio's page.
+- **Home** — a header with the time, the date, the weather (from the Nexus's weather) and the battery; a strip
+  of four readings (CPU, RAM, temperature, GPU) that turn warm when high; the music (cover, song, transport, a
+  seek bar; press the cover for the player); five buttons for Wi-Fi, Silent, Timer, Bluetooth and Game mode;
+  volume and brightness sliders; the three newest notices with `Clear all`; and the page icons.
 - **Calendar**, **Notes**, **Clipboard**, **Stash**, **Wallpaper** and **Power** — what the shelf's
+- **Wallpaper** — nine pictures to a page in a 3 × 3 grid, each named, the one you wear outlined and ticked.
+  Back and On turn the pages (the wheel too), Random wears one at random, and All opens the full picker (Super+W).
   branches held, now pages of the same panel.
 - **Wi-Fi** — the network in use, its strength and whether it is locked, then the networks in reach,
   strongest first: bars, a lock, and `known` for one used before. Press a known or open network to join
