@@ -368,7 +368,7 @@ end
 
 -- the studio (D229): what the node is shown as on its stage (the eighth chip tours them all), and what it shows
 -- when nothing real is there to show
-local PREVIEW = { "rest", "media", "notice", "volume", "workspaces", "system", "launcher" }
+local PREVIEW = { "rest", "media", "notice", "volume", "workspaces", "panel", "launcher" }
 local SAMPLE_NOTICES = {
     { app = "MOOI", title = "A notice grows out of the node", actions = { "Open" } },
     { app = "CALENDAR", title = "Stand-up in ten minutes" },
@@ -1203,11 +1203,13 @@ local function show_panel_home(b)
     local cap = TK.capsule(N.time, wall())
     fact.nd_tmr_on = cap ~= nil
     if cap then text.nd_capt = cap.text end
-    local rows = {}
+    local rows, idx = {}, {}
     for i, n in ipairs(N.notices) do
         if i > 3 then break end
         rows[i] = { icon = "󰂚", app = string.upper(tostring(n.app or "MOOI")), title = tostring(n.title or ""), age = ago(n.time) }
+        idx[i] = i   -- each row is its own notice in the feed's order (nd_nc looks them up here)
     end
+    N.notice_rows = idx
     model.pn = rows
     fact.nd_ncn = #rows
     fact.nd_vol = N.vol or 0
@@ -1343,8 +1345,6 @@ open_panel = function(page)
     render()
 end
 N.open_panel, N.close_panel = open_panel, function() ST.release(N.st, "panel"); render() end
-local function close_panel() ST.release(N.st, "panel"); render() end
-N.close_panel = close_panel
 
 -- ── a reading pressed (D249): btop, in the owner's terminal — the first of the usual ones that answers, found
 -- once by asking each its version (no shell), and started through Hyprland so it is a window like any other ──
@@ -1517,7 +1517,9 @@ local function look_changed()
     render()
 end
 local function prepare_preview()
-    if studio_kind() == "launcher" then N.q, N.sel = "", 0; text.nd_q = ""; search() end
+    local k = studio_kind()
+    if k == "launcher" then N.q, N.sel = "", 0; text.nd_q = ""; search() end
+    if k == "panel" then N.panel = "home" end   -- the panel on its home page (D260)
 end
 local function open_studio()
     for _, k in ipairs(HELD) do ST.release(N.st, k) end

@@ -38,7 +38,7 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width"),
         ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_rxl", 1, "reactions: 0 off · 1 subtle · 2 lively"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
-PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "System", "Search", "Tour"]
+PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "Panel", "Search", "Tour"]
 TABS = ["Presets", "Pill", "Shape", "Surface", "Motion", "Music", "Parts"]   # lib/node/look M.TABS, in its order (a test holds them together)
 MONO = '"Share Tech Mono"'
 SANS = '"Exo 2"'

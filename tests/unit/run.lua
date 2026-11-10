@@ -6926,6 +6926,19 @@ do
     end)
 end
 
+section("the panel, reviewed (D260 fixes)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local l = read("shell/mooi-node.luau")
+    test("a notification row on the home page reaches its own notice; the studio previews the panel", function()
+        assert(l:find("idx[i] = i   -- each row is its own notice in the feed's order", 1, true))
+        assert(l:find('local PREVIEW = { "rest", "media", "notice", "volume", "workspaces", "panel", "launcher" }', 1, true))
+        assert(l:find('if k == "panel" then N.panel = "home" end', 1, true))
+        assert(not l:find('"system", "launcher" }', 1, true), "no preview of a kind that is gone")
+        assert(read("tools/gen-node.py"):find('"Rail", "Panel", "Search", "Tour"', 1, true))
+    end)
+end
+
 section("the node: what a review of its logic found (D244)")
 do
     local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end

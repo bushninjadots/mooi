@@ -426,7 +426,7 @@ scene Node {
     follow nd_stf = if(nd_studio, 1, 0)
     fact nd_tab = 0       // 0 Presets · 1 Pill · 2 Shape · 3 Surface · 4 Motion · 5 Music · 6 Parts
     fact nd_kr = 0        // the row the keyboard is on
-    fact nd_pv = 0        // the preview: 0 Rest · 1 Music · 2 Notice · 3 Volume · 4 Rail · 5 System · 6 Search · 7 Tour
+    fact nd_pv = 0        // the preview: 0 Rest · 1 Music · 2 Notice · 3 Volume · 4 Rail · 5 Panel · 6 Search · 7 Tour
     text nd_lookname = "Organic"
     model sk max 7 { kind: number; label: text; desc: text; value: text; frac: number; sel: number; n: number; off: bool; why: text; o0: text; o1: text; o2: text; o3: text; o4: text; o5: text; o6: text }
     model ps max 4 { name: text; desc: text; on: bool; sw: number; sh: number; sr: number; seed: number }
@@ -724,8 +724,8 @@ scene Node {
             on press stp4 { emit nd_pv(4) }
             box { from: st_x + 574, st_dy - 62; size: 96, 26; corner: 26 / 2; color: nd_acc; opacity: if(nd_pv == 5, 0.9, if(stp5.hover, 0.18, 0)) }
             box { from: st_x + 574, st_dy - 62; size: 96, 26; corner: 26 / 2; stroke: 1; color: if(nd_pv == 5, nd_acc, fl.trace_lit) }
-            text "SYSTEM" { at: st_x + 574 + 96 / 2, st_dy - 62 + 26 / 2; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(nd_pv == 5, fl.ground, fl.engrave) }
-            zone box stp5 { from: st_x + 574, st_dy - 62; size: 96, 26; corner: 26 / 2; cursor: pointer; role: button; label: "System"; show: nd_studio }
+            text "PANEL" { at: st_x + 574 + 96 / 2, st_dy - 62 + 26 / 2; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(nd_pv == 5, fl.ground, fl.engrave) }
+            zone box stp5 { from: st_x + 574, st_dy - 62; size: 96, 26; corner: 26 / 2; cursor: pointer; role: button; label: "Panel"; show: nd_studio }
             on press stp5 { emit nd_pv(5) }
             box { from: st_x + 678, st_dy - 62; size: 96, 26; corner: 26 / 2; color: nd_acc; opacity: if(nd_pv == 6, 0.9, if(stp6.hover, 0.18, 0)) }
             box { from: st_x + 678, st_dy - 62; size: 96, 26; corner: 26 / 2; stroke: 1; color: if(nd_pv == 6, nd_acc, fl.trace_lit) }

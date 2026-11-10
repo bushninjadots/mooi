@@ -7040,3 +7040,8 @@ the panel now says what is going on. The media capsule, notices, volume gauge, w
 universe, time tools, player, privacy and battery cards and reactions all stay.
 
 **Verified.** Unit 832 / 0; scenes compile; `bin/mooi check` green.
+
+**Reviewed (Claude):** two fixes on opencode's step. The home page's notification rows built their own list
+but never told `nd_nc` which notice each row was, so a press acted on a stale card layout or nothing; each row
+now names its notice. The studio still previewed "system" as a kind of its own, which is gone with the spokes;
+it previews the panel on its home page instead. A duplicate closer removed.
