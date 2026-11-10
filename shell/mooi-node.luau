@@ -40,6 +40,8 @@ local SSH = require("lib/node/ssh")
 local PK = require("lib/node/pkgs")
 local SX = require("lib/node/sysextra")
 local HM = require("lib/node/home")
+local SETTINGS = require("lib/settingsfile")
+local SETTINGS_FILE = "settings.json"
 local DESK = require("lib/desktop")
 
 local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, panel = 13 }
@@ -877,7 +879,8 @@ on("nd_key", function(v)
         return
     end
     if N.kind == "panel" then
-        if v == 27 then ST.release(N.st, "panel"); render()
+        if v == 27 and N.panel == "home" and N.hedit then N.close_editor(); render()
+        elseif v == 27 then ST.release(N.st, "panel"); render()
         elseif N.panel == "keys" and (v == 38 or v == 40) then N.ksc = N.ksc + (v == 38 and -1 or 1); show_keys(); render()
         elseif N.panel == "notes" and (v == 38 or v == 40) then
             N.npage = math.max(0, (N.npage or 0) + (v == 38 and -1 or 1))
@@ -1316,6 +1319,58 @@ N.show_identity = function()
     fact.nd_face_on = text.nd_face ~= ""
 end
 N.show_identity()
+N.hedit, N.hn = false, ""
+
+local function close_editor()
+    N.hedit, fact.nd_hedit, N.hn, text.nd_hn = false, false, "", ""
+end
+N.close_editor = close_editor
+
+local function save_name()
+    local name = HM.name(N.hn)
+    if not name then return false end
+    local before = read(SETTINGS_FILE, "json")
+    if type(before) ~= "table" then return false end
+    local after = SETTINGS.copy(before)
+    after.nexus = type(after.nexus) == "table" and after.nexus or {}
+    after.nexus.identity = type(after.nexus.identity) == "table" and after.nexus.identity or {}
+    after.nexus.identity.name = name
+    local doc = SETTINGS.save(sys, SETTINGS_FILE, before, after, function()
+        local s, _, _, state = config.parse(read(SETTINGS_FILE), json.decode)
+        if state == "broken" then return nil end
+        return s
+    end)
+    if not doc then return false end
+    N.settings = config.parse(read(SETTINGS_FILE), json.decode)
+    N.show_identity()
+    N.close_editor()
+    render()
+    return true
+end
+
+on("nd_hopen", function()
+    N.hedit, fact.nd_hedit = true, true
+    N.hn = text.nd_hname or ""
+    text.nd_hn = N.hn
+    render()
+end)
+on("text:nd_hn", function(v) N.hn = tostring(v or "") end)
+on("nd_hsave", function() save_name() end)
+on("nd_hdone", function() save_name() end)
+on("nd_hpic", function()
+    pcall(run, "zenity", { "--file-selection", "--title=Choose your profile picture",
+        "--file-filter=Images | *.png *.jpg *.jpeg *.webp *.avif" }, function(out, code)
+        local path = tostring(out or ""):gsub("%s+$", "")
+        if code ~= 0 or path == "" then return end
+        run("mooi", { "identity", "avatar", path }, function(_, done)
+            if done ~= 0 then return end
+            N.settings = config.parse(read(SETTINGS_FILE), json.decode)
+            N.show_identity()
+            render()
+        end)
+    end)
+end)
+
 pcall(run, "hostname", {}, function(out)
     N.host = (tostring(out or ""):gsub("^%s+", ""):gsub("%s+$", ""))
     N.show_identity()
@@ -1626,6 +1681,7 @@ open_panel = function(page)
     N.panel = PANEL_PAGES[page] and page or "home"
     N.panel_sub, N.panel_shown = "", nil
     if N.panel == "notes" then text.nd_nq = ""; N.npage = 0 end
+    if N.panel == "home" then N.close_editor() end
     if N.panel == "stash" then N.sclear, fact.nd_sclear = nil, false end
     if N.panel == "keys" then N.kq, N.ksc, text.nd_kq = "", 0, ""; load_keys() end
     if (N.panel == "system" or N.panel == "home") and N.poll_extra then N.poll_extra() end
