@@ -50,6 +50,14 @@ local function trim(s)
     return s
 end
 
+-- the name the inline editor will keep: trimmed, no control characters, nothing for nothing, 48 at most
+function M.name(value)
+    value = trim(value):gsub("%c", "")
+    value = trim(value)
+    if value == "" then return nil end
+    return string.sub(value, 1, 48)
+end
+
 -- the profile card's words: the display name (never empty), the hostname, the picture's file, and the letter
 -- shown when there is no picture
 function M.identity(name, host, avatar)

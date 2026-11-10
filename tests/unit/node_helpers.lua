@@ -1762,6 +1762,14 @@ do
         eq(HM.face("/data", "   ", function() return true end), "", "no picture")
         eq(HM.face("/data", "ada.png"), "/data/ada.png", "a caller without a checker trusts the name")
     end)
+
+    test("name: trimmed, no control characters, empty is nothing, and 48 characters at most", function()
+        eq(HM.name("  Ada Lovelace  "), "Ada Lovelace")
+        eq(HM.name("Ada\tLovelace\n"), "AdaLovelace")
+        eq(HM.name("   "), nil)
+        eq(HM.name(nil), nil)
+        eq(#HM.name(string.rep("a", 60)), 48)
+    end)
 end
 
 section("the panel's Home profile (D280): the scene")
