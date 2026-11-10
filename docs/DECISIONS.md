@@ -7429,3 +7429,18 @@ The notch's scene gains `files.remove`, which it lacked: without it the file sta
 **Verified.** Unit 888 / 0; the notch's scene compiles; live after `mooi refresh`: sample words left in the file
 reached the field as one line and the file was removed. The region step is the same slurp/grim/tesseract path as
 D269's tested `mooi capture text`; no question was sent to Claude.
+
+## D282 · 2026-11-10 · The Dashboard folds the side notch away; what wave 2 leaves for the owner
+
+The old side notch opens from the same left edge as the Dashboard drawer, and once lay over it. Opening the
+Dashboard now asks the notch to fold away (`nt_close`).
+
+Wave 2 of the k4 / Minflair port is built except four, each for a reason the owner can overrule:
+- **Monitors** (k4's Pantallas, Minflair's display settings): this machine has one screen, so an arrangement
+  cannot be tested, and a wrong mode or scale on the only display could leave it unusable; it wants a keep-or-revert
+  timer and the owner's word.
+- **The battery charge limit**: this laptop's battery has no `charge_control_end_threshold` (D278).
+- **Neovim, lazygit, Starship and Obsidian colours**: theming them means mooi rewriting the owner's own configs;
+  Settings → Theme & colour → Everything else already runs the owner's Matugen templates (btop, cava, fish,
+  Vesktop, Zen, Spicetify).
+- **Island terminal sessions**: k4's is its own terminal, k4term; mooi opens the owner's terminal.

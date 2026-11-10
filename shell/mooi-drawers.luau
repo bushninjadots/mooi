@@ -123,6 +123,8 @@ local function open(which)
     if which == 2 and cfg().notices == false then which = 0 end
     D.open = which
     fact.dr_open = which
+    -- the old side notch opens from the same left edge: the Dashboard folds it away rather than lie over it
+    if which == 1 then run("pleamar", { "--say", "mooi-notch", "emit nt_close" }, function() end) end
     if which == 1 then dashboard() elseif which == 2 then notices() end
 end
 on("dr_cmd", function(v)
