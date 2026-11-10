@@ -48,12 +48,18 @@ function M.rail(body, n)
 end
 
 -- the notices' cards, branching down from the node (a stem, then each card under the last)
-function M.cards(body, n, scr)
+-- (D245: `heights` may give a card its own height — one opened to be read — and those under it move down)
+function M.cards(body, n, scr, heights)
     local W = tonumber(scr and scr.w) or 1920
     local out = {}
     local cw, chh = 340, 58
     local x = clamp(body.x + body.w / 2 - cw / 2, M.MARGIN, W - M.MARGIN - cw)
-    for i = 1, n do out[i] = { x = x, y = body.y + body.h + 22 + (i - 1) * (chh + 8), w = cw, h = chh } end
+    local y = body.y + body.h + 22
+    for i = 1, n do
+        local h = (type(heights) == "table" and tonumber(heights[i])) or chh
+        out[i] = { x = x, y = y, w = cw, h = h }
+        y = y + h + 8
+    end
     return out
 end
 

@@ -19,6 +19,7 @@ function M.group(list)
             else
                 local title = tostring(n.title or "")
                 g = { idx = i, app = app ~= "" and app or "Notice", title = title ~= "" and title or "Something new",
+                      body = tostring(n.body or ""),
                       actions = type(n.actions) == "table" and n.actions or {}, count = 1 }
                 by[key] = g
                 out[#out + 1] = g
@@ -26,6 +27,16 @@ function M.group(list)
         end
     end
     return out
+end
+
+-- how tall a card opened to be read is: its body's lines (about 52 characters each, at most six) under the title
+M.CARD_H, M.LINE_H, M.LINE_CHARS, M.LINES_MAX = 58, 15, 52, 6
+function M.open_height(g)
+    local b = type(g) == "table" and tostring(g.body or "") or ""
+    if b == "" then return M.CARD_H end
+    local lines = 0
+    for para in (b .. "\n"):gmatch("([^\n]*)\n") do lines = lines + math.max(1, math.ceil(#para / M.LINE_CHARS)) end
+    return M.CARD_H + math.min(M.LINES_MAX, lines) * M.LINE_H + 6
 end
 
 -- what a card's first line says: the app, and how many it has sent when more than one

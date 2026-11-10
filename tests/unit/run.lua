@@ -2772,15 +2772,18 @@ test("stats: upower's battery — state, time left, rate, health", function()
 end)
 
 local nexusfeed = require("lib/nexusfeed")
-test("nexus feed: the latest five, how long ago, never the bodies", function()
+test("nexus feed: the latest five, how long ago; bodies only while signals are not private (D245)", function()
     local list = {}
     for i = 1, 7 do list[i] = { id = i, app = "App" .. i, title = "Title " .. i, body = "secret", time = 1000 - i * 90 } end
     local f = nexusfeed.feed(list, 1000, false)
     eq(f.count, 7); eq(#f.items, 5); eq(f.items[1].app, "App1"); eq(f.items[1].title, "Title 1")
     eq(f.items[1].ago, "1 min"); eq(f.items[5].ago, "7 min")
-    for _, it in ipairs(f.items) do eq(it.body, nil, "no body leaves the bar") end
+    for _, it in ipairs(f.items) do eq(it.body, "secret", "D245: the body, for the node to open") end
     local p = nexusfeed.feed(list, 1000, true)
     eq(p.items[1].title, "", "private: who it is from, not what it says")
+    for _, it in ipairs(p.items) do eq(it.body, "", "private: never the body") end
+    local long = nexusfeed.feed({ { app = "A", title = "T", body = string.rep("x", 900), time = 1 } }, 2, false)
+    eq(#long.items[1].body <= nexusfeed.BODY_MAX + 3, true, "cut short")
     eq(nexusfeed.feed(nil, 1000, false).count, 0)
 end)
 test("nexus feed: ages, and the updates document", function()
@@ -6635,9 +6638,28 @@ do
     test("the node: a card's action reaches its own notice in the feed's order; its time drains and is held while pointed at", function()
         local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()
         assert(l:find('"emit note_act " .. tostring((i - 1) * 10 + (what == 9 and 9 or what))', 1, true))
-        assert(l:find("if N.near then ev.till = ev.till + 250 end", 1, true))
+        assert(l:find("if N.near or N.nc_open then ev.till = ev.till + 250 end", 1, true), "D245: an opened card holds it too")
         local p = assert(io.open("shell/mooi-node.plm")):read("a")
         assert(p:find("size: (n.w - 24) * nd_ncs, 1.5", 1, true))
+    end)
+end
+
+section("the node sits above the windows' line, and its notices open to be read (D245)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("its surface is not pushed below the other bars' strip", function()
+        assert(read("shell/mooi-node.plm"):find("reserve: -1", 1, true))
+    end)
+    test("a card the pointer rests on opens: its message under the title, the cards under it moved down", function()
+        local NT = require("lib/node/notices")
+        local G = require("lib/node/geometry")
+        local g = NT.group({ { app = "Mail", title = "Hi", body = string.rep("word ", 30) } })
+        assert(NT.open_height(g[1]) > NT.CARD_H); eq(NT.open_height({ body = "" }), NT.CARD_H)
+        assert(NT.open_height({ body = string.rep("x\n", 40) }) <= NT.CARD_H + NT.LINES_MAX * NT.LINE_H + 6, "at most six lines")
+        local c = G.cards({ x = 900, y = 0, w = 120, h = 10 }, 2, { w = 1920 }, { 120, 58 })
+        eq(c[1].h, 120); eq(c[2].y, c[1].y + 120 + 8)
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("on change nchv { emit nd_ncx(if(nchv, row + 1, 0)) }", 1, true))
     end)
 end
 

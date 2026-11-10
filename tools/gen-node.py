@@ -94,7 +94,7 @@ def scene():
           '    fact nd_playing = false', '    fact nd_prog = 0', '    fact nd_arted = false',
           '    prop nd_vph = 0', '    spin nd_vph by if(nd_kind == 1 and nd_playing, 240, 0)',
           '    // notices',
-          '    model nc max 5 { x: number; y: number; w: number; h: number; app: text; title: text; act: text; hasact: bool }',
+          '    model nc max 5 { x: number; y: number; w: number; h: number; app: text; title: text; body: text; open: bool; act: text; hasact: bool }',
           '    fact nd_ncn = 0       // how many cards are shown', '    fact nd_more = 0      // how many more wait',
           '    fact nd_ncl = 1       // how much of their time is left (D237)', '    prop nd_ncs = 1 ~nd.aux', '    follow nd_ncs = nd_ncl',
           '    // volume',
@@ -165,6 +165,7 @@ def scene():
           '    event nd_press ->     // the node pressed',
           '    event nd_media ->     // 1 back · 2 play / pause · 3 next',
           '    event nd_nc ->        // a notice: row * 10 + 0 open · 1 its action · 9 dismiss',
+          '    event nd_ncx ->       // the pointer over a notice card: its row + 1 · 0 gone (D245: it opens to be read)',
           '    event nd_ws ->        // a workspace on the rail',
           '    event nd_lr ->        // a launcher row',
           '    event nd_un ->        // a workspace in the universe',
@@ -466,7 +467,8 @@ def surface():
     acc = "nd_acc"
     L = ['    surface node {',
          '        size: full, full', '        anchor: top', '        level: top, overlay while nd_kind == 7 or nd_studio',
-         '        reserve: 0', '        keyboard: exclusive while nd_kb', '        rate: 60, 20 while nd_kind == 0 and nd_grow > 0.99 and not nd_studio']
+         '        // -1: over every other bar\'s strip, not pushed below it (it sat on the windows\' line, D245)',
+         '        reserve: -1', '        keyboard: exclusive while nd_kb', '        rate: 60, 20 while nd_kind == 0 and nd_grow > 0.99 and not nd_studio']
     L += [f'{c}// the look\'s colours: its own, and its light\'s',
           f'{c}let nd_acc = pick(nd_ac, fl.phos, fl.ember, fl.ink, fl.trace_lit)',
           f'{c}let nd_glc = pick(nd_gc, fl.phos, fl.ember, fl.ink, fl.trace_lit)']
@@ -599,6 +601,8 @@ def surface():
           f'{c}            box {{ from: n.x + 12, n.y + n.h - 3; size: (n.w - 24) * nd_ncs, 1.5; corner: 1; color: {acc}; opacity: 0.6; show: row == 0 }}',
           f'{c}            text n.app {{ at: n.x + 14, n.y + 16; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {acc}; width: n.w - 60; lines: 1 }}',
           f'{c}            text n.title {{ at: n.x + 14, n.y + 37; anchor: left center; size: 12; family: {SANS}; color: {ink}; width: if(n.hasact, n.w - 120, n.w - 40); lines: 1 }}',
+          f'{c}            // opened to be read: the message under the title (D245)',
+          f'{c}            text n.body {{ at: n.x + 14, n.y + 54; anchor: left top; size: 11; family: {SANS}; color: {dim}; width: n.w - 28; lines: 6; show: n.open }}',
           f'{c}            group {{ show: n.hasact',
           f'{c}                box {{ from: n.x + n.w - 100, n.y + 27; size: 64, 20; corner: 10 * nd_rnd; stroke: 1; color: {acc} }}',
           f'{c}                text n.act {{ at: n.x + n.w - 68, n.y + 37; anchor: center; align: center; size: 9; family: {MONO}; color: {acc}; width: 58; lines: 1 }} }}',
@@ -606,6 +610,8 @@ def surface():
           f'{c}        }}',
           f'{c}        zone box ncz {{ from: n.x, n.y; size: n.w, n.h; corner: 12; cursor: pointer; role: button; label: "{{n.app}}: {{n.title}}"; show: nd_kind == 2 and g > 0.9 and not nd_studio }}',
           f'{c}        on press ncz {{ emit nd_nc(row * 10) }}',
+          f'{c}        let nchv = ncz.hover',
+          f'{c}        on change nchv {{ emit nd_ncx(if(nchv, row + 1, 0)) }}',
           f'{c}        zone box nca {{ from: n.x + n.w - 100, n.y + 27; size: 64, 20; cursor: pointer; role: button; label: "{{n.act}}"; show: nd_kind == 2 and n.hasact and g > 0.9 and not nd_studio }}',
           f'{c}        on press nca {{ emit nd_nc(row * 10 + 1) }}',
           f'{c}        zone box ncx {{ from: n.x + n.w - 30, n.y + 4; size: 24, 24; cursor: pointer; role: button; label: "Dismiss"; show: nd_kind == 2 and g > 0.9 and not nd_studio }}',

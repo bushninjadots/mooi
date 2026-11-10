@@ -140,13 +140,17 @@ end
 -- D237: one card per app (its newest notice, and how many it has sent); each row remembers which notice it is
 local function show_notices(b)
     local groups = NT.group(N.notice_list or N.notices)
-    local cards = G.cards(b, math.min(N.look.cards, #groups), N.scr)
+    -- the card the pointer rests on opens to be read (D245)
+    local heights = {}
+    for i, g in ipairs(groups) do heights[i] = (N.nc_open == i) and NT.open_height(g) or NT.CARD_H end
+    local cards = G.cards(b, math.min(N.look.cards, #groups), N.scr, heights)
     local rows, idx = {}, {}
     local shown = 0
     for i, c in ipairs(cards) do
         local g = groups[i]
         local a1 = g.actions[1]
-        rows[i] = { x = c.x, y = c.y, w = c.w, h = c.h, app = NT.label(g), title = g.title,
+        rows[i] = { x = c.x, y = c.y, w = c.w, h = c.h, app = NT.label(g), title = g.title, body = g.body,
+                    open = N.nc_open == i and g.body ~= "",
                     act = type(a1) == "string" and a1 or "", hasact = type(a1) == "string" and a1 ~= "" }
         idx[i] = g.idx
         shown = shown + g.count
@@ -559,6 +563,18 @@ on("nd_media", function(v)
     local c = math.floor(tonumber(v) or 0)
     pcall(sys.call, ({ [1] = "media.previous", [2] = "media.toggle", [3] = "media.next" })[c] or "media.toggle")
 end)
+-- the pointer over a card (row + 1) or gone (0): it opens to be read; leaving waits a moment, so moving from
+-- one card to the next never folds them both
+on("nd_ncx", function(v)
+    v = math.floor(tonumber(v) or 0)
+    N.ncx_gen = (N.ncx_gen or 0) + 1
+    if v > 0 then
+        if N.nc_open ~= v then N.nc_open = v; render() end
+    else
+        local g = N.ncx_gen
+        after(160, function() if g == N.ncx_gen and N.nc_open then N.nc_open = nil; render() end end)
+    end
+end)
 on("nd_nc", function(v)
     v = math.floor(tonumber(v) or -1)
     local row, what = v // 10, v % 10
@@ -950,11 +966,11 @@ on("nd_mt", function(v)
     end
 end)
 
--- ── a notice's life (D237): a line drains over it; the pointer resting on the node holds it ──
+-- ── a notice's life (D237): a line drains over it; the pointer resting on the node or on an opened card holds it ──
 every(250, function()
     local ev = N.st.events.notice
     if N.kind ~= "notice" or not ev then return end
-    if N.near then ev.till = ev.till + 250 end
+    if N.near or N.nc_open then ev.till = ev.till + 250 end
     fact.nd_ncl = math.max(0, math.min(1, (ev.till - now()) / ST.LIFE.notice))
 end)
 

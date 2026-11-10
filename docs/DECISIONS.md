@@ -6814,3 +6814,18 @@ the code, found real, and fixed:
 - Time added to a running timer moves what it was set to as well, so its progress never passes full.
 
 **Verified.** Unit 751 / 0 (six new regression tests); `bin/mooi check` green.
+
+## D245 · 2026-11-10 · Above the windows' line; notices open to be read
+
+**Higher.** The owner saw the node sitting on the windows' line. Its surface had been placed below the 33 px
+the frame reserves, because a layer that reserves nothing (`reserve: 0`) is moved out of other layers' strips.
+With `reserve: -1` (as the Subsurface's surfaces have) it starts at the very top of the screen, and the
+studio's "From the top" distance counts from there.
+
+**Expand to read (the owner's choice, reversing D98/D237's "no body leaves the bar").** Signal Loom's feed now
+carries each notification's body, cut to 400 characters, except while signals are private, when neither the
+title nor the body leaves. A notice card the pointer rests on opens: the message, up to six lines, sits under the
+title and the cards below move down. Leaving waits 160 ms, so moving from one card to the next never folds both.
+An open card holds the notices' time, like the pointer on the node.
+
+**Verified.** Unit 753 / 0; scenes compile; `bin/mooi check` green.
