@@ -236,7 +236,7 @@ scene Node {
     fact st_glow = 1
 
     // ── what the node is (the logic, lib/node/state): 0 rest · 1 media · 2 notice · 3 volume · 4 workspaces ·
-    //    5 system · 6 launcher · 7 universe ──
+    //    5 system · 6 launcher · 7 universe · 8 time · 9 something finished ──
     fact nd_kind = 0
     fact nd_breath = true
     fact nd_kb = false
@@ -446,6 +446,27 @@ scene Node {
     fact nd_gl = 0
     prop nd_glf = 0 ~nd.glit
     follow nd_glf = nd_gl
+    // the time tools (D231): the panel (a mode on stage, the others on its rail), the seed's capsule while
+    // something runs, and the card when something finishes
+    fact nd_tmm = 0       // on stage: 0 timer · 1 stopwatch · 2 focus · 3 alarm
+    text nd_tmr = "05:00"
+    text nd_tms = ""
+    fact nd_tmp = 1
+    text nd_tmgl = "START"
+    text nd_tm2l = "RESET"
+    model tc max 4 { label: text; code: number }
+    model tr max 3 { label: text; value: text; on: bool; m: number }
+    fact nd_cap = false
+    text nd_capt = ""
+    text nd_capm = ""
+    fact nd_capf = 1
+    fact nd_capu = false
+    prop nd_swp = 0
+    spin nd_swp by if(nd_cap and nd_kind == 0, if(nd_capu, 300, 120), 0)
+    text nd_dnt = ""
+    text nd_dnd = ""
+    prop nd_dph = 0
+    spin nd_dph by if(nd_kind == 9, 260, 0)
     // satellites
     model sa max 6 { x: number; y: number; w: number; h: number; label: text; kind: number }
     prop nd_sf = 0 ~nd.aux
@@ -460,7 +481,7 @@ scene Node {
     event nd_un ->        // a workspace in the universe
     event nd_sa ->        // a satellite (its kind)
     event nd_key ->       // a key while the node holds the keyboard
-    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio
+    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time
     event nd_tab ->       // the studio: a page
     event nd_sk ->        // the studio: a slider, row * 1000 + where along it (0 … 1000)
     event nd_so ->        // the studio: a choice, row * 10 + which
@@ -468,6 +489,8 @@ scene Node {
     event nd_ps ->        // the studio: a preset
     event nd_slot ->      // the studio: a saved look, slot * 10 + 0 save · 1 wear · 9 clear
     event nd_stc ->       // the studio: 1 shuffle · 2 done · 3 reset
+    event nd_tm ->        // the time tools: 0-3 a mode · 10 go · 11 reset · 12 lap or skip · 2x timer · 3x alarm
+    event nd_dn ->        // the finish card answered
 
     surface node {
         size: full, full
@@ -569,7 +592,7 @@ scene Node {
         let nd_sy = nb_y - (nd_sh - nb_h) / 2
         let nd_sr = min(nb_r, nd_sh / 2)
         // the seed: a line, a bar or a dot (filled), a ring (an outline), twins (two halves breathing in turn)
-        group { show: nd_kind == 0; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc
+        group { show: nd_kind == 0 and not nd_cap; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc
             box { from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 0 or nd_seed == 1 or nd_seed == 4 }
             box { from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; stroke: 1.5; color: nd_acc; opacity: 0.6 + 0.35 * nd_br; show: nd_seed == 2 }
             box { from: nd_sx, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: nd_acc; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 3 }
@@ -718,6 +741,83 @@ scene Node {
         }
         on submit nd_q { emit nd_key(13) }
         on change nd_kb while nd_kb and nd_kind == 6 and not nd_studio { focus nd_q }
+        // the capsule: while a timer, a focus phase, the stopwatch or a near alarm runs, the seed is a capsule with its
+        // value, a line that drains, and a sweep of light (faster, and warm, in the last minute)
+        group { show: nd_kind == 0 and nd_cap
+            let cw = if(nd_capu, fl.ember, nd_acc)
+            group { glow: 10, 0.5 * nd_gw + if(nd_capu, 0.3, 0), if(nd_capu, fl.ember, nd_glc)
+                box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: fl.hull; opacity: 0.95 } }
+            box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: 1; color: cw; opacity: 0.7 }
+            group { clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
+                box { from: nb_x - 24 + fract(nd_swp / 360) * (nb_w + 24), nb_y; size: 24, nb_h; color: cw; opacity: 0.18 }
+                box { from: nb_x + 8, nb_y + nb_h - 3; size: (nb_w - 16) * nd_capf, 1.5; color: cw; opacity: 0.9 } }
+            text nd_capm { at: nb_x + 10, nb_y + nb_h / 2; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted; opacity: nd_cf }
+            text nd_capt { at: nb_x + nb_w - 10, nb_y + nb_h / 2; anchor: right center; align: right; size: 11; weight: 700; family: "Share Tech Mono"; color: if(nd_capu, fl.ember, fl.engrave); opacity: nd_cf }
+        }
+        // the panel: the mode on stage, its readout big, its progress as a strip of cells, its controls; the other
+        // three on the rail along the floor, still counting
+        group { show: nd_kind == 8; opacity: nd_cf
+            clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
+            text "TIMER" { at: nb_x + 20, nb_y + 20; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_tmm == 0, nd_acc, if(tmz0.hover, fl.engrave, fl.muted)) }
+            box { from: nb_x + 20, nb_y + 29; size: 24, 1.5; color: nd_acc; show: nd_tmm == 0 }
+            zone box tmz0 { from: nb_x + 20 - 6, nb_y + 8; size: 92, 26; cursor: pointer; role: tab; label: "Timer"; selected: nd_tmm == 0; show: nd_kind == 8 }
+            on press tmz0 { emit nd_tm(0) }
+            text "STOPWATCH" { at: nb_x + 116, nb_y + 20; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_tmm == 1, nd_acc, if(tmz1.hover, fl.engrave, fl.muted)) }
+            box { from: nb_x + 116, nb_y + 29; size: 24, 1.5; color: nd_acc; show: nd_tmm == 1 }
+            zone box tmz1 { from: nb_x + 116 - 6, nb_y + 8; size: 92, 26; cursor: pointer; role: tab; label: "Stopwatch"; selected: nd_tmm == 1; show: nd_kind == 8 }
+            on press tmz1 { emit nd_tm(1) }
+            text "FOCUS" { at: nb_x + 212, nb_y + 20; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_tmm == 2, nd_acc, if(tmz2.hover, fl.engrave, fl.muted)) }
+            box { from: nb_x + 212, nb_y + 29; size: 24, 1.5; color: nd_acc; show: nd_tmm == 2 }
+            zone box tmz2 { from: nb_x + 212 - 6, nb_y + 8; size: 92, 26; cursor: pointer; role: tab; label: "Focus"; selected: nd_tmm == 2; show: nd_kind == 8 }
+            on press tmz2 { emit nd_tm(2) }
+            text "ALARM" { at: nb_x + 308, nb_y + 20; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_tmm == 3, nd_acc, if(tmz3.hover, fl.engrave, fl.muted)) }
+            box { from: nb_x + 308, nb_y + 29; size: 24, 1.5; color: nd_acc; show: nd_tmm == 3 }
+            zone box tmz3 { from: nb_x + 308 - 6, nb_y + 8; size: 92, 26; cursor: pointer; role: tab; label: "Alarm"; selected: nd_tmm == 3; show: nd_kind == 8 }
+            on press tmz3 { emit nd_tm(3) }
+            text nd_tmr { at: nb_x + 20, nb_y + 66; anchor: left center; size: 36; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            text nd_tms { at: nb_x + 22, nb_y + 94; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 300; lines: 1 }
+            repeat cl in 0..30 { box { from: nb_x + 20 + cl * 10, nb_y + 108; size: 7, 5; corner: 1; color: if(cl < nd_tmp * 30, nd_acc, fl.trace_dim); opacity: if(cl < nd_tmp * 30, 0.9, 0.6) } }
+            box { from: nb_x + nb_w - 214, nb_y + 46; size: 94, 30; corner: 15 * max(0.3, nd_rnd); color: nd_acc; opacity: if(true, 0.9, if(tmb10.hover, 0.18, 0)) }
+            box { from: nb_x + nb_w - 214, nb_y + 46; size: 94, 30; corner: 15 * max(0.3, nd_rnd); stroke: 1; color: if(true, nd_acc, fl.trace_lit) }
+            text nd_tmgl { at: nb_x + nb_w - 214 + 47, nb_y + 61; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(true, fl.ground, fl.engrave) }
+            zone box tmb10 { from: nb_x + nb_w - 214, nb_y + 46; size: 94, 30; cursor: pointer; role: button; label: "{nd_tmgl}"; show: nd_kind == 8 }
+            on press tmb10 { emit nd_tm(10) }
+            box { from: nb_x + nb_w - 112, nb_y + 46; size: 94, 30; corner: 15 * max(0.3, nd_rnd); color: nd_acc; opacity: if(false, 0.9, if(tmb11.hover, 0.18, 0)) }
+            box { from: nb_x + nb_w - 112, nb_y + 46; size: 94, 30; corner: 15 * max(0.3, nd_rnd); stroke: 1; color: if(false, nd_acc, fl.trace_lit) }
+            text nd_tm2l { at: nb_x + nb_w - 112 + 47, nb_y + 61; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(false, fl.ground, fl.engrave) }
+            zone box tmb11 { from: nb_x + nb_w - 112, nb_y + 46; size: 94, 30; cursor: pointer; role: button; label: "{nd_tm2l}"; show: nd_kind == 8 }
+            on press tmb11 { emit nd_tm(11) }
+            for k in tc {
+                let kx = nb_x + nb_w - 214 + k.index * 50
+                box { from: kx, nb_y + 86; size: 44, 24; corner: 12 * max(0.3, nd_rnd); stroke: 1; color: if(tcz.hover, nd_acc, fl.trace_lit) }
+                text k.label { at: kx + 22, nb_y + 98; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: 42; lines: 1 }
+                zone box tcz { from: kx, nb_y + 86; size: 44, 24; cursor: pointer; role: button; label: "{k.label}"; show: nd_kind == 8 }
+                on press tcz { emit nd_tm(k.code) }
+            }
+            line { from: nb_x + 16, nb_y + nb_h - 36; to: nb_x + nb_w - 16, nb_y + nb_h - 36; width: 1; color: fl.trace_dim }
+            for r in tr {
+                let rx = nb_x + 20 + r.index * ((nb_w - 40) / 3)
+                ellipse { at: rx + 3, nb_y + nb_h - 18; radius: 2.5; color: if(r.on, nd_acc, fl.trace_dim) }
+                text r.label { at: rx + 12, nb_y + nb_h - 18; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                text r.value { at: rx + 90, nb_y + nb_h - 18; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(r.on, fl.engrave, fl.muted) }
+                zone box trz { from: rx, nb_y + nb_h - 30; size: (nb_w - 40) / 3 - 8, 24; cursor: pointer; role: button; label: "{r.label} {r.value}"; show: nd_kind == 8 }
+                on press trz { emit nd_tm(r.m) }
+            }
+        }
+        // something finished: the node becomes a card that pulses until it is answered (a click on it, Esc, Space,
+        // Return, or OK) — never by the pointer merely resting there, never by folding away
+        group { show: nd_kind == 9
+            group { glow: 20, 0.45 + 0.35 * sin(nd_dph), fl.ember
+                box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: fl.hull; opacity: 0.97 } }
+            box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: 1.5; color: fl.ember; opacity: 0.6 + 0.3 * sin(nd_dph) }
+            group { opacity: nd_cf
+                text nd_dnt { at: nb_x + 22, nb_y + 28; anchor: left center; size: 15; weight: 700; family: "Exo 2"; color: fl.engrave; width: nb_w - 140; lines: 1 }
+                text nd_dnd { at: nb_x + 22, nb_y + 50; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: nb_w - 140; lines: 1 }
+                box { from: nb_x + nb_w - 92, nb_y + nb_h / 2 - 15; size: 72, 30; corner: 15 * max(0.3, nd_rnd); color: fl.ember; opacity: 0.9 }
+                text "OK" { at: nb_x + nb_w - 56, nb_y + nb_h / 2; anchor: center; align: center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.ground } }
+            zone box dnz { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "{nd_dnt}: OK"; show: nd_kind == 9 }
+            on press dnz { emit nd_dn }
+        }
         // satellites: they leave the seed for their place on the arc and come back into it; organic ones drift.
         // Pills (a word), dots (a point), or ticks (a stroke and a word under it)
         for s in sa {
@@ -898,5 +998,6 @@ scene Node {
         on key Left while nd_kb { emit nd_key(37) }
         on key Right while nd_kb { emit nd_key(39) }
         on key Tab while nd_kb { emit nd_key(9) }
+        on key space while nd_kb { emit nd_key(32) }
     }
 }

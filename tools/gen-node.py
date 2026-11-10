@@ -24,8 +24,8 @@ SPRINGS = [(f"{s}_{b}", k, int(2 * math.sqrt(k) * f + 0.5)) for s, k in SPEED fo
 GROWTH = [("slow", 90, 15), ("normal", 170, 19), ("fast", 320, 30)]
 FIELDS = [("x", 949), ("y", 8), ("w", 22), ("h", 6), ("r", 3)]
 # the kinds, as the logic numbers them (lib/node/state)
-K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "system": 5, "launcher": 6, "universe": 7}
-KEYS = [("Escape", 27), ("Return", 13), ("Up", 38), ("Down", 40), ("Left", 37), ("Right", 39), ("Tab", 9)]
+K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "system": 5, "launcher": 6, "universe": 7, "time": 8, "done": 9}
+KEYS = [("Escape", 27), ("Return", 13), ("Up", 38), ("Down", 40), ("Left", 37), ("Right", 39), ("Tab", 9), ("space", 32)]
 # the look's facts and their defaults (the organic preset; lib/node/look's M.facts names them)
 LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 cyber"), ("nd_sp", 2, "the body's spring (speed × bounce)"),
         ("nd_gs", 1, "growth: 0 slow · 1 normal · 2 fast"), ("nd_seed", 0, "0 line · 1 dot · 2 ring · 3 twin · 4 bar"),
@@ -68,7 +68,7 @@ def scene():
     L += palette_block()
     L += ['',
           '    // ── what the node is (the logic, lib/node/state): 0 rest · 1 media · 2 notice · 3 volume · 4 workspaces ·',
-          '    //    5 system · 6 launcher · 7 universe ──',
+          '    //    5 system · 6 launcher · 7 universe · 8 time · 9 something finished ──',
           '    fact nd_kind = 0', '    fact nd_breath = true', '    fact nd_kb = false',
           '    fact nd_lean = 0       // where the pointer came in: -1 left · 1 right (expansion leans that way)',
           '    // ── its look (lib/node/look, node-look.json; the studio sets it) ──']
@@ -132,6 +132,16 @@ def scene():
           '    let nd_gk = 1 + 0.8 * nd_stg',
           '    // cyber: a change glitches it for a moment',
           '    fact nd_gl = 0', '    prop nd_glf = 0 ~nd.glit', '    follow nd_glf = nd_gl',
+          '    // the time tools (D231): the panel (a mode on stage, the others on its rail), the seed\'s capsule while',
+          '    // something runs, and the card when something finishes',
+          '    fact nd_tmm = 0       // on stage: 0 timer · 1 stopwatch · 2 focus · 3 alarm',
+          '    text nd_tmr = "05:00"', '    text nd_tms = ""', '    fact nd_tmp = 1', '    text nd_tmgl = "START"', '    text nd_tm2l = "RESET"',
+          '    model tc max 4 { label: text; code: number }',
+          '    model tr max 3 { label: text; value: text; on: bool; m: number }',
+          '    fact nd_cap = false', '    text nd_capt = ""', '    text nd_capm = ""', '    fact nd_capf = 1', '    fact nd_capu = false',
+          '    prop nd_swp = 0', '    spin nd_swp by if(nd_cap and nd_kind == 0, if(nd_capu, 300, 120), 0)',
+          '    text nd_dnt = ""', '    text nd_dnd = ""',
+          '    prop nd_dph = 0', '    spin nd_dph by if(nd_kind == 9, 260, 0)',
           '    // satellites',
           '    model sa max 6 { x: number; y: number; w: number; h: number; label: text; kind: number }',
           '    prop nd_sf = 0 ~nd.aux', '    follow nd_sf = if(nd_kind == 0, 1, 0)',
@@ -145,7 +155,7 @@ def scene():
           '    event nd_un ->        // a workspace in the universe',
           '    event nd_sa ->        // a satellite (its kind)',
           '    event nd_key ->       // a key while the node holds the keyboard',
-          '    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio',
+          '    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time',
           '    event nd_tab ->       // the studio: a page',
           '    event nd_sk ->        // the studio: a slider, row * 1000 + where along it (0 … 1000)',
           '    event nd_so ->        // the studio: a choice, row * 10 + which',
@@ -153,6 +163,8 @@ def scene():
           '    event nd_ps ->        // the studio: a preset',
           '    event nd_slot ->      // the studio: a saved look, slot * 10 + 0 save · 1 wear · 9 clear',
           '    event nd_stc ->       // the studio: 1 shuffle · 2 done · 3 reset',
+          '    event nd_tm ->        // the time tools: 0-3 a mode · 10 go · 11 reset · 12 lap or skip · 2x timer · 3x alarm',
+          '    event nd_dn ->        // the finish card answered',
           '']
     L += surface()
     L += ['}', '']
@@ -277,6 +289,75 @@ def studio_deck():
     return L
 
 
+def time_parts(c, acc, ink, dim, hull):
+    """The time tools (D231): the seed's capsule, the panel, the finish card."""
+    L = [f'{c}// the capsule: while a timer, a focus phase, the stopwatch or a near alarm runs, the seed is a capsule with its',
+         f'{c}// value, a line that drains, and a sweep of light (faster, and warm, in the last minute)',
+         f'{c}group {{ show: nd_kind == 0 and nd_cap',
+         f'{c}    let cw = if(nd_capu, fl.ember, {acc})',
+         f'{c}    group {{ glow: 10, 0.5 * nd_gw + if(nd_capu, 0.3, 0), if(nd_capu, fl.ember, nd_glc)',
+         f'{c}        box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; opacity: 0.95 }} }}',
+         f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: 1; color: cw; opacity: 0.7 }}',
+         f'{c}    group {{ clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
+         f'{c}        box {{ from: nb_x - 24 + fract(nd_swp / 360) * (nb_w + 24), nb_y; size: 24, nb_h; color: cw; opacity: 0.18 }}',
+         f'{c}        box {{ from: nb_x + 8, nb_y + nb_h - 3; size: (nb_w - 16) * nd_capf, 1.5; color: cw; opacity: 0.9 }} }}',
+         f'{c}    text nd_capm {{ at: nb_x + 10, nb_y + nb_h / 2; anchor: left center; size: 8; weight: 700; family: {MONO}; color: {dim}; opacity: nd_cf }}',
+         f'{c}    text nd_capt {{ at: nb_x + nb_w - 10, nb_y + nb_h / 2; anchor: right center; align: right; size: 11; weight: 700; family: {MONO}; color: if(nd_capu, fl.ember, {ink}); opacity: nd_cf }}',
+         f'{c}}}',
+         f'{c}// the panel: the mode on stage, its readout big, its progress as a strip of cells, its controls; the other',
+         f'{c}// three on the rail along the floor, still counting',
+         f'{c}group {{ show: nd_kind == 8; opacity: nd_cf',
+         f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}']
+    for i, name in enumerate(["TIMER", "STOPWATCH", "FOCUS", "ALARM"]):
+        x = f"nb_x + {20 + i * 96}"
+        L += [f'{c}    text "{name}" {{ at: {x}, nb_y + 20; anchor: left center; size: 9; weight: 700; family: {MONO}; color: if(nd_tmm == {i}, {acc}, if(tmz{i}.hover, {ink}, {dim})) }}',
+              f'{c}    box {{ from: {x}, nb_y + 29; size: 24, 1.5; color: {acc}; show: nd_tmm == {i} }}',
+              f'{c}    zone box tmz{i} {{ from: {x} - 6, nb_y + 8; size: 92, 26; cursor: pointer; role: tab; label: "{name.capitalize()}"; selected: nd_tmm == {i}; show: nd_kind == 8 }}',
+              f'{c}    on press tmz{i} {{ emit nd_tm({i}) }}']
+    L += [f'{c}    text nd_tmr {{ at: nb_x + 20, nb_y + 66; anchor: left center; size: 36; weight: 700; family: {MONO}; color: {ink} }}',
+          f'{c}    text nd_tms {{ at: nb_x + 22, nb_y + 94; anchor: left center; size: 10; family: {MONO}; color: {dim}; width: 300; lines: 1 }}',
+          f'{c}    repeat cl in 0..30 {{ box {{ from: nb_x + 20 + cl * 10, nb_y + 108; size: 7, 5; corner: 1; color: if(cl < nd_tmp * 30, {acc}, fl.trace_dim); opacity: if(cl < nd_tmp * 30, 0.9, 0.6) }} }}']
+    for code, label, x in ((10, "nd_tmgl", "nb_x + nb_w - 214"), (11, "nd_tm2l", "nb_x + nb_w - 112")):
+        lit = "true" if code == 10 else "false"
+        L += [f'{c}    box {{ from: {x}, nb_y + 46; size: 94, 30; corner: 15 * max(0.3, nd_rnd); color: {acc}; opacity: if({lit}, 0.9, if(tmb{code}.hover, 0.18, 0)) }}',
+              f'{c}    box {{ from: {x}, nb_y + 46; size: 94, 30; corner: 15 * max(0.3, nd_rnd); stroke: 1; color: if({lit}, {acc}, fl.trace_lit) }}',
+              f'{c}    text {label} {{ at: {x} + 47, nb_y + 61; anchor: center; align: center; size: 10; weight: 700; family: {MONO}; color: if({lit}, fl.ground, {ink}) }}',
+              f'{c}    zone box tmb{code} {{ from: {x}, nb_y + 46; size: 94, 30; cursor: pointer; role: button; label: "{{{label}}}"; show: nd_kind == 8 }}',
+              f'{c}    on press tmb{code} {{ emit nd_tm({code}) }}']
+    L += [f'{c}    for k in tc {{',
+          f'{c}        let kx = nb_x + nb_w - 214 + k.index * 50',
+          f'{c}        box {{ from: kx, nb_y + 86; size: 44, 24; corner: 12 * max(0.3, nd_rnd); stroke: 1; color: if(tcz.hover, {acc}, fl.trace_lit) }}',
+          f'{c}        text k.label {{ at: kx + 22, nb_y + 98; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: {ink}; width: 42; lines: 1 }}',
+          f'{c}        zone box tcz {{ from: kx, nb_y + 86; size: 44, 24; cursor: pointer; role: button; label: "{{k.label}}"; show: nd_kind == 8 }}',
+          f'{c}        on press tcz {{ emit nd_tm(k.code) }}',
+          f'{c}    }}',
+          f'{c}    line {{ from: nb_x + 16, nb_y + nb_h - 36; to: nb_x + nb_w - 16, nb_y + nb_h - 36; width: 1; color: fl.trace_dim }}',
+          f'{c}    for r in tr {{',
+          f'{c}        let rx = nb_x + 20 + r.index * ((nb_w - 40) / 3)',
+          f'{c}        ellipse {{ at: rx + 3, nb_y + nb_h - 18; radius: 2.5; color: if(r.on, {acc}, fl.trace_dim) }}',
+          f'{c}        text r.label {{ at: rx + 12, nb_y + nb_h - 18; anchor: left center; size: 8; weight: 700; family: {MONO}; color: {dim} }}',
+          f'{c}        text r.value {{ at: rx + 90, nb_y + nb_h - 18; anchor: left center; size: 10; weight: 700; family: {MONO}; color: if(r.on, {ink}, {dim}) }}',
+          f'{c}        zone box trz {{ from: rx, nb_y + nb_h - 30; size: (nb_w - 40) / 3 - 8, 24; cursor: pointer; role: button; label: "{{r.label}} {{r.value}}"; show: nd_kind == 8 }}',
+          f'{c}        on press trz {{ emit nd_tm(r.m) }}',
+          f'{c}    }}',
+          f'{c}}}',
+          f'{c}// something finished: the node becomes a card that pulses until it is answered (a click on it, Esc, Space,',
+          f'{c}// Return, or OK) — never by the pointer merely resting there, never by folding away',
+          f'{c}group {{ show: nd_kind == 9',
+          f'{c}    group {{ glow: 20, 0.45 + 0.35 * sin(nd_dph), fl.ember',
+          f'{c}        box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; opacity: 0.97 }} }}',
+          f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: 1.5; color: fl.ember; opacity: 0.6 + 0.3 * sin(nd_dph) }}',
+          f'{c}    group {{ opacity: nd_cf',
+          f'{c}        text nd_dnt {{ at: nb_x + 22, nb_y + 28; anchor: left center; size: 15; weight: 700; family: {SANS}; color: {ink}; width: nb_w - 140; lines: 1 }}',
+          f'{c}        text nd_dnd {{ at: nb_x + 22, nb_y + 50; anchor: left center; size: 10; family: {MONO}; color: {dim}; width: nb_w - 140; lines: 1 }}',
+          f'{c}        box {{ from: nb_x + nb_w - 92, nb_y + nb_h / 2 - 15; size: 72, 30; corner: 15 * max(0.3, nd_rnd); color: fl.ember; opacity: 0.9 }}',
+          f'{c}        text "OK" {{ at: nb_x + nb_w - 56, nb_y + nb_h / 2; anchor: center; align: center; size: 11; weight: 700; family: {MONO}; color: fl.ground }} }}',
+          f'{c}    zone box dnz {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "{{nd_dnt}}: OK"; show: nd_kind == 9 }}',
+          f'{c}    on press dnz {{ emit nd_dn }}',
+          f'{c}}}']
+    return L
+
+
 def surface():
     c = "        "
     ink, dim, hull = "fl.engrave", "fl.muted", "fl.hull"
@@ -328,7 +409,7 @@ def surface():
           f'{c}let nd_sy = nb_y - (nd_sh - nb_h) / 2',
           f'{c}let nd_sr = min(nb_r, nd_sh / 2)',
           f'{c}// the seed: a line, a bar or a dot (filled), a ring (an outline), twins (two halves breathing in turn)',
-          f'{c}group {{ show: nd_kind == 0; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc',
+          f'{c}group {{ show: nd_kind == 0 and not nd_cap; glow: 8, (0.35 + 0.35 * nd_br * nd_bd) * nd_gw / 0.7, nd_glc',
           f'{c}    box {{ from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; color: {acc}; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 0 or nd_seed == 1 or nd_seed == 4 }}',
           f'{c}    box {{ from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr; stroke: 1.5; color: {acc}; opacity: 0.6 + 0.35 * nd_br; show: nd_seed == 2 }}',
           f'{c}    box {{ from: nd_sx, nd_sy; size: nd_sw * 0.45, nd_sh; corner: nd_sr; color: {acc}; opacity: (0.55 + 0.35 * nd_br) * nd_fill; show: nd_seed == 3 }}',
@@ -479,6 +560,7 @@ def surface():
           f'{c}}}',
           f'{c}on submit nd_q {{ emit nd_key(13) }}',
           f'{c}on change nd_kb while nd_kb and nd_kind == 6 and not nd_studio {{ focus nd_q }}']
+    L += time_parts(c, acc, ink, dim, hull)
     # satellites
     L += [f'{c}// satellites: they leave the seed for their place on the arc and come back into it; organic ones drift.',
           f'{c}// Pills (a word), dots (a point), or ticks (a stroke and a word under it)',
