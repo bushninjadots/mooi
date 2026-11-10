@@ -370,9 +370,11 @@ render = function()
     -- on the studio's stage: in the middle, a little way down
     local shape = LK.shape(look)
     -- the long pill (D248): as wide as what it holds
-    if look.rest == "long" and kind == "rest" and N.long_layout then
+    if (look.rest == "long" or look.rest == "notch") and kind == "rest" and N.long_layout then
         local w = N.long_layout()
         shape.seed_w, shape.seed_h = w, 26
+        -- the notch (D251) hangs from the top edge itself, and opens a little under the pointer
+        if look.rest == "notch" and not studio then shape.top = 0; shape.seed_h = N.near and 34 or 28 end
     end
     if studio then shape.top = 96 end
     local anchor = studio and "centre" or (cfg().anchor or "centre")
@@ -1054,7 +1056,7 @@ N.long_layout = function()
 end
 -- what has the focus, while the long pill shows it (asked every second and a half, only then)
 every(1500, function()
-    if N.kind ~= "rest" or N.look.rest ~= "long" or N.look.m_window ~= "on" or N.studio.open then return end
+    if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") or N.look.m_window ~= "on" or N.studio.open then return end
     run("hyprctl", { "-j", "activewindow" }, function(out)
         local ok, w = pcall(json.decode, out or "")
         local t = (ok and type(w) == "table" and type(w.class) == "string" and w.class ~= "") and tostring(w.title ~= "" and w.title or w.class) or ""
@@ -1064,9 +1066,17 @@ end)
 -- the minute turning, while the long pill holds the clock
 local long_min
 every(5000, function()
-    if N.kind ~= "rest" or N.look.rest ~= "long" or N.look.m_clock ~= "on" then return end
+    if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") or N.look.m_clock ~= "on" then return end
     local m = os.date("%H:%M")
     if m ~= long_min then long_min = m; render() end
+end)
+
+-- the wheel over the node (D251): the volume, a twentieth a notch (the gauge shows it, as any change does)
+on("nd_wheel", function(v)
+    if N.studio.open then return end
+    local d = (tonumber(v) or 0) > 0 and 0.05 or -0.05
+    local to = math.max(0, math.min(1, (N.vol or 0.5) + d))
+    pcall(sys.call, "audio.volume", to)
 end)
 
 -- ── the shelf and its branches (D247): Super grows side pills out of the node — what you reach often — and each

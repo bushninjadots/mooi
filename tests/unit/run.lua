@@ -6722,7 +6722,7 @@ do
     test("the pill is as wide as what it holds; the window is asked for only while shown", function()
         local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()
         assert(l:find("shape.seed_w, shape.seed_h = w, 26", 1, true))
-        assert(l:find('if N.kind ~= "rest" or N.look.rest ~= "long" or N.look.m_window ~= "on" or N.studio.open then return end', 1, true))
+        assert(l:find('if N.kind ~= "rest" or (N.look.rest ~= "long" and N.look.rest ~= "notch") or N.look.m_window ~= "on" or N.studio.open then return end', 1, true))
     end)
 end
 
@@ -6742,6 +6742,24 @@ do
         assert(l:find('run(t, { "--version" }', 1, true), "the terminal found by asking, no shell")
         local p = read("shell/mooi-node.plm")
         assert(p:find("on press syz1 { emit nd_sys(p.index) }", 1, true) and p:find("p.h19 * 32", 1, true))
+    end)
+end
+
+section("the notch, the wheel, and a cheaper rest (D251, D252)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    test("at rest a notch hangs from the top edge; the wheel over the node is the volume", function()
+        local LK = require("lib/node/look")
+        eq(LK.facts(LK.normalise({ rest = "notch" })).nd_long, 2)
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('if look.rest == "notch" and not studio then shape.top = 0; shape.seed_h = N.near and 34 or 28 end', 1, true))
+        assert(l:find('pcall(sys.call, "audio.volume", to)', 1, true))
+        assert(read("shell/mooi-node.plm"):find("on scroll nd_bz { emit nd_wheel(if(wheel > 0, 1, -1)) }", 1, true))
+    end)
+    test("a seed that does not breathe costs no frames; at rest twelve a second", function()
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("spin nd_ph by if(nd_kind == 0 and nd_breath and nd_bd > 0.01, 180, 0)", 1, true))
+        assert(p:find("rate: 60, 12 while nd_kind == 0 and nd_grow > 0.99 and not nd_studio and not nd_cap", 1, true))
     end)
 end
 

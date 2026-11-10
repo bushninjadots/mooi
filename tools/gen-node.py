@@ -36,7 +36,7 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_mu", 0.6, "how much it moves with the music"), ("nd_viz", 0, "the media's music: 0 bars · 1 wave · 2 dots · 3 off"),
         ("nd_cov", 0, "the cover: 0 square · 1 round"), ("nd_sst", 0, "satellites: 0 pills · 1 dots · 2 ticks"),
         ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width"),
-        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill"), ("nd_sys", 0, "the system as: 0 spokes · 1 rings · 2 graphs"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
+        ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_sys", 0, "the system as: 0 spokes · 1 rings · 2 graphs"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "System", "Search", "Tour"]
 TABS = ["Presets", "Shape", "Surface", "Motion", "Music", "Parts"]
@@ -88,7 +88,8 @@ def scene():
     L += ['    // what is inside appears as the body reaches its size: it grows out of the node, never pops in',
           '    let nd_cf = clamp((nb_w - 0.82 * nd_tw) / max(1, 0.18 * nd_tw), 0, 1) * clamp((nb_h - 0.82 * nd_th) / max(1, 0.18 * nd_th), 0, 1)',
           '    // the seed breathes (2 s), only at rest and only while allowed',
-          '    prop nd_ph = 0', '    spin nd_ph by if(nd_kind == 0 and nd_breath, 180, 0)',
+          '    // (D252: not at all when the look breathes 0 — a still seed costs no frames)',
+          '    prop nd_ph = 0', '    spin nd_ph by if(nd_kind == 0 and nd_breath and nd_bd > 0.01, 180, 0)',
           '    let nd_br = 0.5 + 0.5 * sin(nd_ph)',
           '    // media',
           '    text nd_title = ""', '    text nd_artist = ""', '    text nd_art = ""', '    image nd_cover = from nd_art, 96, 96',
@@ -198,6 +199,7 @@ def scene():
           '    event nd_tm ->        // the time tools: 0-3 a mode · 10 go · 11 reset · 12 lap or skip · 2x timer · 3x alarm',
           '    event nd_dn ->        // the finish card answered',
           '    event nd_sh ->        // a side pill pressed: its code',
+          '    event nd_wheel ->     // the wheel over the node: 1 up · -1 down (the volume)',
           '    event nd_sys ->       // a reading of the system cluster pressed (D249: btop, in the owner\'s terminal)',
           '    event nd_br ->        // in a branch: 1 back a month / step · 2 on a month / step · 10 + row a row · 30 + row its second press',
           '    event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted',
@@ -622,7 +624,8 @@ def surface():
     L = ['    surface node {',
          '        size: full, full', '        anchor: top', '        level: top, overlay while nd_kind == 7 or nd_studio',
          '        // -1: over every other bar\'s strip, not pushed below it (it sat on the windows\' line, D245)',
-         '        reserve: -1', '        keyboard: exclusive while nd_kb', '        rate: 60, 20 while nd_kind == 0 and nd_grow > 0.99 and not nd_studio']
+         '        reserve: -1', '        keyboard: exclusive while nd_kb', '        // D252: at rest only a slow breath moves, twelve frames a second is plenty (each repaints the whole surface)',
+         '        rate: 60, 12 while nd_kind == 0 and nd_grow > 0.99 and not nd_studio and not nd_cap']
     L += [f'{c}// the look\'s colours: its own, and its light\'s',
           f'{c}let nd_acc = pick(nd_ac, fl.phos, fl.ember, fl.ink, fl.trace_lit)',
           f'{c}let nd_glc = pick(nd_gc, fl.phos, fl.ember, fl.ink, fl.trace_lit)']
@@ -680,10 +683,18 @@ def surface():
     L += [f'{c}}}',
           f'{c}// the long pill (D248): at rest, a pill that holds the modules the look chose — the time, what has the focus,',
           f'{c}// the workspaces, the battery, what plays',
-          f'{c}group {{ show: nd_kind == 0 and nd_long == 1 and not nd_cap',
-          f'{c}    group {{ glow: 10, 0.4 * nd_gw, nd_glc',
+          f'{c}group {{ show: nd_kind == 0 and nd_long > 0 and not nd_cap',
+          f'{c}    // the long pill\'s body',
+          f'{c}    group {{ glow: 10, 0.4 * nd_gw, nd_glc; show: nd_long == 1',
           f'{c}        box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; opacity: nd_fill }} }}',
-          f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: {acc}; opacity: 0.4; show: nd_ol > 0.05 }}',
+          f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: {acc}; opacity: 0.4; show: nd_long == 1 and nd_ol > 0.05 }}',
+          f'{c}    // the notch (D251): hanging from the screen\'s top edge, square where it meets it, rounded below, and curved',
+          f'{c}    // out into the edge either side, as a notch is',
+          f'{c}    group {{ show: nd_long == 2; glow: 10, 0.3 * nd_gw, nd_glc',
+          f'{c}        box {{ from: nb_x, nb_y - 16; size: nb_w, nb_h + 16; corner: min(14, nb_h / 2 + 4) * max(0.3, nd_rnd); color: fl.ground }}',
+          f'{c}        path {{ at: nb_x, nb_y; move -10, 0; curve 0, 10 via 0, 0; line 0, 0; close; color: fl.ground }}',
+          f'{c}        path {{ at: nb_x + nb_w, nb_y; move 10, 0; curve 0, 10 via 0, 0; line 0, 0; close; color: fl.ground }} }}',
+          f'{c}    box {{ from: nb_x + 14, nb_y + nb_h - 1.5; size: (nb_w - 28) * (0.3 + 0.7 * lv.level * nd_mu), 1.5; corner: 1; color: {acc}; opacity: 0.6; show: nd_long == 2 and nd_playing }}',
           f'{c}    group {{ opacity: nd_cf',
           f'{c}        clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
           f'{c}        for m in lm {{',
@@ -736,7 +747,8 @@ def surface():
           f'{c}zone box nd_bz {{ from: nb_x - 16, nb_y - 8; size: nb_w + 32, nb_h + 16; corner: nb_r; cursor: pointer; role: button; label: "The Pill" }}',
           f'{c}let nd_hv = nd_bz.hover',
           f'{c}on change nd_hv {{ emit nd_hover(if(nd_hv, 1 + round(pointer.x), 0)) }}',
-          f'{c}on press nd_bz {{ emit nd_press }}']
+          f'{c}on press nd_bz {{ emit nd_press }}',
+          f'{c}on scroll nd_bz {{ emit nd_wheel(if(wheel > 0, 1, -1)) }}']
     # media
     L += [f'{c}// media: a lateral capsule — revealed by the body as it grows (its own clip), the music woven into it',
           f'{c}group {{ show: nd_kind == 1 and nd_mf == 0; opacity: nd_cf',

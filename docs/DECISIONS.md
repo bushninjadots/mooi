@@ -6890,3 +6890,19 @@ terminal. The terminal is found once by asking each of the usual ones for its ve
 and started through Hyprland's `exec` so it is a window like any other (`lib/node/terminal`, opencode's).
 
 **Verified.** Unit 788 / 0; scenes compile; `bin/mooi check` green. Not yet seen on screen.
+
+## D251 · 2026-11-10 · The notch, and the wheel
+
+A third **At rest** in the studio: a **notch**. The node hangs from the screen's top edge, square where it meets
+it, rounded below and curved out into the edge either side, in the ground's colour. It holds the long pill's
+modules, has a thin line that moves with what plays, and opens a little under the pointer. Over any form, the
+**wheel** is the volume, a twentieth a notch, with the gauge showing it as any change does.
+
+## D252 · 2026-11-10 · A cheaper rest
+
+`pleamar --report mooi-node` (30 s, live) found the node animating 76 % of the time at rest. The seed's breath
+kept turning even with breathing at 0, and every frame repaints the node's full-screen surface: 4 % of a core,
+but the GPU waited. The breath now stops when the look's breathing is 0, and the resting rate is 12 frames a
+second instead of 20 (a two-second breath needs no more). A running timer's capsule still gets its full rate.
+
+**Verified.** Unit 792 / 0; scenes compile; `bin/mooi check` green. The report is to be repeated after this lands.

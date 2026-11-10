@@ -20,7 +20,7 @@ local function choice(key, label, desc, values, names) return { key = key, label
 
 M.SCHEMA = {
     Rest = {
-        choice("rest", "At rest", "A seed, or a longer pill that holds a few things of its own", { "seed", "long" }, { "Seed", "Long pill" }),
+        choice("rest", "At rest", "A seed, a longer pill that holds a few things, or a notch hanging from the top edge", { "seed", "long", "notch" }, { "Seed", "Long pill", "Notch" }),
         choice("m_clock", "Clock", "The time, in the long pill", { "off", "on" }, { "Off", "On" }),
         choice("m_window", "Window", "What has the focus, in the long pill", { "off", "on" }, { "Off", "On" }),
         choice("m_spaces", "Workspaces", "A dot for each, the one you are on lit", { "off", "on" }, { "Off", "On" }),
@@ -252,7 +252,7 @@ function M.facts(t)
         nd_stg = t.stagger / 100, nd_bd = t.breath / 100, nd_mu = t.music / 100,
         nd_viz = ix({ "bars", "wave", "dots", "off" }, t.viz), nd_cov = ix({ "square", "round" }, t.cover),
         nd_sst = ix({ "pill", "dot", "tick" }, t.sat_style), nd_ldm = t.dim / 100, nd_ur = t.orbit,
-        nd_long = t.rest == "long" and 1 or 0,
+        nd_long = t.rest == "long" and 1 or t.rest == "notch" and 2 or 0,
         nd_sys = ix({ "spokes", "rings", "graphs" }, t.sys_style),
         nd_mf = ix({ "capsule", "visualiser", "vinyl" }, t.music_form), nd_smu = ix({ "still", "pulse", "bars" }, t.seed_music),
     }
