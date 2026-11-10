@@ -7496,3 +7496,16 @@ state under `mazmorra`.
 `mooi ask`). The rules follow Snake's: pure, seeded and tested, each game's clock guarded by its own number so a
 pause cannot leave two running. Mazmorra's away time is capped at eight hours. The upgrades answer to the keypad's
 1–4 and Z X C V, since a Pleamar key name cannot start with a digit.
+
+## D285 · 2026-11-10 · Home says whose it is (opencode's)
+
+The owner: "when clicking the pill the homepage part. add a part ontop where obvios and relevant for profile
+picture with system name", and for the name, "yes hostname". Home now opens with a 58 px inset card above its
+clock: a 40 px round picture with an accent ring, the Nexus identity's display name in bold beside it, and the
+hostname in small mono below. Without a picture the circle carries the name's first letter in the accent; without
+a name the card says "mooi". Every row below the card moved down 58 px and Home is 718 px tall. `lib/node/home.
+identity` trims the words and works out the initial; the logic reads `settings.nexus.identity` and the data folder,
+asks `hostname`, and refreshes the card when `settings.json` changes.
+
+**Verified.** Unit 888 / 0 (the new identity tests and the scene's card); the scene compiles; the node's globals
+are still only the runtime's.

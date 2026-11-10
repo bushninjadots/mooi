@@ -219,7 +219,7 @@ do
         assert(p:find("zone box pt5 {", 1, true) and p:find('label: "Game mode"', 1, true))
         assert(l:find("fact.nd_hasbri = N.light ~= nil", 1, true))
         assert(l:find('run("mooi", { "game-mode" }', 1, true))
-        eq(require("lib/node/geometry").PANEL_H.home, 660)
+        eq(require("lib/node/geometry").PANEL_H.home, 718)
     end)
 end
 

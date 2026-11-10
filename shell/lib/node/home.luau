@@ -43,4 +43,21 @@ function M.reading(label, v, unit)
     return label .. " " .. math.floor(v + 0.5) .. (unit or "%")
 end
 
+local function trim(s)
+    s = type(s) == "string" and s or ""
+    s = s:gsub("^%s+", "")
+    s = s:gsub("%s+$", "")
+    return s
+end
+
+-- the profile card's words: the display name (never empty), the hostname, the picture's file, and the letter
+-- shown when there is no picture
+function M.identity(name, host, avatar)
+    name = trim(name)
+    if name == "" then name = "mooi" end
+    host = trim(host)
+    avatar = trim(avatar)
+    return { name = name, host = host, avatar = avatar, initial = string.upper(string.sub(name, 1, 1)) }
+end
+
 return M
