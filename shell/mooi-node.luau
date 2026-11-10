@@ -40,6 +40,7 @@ local SSH = require("lib/node/ssh")
 local PK = require("lib/node/pkgs")
 local SX = require("lib/node/sysextra")
 local HM = require("lib/node/home")
+local WEEK = require("lib/node/week")
 local SETTINGS = require("lib/settingsfile")
 local SETTINGS_FILE = "settings.json"
 local DESK = require("lib/desktop")
@@ -1063,6 +1064,7 @@ local sp_last, viz_seq = {}, nil
 local function wants_bands()
     if N.kind == "player" then return true end
     if N.kind == "media" and N.look.music_form ~= "capsule" then return true end
+    if N.kind == "panel" and N.media.playing then return true end
     return N.kind == "rest" and N.look.seed_music == "bars" and N.media.playing
 end
 N.wants_bands = wants_bands
@@ -1286,9 +1288,9 @@ every(10000, bmo_show)
 -- pages its icon row reaches hold what the shelf and the branches used to, and each page keeps that row ──
 N.panel = "home"
 N.panel_sub, N.panel_items = "", {}
-local PANEL_PAGES = { home = 0, calendar = 1, notes = 2, clipboard = 3, stash = 4, wallpaper = 5, system = 6, power = 7, wifi = 8, bluetooth = 9, keys = 10 }
+local PANEL_PAGES = { home = 0, calendar = 1, notes = 2, clipboard = 3, stash = 4, wallpaper = 5, system = 6, power = 7, wifi = 8, bluetooth = 9, keys = 10, weather = 11 }
 local PANEL_TITLE = { calendar = "Calendar", notes = "Notes", clipboard = "Clipboard", stash = "Stash",
-                      wallpaper = "Wallpaper", system = "System", power = "Power", wifi = "Wi-Fi", bluetooth = "Bluetooth", keys = "Shortcuts" }
+                      wallpaper = "Wallpaper", system = "System", power = "Power", wifi = "Wi-Fi", bluetooth = "Bluetooth", keys = "Shortcuts", weather = "Weather" }
 local function ago(t) local s = os.time() - (tonumber(t) or 0); if s < 3600 then return math.max(1, s // 60) .. " min" elseif s < 86400 then return (s // 3600) .. " h" end; return (s // 86400) .. " d" end
 local function dnd_state()
     local n = type(N.settings.notifications) == "table" and N.settings.notifications or {}
@@ -1447,6 +1449,29 @@ local function show_calendar()
     for i, c in ipairs(mo.cells) do rows[i] = { d = tostring(c.day), muted = not c.cur, today = c.today, weekend = c.weekend } end
     model.cal = rows
     N.panel_sub = string.upper(mo.title)
+end
+-- D282: the week's weather page, from the Nexus's cached forecast: today now, then the days on one range
+local WEATHER_FILE = "nexus-weather.json"
+local function show_weather_week()
+    local wk = WEEK.week(read(WEATHER_FILE, "json"))
+    if not wk then
+        model.wkw = {}
+        text.nd_wtemp, text.nd_wword, text.nd_wglyph, text.nd_wfeels = "", "", "", ""
+        text.nd_whum, text.nd_wwind, text.nd_wcity, text.nd_wsum = "", "", "", ""
+        N.panel_sub = "NO FORECAST YET"
+        return
+    end
+    local now = wk.now or {}
+    text.nd_wtemp = now.temp or ""
+    text.nd_wword = now.word or ""
+    text.nd_wglyph = now.glyph or "󰖐"
+    text.nd_wfeels = now.feels or ""
+    text.nd_whum = now.humidity or ""
+    text.nd_wwind = now.wind or ""
+    text.nd_wcity = string.upper(wk.city or "")
+    text.nd_wsum = wk.summary or ""
+    model.wkw = wk.rows
+    N.panel_sub = (wk.city ~= "" and string.upper(wk.city) .. " · " or "") .. "THIS WEEK"
 end
 -- D279: the page's changes go to the bar the same way a new note does — an inbox file in mooi's
 -- own data folder, never a command line. Then the page asks again once the bar has had its moment.
@@ -1670,7 +1695,8 @@ local function load_keys()
     end)
 end
 local PANEL_SHOW = { calendar = show_calendar, notes = show_notes, clipboard = show_clipboard, stash = show_stash,
-                     wallpaper = show_walls, power = show_power, wifi = show_wifi, bluetooth = show_bluetooth, keys = show_keys }
+                     wallpaper = show_walls, power = show_power, wifi = show_wifi, bluetooth = show_bluetooth, keys = show_keys,
+                     weather = show_weather_week }
 show_panel = function(b)
     local pg = PANEL_PAGES[N.panel] or 0
     if pg == 0 then show_panel_home(b); return end
@@ -1700,9 +1726,14 @@ open_panel = function(page)
     ST.hold(N.st, "panel")
     panel_state()
     if N.panel == "wifi" and N.wifi_on then pcall(sys.call, "network.scan") end
+    if N.media.playing then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
     render()
 end
 N.open_panel, N.close_panel = open_panel, function() ST.release(N.st, "panel"); render() end
+-- D282: a new forecast while the week's page is open is shown at once
+pcall(sys.watch, "files:nexus-weather.json", function()
+    if N.kind == "panel" and N.panel == "weather" then N.panel_shown = nil; render() end
+end)
 
 -- ── the GPU and the disk (D270): asked every two seconds, only while the System page is open. The GPU's source is
 -- found once — the kernel's busy file of the first card that has one, else nvidia-smi — and kept ──
@@ -2098,6 +2129,8 @@ on("nd_out", function()
     render()
 end)
 
+-- D282: Home's weather, pressed, opens the week's page in the same panel
+on("nd_hweather", function() open_panel("weather") end)
 -- ── the panel's own input (D260): its pages, its four toggles, its notices and the way home ──
 on("nd_pg", function(v)
     v = math.floor(tonumber(v) or 0)

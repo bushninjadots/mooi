@@ -7541,3 +7541,35 @@ the editor's scene and guards, and every command the logic runs being declared);
 properties, 338 zones); `luau-ops`, the gate and the node's globals check pass. Checked live on the running
 desktop: the card opens the field, typed text appears, Escape cancels without closing the panel, Return saves an
 unchanged name, and the picture chooser opens above the full-screen node and gives the node back when cancelled.
+
+## D282 · 2026-11-10 · Home opens the week's weather, and the panel keeps time at its foot (opencode's)
+
+The owner: "when the pill is open and has music playing on the bottom on the inside a small dynamic visualiser i
+want that. and also on the top right is the weather, i want to click that and the pill morphs into weather
+statistics for the week."
+
+Home's weather is now a press. It opens a Weather page in the same panel (page 11, reached only from there): the
+current temperature, what it feels like, humidity and wind, with the city at the card's right, then the week's
+seven days. Each day is a row with its name (`TODAY`, then the weekday), its Nerd Font weather glyph, its high and
+low, a small bar on one shared low-to-high range so the days can be compared at a glance, and a dot when the day is
+wet. Above the rows, one line gives the week's high, low and wet-day count. Without a forecast the page says so.
+
+The rows come from `lib/node/week`, a pure module over the Nexus's cached `nexus-weather.json`: it reads up to
+seven `answer.daily` days, skips a day without both temperatures, labels the first `TODAY` and the rest by
+`lib/calendar.weekday`, reuses `lib/node/home.weather` for the glyphs, and normalizes every bar over the week's
+own minimum and maximum. The current card is `answer.current` when it has a temperature. `lib/forecast` now asks
+Open-Meteo for seven days; the older five-day panels still read five and are unchanged. The page has its own
+height (570 px), the same header and back chevron as every other page, and the Home icon lit while it is open.
+The weather file is watched, so a new forecast while the page is open redraws it.
+
+At the panel's foot, while music plays, 32 thin bars mirror the existing `nd_sp` bands along the bottom inside
+edge, under the icon row, on every page. They use the accent and the panel's own bottom padding, so no page grows.
+The playback decision now includes the open panel, and opening it asks the feed for bands at once. When the music
+pauses the bars settle to a one-pixel line; with nothing playing there is no strip.
+
+The scene gained the `wkw` model, the weather texts, the `nd_hweather` event and the `pwwz` zone, and the Home
+icon now lights on page 11 too. **Verified.** Unit 902 / 0 (the week's rows, labels, shared range, wet count,
+missing document and missing current; the weather press, page, rows, summary and foot; every command permitted);
+the scene compiles (781 properties, 339 zones); `luau-ops`, the gate and the node's globals check pass. Seen live on
+the running desktop: the week's page with its seven days, and the foot's bars while MPD played "Renegade"; they
+settle to a line when the music pauses.

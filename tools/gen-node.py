@@ -192,6 +192,10 @@ def scene():
           '    // D279: the Notes board\'s six cards and the Stash page\'s six rows',
           '    model ncard max 6 { id: number; title: text; rest: text; more: bool; age: text; pinned: bool; tag: number }',
           '    model stz max 6 { id: number; icon: text; name: text; detail: text }',
+          '    // D282: the weather page — the days of the week, their shared temperature range, and today now',
+          '    model wkw max 7 { label: text; glyph: text; hi: text; lo: text; lo_v: number; hi_v: number; wet: bool }',
+          '    text nd_wtemp = ""', '    text nd_wword = ""', '    text nd_wglyph = ""', '    text nd_wfeels = ""',
+          '    text nd_whum = ""', '    text nd_wwind = ""', '    text nd_wcity = ""', '    text nd_wsum = ""',
           '    model wl max 9 { img: image 152, 86; on: bool; name: text }',
           '    text nd_nq = ""',
           '    // the shortcut sheet (D267): ten rows of what Hyprland has bound, a filter, how many more below',
@@ -276,6 +280,7 @@ def scene():
           '    event nd_hsave ->    // the profile name submitted',
           '    event nd_hpic ->     // the profile picture chosen',
           '    event nd_hdone ->    // the profile editor checked',
+          '    event nd_hweather -> // Home\'s weather pressed: the week\'s page',
           '    event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted',
           '    event nd_seek ->      // the player: where along the song (0 … 1000)',
           '    event nd_mx ->        // the mixer: row * 2000 + its level (0 … 1000)',
@@ -699,7 +704,9 @@ def panel_parts(c, acc, ink, dim, hull):
           f'{c}        text nd_hdate {{ at: nb_x + 26, nb_y + 60; anchor: left center; size: 10; family: {MONO}; color: {dim}; width: 220; lines: 1 }}',
           f'{c}        text nd_hwg {{ at: nb_x + nb_w - 24, nb_y + 28; anchor: right center; align: right; size: 18; family: "CaskaydiaCove Nerd Font"; color: {acc} }}',
           f'{c}        text nd_hwt {{ at: nb_x + nb_w - 50, nb_y + 28; anchor: right center; align: right; size: 11; family: {SANS}; color: {ink}; width: 200; lines: 1 }}',
-          f'{c}        text nd_hbat {{ at: nb_x + nb_w - 24, nb_y + 58; anchor: right center; align: right; size: 11; family: "CaskaydiaCove Nerd Font"; color: {dim}; width: 120; lines: 1 }}']
+          f'{c}        text nd_hbat {{ at: nb_x + nb_w - 24, nb_y + 58; anchor: right center; align: right; size: 11; family: "CaskaydiaCove Nerd Font"; color: {dim}; width: 120; lines: 1 }}',
+          f'{c}        zone box pwwz {{ from: nb_x + nb_w - 214, nb_y + 12; size: 200, 32; corner: 16; cursor: pointer; role: button; label: "This week\'s weather"; show: nd_kind == 13 and nd_pgp == 0 }}',
+          f'{c}        on press pwwz {{ emit nd_hweather }}']
     sw = '(nb_w - 52) / 4'
     for i in range(4):
         x = f'nb_x + 14 + {i} * ({sw} + 8)'
@@ -810,6 +817,33 @@ def panel_parts(c, acc, ink, dim, hull):
           f'{c}            zone box pnx {{ from: nb_x + nb_w - 54, ny + 24; size: 36, 26; cursor: pointer; role: button; label: "Dismiss"; show: nd_kind == 13 and nd_pgp == 0 }}',
           f'{c}            on press pnx {{ emit nd_nc(n.index * 10 + 9) }}',
           f'{c}        }}',
+          f'{c}    }}']
+    # ── the week's weather (D282): today now, then seven days on one shared range ────────────────────
+    L += [f'{c}    group {{ show: nd_pgp == 11',
+          f'{c}        box {{ from: nb_x + 14, nb_y + 56; size: nb_w - 28, 104; corner: 14; color: fl.well }}',
+          f'{c}        text "NOW" {{ at: nb_x + 30, nb_y + 74; anchor: left center; size: 8; weight: 700; family: {MONO}; color: {dim} }}',
+          f'{c}        text nd_wcity {{ at: nb_x + nb_w - 26, nb_y + 74; anchor: right center; align: right; size: 8; weight: 700; family: {MONO}; color: {dim}; width: 240; lines: 1 }}',
+          f'{c}        text nd_wglyph {{ at: nb_x + 42, nb_y + 106; anchor: center; align: center; size: 30; family: "CaskaydiaCove Nerd Font"; color: {acc} }}',
+          f'{c}        text nd_wtemp {{ at: nb_x + 76, nb_y + 96; anchor: left center; size: 30; weight: 700; family: {SANS}; color: {ink} }}',
+          f'{c}        text nd_wword {{ at: nb_x + 76, nb_y + 120; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {dim}; width: 300; lines: 1 }}',
+          f'{c}        text nd_wfeels {{ at: nb_x + 76, nb_y + 146; anchor: left center; size: 9; family: {MONO}; color: {dim}; width: 110; lines: 1 }}',
+          f'{c}        text nd_whum {{ at: nb_x + 190, nb_y + 146; anchor: left center; size: 9; family: {MONO}; color: {dim}; width: 110; lines: 1 }}',
+          f'{c}        text nd_wwind {{ at: nb_x + 310, nb_y + 146; anchor: left center; size: 9; family: {MONO}; color: {dim}; width: 160; lines: 1 }}',
+          f'{c}        text nd_wsum {{ at: nb_x + 26, nb_y + 176; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {dim}; width: nb_w - 52; lines: 1 }}',
+          f'{c}        for w in wkw {{',
+          f'{c}            let wy = nb_y + 194 + w.index * 42',
+          f'{c}            box {{ from: nb_x + 14, wy; size: nb_w - 28, 38; corner: 10; color: fl.well; opacity: if(w.wet, 0.75, 0.55) }}',
+          f'{c}            text w.label {{ at: nb_x + 28, wy + 19; anchor: left center; size: 9; weight: 700; family: {MONO}; color: {ink}; width: 44; lines: 1 }}',
+          f'{c}            text w.glyph {{ at: nb_x + 78, wy + 19; anchor: center; align: center; size: 14; family: "CaskaydiaCove Nerd Font"; color: {acc} }}',
+          f'{c}            line {{ from: nb_x + 104, wy + 19; to: nb_x + 326, wy + 19; width: 2; color: fl.trace_dim }}',
+          f'{c}            box {{ from: nb_x + 104 + w.lo_v * 222, wy + 17; size: max(4, (w.hi_v - w.lo_v) * 222), 4; corner: 2; color: {acc} }}',
+          f'{c}            text w.hi {{ at: nb_x + 384, wy + 19; anchor: right center; align: right; size: 9; weight: 700; family: {MONO}; color: {ink}; width: 60; lines: 1 }}',
+          f'{c}            text w.lo {{ at: nb_x + 432, wy + 19; anchor: right center; align: right; size: 9; family: {MONO}; color: {dim}; width: 60; lines: 1 }}',
+          f'{c}            ellipse {{ at: nb_x + 458, wy + 19; radius: 2.5; color: {acc}; opacity: 0.85; show: w.wet }}',
+          f'{c}        }}',
+          f'{c}        text "󰖐" {{ at: nb_x + nb_w / 2, nb_y + 250; anchor: center; align: center; size: 30; family: "CaskaydiaCove Nerd Font"; color: {dim}; show: wkw.count == 0 }}',
+          f'{c}        text "No forecast yet" {{ at: nb_x + nb_w / 2, nb_y + 282; anchor: center; align: center; size: 12; weight: 700; family: {SANS}; color: {ink}; show: wkw.count == 0 }}',
+          f'{c}        text "The Nexus\'s weather will appear here" {{ at: nb_x + nb_w / 2, nb_y + 304; anchor: center; align: center; size: 10; family: {SANS}; color: {dim}; width: nb_w - 80; lines: 1; show: wkw.count == 0 }}',
           f'{c}    }}']
     # ── the other pages: a header, then one branch's contents ─────────────────────────────────────────
     L += [f'{c}    group {{ show: nd_pgp > 0',
@@ -1042,9 +1076,14 @@ def panel_parts(c, acc, ink, dim, hull):
           f'{c}            text "No Bluetooth adapter" {{ at: nb_x + nb_w / 2, nb_y + 90; anchor: center; align: center; size: 11; family: {SANS}; color: {dim}; show: not nd_btp }}',
           f'{c}        }}',
           f'{c}    }}']
+    # ── the panel's foot (D282): a thin mirror of the music while it plays, under the icon row ───────
+    L += [f'{c}    group {{ show: nd_kind == 13 and (nd_playing or nd_paused)']
+    for k in range(32):
+        L += [f'{c}        box {{ from: nb_x + 14 + {k} * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp{k} * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp{k} * 8, 1); corner: 1; color: {acc}; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp{k}, 0.3) }}']
+    L += [f'{c}    }}']
     # the icon row, every page
     icons = (
-        (0, 'nd_pgp == 0', "󰋜", "Home"),
+        (0, 'nd_pgp == 0 or nd_pgp == 11', "󰋜", "Home"),
         (1, 'nd_pgp == 1', "󰃭", "Calendar"),
         (2, 'nd_pgp == 2', "󰎞", "Notes"),
         (3, 'nd_pgp == 3', "󰅌", "Clipboard"),
