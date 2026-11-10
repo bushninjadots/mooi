@@ -4679,7 +4679,7 @@ do
             eq(pages[gone], nil, "no page " .. gone)
         end
         eq(pages["Bar, frame & Pill"], true)
-        local want = { "Shape", "Style", "Screen frame", "Outline", "Surface", "Thickness", "Islands with the frame", "Everyday", "Shows", "Layout", "Band thickness", "Frame corners" }
+        local want = { "Shape", "Style", "Screen frame", "Outline", "Surface", "Thickness", "Island fit", "Everyday", "Shows", "Layout", "Band thickness", "Frame corners" }
         for _, title in ipairs(want) do
             local found = false
             for _, r in ipairs(idx) do if r.title == title and r.page == "Bar, frame & Pill" then found = true end end
@@ -5187,7 +5187,7 @@ do
             assert(set:find('"' .. p .. '"', 1, true), p .. " in setters")
         end
         assert(cfg:find('surface.effect', 1, true) and cfg:find('membrane', 1, true) and cfg:find('glow', 1, true), "eight effects")
-        assert(page:find("The Subsurface", 1, true), "its own page")
+        assert(page:find("Widget layer", 1, true), "its own page")
         for _, ev in ipairs({ "surface_arrange", "surface_above", "surface_below" }) do
             assert(page:find(ev, 1, true), ev .. " on the page")
         end
@@ -6119,7 +6119,7 @@ do
         local d = require("lib/config").defaults().live.music
         eq(d.on, true); eq(d.height, 25)
         local g = read("tools/gen-settings.py")
-        assert(g:find('("card", "Music in the picture")', 1, true))
+        assert(g:find('("card", "Music strips")', 1, true))
         for _, f in ipairs({ "on", "strength", "size", "blend", "height" }) do assert(g:find('"live.music.' .. f .. '"', 1, true), f) end
         local S = require("lib/setters").SETTERS
         local at = {}; for i, k in ipairs(S) do at[k] = i end

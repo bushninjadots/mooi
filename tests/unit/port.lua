@@ -199,7 +199,7 @@ do
         assert(l:find('on("rv_overview", function()', 1, true) and l:find("if SF.want_full then", 1, true))
         assert(read("bin/mooi"):find('overview) "$pleamar" --say mooi-surface "emit rv_overview"', 1, true))
         local g = read("tools/gen-settings.py")
-        assert(g:find('"Hold Super to open it"', 1, true) and g:find('"surface.hold", "sv_surface_hold"', 1, true))
+        assert(g:find('"Hold Super"', 1, true) and g:find('"surface.hold", "sv_surface_hold"', 1, true))
     end)
 end
 

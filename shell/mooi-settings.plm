@@ -2600,7 +2600,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_0_3 - 244
-                    SRow(244, "Colours from", "Your wallpaper, or mooi's own teal and orange", true, "", 550, true)
+                    SRow(244, "Colours from", "Use the wallpaper's colours or mooi's defaults", true, "", 550, true)
                     STrack(874, 260, 264)
                     SChoice(874, 260, 132, "mooi default", theme_wallpaper == 0, set_value, 21000)
                     SChoice(1006, 260, 132, "Wallpaper", theme_wallpaper == 1, set_value, 21001)
@@ -2609,7 +2609,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_0_4 - 304
-                    SRow(304, "Parallax desk", "The wallpaper travels with your workspaces (mooi always draws it)", true, "", 768, true)
+                    SRow(304, "Parallax desk", "Move the wallpaper as you switch workspaces; off keeps it still", true, "", 768, true)
                     SToggle(1092, 322, sv_desk_on, set_value, 320, "desk.on")
                     SRevert(1062, 334, sv_desk_on != df_desk_on, set_value, 320000 + df_desk_on)
                 }
@@ -2663,7 +2663,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_0_11 - 698
-                    SRow(698, "The bar and the frame", "Shape, style, frame, every module's place and look", true, "", 400, true)
+                    SRow(698, "Bar and frame", "Open the bar and frame page for shape, style and modules", true, "", 400, true)
                     SButton(958, 713, 180, "Open Bar & Pill", set_pick, 5)
                 }
                 group {
@@ -2674,7 +2674,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_0_13 - 824
-                    SRow(824, "Switcher", "Everyday", true, "", 374, false)
+                    SRow(824, "Switcher", "How the switcher looks", true, "", 374, false)
                     STrack(698, 840, 440)
                     SChoice(698, 840, 110, "Pills", ws_style == 3, set_value, 7003)
                     SChoice(808, 840, 110, "Segments", ws_style == 4, set_value, 7004)
@@ -2704,7 +2704,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_1_1 - 156
-                    SRow(156, "What it wears", "greetd runs sysc-greet, in this palette: `mooi greet-theme` writes the theme it follows (D190)", true, "", 360, false)
+                    SRow(156, "Login screen", "The login screen follows this palette", true, "", 360, false)
                     text gr_theme { at: 1138, 186; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
                 }
                 group {
@@ -2715,7 +2715,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_1_3 - 282
-                    SRow(282, "Mode", "Dark, light, or light by day and dark by night; the bar, mooi's windows and your apps all turn", true, "", 418, false)
+                    SRow(282, "Mode", "Dark, light, or switch with the sun; applies to the bar and apps", true, "", 418, false)
                     STrack(742, 298, 396)
                     SChoice(742, 298, 132, "Dark", sv_theme_mode == 0, set_value, 325000)
                     SChoice(874, 298, 132, "Light", sv_theme_mode == 1, set_value, 325001)
@@ -2744,7 +2744,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_1_7 - 528
-                    SRow(528, "Corners", "Every plate mooi draws: Ferrolume's two cut corners, all four cut, rounded or square", true, "", 374, false)
+                    SRow(528, "Corners", "How plate corners are cut or rounded", true, "", 374, false)
                     STrack(698, 544, 440)
                     SChoice(698, 544, 110, "Chamfer", sv_look_corners == 0, set_value, 329000)
                     SChoice(808, 544, 110, "Bevel", sv_look_corners == 1, set_value, 329001)
@@ -2755,7 +2755,7 @@ scene Mooi {
                 group {
                     show: sv_look_corners != 3
                     move: 0, gy_1_8 - 588
-                    SRow(588, "Corner size", "How big the cut or the rounding is (12 is as designed)", true, "", 404, true)
+                    SRow(588, "Corner size", "Cut or rounding size in pixels (12 is the default)", true, "", 404, true)
                     SSlider(728, 604, 330, sv_look_corner_size, 24, set_value, 330, "Corner size", "{sv_look_corner_size, 0}", true)
                     SRevert(698, 618, sv_look_corner_size != df_look_corner_size, set_value, 330000 + df_look_corner_size)
                 }
@@ -2780,7 +2780,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_1_11 - 774
-                    SRow(774, "Colours from", "Your wallpaper, or mooi's own teal and orange", true, "", 550, true)
+                    SRow(774, "Colours from", "Use the wallpaper's colours or mooi's defaults", true, "", 550, true)
                     STrack(874, 790, 264)
                     SChoice(874, 790, 132, "mooi default", theme_wallpaper == 0, set_value, 21000)
                     SChoice(1006, 790, 132, "Wallpaper", theme_wallpaper == 1, set_value, 21001)
@@ -2963,28 +2963,28 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_1_32 - 2270
-                    SRow(2270, "GTK apps", "GTK 3 and 4 (libadwaita), light or dark with mooi; open windows change when reopened", true, "", 768, true)
+                    SRow(2270, "GTK apps", "GTK 3 and 4 follow mooi; reopen windows to see it", true, "", 768, true)
                     SToggle(1092, 2288, sv_apps_gtk, set_value, 79, "apps.gtk")
                     SRevert(1062, 2300, sv_apps_gtk != df_apps_gtk, set_value, 79000 + df_apps_gtk)
                 }
                 group {
                     show: true
                     move: 0, gy_1_33 - 2330
-                    SRow(2330, "Files (Nautilus)", "Its path bar, Places list and file selection in the palette, and Papirus's folder icons recoloured to match; off leaves Nautilus as GTK gives it", true, "", 768, true)
+                    SRow(2330, "Files", "Nautilus colours and folder icons; off leaves Nautilus unchanged", true, "", 768, true)
                     SToggle(1092, 2348, sv_apps_files, set_value, 424, "apps.files")
                     SRevert(1062, 2360, sv_apps_files != df_apps_files, set_value, 424000 + df_apps_files)
                 }
                 group {
                     show: true
                     move: 0, gy_1_34 - 2390
-                    SRow(2390, "Qt and KDE apps", "Through qt6ct and KDE's colours (Dolphin, Kate…), light or dark; apps change when reopened", true, "", 768, true)
+                    SRow(2390, "Qt apps", "Qt and KDE apps follow mooi; reopen them to see it", true, "", 768, true)
                     SToggle(1092, 2408, sv_apps_qt, set_value, 80, "apps.qt")
                     SRevert(1062, 2420, sv_apps_qt != df_apps_qt, set_value, 80000 + df_apps_qt)
                 }
                 group {
                     show: true
                     move: 0, gy_1_35 - 2450
-                    SRow(2450, "Everything else", "Your own Matugen templates (btop, fish, cava, Vesktop, Zen, Spotify, widgets) in mooi's mode", true, "", 768, true)
+                    SRow(2450, "Everything else", "Your Matugen templates for other apps follow mooi's colours", true, "", 768, true)
                     SToggle(1092, 2468, sv_apps_others, set_value, 328, "apps.others")
                     SRevert(1062, 2480, sv_apps_others != df_apps_others, set_value, 328000 + df_apps_others)
                 }
@@ -3060,7 +3060,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_3_1 - 156
-                    SRow(156, "The wallpaper picker", "The strip, the colour orbit and the circuit board: every picture and live wallpaper in your folders, and Wallhaven (Super+W)", true, "", 400, false)
+                    SRow(156, "Wallpaper picker", "Open the picker for pictures, live wallpapers and Wallhaven (Super+W)", true, "", 400, false)
                     SButton(958, 171, 180, "Open the picker", wl_settings_open, 1)
                 }
                 group {
@@ -3144,7 +3144,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_3_12 - 868
-                    SRow(868, "Transition", "How a new picture comes in; picked in the notch, it grows from the notch (the picker can choose its own)", true, "", 344, false)
+                    SRow(868, "Transition", "How a new picture appears; Grow starts at the notch", true, "", 344, false)
                     STrack(668, 884, 470)
                     SChoice(668, 884, 94, "Random", sv_desk_transition == 0, set_value, 381000)
                     SChoice(762, 884, 94, "Grow", sv_desk_transition == 1, set_value, 381001)
@@ -3185,7 +3185,7 @@ scene Mooi {
                 group {
                     show: sv_walls_auto == 1
                     move: 0, gy_3_17 - 1174
-                    SRow(1174, "From", "Where the next one comes from: a source, the colour chosen last in the picker, or Wallhaven", true, "", 344, true)
+                    SRow(1174, "From", "Where the next one comes from: a source, the last picker colour, or Wallhaven", true, "", 344, true)
                     STrack(668, 1190, 470)
                     SChoice(668, 1190, 94, "All", sv_walls_auto_from == 0, set_value, 398000)
                     SChoice(762, 1190, 94, "Pictures", sv_walls_auto_from == 1, set_value, 398001)
@@ -3290,12 +3290,12 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_3_c5 - 1814
-                    SCard(1814, gc_3_5, "The desk · parallax")
+                    SCard(1814, gc_3_5, "Desk parallax")
                 }
                 group {
                     show: true
                     move: 0, gy_3_28 - 1858
-                    SRow(1858, "Parallax desk", "The wallpaper travels with your workspaces or the pointer; off, it stays still (also a tile in Control Nexus)", true, "", 768, false)
+                    SRow(1858, "Parallax desk", "Move the wallpaper with workspaces or the pointer; off keeps it still", true, "", 768, false)
                     SToggle(1092, 1876, sv_desk_on, set_value, 320, "desk.on")
                     SRevert(1062, 1888, sv_desk_on != df_desk_on, set_value, 320000 + df_desk_on)
                 }
@@ -3328,17 +3328,17 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_4_1 - 156
-                    SRow(156, "Live wallpaper", "The picture itself moves: ripples, a breath, a drift, a sweep of light. Works with the Subsurface off", true, "", 768, false)
+                    SRow(156, "Live wallpaper", "Animate the picture with ripples, breath, drift and light", true, "", 768, false)
                     SToggle(1092, 174, sv_live_on, set_value, 471, "live.on")
                     SRevert(1062, 186, sv_live_on != df_live_on, set_value, 471000 + df_live_on)
                 }
                 group {
                     show: sv_live_on > 0.5
                     move: 0, gy_4_2 - 216
-                    SRow(216, "Where", "Round the widgets below that move the wallpaper (the Visualiser, the Clock), or the whole picture — which rests while windows cover it", true, "", 550, true)
+                    SRow(216, "Where", "Animate around the widgets or the whole picture", true, "", 550, true)
                     STrack(874, 232, 264)
-                    SChoice(874, 232, 132, "Round the widgets", sv_live_where == 0, set_value, 472000)
-                    SChoice(1006, 232, 132, "The whole picture", sv_live_where == 1, set_value, 472001)
+                    SChoice(874, 232, 132, "Round widgets", sv_live_where == 0, set_value, 472000)
+                    SChoice(1006, 232, 132, "Whole picture", sv_live_where == 1, set_value, 472001)
                     SRevert(844, 246, sv_live_where != df_live_where, set_value, 472000 + df_live_where)
                 }
                 group {
@@ -3489,12 +3489,12 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_4_c5 - 1642
-                    SCard(1642, gc_4_5, "Music in the picture")
+                    SCard(1642, gc_4_5, "Music strips")
                 }
                 group {
                     show: true
                     move: 0, gy_4_26 - 1686
-                    SRow(1686, "Music in the picture", "Strips of the wallpaper are pulled up out of it by the music, in its own colours. Where it grows from: the Overview's MUSIC button (an edge line, areas you draw, colours you pick, the subject)", true, "", 768, false)
+                    SRow(1686, "Music strips", "The music lifts strips of the wallpaper; shape it in the Overview", true, "", 768, false)
                     SToggle(1092, 1704, sv_live_music_on, set_value, 490, "live.music.on")
                     SRevert(1062, 1716, sv_live_music_on != df_live_music_on, set_value, 490000 + df_live_music_on)
                 }
@@ -3529,7 +3529,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_4_31 - 1986
-                    text "IT RESTS WHILE A WINDOW IS FULLSCREEN, WHILE THE OPENING SHOWS, AND — THE WHOLE PICTURE — WHILE WINDOWS COVER IT" { at: 274, 2000; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    text "IT RESTS WHILE FULLSCREEN, WHILE THE OPENING SHOWS, OR WHILE WINDOWS COVER IT" { at: 274, 2000; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
             }
             group {
@@ -3746,7 +3746,7 @@ scene Mooi {
                 group {
                     show: ((frame_on) and (fd_5_2)) and (not bar_full and not st_notch)
                     move: 0, gy_5_27 - 1662
-                    SRow(1662, "Islands with the frame", "Float under the band with a little air, or hang from it as one body", true, "", 550, true)
+                    SRow(1662, "Island fit", "Float under the band with a little air, or hang from it as one body", true, "", 550, true)
                     STrack(874, 1678, 264)
                     SChoice(874, 1678, 132, "Float", sv_frame_islands == 0, set_value, 432000)
                     SChoice(1006, 1678, 132, "Attach", sv_frame_islands == 1, set_value, 432001)
@@ -3842,14 +3842,14 @@ scene Mooi {
                 group {
                     show: fd_5_3
                     move: 0, gy_5_40 - 2466
-                    SRow(2466, "Morph", "An island grows out of its module as one body with the bar (and the Control Nexus out of the screen's edge), with the screen frame or without it", true, "", 768, false)
+                    SRow(2466, "Morph", "An island grows out of its module as one body with the bar, frame or not", true, "", 768, false)
                     SToggle(1092, 2484, sv_island_morph, set_value, 400, "island.morph")
                     SRevert(1062, 2496, sv_island_morph != df_island_morph, set_value, 400000 + df_island_morph)
                 }
                 group {
                     show: fd_5_3
                     move: 0, gy_5_41 - 2526
-                    SRow(2526, "Island panels", "Without Morph: Ferrolume plates, or slabs tethered to their module", true, "", 550, true)
+                    SRow(2526, "Island panels", "Without Morph: flat plates, or slabs tethered to their module", true, "", 550, true)
                     STrack(874, 2542, 264)
                     SChoice(874, 2542, 132, "Plate", sv_island_style == 0, set_value, 348000)
                     SChoice(1006, 2542, 132, "Tether", sv_island_style == 1, set_value, 348001)
@@ -4002,7 +4002,7 @@ scene Mooi {
                 group {
                     show: (fd_5_4) and (ws_style < 0.5 and not bar_full and not st_notch)
                     move: 0, gy_5_47 - 3952
-                    SRow(3952, "Helix forms the island", "The island's own edges twist into the strands", true, "", 768, true)
+                    SRow(3952, "Helix island", "The island's own edges twist into the strands", true, "", 768, true)
                     SToggle(1092, 3970, helix_frame, set_value, 8, "bar.helix_frame")
                     SRevert(1062, 3982, sv_bar_helix_frame != df_bar_helix_frame, set_value, 8000 + df_bar_helix_frame)
                 }
@@ -4023,7 +4023,7 @@ scene Mooi {
                     move: 0, gy_5_50 - 4138
                     SRow(4138, "Mouse wheel", "Scrolling over the switcher", true, "", 418, false)
                     STrack(742, 4154, 396)
-                    SChoice(742, 4154, 132, "Changes workspace", sv_bar_wheel == 0, set_value, 10000)
+                    SChoice(742, 4154, 132, "Changes space", sv_bar_wheel == 0, set_value, 10000)
                     SChoice(874, 4154, 132, "Inverted", sv_bar_wheel == 2, set_value, 10002)
                     SChoice(1006, 4154, 132, "Does nothing", sv_bar_wheel == 1, set_value, 10001)
                     SRevert(712, 4168, sv_bar_wheel != df_bar_wheel, set_value, 10000 + df_bar_wheel)
@@ -4089,19 +4089,19 @@ scene Mooi {
                 group {
                     show: (fd_5_5) and (sv_bar_mode != 3)
                     move: 0, gy_5_58 - 4636
-                    text "CHOOSE SHAPE → PILL ABOVE: THE PILL IS A LIVING NODE AT THE TOP OF THE SCREEN" { at: 274, 4650; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    text "CHOOSE SHAPE → PILL ABOVE: THE PILL SITS AT THE TOP OF THE SCREEN" { at: 274, 4650; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
                 group {
                     show: fd_5_5
                     move: 0, gy_5_59 - 4664
-                    SRow(4664, "The node", "A tiny seed at the top that grows what is happening — the music, a notice, the workspaces, search — and folds back", true, "", 768, true)
+                    SRow(4664, "Show the Pill", "Show a small pill at the top; it opens for music, notices and search", true, "", 768, true)
                     SToggle(1092, 4682, sv_node_on, set_value, 495, "node.on")
                     SRevert(1062, 4694, sv_node_on != df_node_on, set_value, 495000 + df_node_on)
                 }
                 group {
                     show: fd_5_5
                     move: 0, gy_5_60 - 4724
-                    SRow(4724, "Its look", "The studio: its seed, its surface, how it moves, its parts — four characters to start from, a shuffle, three looks of your own", true, "", 400, true)
+                    SRow(4724, "Pill studio", "Open the Pill studio: seed, surface, motion and parts", true, "", 400, true)
                     SButton(958, 4739, 180, "Open the studio", nd_settings_studio, 1)
                 }
                 group {
@@ -4137,7 +4137,7 @@ scene Mooi {
                 group {
                     show: fd_5_5
                     move: 0, gy_5_c12 - 4986
-                    SCard(4986, gc_5_12, "What it may grow")
+                    SCard(4986, gc_5_12, "Pill contents")
                 }
                 group {
                     show: fd_5_5
@@ -4170,7 +4170,7 @@ scene Mooi {
                 group {
                     show: fd_5_5
                     move: 0, gy_5_69 - 5270
-                    SRow(5270, "Readings on Home", "The panel's Home shows CPU, RAM, heat and GPU under the clock (the System page always has them)", true, "", 768, true)
+                    SRow(5270, "Home readings", "Show CPU, RAM, heat and GPU on the panel's Home page", true, "", 768, true)
                     SToggle(1092, 5288, sv_node_system, set_value, 502, "node.system")
                     SRevert(1062, 5300, sv_node_system != df_node_system, set_value, 502000 + df_node_system)
                 }
@@ -4184,21 +4184,21 @@ scene Mooi {
                 group {
                     show: fd_5_5
                     move: 0, gy_5_71 - 5390
-                    SRow(5390, "Lyrics in the player", "The words in time with the song, from a file beside it or from LRCLIB (which is told the song's title and artist; each song is asked about once)", true, "", 768, true)
+                    SRow(5390, "Player lyrics", "Words from a file beside the song, or LRCLIB (sent the title and artist)", true, "", 768, true)
                     SToggle(1092, 5408, sv_node_lyrics, set_value, 508, "node.lyrics")
                     SRevert(1062, 5420, sv_node_lyrics != df_node_lyrics, set_value, 508000 + df_node_lyrics)
                 }
                 group {
                     show: fd_5_5
                     move: 0, gy_5_72 - 5450
-                    SRow(5450, "Microphone and camera", "A card the moment either starts or stops, and a mark while one is on (checked every two seconds)", true, "", 768, true)
+                    SRow(5450, "Camera and mic", "A card when the camera or microphone starts or stops", true, "", 768, true)
                     SToggle(1092, 5468, sv_node_privacy, set_value, 507, "node.privacy")
                     SRevert(1062, 5480, sv_node_privacy != df_node_privacy, set_value, 507000 + df_node_privacy)
                 }
                 group {
                     show: fd_5_5
                     move: 0, gy_5_73 - 5510
-                    text "SUPER OPENS ITS PANEL · SUPER+SPACE SEARCH · SUPER+TAB WORKSPACES · SUPER+T TIME · SUPER+K SHORTCUTS (SETTINGS → KEYS)" { at: 274, 5524; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    text "SUPER OPENS THE PANEL · SUPER+SPACE SEARCH · SUPER+TAB WORKSPACES · SUPER+T TIME" { at: 274, 5524; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
             }
             group {
@@ -4222,7 +4222,7 @@ scene Mooi {
                 group {
                     show: sv_nexus_mode == 0
                     move: 0, gy_6_2 - 216
-                    SRow(216, "Layout", "One row of cards along the edge, or a free canvas over the screen: in ✎, carry a card anywhere (the middle too) and pull its corner to size it", true, "", 550, true)
+                    SRow(216, "Layout", "One row of cards along the edge, or a free canvas; drag cards and corners to place them", true, "", 550, true)
                     STrack(874, 232, 264)
                     SChoice(874, 232, 132, "One row", sv_nexus_rows == 0, set_value, 360000)
                     SChoice(1006, 232, 132, "Free canvas", sv_nexus_rows == 1, set_value, 360001)
@@ -4240,7 +4240,7 @@ scene Mooi {
                 group {
                     show: sv_nexus_mode == 0
                     move: 0, gy_6_4 - 336
-                    SRow(336, "Notches off the deck", "Claude, music, weather, workspaces, wallpapers and GitHub, out of the deck's ends", true, "", 768, true)
+                    SRow(336, "Side notches", "Open Claude, music, weather and more from the deck's ends", true, "", 768, true)
                     SToggle(1092, 354, sv_nexus_notches, set_value, 364, "nexus.notches")
                     SRevert(1062, 366, sv_nexus_notches != df_nexus_notches, set_value, 364000 + df_nexus_notches)
                 }
@@ -4257,7 +4257,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_6_7 - 490
-                    SRow(490, "The side notch", "A sliver on the left edge that fans out into Claude, music, workspaces, wallpapers, weather and GitHub", true, "", 768, false)
+                    SRow(490, "The side notch", "Open a side strip for Claude, music and more", true, "", 768, false)
                     SToggle(1092, 508, sv_notch_on, set_value, 363, "notch.on")
                     SRevert(1062, 520, sv_notch_on != df_notch_on, set_value, 363000 + df_notch_on)
                 }
@@ -4285,7 +4285,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_6_11 - 704
-                    SRow(704, "Free models when Claude can't", "If Claude doesn't answer, ask a free model through opencode instead. It sends your question and the last few turns to a third party", true, "", 768, true)
+                    SRow(704, "Free fallback", "Ask a free model if Claude fails; sends your recent turns", true, "", 768, true)
                     SToggle(1092, 722, sv_claude_free_fallback, set_value, 430, "claude.free_fallback")
                     SRevert(1062, 734, sv_claude_free_fallback != df_claude_free_fallback, set_value, 430000 + df_claude_free_fallback)
                 }
@@ -4326,7 +4326,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_7_4 - 336
-                    SRow(336, "Open by touching the side", "Push the pointer against the screen's left or right edge to open that drawer", true, "", 768, true)
+                    SRow(336, "Edge opening", "Push the pointer against the screen's left or right edge to open that drawer", true, "", 768, true)
                     SToggle(1092, 354, sv_drawers_edge, set_value, 515, "drawers.edge")
                     SRevert(1062, 366, sv_drawers_edge != df_drawers_edge, set_value, 515000 + df_drawers_edge)
                 }
@@ -4338,7 +4338,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_7_6 - 462
-                    SRow(462, "GitHub", "Your profile, four numbers, half a year of contributions and your top repository. Uses the GitHub CLI (gh auth login)", true, "", 768, false)
+                    SRow(462, "GitHub", "Profile, contributions, updates and top repository (gh auth login)", true, "", 768, false)
                     SToggle(1092, 480, sv_drawers_github, set_value, 516, "drawers.github")
                     SRevert(1062, 492, sv_drawers_github != df_drawers_github, set_value, 516000 + df_drawers_github)
                 }
@@ -4365,14 +4365,14 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_8_1 - 156
-                    SRow(156, "Dock", "Touch the bottom edge of the screen to bring it up. A press brings an app forward (again: its next window) or starts it; a right press pins or unpins it", true, "", 768, false)
+                    SRow(156, "Dock", "Touch the bottom edge; press to open or start, right-press to pin", true, "", 768, false)
                     SToggle(1092, 174, sv_dock_on, set_value, 521, "dock.on")
                     SRevert(1062, 186, sv_dock_on != df_dock_on, set_value, 521000 + df_dock_on)
                 }
                 group {
                     show: true
                     move: 0, gy_8_2 - 216
-                    SRow(216, "Show on an empty workspace", "Up by itself whenever the workspace has no windows", true, "", 768, true)
+                    SRow(216, "Empty workspace", "Up by itself whenever the workspace has no windows", true, "", 768, true)
                     SToggle(1092, 234, sv_dock_empty, set_value, 522, "dock.empty")
                     SRevert(1062, 246, sv_dock_empty != df_dock_empty, set_value, 522000 + df_dock_empty)
                 }
@@ -4402,7 +4402,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_9_2 - 216
-                    SRow(216, "Do not disturb", "No pop-ups (urgent ones still come); the notices wait in the panel, and the Pill is not taken by them", true, "", 374, true)
+                    SRow(216, "Do not disturb", "No pop-ups; urgent ones still appear and the rest wait", true, "", 374, true)
                     STrack(698, 232, 440)
                     SChoice(698, 232, 110, "Off", sv_notifications_dnd == 0, set_value, 84000)
                     SChoice(808, 232, 110, "On", sv_notifications_dnd == 1, set_value, 84001)
@@ -4432,7 +4432,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_9_6 - 462
-                    SRow(462, "Origin", "The corner the signals unfold from; the Signal Field opens there too", true, "", 374, false)
+                    SRow(462, "Origin", "Where notices appear; the notice history opens there", true, "", 374, false)
                     STrack(698, 478, 440)
                     SChoice(698, 478, 110, "Top right", sv_signals_edge == 0, set_value, 307000)
                     SChoice(808, 478, 110, "Top left", sv_signals_edge == 1, set_value, 307001)
@@ -4450,8 +4450,8 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_9_8 - 582
-                    SRow(582, "Stays out", "A normal one, in seconds; a low one half as long, an urgent one until you deal with it", true, "", 404, true)
-                    SSlider(728, 598, 330, sv_signals_linger, 27, set_value, 309, "Stays out", "{sv_signals_linger + 3, 0} s", true)
+                    SRow(582, "Time on screen", "Normal stays in seconds; urgent stays until dismissed", true, "", 404, true)
+                    SSlider(728, 598, 330, sv_signals_linger, 27, set_value, 309, "Time on screen", "{sv_signals_linger + 3, 0} s", true)
                     SRevert(698, 612, sv_signals_linger != df_signals_linger, set_value, 309000 + df_signals_linger)
                 }
                 group {
@@ -4495,7 +4495,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_9_14 - 948
-                    SRow(948, "Glow", "The light along an arriving signal and an urgent one's edge (notices still come without it)", true, "", 768, true)
+                    SRow(948, "Glow", "Light along an arriving signal and an urgent edge; notices still arrive", true, "", 768, true)
                     SToggle(1092, 966, sv_signals_effects, set_value, 314, "signals.effects")
                     SRevert(1062, 978, sv_signals_effects != df_signals_effects, set_value, 314000 + df_signals_effects)
                 }
@@ -4507,7 +4507,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_9_16 - 1074
-                    SRow(1074, "Hide what they say", "Pop-ups show only who it is from; the Signal Field shows the rest", true, "", 768, false)
+                    SRow(1074, "Hide details", "Pop-ups show only who it is from; the notice history shows the rest", true, "", 768, false)
                     SToggle(1092, 1092, sv_signals_private, set_value, 315, "signals.private")
                     SRevert(1062, 1104, sv_signals_private != df_signals_private, set_value, 315000 + df_signals_private)
                 }
@@ -4522,20 +4522,20 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_10_1 - 156
-                    SRow(156, "Desktop widgets", "mooi's own widgets on the desktop, under your windows (D137)", true, "", 768, false)
+                    SRow(156, "Desktop widgets", "Show mooi's widgets under your windows", true, "", 768, false)
                     SToggle(1092, 174, sv_widgets_on, set_value, 378, "widgets.on")
                     SRevert(1062, 186, sv_widgets_on != df_widgets_on, set_value, 378000 + df_widgets_on)
                 }
                 group {
                     show: true
                     move: 0, gy_10_2 - 216
-                    SRow(216, "Arrange on the desktop", "Drag, resize and set each one where it sits (also in Control Nexus)", true, "", 400, true)
+                    SRow(216, "Arrange widgets", "Drag, resize and place each widget", true, "", 400, true)
                     SButton(958, 231, 180, "Edit on desktop", wg_settings_edit, 1)
                 }
                 group {
                     show: true
                     move: 0, gy_10_3 - 276
-                    SRow(276, "Depth", "Widgets set to BEHIND sit behind the wallpaper's subject (cut out by rembg)", true, "", 768, true)
+                    SRow(276, "Depth", "Send widgets behind the wallpaper's subject", true, "", 768, true)
                     SToggle(1092, 294, sv_widgets_depth, set_value, 379, "widgets.depth")
                     SRevert(1062, 306, sv_widgets_depth != df_widgets_depth, set_value, 379000 + df_widgets_depth)
                 }
@@ -4579,14 +4579,14 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_11_1 - 156
-                    SRow(156, "The Subsurface", "Widgets that live under the wallpaper, burying windows and the Overview (Super+Alt+U)", true, "", 768, false)
+                    SRow(156, "Widget layer", "Widgets under the wallpaper; open with Super+Alt+U", true, "", 768, false)
                     SToggle(1092, 174, sv_surface_on, set_value, 434, "surface.on")
                     SRevert(1062, 186, sv_surface_on != df_surface_on, set_value, 434000 + df_surface_on)
                 }
                 group {
                     show: true
                     move: 0, gy_11_2 - 216
-                    SRow(216, "Hold Super to open it", "Off: Super is only the Pill's tap. On: holding Super opens the wallpaper at your pointer (a Super shortcut held too long opens it as well)", true, "", 768, true)
+                    SRow(216, "Hold Super", "Hold Super to open the layer; off makes Super a tap only", true, "", 768, true)
                     SToggle(1092, 234, sv_surface_hold, set_value, 510, "surface.hold")
                     SRevert(1062, 246, sv_surface_hold != df_surface_hold, set_value, 510000 + df_surface_hold)
                 }
@@ -4600,7 +4600,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_11_4 - 336
-                    SRow(336, "Effect", "How the wallpaper gives way: torn, a lens, a soft membrane, ripples, folded paper, dissolving, glass or a glow", true, "", 254, true)
+                    SRow(336, "Effect", "How the wallpaper opens: tear, lens, membrane, ripple, fold, dissolve, glass or glow", true, "", 254, true)
                     STrack(578, 352, 560)
                     SChoice(578, 352, 70, "Tear", sv_surface_effect == 0, set_value, 436000)
                     SChoice(648, 352, 70, "Aperture", sv_surface_effect == 1, set_value, 436001)
@@ -4653,7 +4653,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_11_c1 - 718
-                    SCard(718, gc_11_1, "The wallpaper under it")
+                    SCard(718, gc_11_1, "Wallpaper below")
                 }
                 group {
                     show: true
@@ -4702,7 +4702,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_11_c2 - 1144
-                    SCard(1144, gc_11_2, "Light through the skin")
+                    SCard(1144, gc_11_2, "Light through")
                 }
                 group {
                     show: true
@@ -4731,7 +4731,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_11_21 - 1368
-                    SRow(1368, "Push up from below", "A new song or notice bulges the wallpaper where it lives, and its words press up through it", true, "", 768, true)
+                    SRow(1368, "Push up", "A new song or notice lifts the wallpaper with its words", true, "", 768, true)
                     SToggle(1092, 1386, sv_surface_push, set_value, 469, "surface.push")
                     SRevert(1062, 1398, sv_surface_push != df_surface_push, set_value, 469000 + df_surface_push)
                 }
@@ -4754,7 +4754,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_11_24 - 1554
-                    SRow(1554, "Lay them out", "Every widget under the wallpaper placed again by the arrangement above (undo in the Overview puts them back)", true, "", 400, true)
+                    SRow(1554, "Lay them out", "Re-place every widget using the arrangement", true, "", 400, true)
                     SButton(958, 1569, 180, "Re-arrange", surface_arrange, 0)
                 }
                 group {
@@ -4784,7 +4784,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_11_28 - 1800
-                    SRow(1800, "Keep them on the desktop", "Mark every widget above the wallpaper, so it stays visible while the opening is shut", true, "", 400, true)
+                    SRow(1800, "Keep on desktop", "Mark every widget above the wallpaper, so it stays visible while the opening is shut", true, "", 400, true)
                     SButton(958, 1815, 180, "Keep above", surface_above, 0)
                 }
                 group {
@@ -4808,7 +4808,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_11_32 - 2046
-                    text "HOLD SUPER · ROAM · SCROLL TO WIDEN · CLICK TO USE · DRAG A WIDGET OUT TO KEEP IT ON THE DESKTOP · ESC HEALS" { at: 274, 2060; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
+                    text "HOLD SUPER · ROAM · SCROLL TO WIDEN · CLICK · DRAG A WIDGET OUT · ESC CLOSES" { at: 274, 2060; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
                 }
             }
             group {
@@ -4821,7 +4821,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_12_1 - 156
-                    SRow(156, "BMO on your desktop", "Starts with mooi; off, he says goodbye", true, "", 768, false)
+                    SRow(156, "Desktop BMO", "Starts with mooi; off, he says goodbye", true, "", 768, false)
                     SToggle(1092, 174, sv_companion_bmo, set_value, 331, "companion.bmo")
                     SRevert(1062, 186, sv_companion_bmo != df_companion_bmo, set_value, 331000 + df_companion_bmo)
                 }
@@ -4924,7 +4924,7 @@ scene Mooi {
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_12_13 - 882
-                    SRow(882, "Clock in his panel", "The time and date on his panel's home tab", true, "", 768, true)
+                    SRow(882, "Panel clock", "The time and date on his panel's home tab", true, "", 768, true)
                     SToggle(1092, 900, sv_companion_clock, set_value, 342, "companion.clock")
                     SRevert(1062, 912, sv_companion_clock != df_companion_clock, set_value, 342000 + df_companion_clock)
                 }
@@ -5005,14 +5005,14 @@ scene Mooi {
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_12_24 - 1554
-                    SRow(1554, "Herdr agents", "A face when a coding agent needs you", true, "", 768, true)
+                    SRow(1554, "Agent faces", "A face when a coding agent needs you", true, "", 768, true)
                     SToggle(1092, 1572, sv_companion_react_herdr, set_value, 460, "companion.react.herdr")
                     SRevert(1062, 1584, sv_companion_react_herdr != df_companion_react_herdr, set_value, 460000 + df_companion_react_herdr)
                 }
                 group {
                     show: sv_companion_bmo == 1
                     move: 0, gy_12_25 - 1614
-                    SRow(1614, "What you are reading", "A curious look when the browser's title changes", true, "", 768, true)
+                    SRow(1614, "Reading face", "A curious look when the browser's title changes", true, "", 768, true)
                     SToggle(1092, 1632, sv_companion_react_browser, set_value, 461, "companion.react.browser")
                     SRevert(1062, 1644, sv_companion_react_browser != df_companion_react_browser, set_value, 461000 + df_companion_react_browser)
                 }
@@ -5046,7 +5046,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_13_4 - 342
-                    SRow(342, "What it is doing", "The window title plus the last lines of output, cached for 8 seconds", true, "", 768, false)
+                    SRow(342, "Agent brief", "The window title plus the last lines of output, cached for 8 seconds", true, "", 768, false)
                     SToggle(1092, 360, sv_herdr_brief, set_value, 466, "herdr.brief")
                     SRevert(1062, 372, sv_herdr_brief != df_herdr_brief, set_value, 466000 + df_herdr_brief)
                 }
@@ -5080,7 +5080,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_14_1 - 156
-                    SRow(156, "Let mooi style windows", "Off: your Hyprland config decides everything here and in Input", true, "", 768, false)
+                    SRow(156, "Style windows", "Off: your Hyprland config decides everything here and in Input", true, "", 768, false)
                     SToggle(1092, 174, dk_manage, set_value, 30, "desktop.manage")
                     SRevert(1062, 186, sv_desktop_manage != df_desktop_manage, set_value, 30000 + df_desktop_manage)
                 }
@@ -5259,7 +5259,7 @@ scene Mooi {
                 group {
                     show: dk_manage
                     move: 0, gy_14_24 - 1528
-                    SRow(1528, "Wobble", "Windows bend as you drag them (Hyprland 0.57) and bounce as they open and move", true, "", 344, false)
+                    SRow(1528, "Wobble", "How windows bend and bounce when moved", true, "", 344, false)
                     STrack(668, 1544, 470)
                     SChoice(668, 1544, 94, "Keep mine", sv_desktop_wobble == 0, set_value, 354000)
                     SChoice(762, 1544, 94, "Off", sv_desktop_wobble == 1, set_value, 354001)
@@ -5298,7 +5298,7 @@ scene Mooi {
                 group {
                     show: dk_manage
                     move: 0, gy_14_28 - 1774
-                    SRow(1774, "", "…Column is niri's, the workspaces stacked; Tide is mooi's own, the next one rising as this one dissolves", true, "", 550, true)
+                    SRow(1774, "", "…or Tide: the next workspace rises as this fades", true, "", 550, true)
                     STrack(874, 1790, 264)
                     SChoice(874, 1790, 132, "Fade", sv_desktop_ws_style == 4, set_value, 401004)
                     SChoice(1006, 1790, 132, "Tide", sv_desktop_ws_style == 5, set_value, 401005)
@@ -5339,7 +5339,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_14_33 - 2080
-                    SRow(2080, "The light", "Where the transition and the windows' effects take their colour: the bar's own palette (a new wallpaper re-lights them), or a fixed way of their own", true, "", 346, false)
+                    SRow(2080, "Effect colour", "Colour source for window effects: palette or fixed", true, "", 346, false)
                     STrack(670, 2096, 468)
                     SChoice(670, 2096, 78, "Palette", sv_desktop_fx_light == 0, set_value, 415000)
                     SChoice(748, 2096, 78, "Phosphor", sv_desktop_fx_light == 1, set_value, 415001)
@@ -5401,7 +5401,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_14_39 - 2452
-                    SRow(2452, "Open and close", "A window's arrival and exit as a shader, in the bar's colours. Off is Hyprland's own animation; a pair plays where the HyprWindowShade plugin is loaded", true, "", 254, false)
+                    SRow(2452, "Window effects", "How windows appear and leave (shader effects)", true, "", 254, false)
                     STrack(578, 2468, 560)
                     SChoice(578, 2468, 70, "Off", sv_desktop_window_fx == 0, set_value, 411000)
                     SChoice(648, 2468, 70, "Phosphor", sv_desktop_window_fx == 1, set_value, 411001)
@@ -5423,19 +5423,19 @@ scene Mooi {
                 group {
                     show: sv_desktop_window_fx != 0
                     move: 0, gy_14_41 - 2572
-                    SRow(2572, "Terminals and browsers differ", "A terminal leaves with the Glitch and a browser arrives with the Iris, whatever the pair above is", true, "", 768, true)
+                    SRow(2572, "Terminals differ", "Terminals leave with Glitch and browsers arrive with Iris", true, "", 768, true)
                     SToggle(1092, 2590, sv_desktop_window_fx_apps, set_value, 413, "desktop.window_fx_apps")
                     SRevert(1062, 2602, sv_desktop_window_fx_apps != df_desktop_window_fx_apps, set_value, 413000 + df_desktop_window_fx_apps)
                 }
                 group {
                     show: true
                     move: 0, gy_14_c8 - 2654
-                    SCard(2654, gc_14_8, "Shader over the switch")
+                    SCard(2654, gc_14_8, "Workspace shader")
                 }
                 group {
                     show: true
                     move: 0, gy_14_43 - 2698
-                    SRow(2698, "Transition shader", "mooi's own, laid over the switch itself for the length of the move; Off is the switch. It runs while mooi's theme watch does", true, "", 160, false)
+                    SRow(2698, "Transition shader", "Shader over workspace switches; Off uses the plain move", true, "", 160, false)
                     STrack(456, 2714, 682)
                     SChoice(456, 2714, 62, "Off", sv_desktop_ws_fx == 0, set_value, 410000)
                     SChoice(518, 2714, 62, "Channel", sv_desktop_ws_fx == 1, set_value, 410001)
@@ -5453,7 +5453,7 @@ scene Mooi {
                 group {
                     show: sv_desktop_ws_fx != 0
                     move: 0, gy_14_44 - 2758
-                    SRow(2758, "How long", "The shader's own length, against the kind's timing; the move itself has its Duration above", true, "", 404, true)
+                    SRow(2758, "How long", "Shader length; the move uses Duration above", true, "", 404, true)
                     SSlider(728, 2774, 330, sv_desktop_ws_fx_speed, 150, set_value, 414, "How long", "{sv_desktop_ws_fx_speed + 50, 0}%", true)
                     SRevert(698, 2788, sv_desktop_ws_fx_speed != df_desktop_ws_fx_speed, set_value, 414000 + df_desktop_ws_fx_speed)
                 }
@@ -5465,7 +5465,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_14_46 - 2884
-                    SRow(2884, "On", "kitty's own custom_shaders (kitty 0.49+): mooi writes a small include into kitty.conf and asks kitty to read its config again", true, "", 768, false)
+                    SRow(2884, "Kitty shader", "Write a custom shader include into kitty.conf (kitty 0.49+)", true, "", 768, false)
                     SToggle(1092, 2902, sv_desktop_kitty_shader_on, set_value, 425, "desktop.kitty_shader_on")
                     SRevert(1062, 2914, sv_desktop_kitty_shader_on != df_desktop_kitty_shader_on, set_value, 425000 + df_desktop_kitty_shader_on)
                 }
@@ -5592,7 +5592,7 @@ scene Mooi {
                 group {
                     show: (dk_manage) and (sv_desktop_layout == 0 or sv_desktop_layout == 3)
                     move: 0, gy_14_59 - 3670
-                    SRow(3670, "Column keys", "niri's: Super+] [ widths, Super+= − size, Super+Alt+← → move the column, Super+C fit it", true, "", 768, true)
+                    SRow(3670, "Column keys", "Keys: Super+] [ width, Super+= − size, Super+C fit", true, "", 768, true)
                     SToggle(1092, 3688, sv_desktop_column_keys, set_value, 408, "desktop.column_keys")
                     SRevert(1062, 3700, sv_desktop_column_keys != df_desktop_column_keys, set_value, 408000 + df_desktop_column_keys)
                 }
@@ -5688,28 +5688,28 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_16_1 - 156
-                    SRow(156, "Wheel steps desktops", "The wheel over the grid, and ← →, walk the desktops; the Overview stays open on each one", true, "", 768, false)
+                    SRow(156, "Wheel steps", "The wheel and ← → move between desktops", true, "", 768, false)
                     SToggle(1092, 174, sv_atlas_wheel_desktops, set_value, 372, "atlas.wheel_desktops")
                     SRevert(1062, 186, sv_atlas_wheel_desktops != df_atlas_wheel_desktops, set_value, 372000 + df_atlas_wheel_desktops)
                 }
                 group {
                     show: true
                     move: 0, gy_16_2 - 216
-                    SRow(216, "Type to run apps", "Installed apps matching the search appear under the row; Ctrl+↑↓ chooses one, Enter starts it", true, "", 768, true)
+                    SRow(216, "Run from search", "Search installed apps; Ctrl+↑↓ chooses, Return starts", true, "", 768, true)
                     SToggle(1092, 234, sv_atlas_search_apps, set_value, 373, "atlas.search_apps")
                     SRevert(1062, 246, sv_atlas_search_apps != df_atlas_search_apps, set_value, 373000 + df_atlas_search_apps)
                 }
                 group {
                     show: true
                     move: 0, gy_16_3 - 276
-                    SRow(276, "Search files too", "Documents, Downloads, Desktop and your media folders; bounded, literal, and only while nothing on the board matches", true, "", 768, true)
+                    SRow(276, "Search files too", "Search Documents, Downloads, Desktop and media folders too", true, "", 768, true)
                     SToggle(1092, 294, sv_atlas_search_files, set_value, 374, "atlas.search_files")
                     SRevert(1062, 306, sv_atlas_search_files != df_atlas_search_files, set_value, 374000 + df_atlas_search_files)
                 }
                 group {
                     show: true
                     move: 0, gy_16_4 - 336
-                    SRow(336, "Spring edges", "Carry a window (or a workspace's nameplate) into an edge and hold: the desktops step, or on the canvas the view pans that way; the window lands where you stop", true, "", 768, true)
+                    SRow(336, "Spring edges", "Carry a window into an edge to step desktops", true, "", 768, true)
                     SToggle(1092, 354, sv_atlas_spring_edges, set_value, 377, "atlas.spring_edges")
                     SRevert(1062, 366, sv_atlas_spring_edges != df_atlas_spring_edges, set_value, 377000 + df_atlas_spring_edges)
                 }
@@ -5721,14 +5721,14 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_16_6 - 462
-                    SRow(462, "Super+Tab opens it", "Its own key (in Keys) always does", true, "", 768, false)
+                    SRow(462, "Super+Tab opens", "Its own key (in Keys) always does", true, "", 768, false)
                     SToggle(1092, 480, sv_atlas_super_tab, set_value, 98, "atlas.super_tab")
                     SRevert(1062, 492, sv_atlas_super_tab != df_atlas_super_tab, set_value, 98000 + df_atlas_super_tab)
                 }
                 group {
                     show: true
                     move: 0, gy_16_7 - 522
-                    SRow(522, "Zoom out of your workspace", "The workspace you are on shrinks into its place; off, the panel just comes down", true, "", 768, true)
+                    SRow(522, "Zoom out", "The workspace you are on shrinks into its place; off, the panel just comes down", true, "", 768, true)
                     SToggle(1092, 540, sv_atlas_zoom, set_value, 303, "atlas.zoom")
                     SRevert(1062, 552, sv_atlas_zoom != df_atlas_zoom, set_value, 303000 + df_atlas_zoom)
                 }
@@ -5750,7 +5750,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_16_10 - 708
-                    SRow(708, "Hot corner", "Rest the pointer in a corner to open it; while on, a 6×6 surface takes that corner's clicks", true, "", 344, false)
+                    SRow(708, "Hot corner", "Rest the pointer in a corner to open it; on, that corner takes clicks too", true, "", 344, false)
                     STrack(668, 724, 470)
                     SChoice(668, 724, 94, "Off", sv_atlas_hot_corner == 0, set_value, 375000)
                     SChoice(762, 724, 94, "Top left", sv_atlas_hot_corner == 1, set_value, 375001)
@@ -5824,7 +5824,7 @@ scene Mooi {
                 group {
                     show: previews
                     move: 0, gy_16_20 - 1320
-                    SRow(1320, "Taken", "As it opens and after a move (smooth), or every 3 seconds too (a small hitch each time)", true, "", 550, true)
+                    SRow(1320, "Taken", "When pictures refresh: on open and move, or every 3 s", true, "", 550, true)
                     STrack(874, 1336, 264)
                     SChoice(874, 1336, 132, "As it opens", sv_atlas_refresh == 0, set_value, 304000)
                     SChoice(1006, 1336, 132, "Every 3 s", sv_atlas_refresh == 1, set_value, 304001)
@@ -5833,7 +5833,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_16_21 - 1380
-                    SRow(1380, "Privacy", "Password managers and private browsing show no picture or title; or nothing does, for sharing the screen", true, "", 418, true)
+                    SRow(1380, "Privacy", "Hide pictures and titles for sensitive apps, or all", true, "", 418, true)
                     STrack(742, 1396, 396)
                     SChoice(742, 1396, 132, "Off", sv_atlas_private == 0, set_value, 300000)
                     SChoice(874, 1396, 132, "Sensitive", sv_atlas_private == 1, set_value, 300001)
@@ -5990,7 +5990,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_20_6 - 462
-                    SRow(462, "Set it up", "Once, in a terminal, with your password: on MSI laptops the msi-ec driver, then the right to write the limit", true, "", 400, true)
+                    SRow(462, "Set it up", "One-time terminal setup with your password", true, "", 400, true)
                     SButton(958, 477, 180, "Set up", bat_setup, 1)
                 }
                 group {
@@ -6064,21 +6064,21 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_21_5 - 516
-                    SRow(516, "Show the banner", "The Nexus's banner across the top of the lock screen", true, "", 768, true)
+                    SRow(516, "Banner", "Show your banner on the lock screen", true, "", 768, true)
                     SToggle(1092, 534, sv_lock_banner, set_value, 422, "lock.banner")
                     SRevert(1062, 546, sv_lock_banner != df_lock_banner, set_value, 422000 + df_lock_banner)
                 }
                 group {
                     show: true
                     move: 0, gy_21_6 - 576
-                    SRow(576, "Show your picture", "The Nexus's profile picture on its plate above the clock", true, "", 768, true)
+                    SRow(576, "Picture", "Show your profile picture above the clock", true, "", 768, true)
                     SToggle(1092, 594, sv_lock_avatar, set_value, 423, "lock.avatar")
                     SRevert(1062, 606, sv_lock_avatar != df_lock_avatar, set_value, 423000 + df_lock_avatar)
                 }
                 group {
                     show: true
                     move: 0, gy_21_7 - 636
-                    SRow(636, "Lock it now", "mooi's own lock screen straight away; it also takes the session by itself after the minutes above", true, "", 400, true)
+                    SRow(636, "Lock it now", "Lock the screen now; it also locks after the minutes above", true, "", 400, true)
                     SButton(958, 651, 180, "Lock now", lock_now, 0)
                 }
                 group {
@@ -6094,19 +6094,19 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_21_10 - 790
-                    SRow(790, "On the lock screen", "The same banner or picture the Nexus's profile card shows", true, "", 360, false)
+                    SRow(790, "Lock screen", "The banner or picture shown on the lock screen", true, "", 360, false)
                     text lock_pic_now { at: 1138, 820; anchor: right center; size: 12; weight: 600; family: "Share Tech Mono"; color: fl.phos; width: 460; lines: 1; align: right }
                 }
                 group {
                     show: true
                     move: 0, gy_21_11 - 850
-                    SRow(850, "Profile picture", "A small picture above the clock, chosen here; the Nexus's card shows it too", true, "", 400, true)
+                    SRow(850, "Profile picture", "Choose the picture shown above the clock", true, "", 400, true)
                     SButton(958, 865, 180, "Choose", lock_pic, 0)
                 }
                 group {
                     show: true
                     move: 0, gy_21_12 - 910
-                    SRow(910, "Banner", "A wide picture across the top of the lock screen; the Nexus's card shows it too", true, "", 400, true)
+                    SRow(910, "Banner", "Choose the wide picture shown at the top", true, "", 400, true)
                     SButton(958, 925, 180, "Choose", lock_pic, 1)
                 }
                 group {
@@ -6169,19 +6169,19 @@ scene Mooi {
                     SKeys(700, 772, pick(capturing == 10, key_edit, cap_text), capturing == 10)
                     SButton(1042, 771, 96, pick(capturing == 10, "Change", "Cancel"), key_change, 10, capturing == 10)
                     text key_clash_edit { at: 700, 808; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(816, "Lock screen", "mooi's own lock at once; the session also locks itself after the minutes in Settings → Lock & idle", true, "", 330, true)
+                    SRow(816, "Lock screen", "Lock now; the session also locks after the minutes in Lock & idle", true, "", 330, true)
                     SKeys(700, 832, pick(capturing == 11, key_lock, cap_text), capturing == 11)
                     SButton(1042, 831, 96, pick(capturing == 11, "Change", "Cancel"), key_change, 11, capturing == 11)
                     text key_clash_lock { at: 700, 868; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(876, "The Pill: search", "The node widens into a search line (Super+Space was the float toggle)", true, "", 330, true)
+                    SRow(876, "The Pill: search", "The Pill widens into a search line (Super+Space was the float toggle)", true, "", 330, true)
                     SKeys(700, 892, pick(capturing == 12, key_node_launch, cap_text), capturing == 12)
                     SButton(1042, 891, 96, pick(capturing == 12, "Change", "Cancel"), key_change, 12, capturing == 12)
                     text key_clash_node_launch { at: 700, 928; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(936, "The Pill: workspaces", "The workspaces round the node; arrows or the wheel, Return goes there", true, "", 330, true)
+                    SRow(936, "The Pill: workspaces", "The workspaces round the Pill; arrows or the wheel, Return goes there", true, "", 330, true)
                     SKeys(700, 952, pick(capturing == 13, key_node_universe, cap_text), capturing == 13)
                     SButton(1042, 951, 96, pick(capturing == 13, "Change", "Cancel"), key_change, 13, capturing == 13)
                     text key_clash_node_universe { at: 700, 988; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(996, "The Pill: time", "A timer, a stopwatch, focus rounds and an alarm, grown from the node", true, "", 330, true)
+                    SRow(996, "The Pill: time", "A timer, a stopwatch, focus rounds and an alarm, grown from the Pill", true, "", 330, true)
                     SKeys(700, 1012, pick(capturing == 14, key_node_time, cap_text), capturing == 14)
                     SButton(1042, 1011, 96, pick(capturing == 14, "Change", "Cancel"), key_change, 14, capturing == 14)
                     text key_clash_node_time { at: 700, 1048; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
@@ -6189,7 +6189,7 @@ scene Mooi {
                     SKeys(700, 1072, pick(capturing == 15, key_node_keys, cap_text), capturing == 15)
                     SButton(1042, 1071, 96, pick(capturing == 15, "Change", "Cancel"), key_change, 15, capturing == 15)
                     text key_clash_node_keys { at: 700, 1108; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1116, "Under the windows", "The Subsurface's Overview: the widgets under the wallpaper, at once; again closes it", true, "", 330, true)
+                    SRow(1116, "Under the windows", "The widget layer's Overview: all widgets under the wallpaper; press again to close", true, "", 330, true)
                     SKeys(700, 1132, pick(capturing == 16, key_surface, cap_text), capturing == 16)
                     SButton(1042, 1131, 96, pick(capturing == 16, "Change", "Cancel"), key_change, 16, capturing == 16)
                     text key_clash_surface { at: 700, 1168; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
@@ -6213,7 +6213,7 @@ scene Mooi {
                     SKeys(700, 1432, pick(capturing == 21, key_ask, cap_text), capturing == 21)
                     SButton(1042, 1431, 96, pick(capturing == 21, "Change", "Cancel"), key_change, 21, capturing == 21)
                     text key_clash_ask { at: 700, 1468; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
-                    SRow(1476, "Drop-down terminal", "A terminal from the top that keeps its session between presses (`mooi term out` makes it a window)", true, "", 330, true)
+                    SRow(1476, "Drop-down terminal", "A terminal from the top that keeps its session between presses", true, "", 330, true)
                     SKeys(700, 1492, pick(capturing == 22, key_term, cap_text), capturing == 22)
                     SButton(1042, 1491, 96, pick(capturing == 22, "Change", "Cancel"), key_change, 22, capturing == 22)
                     text key_clash_term { at: 700, 1528; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.ember }
@@ -6254,7 +6254,7 @@ scene Mooi {
                 group {
                     show: true
                     move: 0, gy_23_4 - 342
-                    SRow(342, "Follow a window you move", "Moving a window to a workspace takes you there too", true, "", 768, true)
+                    SRow(342, "Follow moved windows", "Moving a window to a workspace takes you there too", true, "", 768, true)
                     SToggle(1092, 360, sv_island_follow_on_send, set_value, 68, "island.follow_on_send")
                     SRevert(1062, 372, sv_island_follow_on_send != df_island_follow_on_send, set_value, 68000 + df_island_follow_on_send)
                 }

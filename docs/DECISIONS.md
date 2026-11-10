@@ -7919,3 +7919,42 @@ under their words, in the accent, turning ember above 85 %.
 
 **Verified.** Unit 950 / 0 (the module, its style's applicability, the scene's three faces and the meters); the
 Pill compiles. Not seen live: the owner was at the machine.
+## D302 · 2026-11-11 · The settings' words (opencode's)
+
+The owner wanted Settings understood the way Noctalia's are. D300 gave the pages plain names; this pass rewrote the
+words inside them. Every title is one to three plain words in sentence case; every description is one line of at
+most 90 characters that says what changes, in what unit, and what off or none means; every choice is a short noun
+of at most 14 characters. Choices keep their order and count, since they are stored by index.
+
+Private names left the rows: the node is "the Pill", the Subsurface is "the widget layer", the Control Nexus is
+"the control deck", the Signal Field is "the notice history", and Ferrolume plates are "flat plates". The page
+labels and subtitles keep mooi's own names once, as D300 set them.
+
+| Page | Rows reworded |
+| --- | ---: |
+| Quick settings | 4 |
+| Colours | 9 |
+| Wallpaper | 5 |
+| Live wallpaper | 5 |
+| Bar & Pill | 13 |
+| Control deck | 4 |
+| Side panels | 2 |
+| Dock | 2 |
+| Notifications | 5 |
+| Widgets | 3 |
+| Widget layer | 9 |
+| BMO | 4 |
+| Coding agents | 1 |
+| Windows | 11 |
+| Workspaces | 9 |
+| Power | 1 |
+| Lock & idle | 6 |
+| General | 1 |
+| Shortcuts | 6 |
+| **Total** | **100** |
+
+No path, fact, kind, condition, limit, setter, page label or `SECTION_MAP` entry changed. Four tests that pinned old
+wording were updated (the two renamed rows, the music card and the widget-layer toggle); no logic changed.
+
+**Verified.** `python3 tools/gen-settings.py`; `pleamar --check shell/mooi-settings.plm` ok (4,659 properties,
+1,745 zones); unit 944 / 0; `luau-ops` pass; `gate: ok`.
