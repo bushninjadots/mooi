@@ -24,7 +24,7 @@ SPRINGS = [(f"{s}_{b}", k, int(2 * math.sqrt(k) * f + 0.5)) for s, k in SPEED fo
 GROWTH = [("slow", 90, 15), ("normal", 170, 19), ("fast", 320, 30)]
 FIELDS = [("x", 949), ("y", 8), ("w", 22), ("h", 6), ("r", 3)]
 # the kinds, as the logic numbers them (lib/node/state)
-K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "system": 5, "launcher": 6, "universe": 7, "time": 8, "done": 9}
+K = {"rest": 0, "media": 1, "notice": 2, "volume": 3, "workspaces": 4, "system": 5, "launcher": 6, "universe": 7, "time": 8, "done": 9, "privacy": 10}
 KEYS = [("Escape", 27), ("Return", 13), ("Up", 38), ("Down", 40), ("Left", 37), ("Right", 39), ("Tab", 9), ("space", 32)]
 # the look's facts and their defaults (the organic preset; lib/node/look's M.facts names them)
 LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 cyber"), ("nd_sp", 2, "the body's spring (speed × bounce)"),
@@ -61,7 +61,7 @@ def scene():
          '// this springs and draws.', '',
          'scene Node {',
          '    permissions {',
-         '        run: "pleamar", "mooi", "hyprctl", "playerctl"',
+         '        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser"',
          '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"',
          '    }',
          '    service audio.level as lv { level: number }']
@@ -137,11 +137,15 @@ def scene():
           '    fact nd_tmm = 0       // on stage: 0 timer · 1 stopwatch · 2 focus · 3 alarm',
           '    text nd_tmr = "05:00"', '    text nd_tms = ""', '    fact nd_tmp = 1', '    text nd_tmgl = "START"', '    text nd_tm2l = "RESET"',
           '    model tc max 4 { label: text; code: number }',
+          '    model px max 400 { x: number; y: number }   // the readout\'s lit cells (lib/node/clockfont)',
+          '    fact nd_pxw = 29      // its width, in cells',
           '    model tr max 3 { label: text; value: text; on: bool; m: number }',
           '    fact nd_cap = false', '    text nd_capt = ""', '    text nd_capm = ""', '    fact nd_capf = 1', '    fact nd_capu = false',
           '    prop nd_swp = 0', '    spin nd_swp by if(nd_cap and nd_kind == 0, if(nd_capu, 300, 120), 0)',
           '    text nd_dnt = ""', '    text nd_dnd = ""',
           '    prop nd_dph = 0', '    spin nd_dph by if(nd_kind == 9, 260, 0)',
+          '    // privacy (D232): the microphone or the camera started or stopped',
+          '    text nd_pvt = ""', '    text nd_pvd = ""', '    fact nd_pvon = false',
           '    // satellites',
           '    model sa max 6 { x: number; y: number; w: number; h: number; label: text; kind: number }',
           '    prop nd_sf = 0 ~nd.aux', '    follow nd_sf = if(nd_kind == 0, 1, 0)',
@@ -314,7 +318,10 @@ def time_parts(c, acc, ink, dim, hull):
               f'{c}    box {{ from: {x}, nb_y + 29; size: 24, 1.5; color: {acc}; show: nd_tmm == {i} }}',
               f'{c}    zone box tmz{i} {{ from: {x} - 6, nb_y + 8; size: 92, 26; cursor: pointer; role: tab; label: "{name.capitalize()}"; selected: nd_tmm == {i}; show: nd_kind == 8 }}',
               f'{c}    on press tmz{i} {{ emit nd_tm({i}) }}']
-    L += [f'{c}    text nd_tmr {{ at: nb_x + 20, nb_y + 66; anchor: left center; size: 36; weight: 700; family: {MONO}; color: {ink} }}',
+    L += [f'{c}    // the readout: a 5×7 matrix of mooi\'s own, every cell there and dim, the lit ones in its colour',
+          f'{c}    repeat gc in 0..48 {{ repeat gr in 0..7 {{ box {{ from: nb_x + 20 + gc * 6, nb_y + 44 + gr * 6; size: 5, 5; corner: 1; color: fl.trace_dim; opacity: 0.35; show: gc < nd_pxw }} }} }}',
+          f'{c}    group {{ glow: 8, 0.5 * nd_gw, nd_glc',
+          f'{c}        for q in px {{ box {{ from: nb_x + 20 + q.x * 6, nb_y + 44 + q.y * 6; size: 5, 5; corner: 1; color: {acc} }} }} }}',
           f'{c}    text nd_tms {{ at: nb_x + 22, nb_y + 94; anchor: left center; size: 10; family: {MONO}; color: {dim}; width: 300; lines: 1 }}',
           f'{c}    repeat cl in 0..30 {{ box {{ from: nb_x + 20 + cl * 10, nb_y + 108; size: 7, 5; corner: 1; color: if(cl < nd_tmp * 30, {acc}, fl.trace_dim); opacity: if(cl < nd_tmp * 30, 0.9, 0.6) }} }}']
     for code, label, x in ((10, "nd_tmgl", "nb_x + nb_w - 214"), (11, "nd_tm2l", "nb_x + nb_w - 112")):
@@ -561,6 +568,13 @@ def surface():
           f'{c}on submit nd_q {{ emit nd_key(13) }}',
           f'{c}on change nd_kb while nd_kb and nd_kind == 6 and not nd_studio {{ focus nd_q }}']
     L += time_parts(c, acc, ink, dim, hull)
+    L += [f'{c}// privacy: the microphone or the camera, the moment it starts or stops, and who has it',
+          f'{c}group {{ show: nd_kind == 10; opacity: nd_cf',
+          f'{c}    group {{ glow: 10, if(nd_pvon, 0.8, 0.2), fl.ember',
+          f'{c}        ellipse {{ at: nb_x + 22, nb_y + nb_h / 2; radius: 5; color: if(nd_pvon, fl.ember, fl.trace_lit) }} }}',
+          f'{c}    text nd_pvt {{ at: nb_x + 38, nb_y + nb_h / 2 - 7; anchor: left center; size: 10; weight: 700; family: {MONO}; color: if(nd_pvon, fl.ember, {ink}) }}',
+          f'{c}    text nd_pvd {{ at: nb_x + 38, nb_y + nb_h / 2 + 8; anchor: left center; size: 10; family: {SANS}; color: {dim}; width: nb_w - 50; lines: 1 }}',
+          f'{c}}}']
     # satellites
     L += [f'{c}// satellites: they leave the seed for their place on the arc and come back into it; organic ones drift.',
           f'{c}// Pills (a word), dots (a point), or ticks (a stroke and a word under it)',
@@ -569,7 +583,7 @@ def surface():
           f'{c}    let drift = if(nd_np == 0, sin(nd_ph + s.index * 60) * 2, 0)',
           f'{c}    let sx = nb_x + nb_w / 2 - s.w / 2 + (s.x - (nb_x + nb_w / 2 - s.w / 2)) * g',
           f'{c}    let sy = nb_y + (s.y - nb_y) * g + drift',
-          f'{c}    let warm = s.kind == 2 or s.kind == 3 or s.kind == 4',
+          f'{c}    let warm = s.kind == 2 or s.kind == 3 or s.kind == 4 or s.kind == 7 or s.kind == 9',
           f'{c}    group {{ opacity: g; show: g > 0.01',
           f'{c}        line {{ from: nb_x + nb_w / 2, nb_y + nb_h; to: sx + s.w / 2, sy; width: 1; color: fl.trace_lit; opacity: 0.35 }}',
           f'{c}        group {{ show: nd_sst == 0',

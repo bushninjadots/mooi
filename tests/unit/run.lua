@@ -6112,7 +6112,9 @@ do
         assert(g:find('("card", "Music in the picture")', 1, true))
         for _, f in ipairs({ "on", "strength", "size", "blend", "height" }) do assert(g:find('"live.music.' .. f .. '"', 1, true), f) end
         local S = require("lib/setters").SETTERS
-        eq(S[#S], "keys.node_time", "appended (D226's node, then D231's time key, follow it)")
+        local at = {}; for i, k in ipairs(S) do at[k] = i end
+        assert(at["live.music.height"] and at["keys.node_universe"] and at["live.music.height"] < at["keys.node_universe"],
+            "appended: Music in the picture's slots come before what was added after it (D226's node and on)")
     end)
 end
 

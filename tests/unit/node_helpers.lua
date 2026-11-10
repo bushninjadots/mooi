@@ -338,3 +338,18 @@ do
         eq(LY.query("The Band", "Morning", 201):find("duration=201", 1, true) ~= nil, true)
     end)
 end
+
+section("the node's helpers (D232): privacy and monitor sources")
+do
+    local PV = require("lib/node/privacy")
+    test("a stream recording from a monitor of the speakers is not the microphone (a visualiser listening to the music)", function()
+        local mon = PV.monitors({ { index = 60, name = "alsa_output.pci.HiFi__Speaker__sink.monitor" },
+                                  { index = 61, name = "alsa_input.pci.HiFi__Mic2__source" }, "junk", { name = "x" } })
+        eq(mon[60], true); eq(mon[61], nil)
+        local users = PV.mic_users({ { source = 60, properties = { ["media.name"] = "cava" } },
+                                     { source = 61, properties = { ["application.name"] = "Firefox" } } }, mon)
+        eq(#users, 1); eq(users[1], "Firefox")
+        eq(#PV.mic_users({ { source = 60, properties = { ["media.name"] = "cava" } } }), 1, "without the sources it cannot tell")
+        eq(next(PV.monitors(nil)), nil)
+    end)
+end

@@ -464,6 +464,7 @@ M.SCHEMA = {
     { path = "node.system", kind = "boolean", default = true },
     { path = "node.satellites", kind = "boolean", default = true },
     { path = "node.wallpaper", kind = "boolean", default = true },
+    { path = "node.privacy", kind = "boolean", default = true },   -- D232: the microphone and the camera
     { path = "live.on", kind = "boolean", default = true },
     { path = "live.where", kind = "enum", values = { "widgets", "whole" }, default = "widgets" },
     { path = "live.speed", kind = "integer", default = 100, min = 50, max = 200 },

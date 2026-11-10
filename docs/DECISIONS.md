@@ -6652,3 +6652,18 @@ start the break. Everything is kept in `node-time.json` against the wall clock, 
 steps, so it neither drifts nor jumps.
 
 **Verified.** Unit 638 / 0; scenes compile; `bin/mooi check` green. Not yet seen live.
+
+## D232 · 2026-11-10 · Privacy on the node, and time in pixels
+
+**Microphone and camera.** Every two seconds (Settings → The Pill → Microphone and camera, on by default) the node
+asks PipeWire which apps record (`pactl`) and whether a camera is open (`fuser /dev/video0…3`). The moment either
+starts or stops, the node grows a small card that says which, and who has it. While one is on, a warm satellite
+(MIC, CAM) hangs under the seed. Visualisers recording from the speakers' **monitor** source (cava, mooi's own
+level meter) are not counted: `lib/node/privacy` now takes the set of monitor sources (`M.monitors`) and drops
+streams recording from them. Without that, cava showed up as an unknown app on the microphone.
+
+**Pixel time.** The time panel's readout is drawn in `lib/node/clockfont` (D230), mooi's own 5×7 matrix: every
+cell is there and dim, the lit ones are drawn in the look's colour and glow. Only lit cells go through the
+model, and only when the string changes (the stopwatch's hundredths ten times a second).
+
+**Verified.** Unit 639 / 0; scenes compile; `bin/mooi check` green.

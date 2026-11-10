@@ -294,7 +294,7 @@ M.SETTERS = {
     -- D226: the node (the Dynamic Pill). Appended.
     "node.on", "node.pointer", "node.anchor", "node.media", "node.notices",
     "node.workspaces", "node.volume", "node.system", "node.satellites", "node.wallpaper",
-    "keys.node_launch", "keys.node_universe", "keys.node_time",
+    "keys.node_launch", "keys.node_universe", "keys.node_time", "node.privacy",
 }
 
 local function row_of(path)

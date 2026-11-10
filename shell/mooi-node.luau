@@ -11,14 +11,16 @@ local ST = require("lib/node/state")
 local G = require("lib/node/geometry")
 local LK = require("lib/node/look")
 local TK = require("lib/node/timekit")
+local PV = require("lib/node/privacy")
+local CF = require("lib/node/clockfont")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
 
-local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9 }
+local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, system = 5, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10 }
 -- what a press, Super or another opening lets go of (`done` is never among them: it waits to be answered)
 local HELD = { "system", "launcher", "universe", "time" }
-local SAT_KIND = { music = 1, rec = 2, battery = 3, network = 4, music_rec = 5, notice = 6, mic = 7, timer = 8 }
+local SAT_KIND = { music = 1, rec = 2, battery = 3, network = 4, music_rec = 5, notice = 6, mic = 7, timer = 8, cam = 9 }
 
 local function read(name, kind)
     local ok, v
@@ -216,6 +218,14 @@ local CONTROLS = {
     focus = { { "SKIP", 12 } },
     alarm = { { "H+", 31 }, { "H-", 32 }, { "M+", 33 }, { "M-", 34 } },
 }
+-- the readout as the matrix's lit cells, written only when what it says changes
+local px_str
+local function pixels(str)
+    if str == px_str then return end
+    px_str = str
+    model.px = CF.cells(str)
+    fact.nd_pxw = CF.width(str)
+end
 local function show_time()
     local t, now = N.time, wall()
     local r = TK.readouts(t, now)
@@ -223,6 +233,7 @@ local function show_time()
     local me = r[mode]
     fact.nd_tmm = (LK.index_of(TK.MODES, mode) or 1) - 1
     text.nd_tmr = me.value
+    pixels(me.value)
     fact.nd_tmp = me.frac
     if mode == "timer" then
         text.nd_tms = me.on and "RUNNING" or me.paused and "PAUSED" or ("SET " .. TK.format(t.timer.set))
@@ -273,7 +284,8 @@ local function show_satellites(b, kind)
     local f = N.feed
     local list = SAT.collect({ playing = N.media.playing and on_for("media"), media_open = kind == "media", title = N.media.title,
                                recording = f.recording == true, notices = on_for("notices") and #N.notices or 0,
-                               battery = N.bat, charging = N.charging, online = N.online })
+                               battery = N.bat, charging = N.charging, online = N.online,
+                               mic = N.mic_on, cam = N.cam_on })
     local rows = {}
     for i, s in ipairs(SAT.layout(list, b)) do
         if i > N.look.satellites then break end
@@ -584,6 +596,45 @@ on("nd_lr", function(v)
     render()
 end)
 
+-- ── privacy (D232): who has the microphone, whether the camera is open — every two seconds while allowed ──
+N.mic_on, N.cam_on = false, false
+local function privacy_card(what, on, who)
+    text.nd_pvt = what .. (on and " ON" or " OFF")
+    text.nd_pvd = on and (who ~= "" and who or "In use") or "No longer in use"
+    fact.nd_pvon = on
+    ST.push(N.st, "privacy", now())
+    render()
+end
+local pv_busy = false
+every(2000, function()
+    if cfg().privacy == false or pv_busy then
+        if cfg().privacy == false and (N.mic_on or N.cam_on) then N.mic_on, N.cam_on = false, false; render() end
+        return
+    end
+    pv_busy = true
+    run("pactl", { "-f", "json", "list", "sources" }, function(sout)
+    local sok, sources = pcall(json.decode, sout or "")
+    local monitors = PV.monitors(sok and sources or nil)
+    run("pactl", { "-f", "json", "list", "source-outputs" }, function(out, code)
+        local ok, list = pcall(json.decode, out or "")
+        local users = (code == 0 and ok) and PV.mic_users(list, monitors) or {}
+        local on = #users > 0
+        local ch = PV.changed(N.mic_on, on)
+        N.mic_on = on
+        if ch then privacy_card("MICROPHONE", on, table.concat(users, " · ")) end
+        -- fuser prints the processes on its standard output (the device names go to the other): any number is a
+        -- process holding a camera open
+        run("fuser", { "/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3" }, function(fout)
+            pv_busy = false
+            local cam = type(fout) == "string" and fout:find("%d") ~= nil
+            local cc = PV.changed(N.cam_on, cam)
+            N.cam_on = cam
+            if cc then privacy_card("CAMERA", cam, "") end
+        end)
+    end)
+    end)
+end)
+
 -- ── the time tools (D231) ──
 local function chime()
     -- three rising notes of mooi's own, soft: it says so without startling
@@ -616,10 +667,10 @@ local function time_tick()
     if N.kind == "time" then show_time() end
 end
 every(250, time_tick)
--- the stopwatch's hundredths, only while it is on stage and running
-every(50, function()
+-- the stopwatch's hundredths, only while it is on stage and running (ten times a second: the matrix is many cells)
+every(100, function()
     if N.kind == "time" and N.time.mode == "stopwatch" and N.time.stopwatch.since then
-        text.nd_tmr = TK.format(TK.stopwatch_ms(N.time, wall()), true)
+        pixels(TK.format(TK.stopwatch_ms(N.time, wall()), true))
     end
 end)
 N.open_time = open_time

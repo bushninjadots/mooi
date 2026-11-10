@@ -8,7 +8,7 @@ import "theme/ferrolume.plm"
 
 scene Node {
     permissions {
-        run: "pleamar", "mooi", "hyprctl", "playerctl"
+        run: "pleamar", "mooi", "hyprctl", "playerctl", "pactl", "fuser"
         services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "network", "workspaces", "apps", "apps.launch"
     }
     service audio.level as lv { level: number }
@@ -455,6 +455,8 @@ scene Node {
     text nd_tmgl = "START"
     text nd_tm2l = "RESET"
     model tc max 4 { label: text; code: number }
+    model px max 400 { x: number; y: number }   // the readout's lit cells (lib/node/clockfont)
+    fact nd_pxw = 29      // its width, in cells
     model tr max 3 { label: text; value: text; on: bool; m: number }
     fact nd_cap = false
     text nd_capt = ""
@@ -467,6 +469,10 @@ scene Node {
     text nd_dnd = ""
     prop nd_dph = 0
     spin nd_dph by if(nd_kind == 9, 260, 0)
+    // privacy (D232): the microphone or the camera started or stopped
+    text nd_pvt = ""
+    text nd_pvd = ""
+    fact nd_pvon = false
     // satellites
     model sa max 6 { x: number; y: number; w: number; h: number; label: text; kind: number }
     prop nd_sf = 0 ~nd.aux
@@ -774,7 +780,10 @@ scene Node {
             box { from: nb_x + 308, nb_y + 29; size: 24, 1.5; color: nd_acc; show: nd_tmm == 3 }
             zone box tmz3 { from: nb_x + 308 - 6, nb_y + 8; size: 92, 26; cursor: pointer; role: tab; label: "Alarm"; selected: nd_tmm == 3; show: nd_kind == 8 }
             on press tmz3 { emit nd_tm(3) }
-            text nd_tmr { at: nb_x + 20, nb_y + 66; anchor: left center; size: 36; weight: 700; family: "Share Tech Mono"; color: fl.engrave }
+            // the readout: a 5×7 matrix of mooi's own, every cell there and dim, the lit ones in its colour
+            repeat gc in 0..48 { repeat gr in 0..7 { box { from: nb_x + 20 + gc * 6, nb_y + 44 + gr * 6; size: 5, 5; corner: 1; color: fl.trace_dim; opacity: 0.35; show: gc < nd_pxw } } }
+            group { glow: 8, 0.5 * nd_gw, nd_glc
+                for q in px { box { from: nb_x + 20 + q.x * 6, nb_y + 44 + q.y * 6; size: 5, 5; corner: 1; color: nd_acc } } }
             text nd_tms { at: nb_x + 22, nb_y + 94; anchor: left center; size: 10; family: "Share Tech Mono"; color: fl.muted; width: 300; lines: 1 }
             repeat cl in 0..30 { box { from: nb_x + 20 + cl * 10, nb_y + 108; size: 7, 5; corner: 1; color: if(cl < nd_tmp * 30, nd_acc, fl.trace_dim); opacity: if(cl < nd_tmp * 30, 0.9, 0.6) } }
             box { from: nb_x + nb_w - 214, nb_y + 46; size: 94, 30; corner: 15 * max(0.3, nd_rnd); color: nd_acc; opacity: if(true, 0.9, if(tmb10.hover, 0.18, 0)) }
@@ -818,6 +827,13 @@ scene Node {
             zone box dnz { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; cursor: pointer; role: button; label: "{nd_dnt}: OK"; show: nd_kind == 9 }
             on press dnz { emit nd_dn }
         }
+        // privacy: the microphone or the camera, the moment it starts or stops, and who has it
+        group { show: nd_kind == 10; opacity: nd_cf
+            group { glow: 10, if(nd_pvon, 0.8, 0.2), fl.ember
+                ellipse { at: nb_x + 22, nb_y + nb_h / 2; radius: 5; color: if(nd_pvon, fl.ember, fl.trace_lit) } }
+            text nd_pvt { at: nb_x + 38, nb_y + nb_h / 2 - 7; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(nd_pvon, fl.ember, fl.engrave) }
+            text nd_pvd { at: nb_x + 38, nb_y + nb_h / 2 + 8; anchor: left center; size: 10; family: "Exo 2"; color: fl.muted; width: nb_w - 50; lines: 1 }
+        }
         // satellites: they leave the seed for their place on the arc and come back into it; organic ones drift.
         // Pills (a word), dots (a point), or ticks (a stroke and a word under it)
         for s in sa {
@@ -825,7 +841,7 @@ scene Node {
             let drift = if(nd_np == 0, sin(nd_ph + s.index * 60) * 2, 0)
             let sx = nb_x + nb_w / 2 - s.w / 2 + (s.x - (nb_x + nb_w / 2 - s.w / 2)) * g
             let sy = nb_y + (s.y - nb_y) * g + drift
-            let warm = s.kind == 2 or s.kind == 3 or s.kind == 4
+            let warm = s.kind == 2 or s.kind == 3 or s.kind == 4 or s.kind == 7 or s.kind == 9
             group { opacity: g; show: g > 0.01
                 line { from: nb_x + nb_w / 2, nb_y + nb_h; to: sx + s.w / 2, sy; width: 1; color: fl.trace_lit; opacity: 0.35 }
                 group { show: nd_sst == 0
