@@ -6719,7 +6719,7 @@ do
         eq(LK.form(LK.preset("organic")), "seed")
         eq(LK.form(LK.normalise({ modules = { "clock" } })), "long"); eq(LK.facts(LK.normalise({ modules = { "clock" } })).nd_long, 1)
         eq(LK.form(LK.normalise({ place = "attached" })), "notch")
-        eq(LK.form(LK.normalise({ rest = "seed", modules = { "clock" } })), "seed", "a look that rested as a seed stays one")
+        eq(LK.form(LK.normalise({ rest = "seed", modules = { "clock", "weather" } })), "long", "modules someone added are kept and shown")
         eq(LK.normalise({ rest = "notch" }).place, "attached", "a notch from before is attached")
         eq(#LK.SCHEMA.Pill, 2, "place and the clock seed's style; the modules have an editor of their own")
         for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab) end

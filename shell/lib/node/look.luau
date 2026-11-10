@@ -119,13 +119,13 @@ function M.normalise(t, fallback)
     end
     out.custom = t.custom == true
     -- the pill's modules, in order (D257). D259: they live in the pill itself — none, and it is a seed. A look from
-    -- before: its switched-on modules (D248), or none if it rested as a seed; a notch is now a place, attached
+    -- before keeps its modules (D257) or its switched-on ones (D248); a notch is now a place, attached
     local src = t.modules
     if type(src) ~= "table" and (t.m_clock or t.m_window or t.m_spaces or t.m_battery or t.m_music) then
         src = {}
         for _, k in ipairs({ "spaces", "window", "music", "battery", "clock" }) do if t["m_" .. k] == "on" then src[#src + 1] = k end end
     end
-    if t.rest == "seed" then src = {} end
+    -- (modules someone added are kept whatever "at rest" said: they were added to be seen)
     if t.rest == "notch" and t.place == nil then out.place = "attached" end
     out.modules = M.modules(src or {})
     -- the saved looks: up to M.SLOTS, each a look of its own (or nothing)
