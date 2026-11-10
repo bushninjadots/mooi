@@ -6341,6 +6341,44 @@ do
         local w = LK.rows(LK.preset("organic"), "Parts")
         for _, r in ipairs(w) do if r.label == "Orbit" then eq(r.value, "520 px"); assert(math.abs(r.frac - 0.55) < 1e-9) end end
     end)
+    test("look: only what can matter under this look is offered (D261)", function()
+        local function row(t, tab, key)
+            local want = LK.find(key)
+            for _, r in ipairs(LK.rows(t, tab)) do if r.label == want.label then return r end end
+        end
+        local seed = LK.preset("organic")
+        eq(row(seed, "Shape", "seed").off, false, "a seed may be shaped")
+        eq(row(seed, "Shape", "seed_w").off, false, "…and sized")
+        eq(row(seed, "Motion", "breath").off, false, "…and breathe")
+        eq(row(seed, "Pill", "clock_style").off, true, "only the clock seed tells the time")
+        eq(row(seed, "Pill", "clock_style").why, "Only the clock seed tells the time.")
+        eq(row(seed, "Music", "viz").off, false, "the capsule's visualiser")
+        eq(row(seed, "Music", "cover").off, false, "its cover")
+        local clock = LK.preset("organic"); clock.seed = "clock"
+        eq(row(clock, "Pill", "clock_style").off, false, "the clock seed may choose how it tells it")
+        local long = LK.preset("organic"); long.modules = { "clock" }
+        for _, key in ipairs({ "seed", "seed_w", "seed_h" }) do
+            eq(row(long, "Shape", key).off, true, "no seed under a pill: " .. key)
+            eq(row(long, "Shape", key).why, "The pill holds modules: there is no seed to shape.")
+        end
+        eq(row(long, "Motion", "breath").off, true, "nothing rests to breathe")
+        eq(row(long, "Pill", "clock_style").off, true, "the pill is not a clock seed")
+        local attached = LK.preset("organic"); attached.place = "attached"
+        eq(row(attached, "Shape", "top").off, true, "attached: the frame sets the top")
+        eq(row(attached, "Shape", "round").off, true, "a notch takes the frame's corners")
+        eq(row(attached, "Shape", "round").why, "A notch takes its corners from the frame.")
+        local viz = LK.preset("organic"); viz.music_form = "visualiser"
+        eq(row(viz, "Music", "viz").off, true, "the visualiser is the capsule's")
+        eq(row(viz, "Music", "cover").off, true, "and it shows no cover")
+        local vinyl = LK.preset("organic"); vinyl.music_form = "vinyl"
+        eq(row(vinyl, "Music", "viz").off, true, "vinyl is not the capsule either")
+        eq(row(vinyl, "Music", "cover").off, false, "but the record has a label")
+        local h = assert(io.open("shell/mooi-node.plm")); local plm = h:read("a"); h:close()
+        assert(plm:find("group { show: nd_tab > 0; opacity: if(r.off, 0.35, 1)", 1, true), "an offer that cannot matter is dimmed")
+        assert(plm:find("text r.why", 1, true) and plm:find("show: r.off }", 1, true), "the reason replaces the description")
+        assert(plm:find("and r.kind == 0 and not r.off }", 1, true), "its slider cannot be dragged")
+        assert(plm:find("and r.n > 6 and not r.off }", 1, true), "its chips cannot be pressed")
+    end)
     test("look: nine springs for speed and bounce, three for growth; a shuffle is always a sane look of its own", function()
         local sp = LK.springs()
         eq(#sp, 9); for _, s in ipairs(sp) do assert(s.k > 0 and s.d > 0) end

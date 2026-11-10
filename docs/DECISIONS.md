@@ -7040,3 +7040,18 @@ the panel now says what is going on. The media capsule, notices, volume gauge, w
 universe, time tools, player, privacy and battery cards and reactions all stay.
 
 **Verified.** Unit 832 / 0; scenes compile; `bin/mooi check` green.
+
+## D261 · 2026-11-10 · The studio offers only what can matter
+
+The owner's redesign, step three. The studio's deck no longer offers a control that cannot change what is on
+the screen. Each row is checked against the look as it stands: with modules in the pill there is no seed to
+shape, so Seed, Seed width, Seed height and Breathing are dimmed; Clock seed is dimmed unless the seed is the
+clock; From the top is dimmed once the pill is attached to the frame, and Roundness with it, since a notch
+takes the frame's corners; the visualiser's settings are dimmed unless the music is the capsule, and the
+cover's unless there is a cover to shape.
+
+A dimmed row is drawn at 0.35 and its description is replaced by the reason it cannot matter. Its slider or
+chips are not zones: the press passes through, so a dead control is not a trap. The row is dimmed, never
+hidden — the deck keeps its shape, and the reason says what to change first.
+
+**Verified.** Unit 833 / 0; scenes compile; `bin/mooi check` green.
