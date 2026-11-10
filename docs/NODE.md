@@ -225,21 +225,24 @@ Everything is kept in `node-time.json` against the wall clock, so a timer surviv
 
 ### The player
 
-Press the music strip, or the panel's cover, and it grows into the player. It shows the cover (a
-square or a round one, as you chose), the title and artist, and a seek bar with the position and
+Press the music strip, or the panel's cover, and it grows into the player. A large cover sits on the
+left — square or round, as you chose — with the title and its source over its foot, so the record is
+named where it is seen. The title and artist are beside it, then a seek bar with the position and
 length. Drag the bar to seek; the player is told once the drag rests.
 
-The transport is Shuffle, Back, Play or pause, Next and Repeat. Repeat cycles off, the whole playlist
-and the one track, and the track repeat is marked with a small `1`. The player never takes the keyboard; Super, or a press
-on an empty part of the panel, lets it go.
+The transport is a row of icons: Shuffle, Back, Play or pause, Next and Repeat. Play is the larger,
+in a filled accent circle; the others light when they are on. Repeat cycles off, the whole playlist
+and the one track, and the track repeat is marked with a small `1`. The player never takes the
+keyboard; Super, or a press on an empty part of the panel, lets it go.
 
-Along the floor, the music is mirrored around the middle: 32 bars, with the lower 16 mirrored, from
-the bar's own visualiser feed. The node asks for that feed only while the player is open, every three
-seconds.
+Across the middle, the music is mirrored as a wave: 28 bars rising and falling above and below the
+centre, from the bar's own visualiser feed. The node asks for that feed only while the player is
+open, every three seconds.
 
-Three meters sit below: `VOL` for the volume, `LIGHT` for the screen's brightness (hidden when there
-is no backlight) and `MIC` for the microphone. Drag a meter to set it; the `MIC` label mutes and
-unmutes the microphone, and reads `MUTED` while it is muted.
+The three meters have their own inset card on the right, each a column of ten segments with its icon
+under it: `VOL` for the volume, `LIGHT` for the screen's brightness (hidden when there is no
+backlight) and `MIC` for the microphone. Drag a meter to set it; the `MIC` icon mutes and unmutes the
+microphone, and its segments go quiet while it is muted.
 
 The `MIX` switch, beside the song, turns the lower half into a mixer: one row for each application
 playing (a browser with many tabs is one row), with a level to drag and a mute. It shows up to four

@@ -6616,7 +6616,7 @@ do
     end)
     test("meters and sliders: a stride of 2000, so a full one is never the next at zero", function()
         local p = read("shell/mooi-node.plm")
-        assert(p:find("emit nd_mt(2 * 2000 + round(clamp((nb_y + 163 - pointer.y) / 144, 0, 1) * 1000))", 1, true))
+        assert(p:find("emit nd_mt(2 * 2000 + round(clamp((nb_y + 166 - pointer.y) / 116, 0, 1) * 1000))", 1, true))
         local l = read("shell/mooi-node.luau")
         assert(l:find("local m, f = v // 2000, math.min(1000, v % 2000) / 1000", 1, true))
         assert(l:find("local row = v // 2000", 1, true))
@@ -6708,10 +6708,12 @@ do
         assert(l:find('if kind == "media" and look.music_form ~= "capsule" then bkind = "media_" .. look.music_form end', 1, true))
         assert(l:find('if N.kind == "media" and N.look.music_form ~= "capsule" then return true end', 1, true), "the bands read only while drawn")
     end)
-    test("the transport is drawn, play the larger with the song's progress a ring round it", function()
+    test("the transport is five icons, play the larger; no ring is drawn round it (D262)", function()
         local p = read("shell/mooi-node.plm")
-        assert(p:find("span: nd_prog * 360deg; rotate: nd_prog * 180deg", 1, true))
-        assert(p:find("show: not nd_playing }", 1, true) and p:find("show: nd_playing }", 1, true), "play, or pause")
+        for code = 1, 5 do assert(p:find("zone box pbz" .. code, 1, true), "transport " .. code) end
+        assert(p:find('text "󰒟"', 1, true) and p:find('text "󰒮"', 1, true) and p:find('text "󰒭"', 1, true) and p:find('text "󰑖"', 1, true))
+        assert(p:find('text "󰐊"', 1, true) and p:find('text "󰏤"', 1, true), "play, or pause")
+        eq(p:find("span: nd_prog * 360deg", 1, true), nil, "the song's progress is the seek bar, not a ring")
     end)
 end
 
@@ -6961,6 +6963,19 @@ do
         assert(l:find('local asked, ok = pcall(sys.ask, "auth.check", pw)', 1, true))
         assert(l:find("ok = ok == true", 1, true), "only a true answer unlocks")
         assert(read("bin/mooi"):find("for f in palette.json settings.json wall.json nexus-weather.json; do", 1, true))
+    end)
+end
+
+section("the panel, reviewed (D260 fixes)")
+do
+    local function read(p) local f = assert(io.open(p)); local t = f:read("a"); f:close(); return t end
+    local l = read("shell/mooi-node.luau")
+    test("a notification row on the home page reaches its own notice; the studio previews the panel", function()
+        assert(l:find("idx[i] = i   -- each row is its own notice in the feed's order", 1, true))
+        assert(l:find('local PREVIEW = { "rest", "media", "notice", "volume", "workspaces", "panel", "launcher" }', 1, true))
+        assert(l:find('if k == "panel" then N.panel = "home" end', 1, true))
+        assert(not l:find('"system", "launcher" }', 1, true), "no preview of a kind that is gone")
+        assert(read("tools/gen-node.py"):find('"Rail", "Panel", "Search", "Tour"', 1, true))
     end)
 end
 
