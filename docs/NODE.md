@@ -55,13 +55,16 @@ broken outline that glitches when it changes.
 Super, or a press on the resting pill, grows one panel straight down out of it. It is 500 pixels wide on
 every page and as tall as the page needs. Super again, Esc, or a press on an empty part of it lets it go.
 
-- **Home** — a header with the time, the date, the weather (from the Nexus's weather) and the battery; under it a
-  profile card with the owner's picture (or their initial), display name and hostname (press the card to edit the
-  name — Return or ✓ saves, Escape cancels — and the picture to choose another); a strip
-  of four readings (CPU, RAM, temperature, GPU) that turn warm when high; the music (cover, song, transport, a
-  seek bar; press the cover for the player); five buttons for Wi-Fi, Silent, Timer, Bluetooth and Game mode;
-  volume and brightness sliders; the three newest notices with `Clear all`; and the page icons. A button's icon
-  does what it says; the Wi-Fi and Bluetooth names open their pages.
+- **Home** — a header with the time, the date, the weather (from the Nexus's weather) and the battery; the weather
+  itself opens the week's page; under it a profile card with the owner's picture (or their initial), display name
+  and hostname (press the card to edit the name — Return or ✓ saves, Escape cancels — and the picture to choose
+  another); a strip of four readings (CPU, RAM, temperature, GPU) that turn warm when high; the music (cover, song,
+  transport, a seek bar; press the cover for the player); five buttons for Wi-Fi, Silent, Timer, Bluetooth and Game
+  mode; volume and brightness sliders; the three newest notices with `Clear all`; and the page icons. A button's
+  icon does what it says; the Wi-Fi and Bluetooth names open their pages.
+- **Weather** — pressed from Home's weather: the current temperature, what it feels like, humidity and wind, then
+  the week as seven rows with each day's icon, high and low on one shared range, a wet-day mark, and the week's
+  high, low and wet-day count above them.
 - **Calendar**, **Clipboard** and **Power** — what the shelf's branches held, now pages
   of the same panel.
 - **Notes** — the writing line, then six notes a page as cards in two columns: the first line, the next
@@ -273,6 +276,9 @@ node becomes a card that pulses and chimes three soft notes of its own. Answer i
 pointer resting on it or Super will not dismiss it, and if several things
 finish, they wait their turn, oldest first. If a time tool finishes under a fullscreen window, where
 you cannot see the node, a desktop notification says so too.
+
+While music plays, a thin spectrum runs along the panel's bottom inside edge, under the page icons, on every page;
+it settles to a line when the music pauses.
 
 The panel takes the keyboard only on the pages you type into: Notes, the shortcut filter, and Home while
 the profile editor is open. Super, or a press on an empty part of the panel, folds it away.

@@ -14,7 +14,7 @@ local SIZE = {
 -- D260: the panel is one width; its height is the page's own. Home carries the media, the toggles, the two
 -- sliders, the notices and the icon row; the others carry a header and one branch's contents.
 M.PANEL_W = 500
-M.PANEL_H = { home = 732, calendar = 340, notes = 450, clipboard = 370, stash = 430, wallpaper = 500, system = 520, power = 360, wifi = 430, bluetooth = 430, keys = 490 }
+M.PANEL_H = { home = 732, calendar = 340, notes = 450, clipboard = 370, stash = 430, wallpaper = 500, system = 520, power = 360, wifi = 430, bluetooth = 430, keys = 490, weather = 570 }
 -- the shape (lib/node/look's M.shape): the seed's size, how round the corners are (0 square … 1 a capsule), and how
 -- far from the top it sits; without one, the organic seed
 local PLAIN = { seed_w = 22, seed_h = 6, round = 1, top = 8 }

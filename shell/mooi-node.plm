@@ -601,6 +601,16 @@ scene Node {
     // D279: the Notes board's six cards and the Stash page's six rows
     model ncard max 6 { id: number; title: text; rest: text; more: bool; age: text; pinned: bool; tag: number }
     model stz max 6 { id: number; icon: text; name: text; detail: text }
+    // D282: the weather page — the days of the week, their shared temperature range, and today now
+    model wkw max 7 { label: text; glyph: text; hi: text; lo: text; lo_v: number; hi_v: number; wet: bool }
+    text nd_wtemp = ""
+    text nd_wword = ""
+    text nd_wglyph = ""
+    text nd_wfeels = ""
+    text nd_whum = ""
+    text nd_wwind = ""
+    text nd_wcity = ""
+    text nd_wsum = ""
     model wl max 9 { img: image 152, 86; on: bool; name: text }
     text nd_nq = ""
     // the shortcut sheet (D267): ten rows of what Hyprland has bound, a filter, how many more below
@@ -749,6 +759,7 @@ scene Node {
     event nd_hsave ->    // the profile name submitted
     event nd_hpic ->     // the profile picture chosen
     event nd_hdone ->    // the profile editor checked
+    event nd_hweather -> // Home's weather pressed: the week's page
     event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted
     event nd_seek ->      // the player: where along the song (0 … 1000)
     event nd_mx ->        // the mixer: row * 2000 + its level (0 … 1000)
@@ -1132,6 +1143,8 @@ scene Node {
                 text nd_hwg { at: nb_x + nb_w - 24, nb_y + 28; anchor: right center; align: right; size: 18; family: "CaskaydiaCove Nerd Font"; color: nd_acc }
                 text nd_hwt { at: nb_x + nb_w - 50, nb_y + 28; anchor: right center; align: right; size: 11; family: "Exo 2"; color: fl.engrave; width: 200; lines: 1 }
                 text nd_hbat { at: nb_x + nb_w - 24, nb_y + 58; anchor: right center; align: right; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.muted; width: 120; lines: 1 }
+                zone box pwwz { from: nb_x + nb_w - 214, nb_y + 12; size: 200, 32; corner: 16; cursor: pointer; role: button; label: "This week's weather"; show: nd_kind == 13 and nd_pgp == 0 }
+                on press pwwz { emit nd_hweather }
                 group { show: nd_hstrip
                 box { from: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8), nb_y + 150; size: (nb_w - 52) / 4, 34; corner: 10; color: fl.well }
                 text nd_hs1 { at: nb_x + 14 + 0 * ((nb_w - 52) / 4 + 8) + 10, nb_y + 164; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_hh1, fl.ember, fl.engrave); width: (nb_w - 52) / 4 - 16; lines: 1 }
@@ -1269,6 +1282,32 @@ scene Node {
                     zone box pnx { from: nb_x + nb_w - 54, ny + 24; size: 36, 26; cursor: pointer; role: button; label: "Dismiss"; show: nd_kind == 13 and nd_pgp == 0 }
                     on press pnx { emit nd_nc(n.index * 10 + 9) }
                 }
+            }
+            group { show: nd_pgp == 11
+                box { from: nb_x + 14, nb_y + 56; size: nb_w - 28, 104; corner: 14; color: fl.well }
+                text "NOW" { at: nb_x + 30, nb_y + 74; anchor: left center; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted }
+                text nd_wcity { at: nb_x + nb_w - 26, nb_y + 74; anchor: right center; align: right; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted; width: 240; lines: 1 }
+                text nd_wglyph { at: nb_x + 42, nb_y + 106; anchor: center; align: center; size: 30; family: "CaskaydiaCove Nerd Font"; color: nd_acc }
+                text nd_wtemp { at: nb_x + 76, nb_y + 96; anchor: left center; size: 30; weight: 700; family: "Exo 2"; color: fl.engrave }
+                text nd_wword { at: nb_x + 76, nb_y + 120; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted; width: 300; lines: 1 }
+                text nd_wfeels { at: nb_x + 76, nb_y + 146; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 110; lines: 1 }
+                text nd_whum { at: nb_x + 190, nb_y + 146; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 110; lines: 1 }
+                text nd_wwind { at: nb_x + 310, nb_y + 146; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 160; lines: 1 }
+                text nd_wsum { at: nb_x + 26, nb_y + 176; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted; width: nb_w - 52; lines: 1 }
+                for w in wkw {
+                    let wy = nb_y + 194 + w.index * 42
+                    box { from: nb_x + 14, wy; size: nb_w - 28, 38; corner: 10; color: fl.well; opacity: if(w.wet, 0.75, 0.55) }
+                    text w.label { at: nb_x + 28, wy + 19; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: 44; lines: 1 }
+                    text w.glyph { at: nb_x + 78, wy + 19; anchor: center; align: center; size: 14; family: "CaskaydiaCove Nerd Font"; color: nd_acc }
+                    line { from: nb_x + 104, wy + 19; to: nb_x + 326, wy + 19; width: 2; color: fl.trace_dim }
+                    box { from: nb_x + 104 + w.lo_v * 222, wy + 17; size: max(4, (w.hi_v - w.lo_v) * 222), 4; corner: 2; color: nd_acc }
+                    text w.hi { at: nb_x + 384, wy + 19; anchor: right center; align: right; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: 60; lines: 1 }
+                    text w.lo { at: nb_x + 432, wy + 19; anchor: right center; align: right; size: 9; family: "Share Tech Mono"; color: fl.muted; width: 60; lines: 1 }
+                    ellipse { at: nb_x + 458, wy + 19; radius: 2.5; color: nd_acc; opacity: 0.85; show: w.wet }
+                }
+                text "󰖐" { at: nb_x + nb_w / 2, nb_y + 250; anchor: center; align: center; size: 30; family: "CaskaydiaCove Nerd Font"; color: fl.muted; show: wkw.count == 0 }
+                text "No forecast yet" { at: nb_x + nb_w / 2, nb_y + 282; anchor: center; align: center; size: 12; weight: 700; family: "Exo 2"; color: fl.engrave; show: wkw.count == 0 }
+                text "The Nexus's weather will appear here" { at: nb_x + nb_w / 2, nb_y + 304; anchor: center; align: center; size: 10; family: "Exo 2"; color: fl.muted; width: nb_w - 80; lines: 1; show: wkw.count == 0 }
             }
             group { show: nd_pgp > 0
                 text "‹" { at: nb_x + 26, nb_y + 27; anchor: center; size: 20; family: "Exo 2"; color: if(pbkz.hover, nd_acc, fl.engrave) }
@@ -1524,11 +1563,45 @@ scene Node {
                     text "No Bluetooth adapter" { at: nb_x + nb_w / 2, nb_y + 90; anchor: center; align: center; size: 11; family: "Exo 2"; color: fl.muted; show: not nd_btp }
                 }
             }
+            group { show: nd_kind == 13 and (nd_playing or nd_paused)
+                box { from: nb_x + 14 + 0 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp0 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp0 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp0, 0.3) }
+                box { from: nb_x + 14 + 1 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp1 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp1 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp1, 0.3) }
+                box { from: nb_x + 14 + 2 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp2 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp2 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp2, 0.3) }
+                box { from: nb_x + 14 + 3 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp3 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp3 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp3, 0.3) }
+                box { from: nb_x + 14 + 4 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp4 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp4 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp4, 0.3) }
+                box { from: nb_x + 14 + 5 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp5 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp5 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp5, 0.3) }
+                box { from: nb_x + 14 + 6 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp6 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp6 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp6, 0.3) }
+                box { from: nb_x + 14 + 7 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp7 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp7 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp7, 0.3) }
+                box { from: nb_x + 14 + 8 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp8 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp8 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp8, 0.3) }
+                box { from: nb_x + 14 + 9 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp9 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp9 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp9, 0.3) }
+                box { from: nb_x + 14 + 10 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp10 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp10 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp10, 0.3) }
+                box { from: nb_x + 14 + 11 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp11 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp11 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp11, 0.3) }
+                box { from: nb_x + 14 + 12 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp12 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp12 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp12, 0.3) }
+                box { from: nb_x + 14 + 13 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp13 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp13 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp13, 0.3) }
+                box { from: nb_x + 14 + 14 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp14 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp14 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp14, 0.3) }
+                box { from: nb_x + 14 + 15 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp15 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp15 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp15, 0.3) }
+                box { from: nb_x + 14 + 16 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp16 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp16 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp16, 0.3) }
+                box { from: nb_x + 14 + 17 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp17 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp17 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp17, 0.3) }
+                box { from: nb_x + 14 + 18 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp18 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp18 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp18, 0.3) }
+                box { from: nb_x + 14 + 19 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp19 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp19 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp19, 0.3) }
+                box { from: nb_x + 14 + 20 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp20 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp20 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp20, 0.3) }
+                box { from: nb_x + 14 + 21 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp21 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp21 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp21, 0.3) }
+                box { from: nb_x + 14 + 22 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp22 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp22 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp22, 0.3) }
+                box { from: nb_x + 14 + 23 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp23 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp23 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp23, 0.3) }
+                box { from: nb_x + 14 + 24 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp24 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp24 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp24, 0.3) }
+                box { from: nb_x + 14 + 25 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp25 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp25 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp25, 0.3) }
+                box { from: nb_x + 14 + 26 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp26 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp26 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp26, 0.3) }
+                box { from: nb_x + 14 + 27 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp27 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp27 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp27, 0.3) }
+                box { from: nb_x + 14 + 28 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp28 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp28 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp28, 0.3) }
+                box { from: nb_x + 14 + 29 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp29 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp29 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp29, 0.3) }
+                box { from: nb_x + 14 + 30 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp30 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp30 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp30, 0.3) }
+                box { from: nb_x + 14 + 31 * (nb_w - 28) / 32, nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp31 * 8, 0); size: (nb_w - 28) / 32 - 1, if(nd_playing, 1 + nd_sp31 * 8, 1); corner: 1; color: nd_acc; opacity: if(nd_playing, 0.45 + 0.55 * nd_sp31, 0.3) }
+            }
             // the icon row: every page, the current page lit
             line { from: nb_x + 14, nb_y + nb_h - 58; to: nb_x + nb_w - 14, nb_y + nb_h - 58; width: 1; color: fl.trace_dim }
-            box { from: nb_x + 14 + 0 * (nb_w - 28) / 12, nb_y + nb_h - 52; size: (nb_w - 28) / 12 - 4, 42; corner: 10; color: nd_acc; opacity: if(nd_pgp == 0, 0.18, 0) }
-            box { from: nb_x + 14 + 0 * (nb_w - 28) / 12, nb_y + nb_h - 52; size: (nb_w - 28) / 12 - 4, 42; corner: 10; stroke: 1; color: nd_acc; opacity: if(nd_pgp == 0, 0.8, 0) }
-            text "󰋜" { at: nb_x + 14 + 0 * (nb_w - 28) / 12 + (nb_w - 28) / 12 / 2, nb_y + nb_h - 31; anchor: center; align: center; size: 17; family: "CaskaydiaCove Nerd Font"; color: if(nd_pgp == 0, nd_acc, if(pi0.hover, fl.engrave, fl.muted)) }
+            box { from: nb_x + 14 + 0 * (nb_w - 28) / 12, nb_y + nb_h - 52; size: (nb_w - 28) / 12 - 4, 42; corner: 10; color: nd_acc; opacity: if(nd_pgp == 0 or nd_pgp == 11, 0.18, 0) }
+            box { from: nb_x + 14 + 0 * (nb_w - 28) / 12, nb_y + nb_h - 52; size: (nb_w - 28) / 12 - 4, 42; corner: 10; stroke: 1; color: nd_acc; opacity: if(nd_pgp == 0 or nd_pgp == 11, 0.8, 0) }
+            text "󰋜" { at: nb_x + 14 + 0 * (nb_w - 28) / 12 + (nb_w - 28) / 12 / 2, nb_y + nb_h - 31; anchor: center; align: center; size: 17; family: "CaskaydiaCove Nerd Font"; color: if(nd_pgp == 0 or nd_pgp == 11, nd_acc, if(pi0.hover, fl.engrave, fl.muted)) }
             zone box pi0 { from: nb_x + 14 + 0 * (nb_w - 28) / 12, nb_y + nb_h - 52; size: (nb_w - 28) / 12, 42; cursor: pointer; role: button; label: "Home"; show: nd_kind == 13 }
             on press pi0 { emit nd_pg(0) }
             box { from: nb_x + 14 + 1 * (nb_w - 28) / 12, nb_y + nb_h - 52; size: (nb_w - 28) / 12 - 4, 42; corner: 10; color: nd_acc; opacity: if(nd_pgp == 1, 0.18, 0) }

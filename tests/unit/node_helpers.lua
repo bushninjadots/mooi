@@ -1888,3 +1888,112 @@ do
         has('pcall(sys.ask, "files.exists", name)', luau, "the file is asked for")
     end)
 end
+
+section("the week's weather (D282): rows and ranges")
+do
+    local WEEK = require("lib/node/week")
+
+    local function doc(days, current)
+        local time, codes, maxs, mins = {}, {}, {}, {}
+        for i = 1, days do
+            time[i] = "2026-11-" .. string.format("%02d", 9 + i)
+            codes[i] = i == 2 and 61 or 2
+            maxs[i] = ({ 20, 15, 13, 17, 19, 14, 16 })[i]
+            mins[i] = ({ 10, 8, 7, 9, 11, 6, 12 })[i]
+        end
+        return {
+            city = "Bender",
+            answer = {
+                current = current or { temperature_2m = 18.4, apparent_temperature = 17.6,
+                    relative_humidity_2m = 61, wind_speed_10m = 12.2, weather_code = 2 },
+                daily = { time = time, weather_code = codes, temperature_2m_max = maxs, temperature_2m_min = mins },
+            },
+        }
+    end
+
+    test("week: seven rows, TODAY then weekdays, and the current conditions", function()
+        local w = WEEK.week(doc(7))
+        eq(#w.rows, 7)
+        eq(w.rows[1].label, "TODAY")
+        eq(w.rows[2].label, "WED", "the day after today")
+        eq(w.rows[7].label, "MON", "the seventh day")
+        eq(w.rows[1].hi, "20°"); eq(w.rows[1].lo, "10°")
+        eq(w.now.temp, "18°"); eq(w.now.feels, "FEELS 18°")
+        eq(w.now.humidity, "HUMIDITY 61%"); eq(w.now.wind, "WIND 12 KM/H")
+        eq(w.now.word, "PARTLY CLOUDY")
+        eq(w.city, "Bender")
+    end)
+
+    test("week: the rows share one min-max range, and the wet days are counted", function()
+        local w = WEEK.week(doc(7))
+        eq(w.high, 20); eq(w.low, 6)
+        eq(w.rows[1].lo_v, (10 - 6) / 14)
+        eq(w.rows[6].lo_v, 0, "the coldest morning is the floor")
+        eq(w.rows[1].hi_v, 1, "the warmest afternoon is the ceiling")
+        eq(w.rows[5].hi_v, (19 - 6) / 14)
+        eq(w.wet, 1, "one wet day")
+        eq(w.summary, "HIGH 20°  ·  LOW 6°  ·  1 WET DAY")
+    end)
+
+    test("week: six days stay six, and no document or no current is nothing", function()
+        local w = WEEK.week(doc(6))
+        eq(#w.rows, 6)
+        eq(w.high, 20); eq(w.low, 6)
+        eq(WEEK.week(nil), nil)
+        eq(WEEK.week({}), nil)
+        local dry = WEEK.week({ answer = { daily = { time = { "2026-11-10" }, weather_code = { 0 },
+            temperature_2m_max = { 12 }, temperature_2m_min = { 4 } } } })
+        eq(dry.now, nil)
+        eq(#dry.rows, 1)
+    end)
+end
+
+section("the week's weather and the panel's foot (D282): the scene that wears them")
+do
+    local function read(path)
+        local f = io.open(path, "r")
+        if not f then return "" end
+        local s = f:read("*a")
+        f:close()
+        return s
+    end
+    local plm = read("shell/mooi-node.plm")
+    local luau = read("shell/mooi-node.luau")
+    local forecast = read("shell/lib/forecast.luau")
+    local G = require("lib/node/geometry")
+
+    local function has(what, where, why)
+        assert(where:find(what, 1, true), (why or what) .. " is missing")
+    end
+
+    test("Home's weather is a press away from the week's page", function()
+        has("zone box pwwz", plm, "the weather's zone")
+        has("emit nd_hweather", plm, "the weather's event")
+        has('on("nd_hweather", function() open_panel("weather") end)', luau, "the page's way in")
+        has("weather = 11", luau, "the page's id")
+        has('weather = "Weather"', luau, "the page's title")
+        has("forecast_days=7", forecast, "a full week asked of Open-Meteo")
+    end)
+
+    test("the weather page has now, seven rows and a shared range", function()
+        has("model wkw max 7", plm, "the week's rows")
+        has("show: nd_pgp == 11", plm, "the weather page")
+        has("for w in wkw", plm, "the week's loop")
+        has("text nd_wtemp", plm, "the temperature")
+        has("text nd_wsum", plm, "the week's summary")
+        has("w.lo_v * 222", plm, "the range's start")
+        has("(w.hi_v - w.lo_v) * 222", plm, "the range's width")
+        has("nd_wcity", plm, "the city")
+        has("No forecast yet", plm, "the empty week")
+        eq(G.PANEL_H.weather, 570, "seven days and the icon row")
+    end)
+
+    test("the music keeps a thin spectrum at the panel's foot on every page", function()
+        has("show: nd_kind == 13 and (nd_playing or nd_paused)", plm, "the foot's condition")
+        has("nb_y + nb_h - 3 - if(nd_playing, 1 + nd_sp31 * 8, 0)", plm, "the last band")
+        has("if(nd_playing, 1 + nd_sp31 * 8, 1)", plm, "the band's height")
+        has("N.kind == \"panel\" and N.media.playing", luau, "the panel asks for the bands")
+        has("if N.media.playing then run(\"pleamar\"", luau, "opening the panel asks the feed")
+        has('pcall(sys.watch, "files:nexus-weather.json"', luau, "the forecast's watch")
+    end)
+end
