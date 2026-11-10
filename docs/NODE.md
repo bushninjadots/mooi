@@ -212,6 +212,19 @@ workspace. Past the last workspace the ring carries on round rather than spinnin
 
 If the node is not running, Super+Tab opens the Overview instead.
 
+### Super+K — the shortcuts
+
+Super+K opens the panel on **Shortcuts**: every key Hyprland has bound right now, in words. Each row is
+the keys, as people say them (`Super + Shift + S`), and what they do. The words come from the
+`--- what it does` comment above each bind in Hyprland's config, and from mooi's own names for its keys;
+a bind nothing names says what Hyprland knows of it, such as `Close the window` or `Workspace 3`. Super's
+keys come first, then the others, then the workspace numbers.
+
+Type to filter: every word must be in the keys or the words. ↑ and ↓ or the wheel scroll three rows at
+a time; the foot counts what is below. Super+K again, Super or Esc lets it go. The sheet asks Hyprland
+each time it opens, so a key changed a minute ago shows as it is now. It is also in the search line as
+**Keyboard shortcuts**, and `mooi node keys` opens it.
+
 ### Super+T — time
 
 Super+T opens the time panel: a timer, a stopwatch, focus rounds and an alarm, all in one place. The
@@ -381,13 +394,14 @@ Shape → Pill above.
 | Lyrics in the player | `node.lyrics` | off | The words in time with the song, from the cache or LRCLIB. |
 | Microphone and camera | `node.privacy` | on | A card when either starts or stops. |
 
-The page also carries the three keys:
+The page also carries the four keys:
 
 | Row | Setting | Default |
 | --- | --- | --- |
 | The Pill: search | `keys.node_launch` | `SUPER + space` |
 | The Pill: workspaces | `keys.node_universe` | `SUPER + Tab` |
 | The Pill: time | `keys.node_time` | `SUPER + T` |
+| The Pill: shortcuts | `keys.node_keys` | `SUPER + K` |
 
 One older setting still exists in the file but has no row: `node.personality` (Organic by default)
 only seeds the look before the studio has saved one; once `node-look.json` exists, the look comes from
@@ -414,6 +428,7 @@ If you have reduced motion turned on, the node does not breathe, whatever the lo
 | `mooi node universe` | Opens the workspaces' orbit. |
 | `mooi node studio` | Opens the studio. |
 | `mooi node time` | Opens the time panel. |
+| Super+K · `mooi node keys` | The shortcut sheet. |
 | `mooi pill` | Wakes the node; does nothing when it is not running. |
 
 Without a node, `mooi node launch` opens mooi's usual search and `mooi node universe` opens the
@@ -441,6 +456,8 @@ The node is local. It does not send anything anywhere except the one lyrics requ
   `hyprctl` to focus a workspace or a window. `hyprctl -j monitors` once, for the screen's size.
 - **A finished time tool** — if it finishes under a fullscreen window, `hyprctl -j activewindow`
   checks, and `notify-send` shows a desktop notification.
+- **The shortcut sheet** — when it opens, `hyprctl binds -j` for what is bound, and `mooi keys-text`,
+  which prints Hyprland's own config files, for the words. Nothing is written.
 - **The lock keys** — Hyprland's `Caps_Lock` and `Num_Lock` binds run `mooi osd caps|num`, which asks
   `hyprctl devices -j` whether the main keyboard's lock is on. Nothing is read from the keyboard itself.
 - **Copying an answer** — a chosen sum or conversion goes to `wl-copy`.

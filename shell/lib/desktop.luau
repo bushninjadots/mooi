@@ -25,6 +25,8 @@ M.ACTIONS = {
     { key = "node_launch", cmd = "node launch", name = "The Pill: search" },
     { key = "node_universe", cmd = "node universe", name = "The Pill: the workspaces round it" },
     { key = "node_time", cmd = "node time", name = "The Pill: time" },
+    -- D267: the shortcut sheet (k4's and Minflair's Super+K)
+    { key = "node_keys", cmd = "node keys", name = "The Pill: shortcuts" },
     { key = "stop", cmd = "stop", name = "Stop mooi" },
 }
 

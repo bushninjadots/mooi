@@ -190,6 +190,8 @@ def scene():
           '    model br max 7 { label: text; detail: text; pinned: bool }',
           '    model wl max 7 { img: image 112, 63; on: bool }',
           '    text nd_nq = ""',
+          '    // the shortcut sheet (D267): ten rows of what Hyprland has bound, a filter, how many more below',
+          '    model kb max 10 { keys: text; what: text }', '    text nd_kq = ""', '    fact nd_kmore = 0',
           '    // BMO as the seed (D253): the bar\'s own face (ui/bmoface.plm), his expression from bmo-shared.json',
           '    fact pb_ew = 8', '    fact pb_eh = 14', '    fact pb_lid = 0', '    fact pb_brow = 0', '    fact pb_bron = 0',
           '    fact pb_sql = 0', '    fact pb_sqr = 0', '    fact pb_mc = 0.7', '    fact pb_mo = 0.2', '    fact pb_mw = 24', '    fact pb_bl = 0',
@@ -222,7 +224,7 @@ def scene():
           '    event nd_lr ->        // a launcher row',
           '    event nd_un ->        // a workspace in the universe',
           '    event nd_key ->       // a key while the node holds the keyboard',
-          '    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time',
+          '    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time · 6 keys',
           '    event nd_osd ->       // from `mooi osd` (D265): a lock key or game mode for the gauge (lib/node/gauge decode)',
           '    event nd_tab ->       // the studio: a page',
           '    event nd_sk ->        // the studio: a slider, row * 2000 + where along it (0 … 1000: a stride of 2000, never ambiguous)',
@@ -247,6 +249,7 @@ def scene():
           '    event nd_pclose ->    // the panel: a press on its empty body closes it',
           '    event nd_wheel ->     // the wheel over the node: 1 up · -1 down (the volume)',
           '    event nd_sys ->       // a reading of the system cluster pressed (D249: btop, in the owner\'s terminal)',
+          '    event nd_ksc ->       // the shortcut sheet scrolled: -1 up, 1 down (three rows a notch)',
           '    event nd_br ->        // in a branch: 1 back a month / step · 2 on a month / step · 10 + row a row · 30 + row its second press',
           '    event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted',
           '    event nd_seek ->      // the player: where along the song (0 … 1000)',
@@ -775,6 +778,22 @@ def panel_parts(c, acc, ink, dim, hull):
           f'{c}                on press prr {{ emit nd_br(10 + r.index) }}',
           f'{c}            }}',
           f'{c}        }}']
+    # the shortcut sheet (D267): a filter line, then the keys on the left and what they do on the right
+    L += [f'{c}        group {{ show: nd_pgp == 10',
+          f'{c}            box {{ from: nb_x + 16, nb_y + 58; size: nb_w - 32, 32; corner: 16 * max(0.3, nd_rnd); color: fl.well }}',
+          f'{c}            text "󰍉" {{ at: nb_x + 34, nb_y + 74; anchor: center; size: 13; family: "CaskaydiaCove Nerd Font"; color: {acc} }}',
+          f'{c}            input nd_kq {{ at: nb_x + 52, nb_y + 64; width: nb_w - 88; size: 12; family: {SANS}; color: {ink}; selection: fl.hull_raised; placeholder: "filter: a key, or what it does" }}',
+          f'{c}            for k in kb {{',
+          f'{c}                let ky = nb_y + 100 + k.index * 32',
+          f'{c}                box {{ from: nb_x + 12, ky; size: nb_w - 24, 28; corner: 8 * nd_rnd; color: fl.well; opacity: if(k.index - floor(k.index / 2) * 2 == 0, 0.45, 0.2) }}',
+          f'{c}                text k.keys {{ at: nb_x + 24, ky + 14; anchor: left center; size: 10; weight: 700; family: {MONO}; color: {acc}; width: 190; lines: 1 }}',
+          f'{c}                text k.what {{ at: nb_x + 222, ky + 14; anchor: left center; size: 11; family: {SANS}; color: {ink}; width: nb_w - 246; lines: 1 }}',
+          f'{c}            }}',
+          f'{c}            text "{{nd_kmore, 0}} MORE · ↑ ↓ OR THE WHEEL" {{ at: nb_x + nb_w / 2, nb_y + 433; anchor: center; align: center; size: 9; family: {MONO}; color: {dim}; show: nd_kmore > 0.5 }}',
+          f'{c}            text "Nothing bound matches" {{ at: nb_x + nb_w / 2, nb_y + 130; anchor: center; align: center; size: 11; family: {SANS}; color: {dim}; show: kb.count == 0 }}',
+          f'{c}            zone box pksz {{ from: nb_x + 12, nb_y + 100; size: nb_w - 24, 320; show: nd_kind == 13 and nd_pgp == 10 }}',
+          f'{c}            on scroll pksz {{ emit nd_ksc(if(wheel > 0, -1, 1)) }}',
+          f'{c}        }}']
     # wallpaper strip
     L += [f'{c}        group {{ show: nd_pgp == 5',
           f'{c}            for w in wl {{',
@@ -894,7 +913,8 @@ def panel_parts(c, acc, ink, dim, hull):
               f'{c}    zone box pi{code} {{ from: {x}, nb_y + nb_h - 52; size: {iw}, 42; cursor: pointer; role: button; label: "{label}"; show: nd_kind == 13 }}',
               f'{c}    on press pi{code} {{ emit nd_pg({code}) }}']
     L += [f'{c}}}', f'{c}on submit nd_nq {{ emit nd_br(90) }}',
-          f'{c}on change nd_kb while nd_kb and nd_kind == 13 and nd_pgp == 2 {{ focus nd_nq }}']
+          f'{c}on change nd_kb while nd_kb and nd_kind == 13 and nd_pgp == 2 {{ focus nd_nq }}',
+          f'{c}on change nd_kb while nd_kb and nd_kind == 13 and nd_pgp == 10 {{ focus nd_kq }}']
     return L
 
 

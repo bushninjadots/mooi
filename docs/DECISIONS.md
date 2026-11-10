@@ -7149,3 +7149,28 @@ what was there when game mode began.
 
 **Verified.** `tests/game-mode.sh` 21 / 0 (in the gate); live on Hyprland 0.57.2, on then off left all eight
 options as they were.
+
+## D267 · 2026-11-10 · Super+K: the shortcut sheet (k4's and Minflair's)
+
+Both projects open a searchable sheet of every shortcut with Super+K. mooi's is a page of the node's panel,
+`Shortcuts` (page 10, 490 px): a filter line, ten rows of keys and what they do, a count of what is below, and
+the icon row like every page. Super+K (`keys.node_keys`, Settings → The Pill), `mooi node keys` and **Keyboard
+shortcuts** in the search line open it; Super+K again closes it.
+
+What is bound is Hyprland's answer (`hyprctl binds -j`), asked each time the page opens, never a file's claim.
+Hyprland 0.57's Lua binds do not say what they run (`arg` is a number), so the words come from the config's own
+text, which `mooi keys-text` prints: the `--- what it does` comment above a bind (bind.lua's house style), which
+names every bind under it until a blank line or new code (so "volume up" names the XF86 key and its Alt
+fallback); a trailing comment on a `{ "KEYS", "command" }` row; and for a `mooi` command, the name Settings → Keys
+gives it (`lib/desktop`'s ACTIONS) or the sheet's own list. A loop's `[key]` is filled in per row. A mouse bind
+that drags or resizes is said as Hyprland has it, because bind.lua's comments for those two are wrong. A bind no
+text names is said from its dispatcher, with the workspace a digit means. Super's keys come first, then the rest,
+then the workspace numbers. All of this is `lib/node/keysheet`, pure and unit-tested.
+
+**A trap, now gated.** The first version tested a modifier with `mask & 64`. Lua 5.4, which runs the unit suite,
+has bitwise operators; Luau, which Pleamar runs, has none, so the node's logic failed to load and the node stopped
+answering until the fix (`(mask // bit) % 2`). `tests/luau-ops.lua`, run by the gate, now refuses `&`, `|`, a
+binary `~`, `<<` and `>>` in any logic file, with strings and comments taken out first.
+
+**Verified.** Unit 849 / 0; the node's scene compiles; live after `mooi refresh`: Super+K bound, the page opened by
+`mooi node keys` with 133 shortcuts, the filter "volume" left 4, and the second press closed it.

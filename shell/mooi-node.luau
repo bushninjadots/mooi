@@ -35,6 +35,8 @@ local WFX = require("lib/node/wsfx")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's, D215)
+local KS = require("lib/node/keysheet")
+local DESK = require("lib/desktop")
 
 local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, panel = 13 }
 -- what a press, Super or another opening lets go of (`done` is never among them: it waits to be answered)
@@ -441,7 +443,7 @@ render = function()
     if changed and N.wants_bands and N.wants_bands() then run("pleamar", { "--say", "mooi", "emit feed_want" }, function() end) end
     -- the keyboard only for what is opened to be typed into: the time panel, the player and a finish card never
     -- take it, so a timer that ends while you type steals no keys
-    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "panel" and N.panel == "notes")
+    fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "panel" and (N.panel == "notes" or N.panel == "keys"))
     set_body(b, changed and LK.overshoot(look) or 0)
     -- D257: a notch at rest is a piece of the frame's body (the frame draws it, joined to its band); the node
     -- only says where it is, and draws what is inside
@@ -795,7 +797,8 @@ on("nd_key", function(v)
         return
     end
     if N.kind == "panel" then
-        if v == 27 then ST.release(N.st, "panel"); render() end
+        if v == 27 then ST.release(N.st, "panel"); render()
+        elseif N.panel == "keys" and (v == 38 or v == 40) then N.ksc = N.ksc + (v == 38 and -1 or 1); show_keys(); render() end
         return
     end
     if N.kind == "player" then
@@ -1196,9 +1199,9 @@ every(10000, bmo_show)
 -- pages its icon row reaches hold what the shelf and the branches used to, and each page keeps that row ──
 N.panel = "home"
 N.panel_sub, N.panel_items = "", {}
-local PANEL_PAGES = { home = 0, calendar = 1, notes = 2, clipboard = 3, stash = 4, wallpaper = 5, system = 6, power = 7, wifi = 8, bluetooth = 9 }
+local PANEL_PAGES = { home = 0, calendar = 1, notes = 2, clipboard = 3, stash = 4, wallpaper = 5, system = 6, power = 7, wifi = 8, bluetooth = 9, keys = 10 }
 local PANEL_TITLE = { calendar = "Calendar", notes = "Notes", clipboard = "Clipboard", stash = "Stash",
-                      wallpaper = "Wallpaper", system = "System", power = "Power", wifi = "Wi-Fi", bluetooth = "Bluetooth" }
+                      wallpaper = "Wallpaper", system = "System", power = "Power", wifi = "Wi-Fi", bluetooth = "Bluetooth", keys = "Shortcuts" }
 local function ago(t) local s = os.time() - (tonumber(t) or 0); if s < 3600 then return math.max(1, s // 60) .. " min" elseif s < 86400 then return (s // 3600) .. " h" end; return (s // 86400) .. " d" end
 local function dnd_state()
     local n = type(N.settings.notifications) == "table" and N.settings.notifications or {}
@@ -1405,8 +1408,47 @@ N.power_choose = function(i)
         after(3100, function() if N.panel == "power" then show_power(); render() end end)
     end
 end
+-- the shortcut sheet (D267; k4's and Minflair's Super+K): what Hyprland has bound now, in words. The binds are
+-- Hyprland's answer; the words are the config's own comments and mooi's names (lib/node/keysheet), read each time
+-- the page opens, so a key changed a minute ago is shown as it is.
+N.kq, N.ksc, N.krows = "", 0, {}
+local KEYS_SHOWN = 10
+local function show_keys()
+    local rows = KS.filter(N.krows, N.kq)
+    N.ksc = math.max(0, math.min(N.ksc, #rows - KEYS_SHOWN))
+    local out = {}
+    for i = 1, KEYS_SHOWN do
+        local r = rows[N.ksc + i]
+        if r then out[i] = { keys = r.keys, what = r.what } end
+    end
+    model.kb = out
+    fact.nd_kmore = math.max(0, #rows - N.ksc - KEYS_SHOWN)
+    N.panel_sub = (#rows == #N.krows and #rows or (#rows .. " OF " .. #N.krows)) .. " SHORTCUTS"
+    text.nd_pgs = N.panel_sub
+end
+local function load_keys()
+    local binds, words = nil, nil
+    local function both()
+        if not (binds and words) then return end
+        N.krows = KS.rows(binds, words)
+        if N.panel == "keys" then show_keys(); render() end
+    end
+    run("hyprctl", { "binds", "-j" }, function(out, code)
+        local ok, b = pcall(json.decode, out or "")
+        binds = (code == 0 and ok and type(b) == "table") and b or {}
+        both()
+    end)
+    run("mooi", { "keys-text" }, function(out)
+        local name = function(c) return KS.mooi_name(c, DESK.ACTIONS) end
+        local w = KS.words(out or "", name)
+        -- mooi's chosen keys, as it hands them to Hyprland (lib/desktop's file, in this same data folder)
+        KS.words(read("hypr.lua") or "", name, w)
+        words = w
+        both()
+    end)
+end
 local PANEL_SHOW = { calendar = show_calendar, notes = show_notes, clipboard = show_clipboard, stash = show_stash,
-                     wallpaper = show_walls, power = show_power, wifi = show_wifi, bluetooth = show_bluetooth }
+                     wallpaper = show_walls, power = show_power, wifi = show_wifi, bluetooth = show_bluetooth, keys = show_keys }
 show_panel = function(b)
     local pg = PANEL_PAGES[N.panel] or 0
     if pg == 0 then show_panel_home(b); return end
@@ -1428,6 +1470,7 @@ open_panel = function(page)
     N.panel = PANEL_PAGES[page] and page or "home"
     N.panel_sub, N.panel_shown = "", nil
     if N.panel == "notes" then text.nd_nq = "" end
+    if N.panel == "keys" then N.kq, N.ksc, text.nd_kq = "", 0, ""; load_keys() end
     if N.panel == "wifi" then N.wifi_ssid, fact.nd_wsel, text.nd_wpw, fact.nd_werron = "", 0, "", false end
     ST.hold(N.st, "panel")
     panel_state()
@@ -1772,6 +1815,9 @@ on("nd_cmd", function(v)
         if N.studio.open then close_studio() else open_studio() end
     elseif v == 5 then
         if ST.held(N.st, "time") then ST.release(N.st, "time"); render() else open_time() end
+    elseif v == 6 then
+        -- the shortcut sheet (D267): Super+K again lets it go
+        if ST.held(N.st, "panel") and N.panel == "keys" then ST.release(N.st, "panel"); render() else open_panel("keys") end
     end
 end)
 
@@ -1868,6 +1914,8 @@ on("nd_pclose", function() ST.release(N.st, "panel"); render() end)
 
 -- on the panel's pages: the month's turns, a note kept, a row copied or opened, a picture worn
 on("text:nd_nq", function(v) N.nq = tostring(v or "") end)
+on("text:nd_kq", function(v) N.kq, N.ksc = tostring(v or ""), 0; if N.panel == "keys" then show_keys(); render() end end)
+on("nd_ksc", function(v) N.ksc = N.ksc + (math.floor(tonumber(v) or 0) * 3); if N.panel == "keys" then show_keys(); render() end end)
 on("nd_br", function(v)
     v = math.floor(tonumber(v) or 0)
     local page = N.panel

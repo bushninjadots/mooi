@@ -158,6 +158,8 @@ SETTERS = [
     "node.on", "node.pointer", "node.anchor", "node.media", "node.notices",
     "node.workspaces", "node.volume", "node.system", "node.wallpaper",
     "keys.node_launch", "keys.node_universe", "keys.node_time", "node.privacy", "node.lyrics",
+    # D267: the shortcut sheet. Appended.
+    "keys.node_keys",
 ]
 # codes 100 + n and 200 + n are the modules' show and frame, so settings past the 99th go on from
 # 300 (lib/setters `apply` reads them back the same way)
@@ -194,6 +196,7 @@ KEYS = [("search", "Search", "Open search (starts mooi if it is not running)"),
         ("node_launch", "The Pill: search", "The node widens into a search line (Super+Space was the float toggle)"),
         ("node_universe", "The Pill: workspaces", "The workspaces round the node; arrows or the wheel, Return goes there"),
         ("node_time", "The Pill: time", "A timer, a stopwatch, focus rounds and an alarm, grown from the node"),
+        ("node_keys", "The Pill: shortcuts", "Every key Hyprland has bound, in words, with a filter"),
         ("stop", "Stop mooi", "Back to ArchEclipse")]
 
 SCHEMES = [("Balanced", 0), ("Faithful", 1), ("Expressive", 2), ("True to image", 3), ("Playful", 4),

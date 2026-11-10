@@ -295,6 +295,8 @@ M.SETTERS = {
     "node.on", "node.pointer", "node.anchor", "node.media", "node.notices",
     "node.workspaces", "node.volume", "node.system", "node.wallpaper",
     "keys.node_launch", "keys.node_universe", "keys.node_time", "node.privacy", "node.lyrics",
+    -- D267: the shortcut sheet. Appended.
+    "keys.node_keys",
 }
 
 local function row_of(path)

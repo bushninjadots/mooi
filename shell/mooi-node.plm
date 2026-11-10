@@ -599,6 +599,10 @@ scene Node {
     model br max 7 { label: text; detail: text; pinned: bool }
     model wl max 7 { img: image 112, 63; on: bool }
     text nd_nq = ""
+    // the shortcut sheet (D267): ten rows of what Hyprland has bound, a filter, how many more below
+    model kb max 10 { keys: text; what: text }
+    text nd_kq = ""
+    fact nd_kmore = 0
     // BMO as the seed (D253): the bar's own face (ui/bmoface.plm), his expression from bmo-shared.json
     fact pb_ew = 8
     fact pb_eh = 14
@@ -672,7 +676,7 @@ scene Node {
     event nd_lr ->        // a launcher row
     event nd_un ->        // a workspace in the universe
     event nd_key ->       // a key while the node holds the keyboard
-    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time
+    event nd_cmd ->       // from `mooi node …`: 1 wake (Super) · 2 launcher · 3 universe · 4 studio · 5 time · 6 keys
     event nd_osd ->       // from `mooi osd` (D265): a lock key or game mode for the gauge (lib/node/gauge decode)
     event nd_tab ->       // the studio: a page
     event nd_sk ->        // the studio: a slider, row * 2000 + where along it (0 … 1000: a stride of 2000, never ambiguous)
@@ -697,6 +701,7 @@ scene Node {
     event nd_pclose ->    // the panel: a press on its empty body closes it
     event nd_wheel ->     // the wheel over the node: 1 up · -1 down (the volume)
     event nd_sys ->       // a reading of the system cluster pressed (D249: btop, in the owner's terminal)
+    event nd_ksc ->       // the shortcut sheet scrolled: -1 up, 1 down (three rows a notch)
     event nd_br ->        // in a branch: 1 back a month / step · 2 on a month / step · 10 + row a row · 30 + row its second press
     event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted
     event nd_seek ->      // the player: where along the song (0 … 1000)
@@ -1199,6 +1204,21 @@ scene Node {
                         on press prr { emit nd_br(10 + r.index) }
                     }
                 }
+                group { show: nd_pgp == 10
+                    box { from: nb_x + 16, nb_y + 58; size: nb_w - 32, 32; corner: 16 * max(0.3, nd_rnd); color: fl.well }
+                    text "󰍉" { at: nb_x + 34, nb_y + 74; anchor: center; size: 13; family: "CaskaydiaCove Nerd Font"; color: nd_acc }
+                    input nd_kq { at: nb_x + 52, nb_y + 64; width: nb_w - 88; size: 12; family: "Exo 2"; color: fl.engrave; selection: fl.hull_raised; placeholder: "filter: a key, or what it does" }
+                    for k in kb {
+                        let ky = nb_y + 100 + k.index * 32
+                        box { from: nb_x + 12, ky; size: nb_w - 24, 28; corner: 8 * nd_rnd; color: fl.well; opacity: if(k.index - floor(k.index / 2) * 2 == 0, 0.45, 0.2) }
+                        text k.keys { at: nb_x + 24, ky + 14; anchor: left center; size: 10; weight: 700; family: "Share Tech Mono"; color: nd_acc; width: 190; lines: 1 }
+                        text k.what { at: nb_x + 222, ky + 14; anchor: left center; size: 11; family: "Exo 2"; color: fl.engrave; width: nb_w - 246; lines: 1 }
+                    }
+                    text "{nd_kmore, 0} MORE · ↑ ↓ OR THE WHEEL" { at: nb_x + nb_w / 2, nb_y + 433; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: nd_kmore > 0.5 }
+                    text "Nothing bound matches" { at: nb_x + nb_w / 2, nb_y + 130; anchor: center; align: center; size: 11; family: "Exo 2"; color: fl.muted; show: kb.count == 0 }
+                    zone box pksz { from: nb_x + 12, nb_y + 100; size: nb_w - 24, 320; show: nd_kind == 13 and nd_pgp == 10 }
+                    on scroll pksz { emit nd_ksc(if(wheel > 0, -1, 1)) }
+                }
                 group { show: nd_pgp == 5
                     for w in wl {
                         let wx = nb_x + 16 + w.index * ((nb_w - 32) / 7)
@@ -1372,6 +1392,7 @@ scene Node {
         }
         on submit nd_nq { emit nd_br(90) }
         on change nd_kb while nd_kb and nd_kind == 13 and nd_pgp == 2 { focus nd_nq }
+        on change nd_kb while nd_kb and nd_kind == 13 and nd_pgp == 10 { focus nd_kq }
         // notices: a stem drops from the node, and the cards branch from it one after another (each grows out of
         // the stem's foot: it slides down from it, opening as it comes)
         group { show: nd_kind == 2

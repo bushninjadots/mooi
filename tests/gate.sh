@@ -21,6 +21,12 @@ for f in shell/*.luau shell/lib/*.luau shell/lib/surface/*.luau shell/player/*.l
     F="$f" lua5.4 -e 'local _, e = loadfile(os.getenv("F")); if e then io.stderr:write(e, "\n"); os.exit(1) end' || exit 1
 done
 
+echo "logic files use no bitwise operators"
+# Pleamar runs Luau, which has none (`&`, `|`, `~`, `<<`, `>>`), while the unit suite runs Lua 5.4, which has
+# them: a mask written `a & b` passes every test and kills the scene's logic at start (D267's first try took the
+# node down). Strings and comments are taken out before looking.
+lua5.4 tests/luau-ops.lua shell || exit 1
+
 echo "requires are pleamar paths"
 # Pleamar resolves `require("lib/x")` only: a dotted name works under plain Lua (so the unit tests
 # pass) and kills the scene's logic at start (2026-11-06: lib.sysinfo took the whole bar down).

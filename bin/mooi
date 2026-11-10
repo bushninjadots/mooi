@@ -38,6 +38,7 @@
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi game-mode [on|off|status]  game mode: no animations, blur, shadows or gaps; VRR on; put back exactly after
+#   mooi keys-text         Hyprland's config files as written (the node's shortcut sheet reads its words)
 #   mooi osd caps|num      the node's gauge for a lock key (Hyprland's Caps_Lock and Num_Lock binds call it)
 #   mooi open              same as `window` (kept for old scripts)
 #   mooi say CMD…          pass a command to the running scene (pleamar --say)
@@ -1545,6 +1546,11 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     game-mode) game_mode "$@"; exit $? ;;
+    keys-text) # D267: Hyprland's config as written, for the node's shortcut sheet to read the binds' own words
+               # from (Hyprland 0.57's Lua binds do not say what they run). The main file, then the parts it reads.
+        c="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+        for f in "$c/hyprland.lua" "$c"/config/*.lua "$c"/config/custom/*.lua; do [ -r "$f" ] && cat "$f" && echo; done
+        exit 0 ;;
     osd) # D265: a lock key's state for the node's gauge, as Hyprland's main keyboard has it (Minflair's OSD).
          # The bind runs on the press, before Hyprland has turned the lock, so it looks a moment later.
         case "${1:-}" in caps) field=capsLock code=1 ;; num) field=numLock code=2 ;; *) echo "usage: mooi osd caps|num" >&2; exit 2 ;; esac
@@ -1556,7 +1562,7 @@ case "$cmd" in
     pill) "$pleamar" --say mooi-node "emit nd_cmd 1" >/dev/null 2>&1 || : ;;   # D226: the node; none, nothing (D227)
     node) # D226: the node (the Dynamic Pill) — wake | launch (Super+Space) | universe (Super+Tab) | studio (D229:
           # its look); without it, mooi's own search and the Overview answer
-        case "${1:-wake}" in wake) n=1 ;; launch) n=2 ;; universe) n=3 ;; studio) n=4 ;; time) n=5 ;; *) echo "usage: mooi node [wake|launch|universe|studio|time]" >&2; exit 2 ;; esac
+        case "${1:-wake}" in wake) n=1 ;; launch) n=2 ;; universe) n=3 ;; studio) n=4 ;; time) n=5 ;; keys) n=6 ;; *) echo "usage: mooi node [wake|launch|universe|studio|time|keys]" >&2; exit 2 ;; esac
         "$pleamar" --say mooi-node "emit nd_cmd $n" >/dev/null 2>&1 && exit 0
         case "$n" in 2) exec "$self" toggle ;; 3) exec "$pleamar" --say "$name" "emit open_overview" ;; *) : ;; esac ;;
     bury) # D224: Super+Alt+B — the focused window buried under the wallpaper, a tile left where the pointer is
