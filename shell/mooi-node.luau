@@ -19,6 +19,7 @@ local HY = require("lib/hypr")
 local MK = require("lib/node/mediakit")
 local NT = require("lib/node/notices")
 local CALC = require("lib/node/calc")
+local MX = require("lib/node/mixer")
 local VF = require("lib/vizfeed")
 local IX = require("lib/node/interaction")
 local SAT = require("lib/node/satellites")
@@ -800,12 +801,55 @@ on("nd_pl", function(v)
     elseif v == 2 or v == 3 or v == 4 then
         pcall(sys.call, ({ [2] = "media.previous", [3] = "media.toggle", [4] = "media.next" })[v])
         if v == 3 and N.pl then N.pl.playing = not N.pl.playing; N.pl.position_ms = N.pl.position_ms + (wall() - (N.pl_at or wall())); N.pl_at = wall() end
+    elseif v == 7 then
+        fact.nd_mix = not fact.nd_mix
+        if fact.nd_mix and N.mix_poll then N.mix_poll() end
     elseif v == 6 then
         fact.nd_micm = not fact.nd_micm
         local argv = DV.toggle_source_mute()
         run(argv[1], { table.unpack(argv, 2) }, function() end)
     end
     player_show()
+end)
+-- the mixer (D239): one row per app playing, from PipeWire's playback streams, polled each second while shown
+N.mix = {}
+local function mix_rows()
+    local rows = {}
+    for i, a in ipairs(N.mix) do if i <= 4 then rows[i] = { name = a.name, vol = math.min(1, a.volume), muted = a.muted } end end
+    model.mx = rows
+end
+N.mix_poll = function()
+    run("pactl", { "-f", "json", "list", "sink-inputs" }, function(out, code)
+        local ok, list = pcall(json.decode, out or "")
+        if code ~= 0 or not ok then return end
+        if N.mix_drag then return end
+        N.mix = MX.group(list)
+        mix_rows()
+    end)
+end
+every(1000, function() if N.kind == "player" and fact.nd_mix then N.mix_poll() end end)
+local function run_all(cmds) for _, argv in ipairs(cmds) do run(argv[1], { table.unpack(argv, 2) }, function() end) end end
+on("nd_mx", function(v)
+    v = math.floor(tonumber(v) or 0)
+    local a = N.mix[v // 2000 + 1]
+    if not a then return end
+    a.volume = math.min(1000, v % 2000) / 1000
+    mix_rows()
+    N.mix_drag = true
+    N.mx_gen = (N.mx_gen or 0) + 1
+    local g = N.mx_gen
+    after(80, function()
+        if g ~= N.mx_gen then return end
+        run_all(MX.set_volume(a, a.volume))
+        after(600, function() if g == N.mx_gen then N.mix_drag = false end end)
+    end)
+end)
+on("nd_mxm", function(v)
+    local a = N.mix[math.floor(tonumber(v) or -1) + 1]
+    if not a then return end
+    a.muted = not a.muted
+    mix_rows()
+    run_all(MX.set_mute(a, a.muted))
 end)
 on("nd_seek", function(v)
     local f = math.max(0, math.min(1000, tonumber(v) or 0)) / 1000

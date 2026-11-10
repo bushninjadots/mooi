@@ -150,6 +150,8 @@ def scene():
           '    text nd_pos = "0:00"', '    text nd_len = "0:00"',
           '    fact nd_bri = 0.5', '    fact nd_mic = 0.5', '    fact nd_micm = false',
           '    fact nd_hasbri = false',
+          '    fact nd_mix = false   // the player\'s other page: one row per app playing (D239)',
+          '    model mx max 4 { name: text; vol: number; muted: bool }',
           ] + [f'    fact nd_sp{i} = 0' for i in range(32)] + [
           '    // privacy (D232): the microphone or the camera started or stopped',
           '    text nd_pvt = ""', '    text nd_pvd = ""', '    fact nd_pvon = false',
@@ -178,6 +180,8 @@ def scene():
           '    event nd_dn ->        // the finish card answered',
           '    event nd_pl ->        // the player: 1 shuffle · 2 back · 3 play / pause · 4 next · 5 loop · 6 the mic muted',
           '    event nd_seek ->      // the player: where along the song (0 … 1000)',
+          '    event nd_mx ->        // the mixer: row * 2000 + its level (0 … 1000)',
+          '    event nd_mxm ->       // the mixer: a row muted or not',
           '    event nd_mt ->        // the player: a meter dragged, meter * 2000 + its level (0 … 1000) · 0 volume · 1 light · 2 mic',
           '']
     L += surface()
@@ -385,7 +389,7 @@ def player_parts(c, acc, ink, dim, hull):
          f'{c}    group {{ clip box {{ from: nb_x + 16, nb_y + 16; size: 132, 132; corner: if(nd_cov == 1, 66, max(3, 14 * nd_rnd)) }}',
          f'{c}        box {{ from: nb_x + 16, nb_y + 16; size: 132, 132; color: fl.well }}',
          f'{c}        image nd_cover {{ at: nb_x + 16, nb_y + 16; size: 132, 132; fit: cover; show: nd_arted }} }}',
-         f'{c}    text nd_title {{ at: nb_x + 164, nb_y + 32; anchor: left center; size: 16; weight: 700; family: {SANS}; color: {ink}; width: pw; lines: 1 }}',
+         f'{c}    text nd_title {{ at: nb_x + 164, nb_y + 32; anchor: left center; size: 16; weight: 700; family: {SANS}; color: {ink}; width: pw - 66; lines: 1 }}',
          f'{c}    text nd_artist {{ at: nb_x + 164, nb_y + 54; anchor: left center; size: 11; family: {MONO}; color: {dim}; width: pw; lines: 1 }}',
          f'{c}    box {{ from: nb_x + 164, nb_y + 78; size: pw, 3; corner: 1.5; color: fl.trace_dim }}',
          f'{c}    box {{ from: nb_x + 164, nb_y + 78; size: pw * nd_prog, 3; corner: 1.5; color: {acc} }}',
@@ -395,18 +399,40 @@ def player_parts(c, acc, ink, dim, hull):
          f'{c}    zone box pkz {{ from: nb_x + 158, nb_y + 68; size: pw + 12, 22; cursor: pointer; role: slider; label: "Where in the song"; value: "{{nd_pos}}"; show: nd_kind == 11 }}',
          f'{c}    on press pkz {{ emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }}',
          f'{c}    on drag pkz {{ emit nd_seek(round(clamp((pointer.x - nb_x - 164) / pw, 0, 1) * 1000)) }}']
+    L += [f'{c}    group {{ show: not nd_mix']
     for i, (glyph, code, lit, label) in enumerate((("⤮", 1, "nd_shuf", "Shuffle"), ("⏮", 2, "false", "Back"), ("⏯", 3, "false", "Play or pause"),
                                                    ("⏭", 4, "false", "Next"), ("⟲", 5, "nd_loop > 0", "Repeat"))):
         x = f"nb_x + 164 + {i * 46}"
         big = code == 3
-        L += [f'{c}    box {{ from: {x}, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: {acc}; opacity: if({"true" if big else "false"}, 0.9, if({lit}, 0.22, if(pbz{code}.hover, 0.12, 0))) }}',
-              f'{c}    text "{glyph}" {{ at: {x} + 19, nb_y + 127; anchor: center; align: center; size: {17 if big else 15}; family: {SANS}; color: if({"true" if big else "false"}, fl.ground, if({lit}, {acc}, {ink})) }}',
-              f'{c}    zone box pbz{code} {{ from: {x}, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "{label}"; show: nd_kind == 11 }}',
-              f'{c}    on press pbz{code} {{ emit nd_pl({code}) }}']
-    L += [f'{c}    text "1" {{ at: nb_x + 164 + 4 * 46 + 30, nb_y + 116; anchor: center; size: 8; weight: 700; family: {MONO}; color: {acc}; show: nd_loop == 2 }}',
-          f'{c}    // the music, mirrored: the low bands meet in the middle']
+        L += [f'{c}        box {{ from: {x}, nb_y + 108; size: 38, 38; corner: 19 * max(0.3, nd_rnd); color: {acc}; opacity: if({"true" if big else "false"}, 0.9, if({lit}, 0.22, if(pbz{code}.hover, 0.12, 0))) }}',
+              f'{c}        text "{glyph}" {{ at: {x} + 19, nb_y + 127; anchor: center; align: center; size: {17 if big else 15}; family: {SANS}; color: if({"true" if big else "false"}, fl.ground, if({lit}, {acc}, {ink})) }}',
+              f'{c}        zone box pbz{code} {{ from: {x}, nb_y + 108; size: 38, 38; corner: 19; cursor: pointer; role: button; label: "{label}"; show: nd_kind == 11 }}',
+              f'{c}        on press pbz{code} {{ emit nd_pl({code}) }}']
+    L += [f'{c}        text "1" {{ at: nb_x + 164 + 4 * 46 + 30, nb_y + 116; anchor: center; size: 8; weight: 700; family: {MONO}; color: {acc}; show: nd_loop == 2 }}',
+          f'{c}        // the music, mirrored: the low bands meet in the middle']
     for k in range(32):
-        L += [f'{c}    box {{ from: nb_x + 164 + {k} * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp{k} * 34; size: pw / 32 - 2, nd_sp{k} * 34 + 1; corner: 1; color: {acc}; opacity: 0.35 + 0.4 * nd_sp{k} }}']
+        L += [f'{c}        box {{ from: nb_x + 164 + {k} * pw / 32 + 1, nb_y + nb_h - 10 - nd_sp{k} * 34; size: pw / 32 - 2, nd_sp{k} * 34 + 1; corner: 1; color: {acc}; opacity: 0.35 + 0.4 * nd_sp{k} }}']
+    L += [f'{c}    }}']
+    # the mixer: one row per app that plays, its level to drag, its mute
+    L += [f'{c}    group {{ show: nd_mix',
+          f'{c}        for a in mx {{',
+          f'{c}            let my = nb_y + 104 + a.index * 24',
+          f'{c}            text a.name {{ at: nb_x + 164, my + 8; anchor: left center; size: 10; family: {SANS}; color: if(a.muted, {dim}, {ink}); width: 110; lines: 1 }}',
+          f'{c}            box {{ from: nb_x + 280, my + 6; size: pw - 150, 4; corner: 2; color: fl.trace_dim }}',
+          f'{c}            box {{ from: nb_x + 280, my + 6; size: (pw - 150) * a.vol, 4; corner: 2; color: if(a.muted, fl.trace_lit, {acc}) }}',
+          f'{c}            zone box mxz {{ from: nb_x + 274, my - 2; size: pw - 138, 20; cursor: ew_resize; role: slider; label: "{{a.name}}"; value: a.vol; show: nd_kind == 11 and nd_mix }}',
+          f'{c}            on press mxz {{ emit nd_mx(a.index * 2000 + round(clamp((pointer.x - nb_x - 280) / (pw - 150), 0, 1) * 1000)) }}',
+          f'{c}            on drag mxz {{ emit nd_mx(a.index * 2000 + round(clamp((pointer.x - nb_x - 280) / (pw - 150), 0, 1) * 1000)) }}',
+          f'{c}            text if(a.muted, "MUTED", "MUTE") {{ at: nb_x + 164 + pw, my + 8; anchor: right center; align: right; size: 8; weight: 700; family: {MONO}; color: if(a.muted, fl.ember, if(mxmz.hover, {ink}, {dim})) }}',
+          f'{c}            zone box mxmz {{ from: nb_x + 164 + pw - 40, my - 2; size: 42, 20; cursor: pointer; role: toggle; label: "Mute {{a.name}}"; checked: a.muted; show: nd_kind == 11 and nd_mix }}',
+          f'{c}            on press mxmz {{ emit nd_mxm(a.index) }}',
+          f'{c}        }}',
+          f'{c}        text "NOTHING ELSE PLAYS" {{ at: nb_x + 164, nb_y + 112; anchor: left center; size: 9; family: {MONO}; color: {dim}; show: mx.count == 0 }}',
+          f'{c}    }}',
+          f'{c}    // the page\'s switch',
+          f'{c}    text if(nd_mix, "PLAYER", "MIX") {{ at: nb_x + 164 + pw, nb_y + 32; anchor: right center; align: right; size: 9; weight: 700; family: {MONO}; color: if(pmxz.hover or nd_mix, {acc}, {dim}) }}',
+          f'{c}    zone box pmxz {{ from: nb_x + 164 + pw - 56, nb_y + 21; size: 58, 22; cursor: pointer; role: toggle; label: "Each app\'s volume"; checked: nd_mix; show: nd_kind == 11 }}',
+          f'{c}    on press pmxz {{ emit nd_pl(7) }}']
     meters = (("VOL", "nd_vol", 0), ("LIGHT", "nd_bri", 1), ("MIC", "nd_mic", 2))
     for label, val, m in meters:
         x = f"nb_x + nb_w - {136 - m * 44}"

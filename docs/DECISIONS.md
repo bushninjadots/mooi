@@ -6728,3 +6728,12 @@ launcher uses it as the weakest match for commands and windows (`wpp` for the wa
 O(query × name²); measured at ≈ 9 ms per keystroke over 200 long names, so it is left as written.
 
 **Verified.** Unit 722 / 0; scenes compile; `bin/mooi check` green.
+
+## D239 · 2026-11-10 · Each app's volume, in the player
+
+The player's MIX switch, beside the song title, turns its lower half into a mixer: one row per app playing (a
+browser with many tabs is one row), each with a level to drag (told to PipeWire once it rests) and a mute. Rows
+come from `pactl -f json list sink-inputs` through `lib/node/mixer` (opencode's, D230), polled each second only
+while the page is shown. The poll is ignored while a level is being dragged, so the row never jumps back.
+
+**Verified.** Unit 723 / 0; scenes compile; `bin/mooi check` green.
