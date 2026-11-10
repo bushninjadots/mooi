@@ -67,8 +67,8 @@ every page and as tall as the page needs. Super again, Esc, or a press on an emp
 - **Bluetooth** — the adapter and the device in use, with its battery when it says. The devices follow,
   connected first then paired then the rest; press one to connect or disconnect it. The refresh icon
   looks for more. Without an adapter the page says so.
-- **System** — CPU, memory, temperature, network and battery as cards, each with its last twenty samples.
-  Press the processor, memory or heat card for btop.
+- **System** — CPU, memory, temperature, network, battery, GPU and disk as cards, each with its last twenty samples.
+  Press the processor, memory, heat or GPU card for btop.
 
 Every page ends in the same row of icons: home, calendar, notes, clipboard, stash, wallpaper, system,
 Wi-Fi, Bluetooth, settings, Control Nexus and power. The current page is lit. Wi-Fi and Bluetooth are
@@ -188,7 +188,8 @@ Super+Space opens the search line. Type, and the node looks for:
 - **Applications** — the apps you use most first, then the ones whose names match.
 - **mooi's commands** — Settings, The Pill's studio, the time panel, the wallpaper picker, arranging
   the widgets, Control Nexus, the music player, clipboard history, quick notes, the board, every
-  workspace, light or dark, locking the screen, recording the screen and game mode. Nothing that stops,
+  workspace, light or dark, locking the screen, recording the screen, game mode, copying text from the
+  screen (choose a region; its words go to the clipboard) and updating the system. Nothing that stops,
   restarts or rewrites anything is in the list.
 - **Open windows** — by title or application; each row is tagged `WINDOW` and the workspace it is on.
 - **Sums** — `200+10%` gives `= 220`, `2^10` gives `= 1024`, `sqrt(9)` gives `= 3`.
@@ -295,10 +296,12 @@ lyrics cache or from LRCLIB, once per song; see Privacy below.
 
 ### The system page
 
-The panel's system page shows the machine in five cards: `CPU`, `RAM`, `TEMP`, `NET` and `BAT`, each with
-its value and its last twenty samples. A reading turns warm when the processor is over 85%, memory over
-90%, the temperature over 85°, the network is offline, or the battery is below 20% and unplugged. A
-reading that is not available shows `—`. Press the processor, memory or heat card for btop.
+The panel's system page shows the machine in seven cards: `CPU`, `RAM`, `TEMP`, `NET`, `BAT`, `GPU` and
+`DISK`, each with its value and its last twenty samples. A reading turns warm when the processor is over
+85%, memory over 90%, the temperature over 85°, the network is offline, the battery is below 20% and
+unplugged, the GPU is over 90% busy, or the home folder's disk is over 90% full. A GPU that does not say
+how busy it is shows `—`. A
+reading that is not available shows `—`. Press the processor, memory, heat or GPU card for btop.
 
 ## The studio
 
@@ -471,6 +474,11 @@ The node is local. It does not send anything anywhere except the one lyrics requ
   search runs `mooi pkg search`, which asks `pacman -Ss` (the local database) and `paru -Ssa` or
   `yay -Ssa`, **which sends the words you typed to aur.archlinux.org**. Nothing is installed or
   connected without your Return, and then only in a terminal you see.
+- **The GPU and the disk** — only while the System page is open, every two seconds: the first
+  `/sys/class/drm/card0…3/device/gpu_busy_percent` that answers (found once), else `nvidia-smi`; and
+  `df -P` on your home folder.
+- **Text from the screen** — `mooi capture text` runs `slurp` for the region, `grim` to photograph it and
+  `tesseract` to read it, down a pipe: no picture is saved. The words go to `wl-copy` and a notice.
 - **The lock keys** — Hyprland's `Caps_Lock` and `Num_Lock` binds run `mooi osd caps|num`, which asks
   `hyprctl devices -j` whether the main keyboard's lock is on. Nothing is read from the keyboard itself.
 - **Copying an answer** — a chosen sum or conversion goes to `wl-copy`.

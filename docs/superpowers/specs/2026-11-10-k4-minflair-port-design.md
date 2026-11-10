@@ -86,6 +86,11 @@ command in the search line.
 or `nvidia-smi`, read every two seconds only while the page shows) and `DISK` (the home folder's file
 system, `df`), as cards like the others.
 
+## Status
+
+Wave 1 is built: the gauge (D265), game mode (D266), the shortcut sheet (D267), SSH and packages (D268), text from
+the screen (D269), and the GPU and disk cards (D270). Wave 2 waits for the owner's word on which comes first.
+
 ## Testing
 
 Each piece is pure where it can be (`lib/node/keysheet`, `lib/node/ssh`, `lib/node/pkgs`, `lib/gamemode`)

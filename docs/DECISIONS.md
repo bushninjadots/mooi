@@ -7202,3 +7202,30 @@ does not give.
 **Verified.** Unit 855 / 0; live after `mooi refresh`: `pkg ripgrep` gave three repository rows (two marked
 installed) and two AUR rows. SSH was not tried live: this machine has no `~/.ssh/config`; its parsing and
 matching are unit-tested.
+
+## D269 · 2026-11-10 · Text from the screen (Minflair's OCR)
+
+`mooi capture text`, and **Copy text from the screen** in the search line: choose a region with slurp, grim
+photographs it, tesseract reads it (English, or `MOOI_OCR_LANG` such as `eng+jpn`), and the words go to the
+clipboard with a notice showing their start. The picture goes from grim to tesseract down a pipe, so nothing is
+saved. Esc at the region ends it without a word; a region with no words copies nothing and says so; a missing tool
+is named in the notice.
+
+`tests/capture-text.sh` runs it with stand-ins for the region, the screen, the clipboard and the notices, and the
+real tesseract reading a picture of known words. Its first version left the real slurp reachable in the
+missing-tool case, which opened a region chooser on the desktop until it was ended by hand; that case now runs on
+a PATH of links with slurp left out.
+
+**Verified.** `tests/capture-text.sh` 11 / 0 (in the gate; skipped where tesseract or ImageMagick is missing).
+
+## D270 · 2026-11-10 · The GPU and the disk on the System page (Minflair's)
+
+The System page grows from five cards to seven: `GPU`, how busy the graphics card is, with its history like the
+processor's, and `DISK`, how full the home folder's file system is. Both are asked every two seconds and only
+while the page is open. The GPU's source is found once: the first `card0…3/device/gpu_busy_percent` the kernel
+offers (AMD, and Intel's newer drivers), else `nvidia-smi`; a card that says neither shows `—`. The disk is
+`df -P` on the home folder. The GPU card opens btop like the processor's. The page is 520 px tall now.
+`lib/node/sysextra` reads the three outputs; `df` and `nvidia-smi` join the node's allowed commands.
+
+**Verified.** Unit 857 / 0; the scene compiles; live after `mooi refresh`: GPU 43% with its history from card1's
+busy file, DISK 74%.

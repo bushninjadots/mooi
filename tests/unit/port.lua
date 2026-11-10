@@ -168,3 +168,23 @@ do
         eq(require("lib/node/commands").match("update the system")[1].term, true)
     end)
 end
+
+section("the System page's GPU and disk (D270, Minflair's)")
+do
+    local SX = require("lib/node/sysextra")
+    test("readings from the kernel's busy file, nvidia-smi and df", function()
+        eq(SX.busy("48\n"), 48); eq(SX.busy("7\n12\n"), 7, "the first card"); eq(SX.busy("[N/A]"), nil); eq(SX.busy(""), nil)
+        eq(SX.busy("250"), 100, "held to 100")
+        local d = SX.disk("Filesystem 1024-blocks Used Available Capacity Mounted on\n/dev/nvme0n1p2 498008372 362050468 132614524 74% /home\n")
+        eq(d.pct, 74); eq(d.size, 498008372 * 1024)
+        eq(SX.disk("df: /nowhere: No such file"), nil); eq(SX.disk(""), nil)
+        eq(#SX.BUSY, 4); eq(SX.BUSY[2], "/sys/class/drm/card1/device/gpu_busy_percent")
+    end)
+    test("asked only while the System page is open; seven cards; the GPU card opens btop", function()
+        local l, g = read("shell/mooi-node.luau"), read("tools/gen-node.py")
+        assert(l:find('every(2000, function() if N.kind == "panel" and N.panel == "system" then poll_extra() end end)', 1, true))
+        assert(l:find('if row < 1 or (row > 3 and row ~= 6) then return end', 1, true))
+        assert(g:find('"hyprctl", "df", "nvidia-smi"', 1, true), "the two commands are allowed")
+        eq(require("lib/node/geometry").PANEL_H.system, 520)
+    end)
+end

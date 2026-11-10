@@ -38,6 +38,7 @@ local WB = require("lib/wbelow")          -- the apps' ranking (Launch's grid's,
 local KS = require("lib/node/keysheet")
 local SSH = require("lib/node/ssh")
 local PK = require("lib/node/pkgs")
+local SX = require("lib/node/sysextra")
 local DESK = require("lib/desktop")
 
 local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, panel = 13 }
@@ -218,6 +219,9 @@ local function show_system(b)
         { "TEMP", f.temp and (math.floor(f.temp) .. "°") or "—", (tonumber(f.temp) or 0) > 85, math.min(1, (tonumber(f.temp) or 0) / 100), true, N.hist.temp },
         { "NET", N.online and "ON" or "OFF", not N.online, N.online and 1 or 0, false },
         { "BAT", N.bat and (math.floor(N.bat + 0.5) .. "%" .. (N.charging and "+" or "")) or "—", N.bat ~= nil and DV.band(N.bat) == "critical" and not N.charging, (N.bat or 0) / 100, false },
+        -- D270 (Minflair's): the graphics card, when it says, and the home folder's disk
+        { "GPU", N.gpu and (math.floor(N.gpu + 0.5) .. "%") or "—", (N.gpu or 0) > 90, (N.gpu or 0) / 100, true, N.hist.gpu },
+        { "DISK", N.disk and (math.floor(N.disk.pct + 0.5) .. "%") or "—", N.disk ~= nil and N.disk.pct > 90, N.disk and N.disk.pct / 100 or 0, false },
     }
     local rows = {}
     -- D260: the panel's System page is a two-column grid of cards, each with its last twenty readings
@@ -611,7 +615,7 @@ end
 pcall(sys.watch, "files:nexus-feed.json", notices_now)
 -- the bar's feed: the system's numbers, recording
 -- D249: a short history of each reading, for the graphs
-N.hist = { cpu = HI.new(40), mem = HI.new(40), temp = HI.new(40) }
+N.hist = { cpu = HI.new(40), mem = HI.new(40), temp = HI.new(40), gpu = HI.new(40) }
 local function feed_now()
     local f = read("sigil-feed.json", "json")
     N.feed = type(f) == "table" and f or {}
@@ -1542,6 +1546,7 @@ open_panel = function(page)
     N.panel_sub, N.panel_shown = "", nil
     if N.panel == "notes" then text.nd_nq = "" end
     if N.panel == "keys" then N.kq, N.ksc, text.nd_kq = "", 0, ""; load_keys() end
+    if N.panel == "system" and N.poll_extra then N.poll_extra() end
     if N.panel == "wifi" then N.wifi_ssid, fact.nd_wsel, text.nd_wpw, fact.nd_werron = "", 0, "", false end
     ST.hold(N.st, "panel")
     panel_state()
@@ -1549,6 +1554,45 @@ open_panel = function(page)
     render()
 end
 N.open_panel, N.close_panel = open_panel, function() ST.release(N.st, "panel"); render() end
+
+-- ── the GPU and the disk (D270): asked every two seconds, only while the System page is open. The GPU's source is
+-- found once — the kernel's busy file of the first card that has one, else nvidia-smi — and kept ──
+local function poll_extra()
+    local okh, home = pcall(sys.ask, "env", "HOME")
+    if okh and type(home) == "string" and home:match("^/") then
+        run("df", { "-P", home }, function(out, code)
+            N.disk = code == 0 and SX.disk(out) or nil
+        end)
+    end
+    local function got(v) N.gpu = v; if v then HI.push(N.hist.gpu, v / 100) end; if N.panel == "system" and N.kind == "panel" then render() end end
+    if N.gpu_src == "none" then return end
+    if N.gpu_src == "nvidia" then
+        run("nvidia-smi", SX.NVIDIA, function(out, code) got(code == 0 and SX.busy(out) or nil) end)
+    elseif N.gpu_src then
+        run("cat", { N.gpu_src }, function(out, code) got(code == 0 and SX.busy(out) or nil) end)
+    else
+        local i = 0
+        local function try()
+            i = i + 1
+            local path = SX.BUSY[i]
+            if not path then
+                run("nvidia-smi", SX.NVIDIA, function(out, code)
+                    local v = code == 0 and SX.busy(out) or nil
+                    N.gpu_src = v and "nvidia" or "none"
+                    got(v)
+                end)
+                return
+            end
+            run("cat", { path }, function(out, code)
+                local v = code == 0 and SX.busy(out) or nil
+                if v then N.gpu_src = path; got(v) else try() end
+            end)
+        end
+        try()
+    end
+end
+N.poll_extra = poll_extra
+every(2000, function() if N.kind == "panel" and N.panel == "system" then poll_extra() end end)
 
 -- ── a reading pressed (D249): btop, in the owner's terminal — the first of the usual ones that answers, found
 -- once by asking each its version (no shell), and started through Hyprland so it is a window like any other ──
@@ -1567,9 +1611,9 @@ with_terminal = function(go)
     try()
 end
 on("nd_sys", function(v)
-    -- the first three are the processor, the memory and the heat; the network and the battery open nothing
+    -- the processor, the memory, the heat and (D270) the GPU; the network, the battery and the disk open nothing
     local row = math.floor(tonumber(v) or -1) + 1
-    if row < 1 or row > 3 then return end
+    if row < 1 or (row > 3 and row ~= 6) then return end
     with_terminal(function(t)
         local argv = t and TM.argv(t, { "btop" })
         if not argv then return end

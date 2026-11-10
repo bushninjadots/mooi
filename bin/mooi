@@ -38,6 +38,7 @@
 #   mooi identity …        manage local Nexus name, avatar and banner assets
 #   mooi record [area]     start or stop recording the screen (or an area) with the bar's recorder
 #   mooi game-mode [on|off|status]  game mode: no animations, blur, shadows or gaps; VRR on; put back exactly after
+#   mooi capture text      choose a region of the screen: its words (tesseract) go to the clipboard
 #   mooi pkg search WORDS | install NAME [repo|aur] | update   packages: search, and install or update in a terminal
 #   mooi keys-text         Hyprland's config files as written (the node's shortcut sheet reads its words)
 #   mooi osd caps|num      the node's gauge for a lock key (Hyprland's Caps_Lock and Num_Lock binds call it)
@@ -1010,6 +1011,30 @@ pkg_cmd() {
     esac
 }
 
+# Text from the screen (D269, Minflair's OCR): choose a region, and its words go to the clipboard. grim takes the
+# region, tesseract reads it (English, or MOOI_OCR_LANG such as `eng+jpn`), wl-copy keeps it; a notice says what
+# was copied or why nothing was. Nothing is saved: the picture goes from grim to tesseract down a pipe.
+capture_text() {
+    local missing="" t
+    for t in slurp grim tesseract wl-copy; do command -v "$t" >/dev/null 2>&1 || missing="$missing $t"; done
+    if [ -n "$missing" ]; then
+        notify-send -a mooi "Text from the screen" "Needs:$missing" 2>/dev/null || echo "text from the screen needs:$missing" >&2
+        return 1
+    fi
+    local geo lang words
+    geo=$(slurp 2>/dev/null) || return 0          # Esc: nothing chosen, nothing said
+    lang="${MOOI_OCR_LANG:-eng}"
+    case "$lang" in *[!a-z_+]*) lang=eng ;; esac
+    words=$(grim -g "$geo" - | tesseract stdin stdout -l "$lang" 2>/dev/null | sed -e 's/[[:space:]]*$//' | sed -e '/./,$!d')
+    if [ -z "$(printf '%s' "$words" | tr -d '[:space:]')" ]; then
+        notify-send -a mooi "Text from the screen" "No words found there" 2>/dev/null || :
+        return 1
+    fi
+    printf '%s' "$words" | wl-copy
+    notify-send -a mooi "Copied the text" "$(printf '%s' "$words" | head -c 160)" 2>/dev/null || :
+    printf '%s\n' "$words"
+}
+
 ws_fx() {
     exec 9>"$rt/ws-fx.lock"
     flock -n 9 2>/dev/null || { echo "mooi-ws-fx: already running" >&2; exit 1; }
@@ -1586,6 +1611,8 @@ case "$cmd" in
     open | window) exec "$pleamar" --say "$name" "emit open_window" ;;
     system) exec "$pleamar" --say "$name" "emit open_system" ;;
     game-mode) game_mode "$@"; exit $? ;;
+    capture) # D269: `mooi capture text` — a region's words to the clipboard
+        case "${1:-}" in text) capture_text; exit $? ;; *) echo "usage: mooi capture text" >&2; exit 2 ;; esac ;;
     pkg) pkg_cmd "$@"; exit $? ;;
     keys-text) # D267: Hyprland's config as written, for the node's shortcut sheet to read the binds' own words
                # from (Hyprland 0.57's Lua binds do not say what they run). The main file, then the parts it reads.

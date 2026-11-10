@@ -6549,7 +6549,7 @@ do
         assert(l:find('{ "BAT", N.bat and', 1, true))
         local D = require("lib/node/devices")
         eq(D.crossed_critical(21, 19, false), true); eq(D.crossed_critical(19, 18, false), false, "once"); eq(D.crossed_critical(21, 19, true), false, "not charging")
-        assert(read("shell/mooi-node.plm"):find("model sy max 5 {", 1, true))
+        assert(read("shell/mooi-node.plm"):find("model sy max 7 {", 1, true))
     end)
     test("a finish under a fullscreen window is said by the desktop's notifications too", function()
         local l = read("shell/mooi-node.luau")
