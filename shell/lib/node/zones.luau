@@ -128,7 +128,6 @@ return {
     "stt3",
     "stt4",
     "stt5",
-    "stt6",
     "tcz",
     "tmb10",
     "tmb11",

@@ -8043,3 +8043,32 @@ volume".
 
 **Verified.** Unit 958 / 0; the scene compiles. Not seen live: a test gauge sent to open the Pill never showed
 (the owner's screen changed under the test), so the notch held while open and a switch by the wheel are untested.
+
+## D313 · 2026-11-11 · The Pill audited, and what it found fixed
+
+The owner asked for "a full audit of every aspect of the pill and its settings, performance, features, visuals and
+layouts", then "yes do it" to the fixes in order.
+
+- **Attached, plain.** What grows out of the notch wore the Organic character's second outline, the Trail ghost and
+  the Glass, Neon, Aurora, scan and dotted textures and the Technical brackets, all drawn round its whole body — top
+  included — so it read as an island under the frame. Attached, none of them are drawn; its content starts under the
+  band, its fill running up to the edge.
+- **Every list kept fresh.** The Window module was refreshed only when it stood in the pill's own list (a corner's
+  showed "Desktop" for ever); the minute only when the pill held modules (a corner's clock stopped). Both now look at
+  every list (`placed`), and the focused window is told by Pleamar's `window` service instead of `hyprctl` asked every
+  1.5 s.
+- **The corners kept apart.** Nothing bounded them: a corner now stops where the pill was last at rest, less 24 px of
+  air, leaving out what does not fit, in order. Framed, a corner's modules follow the frame's height at once rather
+  than easing behind its redrawn notch.
+- **Less work.** The microphone is asked every 3 s and the camera every 6 s (`pactl` and `fuser` were both started
+  every 2 s); the weather file and the launch counts are read when they change (they were read on every layout and
+  every keystroke). The 20 Hz tick stays: it is the node's own clock, and costs little. A test now holds the node's
+  logic under Luau's 200 top-level locals (it stands at 179).
+- **The studio in six pages.** Presets · **Layout** (Place, Side, Music module, Workspace switch, Notice cards,
+  Reactions, Workspace orbit — the module editor beside them) · **Shape** (Seed and Clock style together) · **Surface**
+  (with Search dim) · **Motion** (with Trail; "Music sway") · **Music** (When music starts, Capsule visualiser, Cover,
+  Seed with music). The Parts page is gone. **Side** moved from Settings (its *Where* row is gone; an old look takes
+  the side Settings had). The colours are named for what they are: Accent, Warm, Text, Cool. Attached, Texture, Fill
+  and Outline are greyed with the reason.
+
+**Verified.** Unit 964 / 0; scenes compile. Live after `mooi refresh`: the Window module in the left corner shows the focused window ("bender: mooi", it read "Desktop" before); the logic runs without errors; the Status module's first icon (the controls) was an empty string and is restored. Not seen live: what grows out of the notch, the studio's new pages, the corner limit (the owner's lists fit).

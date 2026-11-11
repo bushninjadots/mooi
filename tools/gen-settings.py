@@ -381,7 +381,6 @@ SECTIONS = [
         ("toggle", "Show the Pill", "Show a small pill at the top; it opens for music, notices and search", "node.on", "sv_node_on"),
         ("button", "Pill studio", "Open the Pill studio: seed, surface, motion and parts", "Open the studio", "nd_settings_studio", 1),
         ("choice", "Your pointer", "How readily it unfolds when the pointer rests on it", "node.pointer", "sv_node_pointer", ["Off", "Low", "Normal", "High"]),
-        ("choice", "Where", "Where it sits at the top of the screen", "node.anchor", "sv_node_anchor", ["Left", "Centre", "Right"]),
         ("choice", "Side groups", "The left and right groups as islands beside it, or the Pill alone", "pill.sides", "sv_pill_sides", ["Show", "Hide"]),
         ("card", "Pill contents"),
         ("toggle", "Music", "A strip with the cover, the song and its controls when music starts", "node.media", "sv_node_media"),

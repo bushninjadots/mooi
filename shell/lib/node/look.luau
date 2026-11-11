@@ -12,57 +12,57 @@ M.PRESETS = { "organic", "minimal", "technical", "cyber", "liquid", "neon" }
 M.SLOTS = 3
 
 -- the studio's tabs; the first is the presets' own page (no rows)
-M.TABS = { "Presets", "Pill", "Shape", "Surface", "Motion", "Music", "Parts" }
+M.TABS = { "Presets", "Layout", "Shape", "Surface", "Motion", "Music" }
 
 -- each row: key, label, description, and either a range (lo, hi, unit) or a choice (values, names)
 local function range(key, label, desc, lo, hi, unit) return { key = key, label = label, desc = desc, lo = lo, hi = hi, unit = unit or "" } end
 local function choice(key, label, desc, values, names) return { key = key, label = label, desc = desc, values = values, names = names } end
 
+-- D313: six pages, each one subject — where it is and what it holds (Layout, with the module editor beside), its
+-- resting shape, its body, how it moves, and how music shows. Placement is all here (Side came from Settings).
+local COLOURS_NAMED = { "Accent", "Warm", "Text", "Cool" }
 M.SCHEMA = {
-    Pill = {
-        choice("place", "Place", "Floating at the top; attached to the frame's border as one body with it (a notch); or attached only while music plays", { "floating", "attached", "music" }, { "Floating", "Attached", "While music plays" }),
-        choice("clock_style", "Clock seed", "How the clock seed tells the time (Shape → Seed → Clock)", { "pixel", "digital", "analog", "words", "binary", "dots" }, { "Pixel", "Digits", "Hands", "Words", "Binary", "Dots" }),
-        -- D310: the Music module's look, wherever it is placed (the pill or a corner)
-        choice("music_mod", "Music module", "The Music module: a visualiser beside the title, the title alone, or the album cover with the title", { "bars", "title", "cover" }, { "Visualiser", "Title", "Cover" }),
+    Layout = {
+        choice("place", "Place", "Floating under the top edge; attached to the frame as a notch; or attached only while music plays", { "floating", "attached", "music" }, { "Floating", "Attached", "With music" }),
+        choice("side", "Side", "Where along the top it sits", { "centre", "left", "right" }, { "Centre", "Left", "Right" }),
+        choice("music_mod", "Music module", "The Music module: four bars beside the title, the title alone, or the album cover and title", { "bars", "title", "cover" }, { "Visualiser", "Title", "Cover" }),
+        choice("ws_style", "Workspace switch", "What shows when you change workspace: a bead along a rail, a slide, a flip, a pulse, or its number", { "bead", "slide", "flip", "pulse", "count" }, { "Bead", "Slide", "Flip", "Pulse", "Number" }),
+        range("cards", "Notice cards", "How many notices show at once", 1, 5, ""),
+        choice("reactions", "Reactions", "A ring from it when something happens: music, a notice, the charger, the microphone", { "off", "subtle", "lively", "sparks" }, { "Off", "Subtle", "Lively", "Sparks" }),
+        range("orbit", "Workspace orbit", "How wide the workspaces' orbit is (Super+Tab)", 300, 700, " px"),
     },
     Shape = {
-        choice("seed", "Seed", "What rests at the top while nothing happens", { "line", "dot", "ring", "twin", "bar", "clock", "bmo", "orb", "comet" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock", "BMO", "Orb", "Comet" }),
+        choice("seed", "Seed", "What rests at the top while it holds no modules", { "line", "dot", "ring", "twin", "bar", "clock", "bmo", "orb", "comet" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock", "BMO", "Orb", "Comet" }),
+        choice("clock_style", "Clock style", "How the Clock seed tells the time", { "pixel", "digital", "analog", "words", "binary", "dots" }, { "Pixel", "Digits", "Hands", "Words", "Binary", "Dots" }),
         range("seed_w", "Seed width", "How long the resting seed is", 6, 80, " px"),
         range("seed_h", "Seed height", "How thick it is", 2, 16, " px"),
         range("round", "Roundness", "From square corners to a full capsule", 0, 100, "%"),
         choice("style", "Character", "The details it wears: soft, bare, ruled, or broken", { "organic", "minimal", "technical", "cyber" }, { "Organic", "Minimal", "Technical", "Cyber" }),
-        range("top", "From the top", "How far below the screen's edge it sits", 0, 40, " px"),
+        range("top", "From the top", "How far below the screen's edge it floats", 0, 40, " px"),
     },
     Surface = {
         choice("texture", "Texture", "What its body is made of", { "solid", "hollow", "segmented", "scan", "dotted", "glass", "neon", "aurora" }, { "Solid", "Hollow", "Segmented", "Scan", "Dotted", "Glass", "Neon", "Aurora" }),
         range("fill", "Fill", "How solid the body is", 30, 100, "%"),
         range("outline", "Outline", "The edge's weight", 0, 30, ""),
         range("glow", "Glow", "How much light it gives off", 0, 100, "%"),
-        choice("accent", "Colour", "Its own colour, from the palette", { "phos", "ember", "ink", "steel" }, { "Signal", "Ember", "Ink", "Steel" }),
-        choice("glow_colour", "Glow colour", "The light's colour", { "phos", "ember", "ink", "steel" }, { "Signal", "Ember", "Ink", "Steel" }),
+        choice("accent", "Colour", "Its own colour, from the theme", { "phos", "ember", "ink", "steel" }, COLOURS_NAMED),
+        choice("glow_colour", "Glow colour", "The light's colour, from the theme", { "phos", "ember", "ink", "steel" }, COLOURS_NAMED),
+        range("dim", "Search dim", "How far the desktop darkens behind the search", 0, 60, "%"),
     },
     Motion = {
         choice("speed", "Speed", "How quickly it changes shape", { "soft", "quick", "snap" }, { "Soft", "Quick", "Snap" }),
         choice("bounce", "Bounce", "How far it overshoots and settles", { "none", "some", "lots" }, { "None", "Some", "Lots" }),
-        choice("growth", "Growth", "How fast what unfolds grows out of it", { "slow", "normal", "fast" }, { "Slow", "Normal", "Fast" }),
+        choice("growth", "Growth", "How fast what opens grows out of it", { "slow", "normal", "fast" }, { "Slow", "Normal", "Fast" }),
         range("stagger", "Stagger", "Parts one after another, or all at once", 0, 100, "%"),
         range("breath", "Breathing", "How deeply the seed breathes at rest (0: still)", 0, 100, "%"),
-        range("music", "Music", "How much it moves with what plays", 0, 100, "%"),
-        choice("ws_style", "Workspaces", "How a switch shows: a bead along a rail, a slide, a flip, a pulse, or its number", { "bead", "slide", "flip", "pulse", "count" }, { "Bead", "Slide", "Flip", "Pulse", "Number" }),
+        range("music", "Music sway", "How much it moves with what plays", 0, 100, "%"),
+        choice("trail", "Trail", "A faint ghost of its outline following it as it grows and folds", { "off", "on" }, { "Off", "On" }),
     },
     Music = {
-        choice("music_form", "Music as", "When music starts: the capsule with its song, a visualiser, or a turning record", { "capsule", "visualiser", "vinyl" }, { "Capsule", "Spectrum", "Vinyl" }),
-        choice("seed_music", "Seed with music", "What the resting seed does while music plays", { "still", "pulse", "bars" }, { "Still", "Pulse", "Bars" }),
-        choice("viz", "Visualiser", "The music inside the media capsule", { "bars", "wave", "dots", "off" }, { "Bars", "Wave", "Dots", "Off" }),
+        choice("music_form", "When music starts", "The capsule with the song, a visualiser strip, or a turning record", { "capsule", "visualiser", "vinyl" }, { "Capsule", "Spectrum", "Vinyl" }),
+        choice("viz", "Capsule visualiser", "The music drawn inside the capsule", { "bars", "wave", "dots", "off" }, { "Bars", "Wave", "Dots", "Off" }),
         choice("cover", "Cover", "The album art's shape", { "square", "round" }, { "Square", "Round" }),
-    },
-    Parts = {
-        choice("reactions", "Reactions", "A ring from the node when something happens: music, a notice, the charger, the microphone", { "off", "subtle", "lively", "sparks" }, { "Off", "Subtle", "Lively", "Sparks" }),
-        range("cards", "Notices", "How many notice cards branch from it", 1, 5, ""),
-        range("dim", "Search dim", "How far the desktop steps back behind the search", 0, 60, "%"),
-        range("orbit", "Orbit", "How wide the workspaces orbit (Super+Tab)", 300, 700, " px"),
-        -- D296: a ghost that follows it as it changes shape
-        choice("trail", "Trail", "A faint ghost of its outline following it as it grows and folds", { "off", "on" }, { "Off", "On" }),
+        choice("seed_music", "Seed with music", "What the resting seed does while music plays", { "still", "pulse", "bars" }, { "Still", "Pulse", "Bars" }),
     },
 }
 
@@ -72,7 +72,7 @@ local BASE = {
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
     viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse", music_mod = "bars",
     place = "floating", clock_style = "pixel", ws_style = "bead", reactions = "subtle", cards = 3, dim = 28, orbit = 520,
-    trail = "off",
+    trail = "off", side = "centre",
 }
 local PRESET = {
     organic = {},
@@ -240,6 +240,10 @@ local function applicable(t, row)
             for _, k in ipairs(type(t[side]) == "table" and t[side] or {}) do if k == "music" then placed = true end end
         end
         if not placed then return false, "Add the Music module to the pill or a corner first." end
+    end
+    -- D313: attached, its body is the frame's — its fill and its line — so these do nothing there
+    if t.place == "attached" and (row.key == "texture" or row.key == "fill" or row.key == "outline") then
+        return false, "Attached, it wears the frame's own fill and line."
     end
     if row.key == "top" and t.place == "attached" then return false, "Attached, its top is the frame's." end
     if row.key == "round" and form == "notch" then return false, "A notch takes its corners from the frame." end

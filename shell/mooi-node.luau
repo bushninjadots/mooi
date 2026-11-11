@@ -75,7 +75,13 @@ local function on_for(kind) return cfg()[kind] ~= false end
 
 -- ── its look (lib/node/look): node-look.json, or — before the studio ever saved one — the personality chosen in
 -- Settings before D229 ──
-local function look_now() return LK.normalise(read(LK.FILE, "json"), cfg().personality) end
+local function look_now()
+    local raw = read(LK.FILE, "json")
+    local t = LK.normalise(raw, cfg().personality)
+    -- D313: Side moved into the studio; a look from before it takes the side Settings had (node.anchor)
+    if not (type(raw) == "table" and raw.side) and (cfg().anchor == "left" or cfg().anchor == "right") then t.side = cfg().anchor end
+    return t
+end
 N.look = look_now()
 local function apply_look()
     for k, v in pairs(LK.facts(N.look)) do fact[k] = v end
@@ -443,10 +449,12 @@ render = function()
     if kind == "rest" then N.from_corner = nil end
     local framed_now = N.settings.frame == nil or N.settings.frame.on ~= false
     local attached = framed_now and not studio and kind ~= "universe" and (form == "notch" or N.from_corner ~= nil)
-    if attached then shape.top = 0 end
+    local fb = (type(N.settings.frame) == "table" and tonumber(N.settings.frame.band)) or 4
+    -- (D313: what opens starts under the band, its fill running up to the edge, so nothing sits under the band)
+    if attached then shape.top = (kind == "rest") and 0 or fb end
     fact.nd_att = attached and kind ~= "rest"
-    fact.nd_fb = (type(N.settings.frame) == "table" and tonumber(N.settings.frame.band)) or 4
-    local anchor = studio and "centre" or (N.from_corner or cfg().anchor or "centre")
+    fact.nd_fb = fb
+    local anchor = studio and "centre" or (N.from_corner or look.side or "centre")
     local data = { n = #N.ws.list, page = N.panel, notices = math.min(3, #N.notices) }
     -- at rest with something running, the seed is the time capsule
     local cap = (not studio and kind == "rest") and TK.capsule(N.time, wall()) or nil
@@ -505,6 +513,9 @@ render = function()
     fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "panel" and HM.typing(N.panel, N.hedit, N.hpick))
     set_body(b, changed and LK.overshoot(look) or 0)
     N.bx = b.x
+    if kind == "rest" and not studio then
+        if N.centre_x ~= b.x or N.centre_w ~= b.w then N.centre_x, N.centre_w = b.x, b.w; if N.corner_layout then N.corner_layout() end end
+    end
     -- D257: a notch at rest is a piece of the frame's body (the frame draws it, joined to its band); the node
     -- only says where it is, and draws what is inside
     local framed = N.settings.frame == nil or N.settings.frame.on ~= false
@@ -673,6 +684,8 @@ pcall(sys.watch, "tray", function(list)
     model.ltr = rows
     render()
 end)
+-- D313: how often each app was opened (widgets.json), read again only when the file changes
+pcall(sys.watch, "files:widgets.json", function() N.launch_counts = nil end)
 pcall(sys.watch, "apps", function(a)
     N.apps = type(a) == "table" and (type(a.list) == "table" and a.list or (a[1] ~= nil and a) or {}) or {}
 end)
@@ -812,7 +825,11 @@ local function search()
         N.sel = math.max(0, math.min(N.sel, #N.results - 1))
         return
     end
-    local wd = read("widgets.json", "json")
+    if N.launch_counts == nil then
+        local wd = read("widgets.json", "json")
+        N.launch_counts = type(wd) == "table" and type(wd.launch_counts) == "table" and wd.launch_counts or {}
+    end
+    local wd = { launch_counts = N.launch_counts }
     -- D311: nothing typed, the apps as a grid of their icons (twelve); typed, a list of six of everything
     local apps = WB.grid_apps(N.apps, type(wd) == "table" and wd.launch_counts or {}, N.q, N.q:match("%S") and 6 or 12)
     for _, a in ipairs(apps) do a.kind = a.kind or "app" end
@@ -1124,7 +1141,9 @@ local function privacy_card(what, on, who)
     render()
 end
 local pv_busy = false
-every(2000, function()
+-- D313: the microphone every 3 s, the camera every 6 s (pactl and fuser were started every 2 s, both)
+local pv_tick = 0
+every(3000, function()
     -- a process that never answers does not stop the watch: after ten seconds it asks again
     if pv_busy and now() - (N.pv_since or 0) > 10000 then pv_busy = false end
     if cfg().privacy == false or pv_busy then
@@ -1151,6 +1170,8 @@ every(2000, function()
         if ch then privacy_card("MICROPHONE", on, table.concat(users, " · ")) end
         -- fuser prints the processes on its standard output (the device names go to the other): any number is a
         -- process holding a camera open
+        pv_tick = pv_tick + 1
+        if pv_tick % 2 == 1 then pv_busy = false; return end
         run("fuser", { "/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3" }, function(fout)
             pv_busy = false
             local cam = type(fout) == "string" and fout:find("%d") ~= nil
@@ -1392,19 +1413,26 @@ local function battery_icon(p)
     return steps[math.max(1, math.min(11, math.floor((p or 0) / 10) + 1))]
 end
 -- the weather the Nexus last read (nexus-weather.json), for the weather module
+-- (D313: read when the file changes, not on every layout — it was read up to three times a render)
+local weather_cache = nil
 local function weather_word()
-    local w = read("nexus-weather.json", "json")
-    local cur = type(w) == "table" and type(w.answer) == "table" and w.answer.current or nil
-    local t = type(cur) == "table" and tonumber(cur.temperature_2m)
-    return t and (math.floor(t + 0.5) .. "°") or ""
+    if weather_cache == nil then
+        local w = read("nexus-weather.json", "json")
+        local cur = type(w) == "table" and type(w.answer) == "table" and w.answer.current or nil
+        local t = type(cur) == "table" and tonumber(cur.temperature_2m)
+        weather_cache = t and (math.floor(t + 0.5) .. "°") or ""
+    end
+    return weather_cache
 end
+pcall(sys.watch, "files:nexus-weather.json", function() weather_cache = nil; if N.placed and N.placed("weather") then render() end end)
 -- the modules of one list laid out left to right from x = 14 (D295: the pill's own, or a corner notch's). D311,
 -- Minflair's and Noctalia's: small ink icons and plain words, no meters; the workspaces as Minflair's dots (the
 -- active one a pill, those with windows brighter); the logo (the launcher), the tray, the status icons (the
 -- Control Center) and power. `area` (0 the pill, 1 the left corner, 2 the right) says where the tray is drawn.
 local ICON_W = 16
-local function lay_modules(list, area)
+local function lay_modules(list, area, room)
     local x, rows = 14, {}
+    room = room or math.huge
     local f = type(N.feed.resources) == "table" and N.feed.resources or {}
     local function pct(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v * 100 or v end
     local function words(t, most) return math.min(most, #t * 6 + 6) end
@@ -1445,6 +1473,8 @@ local function lay_modules(list, area)
             if n > 0 then w = n * 20 - 4; fact.nd_tra, fact.nd_trx = area, x end
         elseif kind == 14 then w = 4 * 20 - 4
         end
+        -- D313: a corner stops where the pill begins (24 px of air); what does not fit is left out, in order
+        if w > 0 and x + w + 14 > room then break end
         if w > 0 then rows[#rows + 1] = { kind = kind, x = x, w = w, label = label, icon = icon, lv = -1 }; x = x + w + 14 end
     end
     return rows, x
@@ -1466,8 +1496,11 @@ end
 -- opens a little under the pointer, as the centre does (28 → 34)
 N.cnear = { left = false, right = false }
 N.corner_layout = function()
-    local lr, lx = lay_modules(N.look.left, 1)
-    local rr, rx = lay_modules(N.look.right, 2)
+    -- the room each corner has: up to the pill's last place at rest, less 24 px of air (the whole half without one)
+    local W = (N.scr and N.scr.w) or 1920
+    local cx, cw = N.centre_x or (W / 2), N.centre_w or 0
+    local lr, lx = lay_modules(N.look.left, 1, cx - 24)
+    local rr, rx = lay_modules(N.look.right, 2, W - (cx + cw) - 24)
     -- the status icons (Minflair's right corner): the Control Center, the notices, Wi-Fi, Bluetooth
     text.nd_sgw = (N.wifi_on and N.online ~= false) and "󰤨" or (N.wifi_on and "󰤯" or "󰤭")
     text.nd_sgb = N.bt_on and "󰂯" or "󰂲"
@@ -1485,21 +1518,29 @@ on("nd_corner", function(v)
     if N.cnear[side] ~= near then N.cnear[side] = near; render() end
 end)
 -- what has the focus, while the long pill shows it (asked every second and a half, only then)
-every(1500, function()
-    if N.kind ~= "rest" or LK.form(N.look) == "seed" or N.studio.open then return end
-    local want = false
-    for _, k in ipairs(LK.modules(N.look.modules)) do if k == "window" then want = true end end
-    if not want then return end
-    run("hyprctl", { "-j", "activewindow" }, function(out)
-        local ok, w = pcall(json.decode, out or "")
-        local t = (ok and type(w) == "table" and type(w.class) == "string" and w.class ~= "") and tostring(w.title ~= "" and w.title or w.class) or ""
-        if t ~= N.awin then N.awin = t; render() end
-    end)
+-- D313: whether a module is placed anywhere — the pill's own list or either corner
+local function placed(name)
+    for _, side in ipairs({ "modules", "left", "right" }) do
+        for _, k in ipairs(LK.modules(N.look[side])) do if k == name then return true end end
+    end
+    return false
+end
+N.placed = placed
+-- D313: what has the focus, told by the window service (it was hyprctl asked every second and a half)
+pcall(sys.watch, "window", function(w)
+    if type(w) ~= "table" then return end
+    local cls, title = tostring(w.class or ""), tostring(w.title or "")
+    local t = cls ~= "" and (title ~= "" and title or cls) or ""
+    if t ~= N.awin then
+        N.awin = t
+        if placed("window") and not N.studio.open then render() end
+    end
 end)
 -- the minute turning, while the long pill holds the clock
 local long_min
 every(5000, function()
-    if N.kind ~= "rest" or LK.form(N.look) == "seed" then return end
+    -- D313: wherever a clock or the date stands (a corner's showed a stale minute when the pill held none)
+    if N.studio.open or not (placed("clock") or placed("date")) then return end
     local m = os.date("%H:%M")
     if m ~= long_min then long_min = m; render() end
 end)
@@ -2204,7 +2245,7 @@ local function studio_rows()
         model.sk = LK.rows(N.look, tab)
     end
     -- D257: the module editor, on the Rest page
-    if tab == "Pill" then
+    if tab == "Layout" then
         local inl, has, rest = {}, {}, {}
         fact.nd_mside = ({ modules = 0, left = 1, right = 2 })[N.mod_side or "modules"] or 0
         for i, k in ipairs(LK.modules(N.look[N.mod_side or "modules"])) do inl[i] = { label = string.upper(LK.MODULE_NAMES[k]) }; has[k] = true end

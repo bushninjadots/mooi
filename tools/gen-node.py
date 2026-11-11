@@ -40,7 +40,7 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_trl", 0, "D296 trail: 0 off · 1 on")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "Panel", "Search", "Tour"]
-TABS = ["Presets", "Pill", "Shape", "Surface", "Motion", "Music", "Parts"]   # lib/node/look M.TABS, in its order (a test holds them together)
+TABS = ["Presets", "Layout", "Shape", "Surface", "Motion", "Music"]   # lib/node/look M.TABS, in its order (a test holds them together)
 MONO = '"Share Tech Mono"'
 SANS = '"Exo 2"'
 
@@ -64,7 +64,7 @@ def scene():
          'scene Node {',
          '    permissions {',
          '        run: "pleamar", "mooi", "hyprctl", "df", "nvidia-smi", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "wl-paste", "find", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm", "hostname", "zenity"',
-         '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "brightness", "network", "network.*", "bluetooth", "bluetooth.*", "thumbnails", "thumbnails.*", "workspaces", "apps", "apps.launch", "tray", "tray.*"',
+         '        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "brightness", "network", "network.*", "bluetooth", "bluetooth.*", "thumbnails", "thumbnails.*", "workspaces", "window", "apps", "apps.launch", "tray", "tray.*"',
          '    }',
          '    service audio.level as lv { level: number }']
     L += palette_block()
@@ -1232,7 +1232,7 @@ def module_row(c, model, bx, cy, ink, dim, acc, area):
          f'{c}    text m.label {{ at: mx + pick(nd_mmod, 24, 12, 24), {cy}; anchor: left center; size: 10; family: {SANS}; color: {ink}; width: m.w - pick(nd_mmod, 24, 12, 24); lines: 1; show: m.kind == 5 }}',
          f'{c}    // the status icons (Minflair\'s right corner): the Control Center, the notices (a dot when some wait), Wi-Fi, Bluetooth',
          f'{c}    group {{ show: m.kind == 14',
-         f'{c}        text "" {{ at: mx + 6, {cy}; anchor: center; align: center; size: 11; family: {I}; color: {ink}; opacity: 0.85 }}',
+         f'{c}        text "" {{ at: mx + 6, {cy}; anchor: center; align: center; size: 11; family: {I}; color: {ink}; opacity: 0.85 }}',
          f'{c}        text "󰂚" {{ at: mx + 26, {cy}; anchor: center; align: center; size: 11; family: {I}; color: {ink}; opacity: 0.85 }}',
          f'{c}        ellipse {{ at: mx + 31, {cy} - 5; radius: 2.2; color: {acc}; show: nd_sgn }}',
          f'{c}        text nd_sgw {{ at: mx + 46, {cy}; anchor: center; align: center; size: 11; family: {I}; color: {ink}; opacity: 0.85 }}',
@@ -1273,7 +1273,10 @@ def corner_notch(c, side, ink, dim, acc):
          f"{c}        body {{ color: fl.ground", f"{c}            path {{"]
     L += [f"{c}                {st}" for st in steps] + [f"{c}                close }} }}"]
     L += [f"{c}        path {{ stroke: 1; color: fl.trace; opacity: 0.85"] + [f"{c}            {st}" for st in steps] + [f"{c}        }}", f"{c}    }}"]
-    L += module_row(c + "    ", model, base, f"({H}) / 2", ink, dim, acc, 1 if side == "left" else 2)
+    # D313: framed, the frame redraws the corner at once (from node-geo.json), so what it holds follows the same
+    # height at once rather than easing behind it; drawn by the node itself, both ease together
+    Hn = "nd_lh" if side == "left" else "nd_rh"
+    L += module_row(c + "    ", model, base, f"if(nd_cfr, {Hn}, {H}) / 2", ink, dim, acc, 1 if side == "left" else 2)
     code_x = "10000" if side == "left" else "20000"
     L += [f'{c}    zone box {z} {{ from: {base}, 0; size: {W}, {H}; cursor: pointer; role: button; label: "The {side} corner"; show: {W} > 1 and not nd_studio }}',
           f"{c}    on press {z} {{ emit nd_cpress({code_x} + round(pointer.x)) }}",
@@ -1440,7 +1443,7 @@ def surface():
           f'{c}    repeat dm in 0..12 {{ ellipse {{ at: nb_x + 8 + dm * 6.4, nb_y + 15; radius: 1.8; color: if(dm < nd_ckdm, {ink}, fl.trace_dim); opacity: nd_cf; show: nd_cks == 5 }} }}',
           f'{c}}}',
           f'{c}// (D296) the trail: a ghost of its outline a slow spring behind it, seen only while they differ',
-          f'{c}box {{ from: nd_tgx, nd_tgy; size: nd_tgw, nd_tgh; corner: min(nb_r, nd_tgh / 2); stroke: 1; color: {acc}; opacity: 0.35 * clamp((abs(nd_tgw - nb_w) + abs(nd_tgh - nb_h) + abs(nd_tgx - nb_x)) / 60, 0, 1); show: nd_trl == 1 }}',
+          f'{c}box {{ from: nd_tgx, nd_tgy; size: nd_tgw, nd_tgh; corner: min(nb_r, nd_tgh / 2); stroke: 1; color: {acc}; opacity: 0.35 * clamp((abs(nd_tgw - nb_w) + abs(nd_tgh - nb_h) + abs(nd_tgx - nb_x)) / 60, 0, 1); show: nd_trl == 1 and not nd_att }}',
           f'{c}// grown: the body, of the look\'s fill (hollow: barely), its texture, its outline',
           f'{c}group {{ show: nd_kind > 0 and not nd_att; glow: 14, nd_glow, nd_glc',
           f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; opacity: nd_fill * if(nd_tex == 1, 0.25, if(nd_tex == 5, 0.3, 1)) }} }}',
@@ -1464,19 +1467,19 @@ def surface():
           f'{c}    }}',
           f'{c}}}',
           f'{c}// (D296) glass: what is behind seen through it, frosted, and a line of light along its top',
-          f'{c}box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; glass: 100%; frost: 70%; show: nd_kind > 0 and nd_tex == 5 }}',
-          f'{c}box {{ from: nb_x + nb_r * 0.6, nb_y + 1.5; size: max(0, nb_w - nb_r * 1.2), 1.2; corner: 0.6; color: #ffffff; opacity: 0.35; show: nd_kind > 0 and nd_tex == 5 }}',
+          f'{c}box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: {hull}; glass: 100%; frost: 70%; show: nd_kind > 0 and nd_tex == 5 and not nd_att }}',
+          f'{c}box {{ from: nb_x + nb_r * 0.6, nb_y + 1.5; size: max(0, nb_w - nb_r * 1.2), 1.2; corner: 0.6; color: #ffffff; opacity: 0.35; show: nd_kind > 0 and nd_tex == 5 and not nd_att }}',
           f'{c}// (D296) neon: a tube of light round a dark body',
-          f'{c}group {{ show: nd_kind > 0 and nd_tex == 6; glow: 18, 0.9 + 0.4 * lv.level * nd_mu, {acc}',
+          f'{c}group {{ show: nd_kind > 0 and nd_tex == 6 and not nd_att; glow: 18, 0.9 + 0.4 * lv.level * nd_mu, {acc}',
           f'{c}    box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: 2; color: {acc} }} }}',
           f'{c}// (D296) aurora: two slow clouds of its colours drifting inside it',
-          f'{c}group {{ show: nd_kind > 0 and nd_tex == 7',
+          f'{c}group {{ show: nd_kind > 0 and nd_tex == 7 and not nd_att',
           f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
           f'{c}    group {{ blur: 18',
           f'{c}        ellipse {{ at: nb_x + nb_w * (0.5 + 0.38 * sin(nd_aph)), nb_y + nb_h * (0.5 + 0.3 * cos(nd_aph * 1.3)); radius: max(nb_w, nb_h) * 0.42; color: {acc}; opacity: 0.32 }}',
           f'{c}        ellipse {{ at: nb_x + nb_w * (0.5 + 0.38 * cos(nd_aph * 0.8)), nb_y + nb_h * (0.5 + 0.3 * sin(nd_aph * 1.1)); radius: max(nb_w, nb_h) * 0.36; color: nd_glc; opacity: 0.28 }} }}',
           f'{c}}}',
-          f'{c}group {{ show: nd_kind > 0 and nd_tex > 2 and nd_tex < 5',
+          f'{c}group {{ show: nd_kind > 0 and nd_tex > 2 and nd_tex < 5 and not nd_att',
           f'{c}    clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
           f'{c}    repeat sl in 0..16 {{ box {{ from: nb_x, nb_y + (sl + 0.5) * nb_h / 16; size: nb_w, 1; color: {acc}; opacity: 0.08; show: nd_tex == 3 }} }}',
           f'{c}    repeat dr in 0..4 {{ repeat dc in 0..48 {{ ellipse {{ at: nb_x + (dc + 0.5) * nb_w / 48, nb_y + (dr + 0.5) * nb_h / 4; radius: 0.9; color: {acc}; opacity: 0.18; show: nd_tex == 4 }} }} }}',
@@ -1484,14 +1487,14 @@ def surface():
           f'{c}box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: {acc}; opacity: if(nd_tex == 1, 0.9, 0.55); show: nd_kind > 0 and nd_ol > 0.05 and not nd_att }}',
           f'{c}// segmented: the outline breaks in three places; and a cyber node glitches on a change (a shifted ghost and a',
           f'{c}// scan line in the counter-signal)',
-          f'{c}box {{ from: nb_x + nb_w * 0.3, nb_y - 1; size: nb_w * 0.12, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 }}',
-          f'{c}box {{ from: nb_x + nb_w * 0.7, nb_y + nb_h - nd_ol - 1; size: nb_w * 0.08, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 }}',
-          f'{c}box {{ from: nb_x - 1, nb_y + nb_h * 0.35; size: nd_ol + 2, nb_h * 0.3; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 }}',
+          f'{c}box {{ from: nb_x + nb_w * 0.3, nb_y - 1; size: nb_w * 0.12, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 and not nd_att }}',
+          f'{c}box {{ from: nb_x + nb_w * 0.7, nb_y + nb_h - nd_ol - 1; size: nb_w * 0.08, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 and not nd_att }}',
+          f'{c}box {{ from: nb_x - 1, nb_y + nb_h * 0.35; size: nd_ol + 2, nb_h * 0.3; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 and not nd_att }}',
           f'{c}box {{ from: nb_x + 4 * sin(nd_ph * 13), nb_y + 2 * cos(nd_ph * 7); size: nb_w, nb_h; corner: nb_r; stroke: 1; color: fl.ember; opacity: 0.7 * nd_glf; show: nd_np == 3 and nd_glf > 0.01 }}',
           f'{c}box {{ from: nb_x + nb_w * 0.15, nb_y + nb_h * 0.4 + 3 * sin(nd_ph * 17); size: nb_w * 0.5, 2; color: fl.ember; opacity: 0.8 * nd_glf; show: nd_np == 3 and nd_glf > 0.01 }}',
           f'{c}// technical: ticks along the floor and brackets at the corners',
-          f'{c}repeat tk in 0..9 {{ box {{ from: nb_x + nb_w * (tk + 0.5) / 9, nb_y + nb_h - 3; size: 1, 3; color: {acc}; opacity: 0.5; show: nd_np == 2 and nd_kind > 0 and nd_kind < 6 }} }}',
-          f'{c}group {{ show: nd_np == 2 and nd_kind > 0',
+          f'{c}repeat tk in 0..9 {{ box {{ from: nb_x + nb_w * (tk + 0.5) / 9, nb_y + nb_h - 3; size: 1, 3; color: {acc}; opacity: 0.5; show: nd_np == 2 and nd_kind > 0 and nd_kind < 6 and not nd_att }} }}',
+          f'{c}group {{ show: nd_np == 2 and nd_kind > 0 and not nd_att',
           f'{c}    box {{ from: nb_x - 4, nb_y - 4; size: 8, 1.5; color: {acc} }}',
           f'{c}    box {{ from: nb_x - 4, nb_y - 4; size: 1.5, 8; color: {acc} }}',
           f'{c}    box {{ from: nb_x + nb_w - 4, nb_y - 4; size: 8, 1.5; color: {acc} }}',
@@ -1502,7 +1505,7 @@ def surface():
           f'{c}    box {{ from: nb_x + nb_w + 2.5, nb_y + nb_h - 4; size: 1.5, 8; color: {acc} }}',
           f'{c}}}',
           f'{c}// organic: a second, softer skin round the body, there as what is inside appears',
-          f'{c}box {{ from: nb_x - 3, nb_y - 3; size: nb_w + 6, nb_h + 6; corner: nb_r + 3; stroke: 1; color: {acc}; opacity: 0.18 * nd_cf; show: nd_np == 0 and nd_kind > 0 }}',
+          f'{c}box {{ from: nb_x - 3, nb_y - 3; size: nb_w + 6, nb_h + 6; corner: nb_r + 3; stroke: 1; color: {acc}; opacity: 0.18 * nd_cf; show: nd_np == 0 and nd_kind > 0 and not nd_att }}',
           f'{c}zone box nd_bz {{ from: nb_x - 16, nb_y - 8; size: nb_w + 32, nb_h + 16; corner: nb_r; cursor: pointer; role: button; label: "The Pill" }}',
           f'{c}let nd_hv = nd_bz.hover',
           f'{c}on change nd_hv {{ emit nd_hover(if(nd_hv, 1 + round(pointer.x), 0)) }}',

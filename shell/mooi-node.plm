@@ -10,7 +10,7 @@ import "ui/bmoface.plm"
 scene Node {
     permissions {
         run: "pleamar", "mooi", "hyprctl", "df", "nvidia-smi", "playerctl", "pactl", "fuser", "upower", "notify-send", "wl-copy", "wl-paste", "find", "brightnessctl", "curl", "cat", "xdg-open", "cliphist", "systemctl", "kitty", "foot", "alacritty", "wezterm", "ghostty", "konsole", "xterm", "hostname", "zenity"
-        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "brightness", "network", "network.*", "bluetooth", "bluetooth.*", "thumbnails", "thumbnails.*", "workspaces", "apps", "apps.launch", "tray", "tray.*"
+        services: "files", "files.write", "env", "media", "media.*", "audio", "audio.*", "audio.level", "sound", "battery", "brightness", "network", "network.*", "bluetooth", "bluetooth.*", "thumbnails", "thumbnails.*", "workspaces", "window", "apps", "apps.launch", "tray", "tray.*"
     }
     service audio.level as lv { level: number }
     fact fr_ground_r = 0.000000
@@ -447,7 +447,7 @@ scene Node {
     fact nd_studio = false
     prop nd_stf = 0 ~nd.aux
     follow nd_stf = if(nd_studio, 1, 0)
-    fact nd_tab = 0       // 0 Presets · 1 Pill · 2 Shape · 3 Surface · 4 Motion · 5 Music · 6 Parts
+    fact nd_tab = 0       // 0 Presets · 1 Layout · 2 Shape · 3 Surface · 4 Motion · 5 Music
     fact nd_kr = 0        // the row the keyboard is on
     fact nd_pv = 0        // the preview: 0 Rest · 1 Music · 2 Notice · 3 Volume · 4 Rail · 5 Panel · 6 Search · 7 Tour
     text nd_lookname = "Organic"
@@ -988,33 +988,33 @@ scene Node {
             for m in lml {
                 let mx = 0 + m.x
                 let mi = if(m.kind == 1 or m.kind == 3 or m.kind == 5, 0, 16)
-                text m.icon { at: mx + 6, (nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85; show: m.kind != 1 and m.kind != 3 and m.kind != 5 and m.kind != 13 and m.kind != 14 }
-                text m.label { at: mx + mi, (nd_lhk) / 2; anchor: left center; size: 10; weight: 600; family: "Exo 2"; color: fl.engrave; width: m.w - mi + 4; lines: 1; show: m.kind == 1 or m.kind == 2 or m.kind == 4 or (m.kind >= 6 and m.kind <= 11) }
+                text m.icon { at: mx + 6, if(nd_cfr, nd_lh, nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85; show: m.kind != 1 and m.kind != 3 and m.kind != 5 and m.kind != 13 and m.kind != 14 }
+                text m.label { at: mx + mi, if(nd_cfr, nd_lh, nd_lhk) / 2; anchor: left center; size: 10; weight: 600; family: "Exo 2"; color: fl.engrave; width: m.w - mi + 4; lines: 1; show: m.kind == 1 or m.kind == 2 or m.kind == 4 or (m.kind >= 6 and m.kind <= 11) }
                 // the workspaces (Minflair): dots on a soft capsule, the active one a longer pill in the accent
-                box { from: mx, (nd_lhk) / 2 - 9; size: m.w, 18; corner: 9; color: fl.hull_raised; opacity: 0.7; show: m.kind == 3 }
-                repeat wsd in 0..10 { box { from: mx + 8 + wsd * 11 + if(wsd > nd_lmwa, 12, 0), (nd_lhk) / 2 - 3; size: if(wsd == nd_lmwa, 18, 6), 6; corner: 3; color: if(wsd == nd_lmwa, nd_acc, fl.engrave); opacity: if(wsd == nd_lmwa, 1, if(pick(wsd, nd_wu0, nd_wu1, nd_wu2, nd_wu3, nd_wu4, nd_wu5, nd_wu6, nd_wu7, nd_wu8, nd_wu9), 0.65, 0.22)); show: m.kind == 3 and wsd < nd_lmws } }
+                box { from: mx, if(nd_cfr, nd_lh, nd_lhk) / 2 - 9; size: m.w, 18; corner: 9; color: fl.hull_raised; opacity: 0.7; show: m.kind == 3 }
+                repeat wsd in 0..10 { box { from: mx + 8 + wsd * 11 + if(wsd > nd_lmwa, 12, 0), if(nd_cfr, nd_lh, nd_lhk) / 2 - 3; size: if(wsd == nd_lmwa, 18, 6), 6; corner: 3; color: if(wsd == nd_lmwa, nd_acc, fl.engrave); opacity: if(wsd == nd_lmwa, 1, if(pick(wsd, nd_wu0, nd_wu1, nd_wu2, nd_wu3, nd_wu4, nd_wu5, nd_wu6, nd_wu7, nd_wu8, nd_wu9), 0.65, 0.22)); show: m.kind == 3 and wsd < nd_lmws } }
                 // the music: four bars and its title, the title alone, or the cover and title
-                repeat mb in 0..4 { box { from: mx + mb * 5, (nd_lhk) / 2 - (2 + pick(mb, nd_sp3, nd_sp8, nd_sp13, nd_sp18) * 12) / 2; size: 3, 2 + pick(mb, nd_sp3, nd_sp8, nd_sp13, nd_sp18) * 12; corner: 1.5; color: nd_acc; show: m.kind == 5 and nd_mmod == 0 } }
-                ellipse { at: mx + 4, (nd_lhk) / 2; radius: 2 + 1.5 * lv.level; color: nd_acc; show: m.kind == 5 and nd_mmod == 1 }
+                repeat mb in 0..4 { box { from: mx + mb * 5, if(nd_cfr, nd_lh, nd_lhk) / 2 - (2 + pick(mb, nd_sp3, nd_sp8, nd_sp13, nd_sp18) * 12) / 2; size: 3, 2 + pick(mb, nd_sp3, nd_sp8, nd_sp13, nd_sp18) * 12; corner: 1.5; color: nd_acc; show: m.kind == 5 and nd_mmod == 0 } }
+                ellipse { at: mx + 4, if(nd_cfr, nd_lh, nd_lhk) / 2; radius: 2 + 1.5 * lv.level; color: nd_acc; show: m.kind == 5 and nd_mmod == 1 }
                 group { show: m.kind == 5 and nd_mmod == 2
-                    clip box { from: mx, (nd_lhk) / 2 - 9; size: 18, 18; corner: 5 }
-                    box { from: mx, (nd_lhk) / 2 - 9; size: 18, 18; color: nd_acc; opacity: 0.5 }
-                    image nd_cover { at: mx, (nd_lhk) / 2 - 9; size: 18, 18; fit: cover; show: nd_arted } }
-                text m.label { at: mx + pick(nd_mmod, 24, 12, 24), (nd_lhk) / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - pick(nd_mmod, 24, 12, 24); lines: 1; show: m.kind == 5 }
+                    clip box { from: mx, if(nd_cfr, nd_lh, nd_lhk) / 2 - 9; size: 18, 18; corner: 5 }
+                    box { from: mx, if(nd_cfr, nd_lh, nd_lhk) / 2 - 9; size: 18, 18; color: nd_acc; opacity: 0.5 }
+                    image nd_cover { at: mx, if(nd_cfr, nd_lh, nd_lhk) / 2 - 9; size: 18, 18; fit: cover; show: nd_arted } }
+                text m.label { at: mx + pick(nd_mmod, 24, 12, 24), if(nd_cfr, nd_lh, nd_lhk) / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - pick(nd_mmod, 24, 12, 24); lines: 1; show: m.kind == 5 }
                 // the status icons (Minflair's right corner): the Control Center, the notices (a dot when some wait), Wi-Fi, Bluetooth
                 group { show: m.kind == 14
-                    text "" { at: mx + 6, (nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
-                    text "󰂚" { at: mx + 26, (nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
-                    ellipse { at: mx + 31, (nd_lhk) / 2 - 5; radius: 2.2; color: nd_acc; show: nd_sgn }
-                    text nd_sgw { at: mx + 46, (nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
-                    text nd_sgb { at: mx + 66, (nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 } }
+                    text "" { at: mx + 6, if(nd_cfr, nd_lh, nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
+                    text "󰂚" { at: mx + 26, if(nd_cfr, nd_lh, nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
+                    ellipse { at: mx + 31, if(nd_cfr, nd_lh, nd_lhk) / 2 - 5; radius: 2.2; color: nd_acc; show: nd_sgn }
+                    text nd_sgw { at: mx + 46, if(nd_cfr, nd_lh, nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
+                    text nd_sgb { at: mx + 66, if(nd_cfr, nd_lh, nd_lhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 } }
             }
             // the tray, where its module stands in this list: each item's own picture (its initial without one)
             for t in ltr {
                 let tx = 0 + nd_trx + t.index * 20
                 group { show: nd_tra == 1
-                    image t.icon { at: tx, (nd_lhk) / 2 - 8; size: 16, 16; show: t.iconed }
-                    text t.letter { at: tx + 8, (nd_lhk) / 2; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: fl.engrave; show: not t.iconed }
+                    image t.icon { at: tx, if(nd_cfr, nd_lh, nd_lhk) / 2 - 8; size: 16, 16; show: t.iconed }
+                    text t.letter { at: tx + 8, if(nd_cfr, nd_lh, nd_lhk) / 2; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: fl.engrave; show: not t.iconed }
                 }
             }
             zone box ndz_lc { from: 0, 0; size: nd_lwk, nd_lhk; cursor: pointer; role: button; label: "The left corner"; show: nd_lwk > 1 and not nd_studio }
@@ -1050,33 +1050,33 @@ scene Node {
             for m in lmr {
                 let mx = node.width - nd_rwk + m.x
                 let mi = if(m.kind == 1 or m.kind == 3 or m.kind == 5, 0, 16)
-                text m.icon { at: mx + 6, (nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85; show: m.kind != 1 and m.kind != 3 and m.kind != 5 and m.kind != 13 and m.kind != 14 }
-                text m.label { at: mx + mi, (nd_rhk) / 2; anchor: left center; size: 10; weight: 600; family: "Exo 2"; color: fl.engrave; width: m.w - mi + 4; lines: 1; show: m.kind == 1 or m.kind == 2 or m.kind == 4 or (m.kind >= 6 and m.kind <= 11) }
+                text m.icon { at: mx + 6, if(nd_cfr, nd_rh, nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85; show: m.kind != 1 and m.kind != 3 and m.kind != 5 and m.kind != 13 and m.kind != 14 }
+                text m.label { at: mx + mi, if(nd_cfr, nd_rh, nd_rhk) / 2; anchor: left center; size: 10; weight: 600; family: "Exo 2"; color: fl.engrave; width: m.w - mi + 4; lines: 1; show: m.kind == 1 or m.kind == 2 or m.kind == 4 or (m.kind >= 6 and m.kind <= 11) }
                 // the workspaces (Minflair): dots on a soft capsule, the active one a longer pill in the accent
-                box { from: mx, (nd_rhk) / 2 - 9; size: m.w, 18; corner: 9; color: fl.hull_raised; opacity: 0.7; show: m.kind == 3 }
-                repeat wsd in 0..10 { box { from: mx + 8 + wsd * 11 + if(wsd > nd_lmwa, 12, 0), (nd_rhk) / 2 - 3; size: if(wsd == nd_lmwa, 18, 6), 6; corner: 3; color: if(wsd == nd_lmwa, nd_acc, fl.engrave); opacity: if(wsd == nd_lmwa, 1, if(pick(wsd, nd_wu0, nd_wu1, nd_wu2, nd_wu3, nd_wu4, nd_wu5, nd_wu6, nd_wu7, nd_wu8, nd_wu9), 0.65, 0.22)); show: m.kind == 3 and wsd < nd_lmws } }
+                box { from: mx, if(nd_cfr, nd_rh, nd_rhk) / 2 - 9; size: m.w, 18; corner: 9; color: fl.hull_raised; opacity: 0.7; show: m.kind == 3 }
+                repeat wsd in 0..10 { box { from: mx + 8 + wsd * 11 + if(wsd > nd_lmwa, 12, 0), if(nd_cfr, nd_rh, nd_rhk) / 2 - 3; size: if(wsd == nd_lmwa, 18, 6), 6; corner: 3; color: if(wsd == nd_lmwa, nd_acc, fl.engrave); opacity: if(wsd == nd_lmwa, 1, if(pick(wsd, nd_wu0, nd_wu1, nd_wu2, nd_wu3, nd_wu4, nd_wu5, nd_wu6, nd_wu7, nd_wu8, nd_wu9), 0.65, 0.22)); show: m.kind == 3 and wsd < nd_lmws } }
                 // the music: four bars and its title, the title alone, or the cover and title
-                repeat mb in 0..4 { box { from: mx + mb * 5, (nd_rhk) / 2 - (2 + pick(mb, nd_sp3, nd_sp8, nd_sp13, nd_sp18) * 12) / 2; size: 3, 2 + pick(mb, nd_sp3, nd_sp8, nd_sp13, nd_sp18) * 12; corner: 1.5; color: nd_acc; show: m.kind == 5 and nd_mmod == 0 } }
-                ellipse { at: mx + 4, (nd_rhk) / 2; radius: 2 + 1.5 * lv.level; color: nd_acc; show: m.kind == 5 and nd_mmod == 1 }
+                repeat mb in 0..4 { box { from: mx + mb * 5, if(nd_cfr, nd_rh, nd_rhk) / 2 - (2 + pick(mb, nd_sp3, nd_sp8, nd_sp13, nd_sp18) * 12) / 2; size: 3, 2 + pick(mb, nd_sp3, nd_sp8, nd_sp13, nd_sp18) * 12; corner: 1.5; color: nd_acc; show: m.kind == 5 and nd_mmod == 0 } }
+                ellipse { at: mx + 4, if(nd_cfr, nd_rh, nd_rhk) / 2; radius: 2 + 1.5 * lv.level; color: nd_acc; show: m.kind == 5 and nd_mmod == 1 }
                 group { show: m.kind == 5 and nd_mmod == 2
-                    clip box { from: mx, (nd_rhk) / 2 - 9; size: 18, 18; corner: 5 }
-                    box { from: mx, (nd_rhk) / 2 - 9; size: 18, 18; color: nd_acc; opacity: 0.5 }
-                    image nd_cover { at: mx, (nd_rhk) / 2 - 9; size: 18, 18; fit: cover; show: nd_arted } }
-                text m.label { at: mx + pick(nd_mmod, 24, 12, 24), (nd_rhk) / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - pick(nd_mmod, 24, 12, 24); lines: 1; show: m.kind == 5 }
+                    clip box { from: mx, if(nd_cfr, nd_rh, nd_rhk) / 2 - 9; size: 18, 18; corner: 5 }
+                    box { from: mx, if(nd_cfr, nd_rh, nd_rhk) / 2 - 9; size: 18, 18; color: nd_acc; opacity: 0.5 }
+                    image nd_cover { at: mx, if(nd_cfr, nd_rh, nd_rhk) / 2 - 9; size: 18, 18; fit: cover; show: nd_arted } }
+                text m.label { at: mx + pick(nd_mmod, 24, 12, 24), if(nd_cfr, nd_rh, nd_rhk) / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - pick(nd_mmod, 24, 12, 24); lines: 1; show: m.kind == 5 }
                 // the status icons (Minflair's right corner): the Control Center, the notices (a dot when some wait), Wi-Fi, Bluetooth
                 group { show: m.kind == 14
-                    text "" { at: mx + 6, (nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
-                    text "󰂚" { at: mx + 26, (nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
-                    ellipse { at: mx + 31, (nd_rhk) / 2 - 5; radius: 2.2; color: nd_acc; show: nd_sgn }
-                    text nd_sgw { at: mx + 46, (nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
-                    text nd_sgb { at: mx + 66, (nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 } }
+                    text "" { at: mx + 6, if(nd_cfr, nd_rh, nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
+                    text "󰂚" { at: mx + 26, if(nd_cfr, nd_rh, nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
+                    ellipse { at: mx + 31, if(nd_cfr, nd_rh, nd_rhk) / 2 - 5; radius: 2.2; color: nd_acc; show: nd_sgn }
+                    text nd_sgw { at: mx + 46, if(nd_cfr, nd_rh, nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
+                    text nd_sgb { at: mx + 66, if(nd_cfr, nd_rh, nd_rhk) / 2; anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 } }
             }
             // the tray, where its module stands in this list: each item's own picture (its initial without one)
             for t in ltr {
                 let tx = node.width - nd_rwk + nd_trx + t.index * 20
                 group { show: nd_tra == 2
-                    image t.icon { at: tx, (nd_rhk) / 2 - 8; size: 16, 16; show: t.iconed }
-                    text t.letter { at: tx + 8, (nd_rhk) / 2; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: fl.engrave; show: not t.iconed }
+                    image t.icon { at: tx, if(nd_cfr, nd_rh, nd_rhk) / 2 - 8; size: 16, 16; show: t.iconed }
+                    text t.letter { at: tx + 8, if(nd_cfr, nd_rh, nd_rhk) / 2; anchor: center; align: center; size: 10; weight: 700; family: "Exo 2"; color: fl.engrave; show: not t.iconed }
                 }
             }
             zone box ndz_rc { from: node.width - nd_rwk, 0; size: nd_rwk, nd_rhk; cursor: pointer; role: button; label: "The right corner"; show: nd_rwk > 1 and not nd_studio }
@@ -1159,7 +1159,7 @@ scene Node {
                     text m.label { at: mx + pick(nd_mmod, 24, 12, 24), (nb_y + nb_h / 2); anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - pick(nd_mmod, 24, 12, 24); lines: 1; show: m.kind == 5 }
                     // the status icons (Minflair's right corner): the Control Center, the notices (a dot when some wait), Wi-Fi, Bluetooth
                     group { show: m.kind == 14
-                        text "" { at: mx + 6, (nb_y + nb_h / 2); anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
+                        text "" { at: mx + 6, (nb_y + nb_h / 2); anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
                         text "󰂚" { at: mx + 26, (nb_y + nb_h / 2); anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
                         ellipse { at: mx + 31, (nb_y + nb_h / 2) - 5; radius: 2.2; color: nd_acc; show: nd_sgn }
                         text nd_sgw { at: mx + 46, (nb_y + nb_h / 2); anchor: center; align: center; size: 11; family: "CaskaydiaCove Nerd Font"; color: fl.engrave; opacity: 0.85 }
@@ -1208,7 +1208,7 @@ scene Node {
             repeat dm in 0..12 { ellipse { at: nb_x + 8 + dm * 6.4, nb_y + 15; radius: 1.8; color: if(dm < nd_ckdm, fl.engrave, fl.trace_dim); opacity: nd_cf; show: nd_cks == 5 } }
         }
         // (D296) the trail: a ghost of its outline a slow spring behind it, seen only while they differ
-        box { from: nd_tgx, nd_tgy; size: nd_tgw, nd_tgh; corner: min(nb_r, nd_tgh / 2); stroke: 1; color: nd_acc; opacity: 0.35 * clamp((abs(nd_tgw - nb_w) + abs(nd_tgh - nb_h) + abs(nd_tgx - nb_x)) / 60, 0, 1); show: nd_trl == 1 }
+        box { from: nd_tgx, nd_tgy; size: nd_tgw, nd_tgh; corner: min(nb_r, nd_tgh / 2); stroke: 1; color: nd_acc; opacity: 0.35 * clamp((abs(nd_tgw - nb_w) + abs(nd_tgh - nb_h) + abs(nd_tgx - nb_x)) / 60, 0, 1); show: nd_trl == 1 and not nd_att }
         // grown: the body, of the look's fill (hollow: barely), its texture, its outline
         group { show: nd_kind > 0 and not nd_att; glow: 14, nd_glow, nd_glc
             box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: fl.hull; opacity: nd_fill * if(nd_tex == 1, 0.25, if(nd_tex == 5, 0.3, 1)) } }
@@ -1232,19 +1232,19 @@ scene Node {
             }
         }
         // (D296) glass: what is behind seen through it, frosted, and a line of light along its top
-        box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: fl.hull; glass: 100%; frost: 70%; show: nd_kind > 0 and nd_tex == 5 }
-        box { from: nb_x + nb_r * 0.6, nb_y + 1.5; size: max(0, nb_w - nb_r * 1.2), 1.2; corner: 0.6; color: #ffffff; opacity: 0.35; show: nd_kind > 0 and nd_tex == 5 }
+        box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: fl.hull; glass: 100%; frost: 70%; show: nd_kind > 0 and nd_tex == 5 and not nd_att }
+        box { from: nb_x + nb_r * 0.6, nb_y + 1.5; size: max(0, nb_w - nb_r * 1.2), 1.2; corner: 0.6; color: #ffffff; opacity: 0.35; show: nd_kind > 0 and nd_tex == 5 and not nd_att }
         // (D296) neon: a tube of light round a dark body
-        group { show: nd_kind > 0 and nd_tex == 6; glow: 18, 0.9 + 0.4 * lv.level * nd_mu, nd_acc
+        group { show: nd_kind > 0 and nd_tex == 6 and not nd_att; glow: 18, 0.9 + 0.4 * lv.level * nd_mu, nd_acc
             box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: 2; color: nd_acc } }
         // (D296) aurora: two slow clouds of its colours drifting inside it
-        group { show: nd_kind > 0 and nd_tex == 7
+        group { show: nd_kind > 0 and nd_tex == 7 and not nd_att
             clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
             group { blur: 18
                 ellipse { at: nb_x + nb_w * (0.5 + 0.38 * sin(nd_aph)), nb_y + nb_h * (0.5 + 0.3 * cos(nd_aph * 1.3)); radius: max(nb_w, nb_h) * 0.42; color: nd_acc; opacity: 0.32 }
                 ellipse { at: nb_x + nb_w * (0.5 + 0.38 * cos(nd_aph * 0.8)), nb_y + nb_h * (0.5 + 0.3 * sin(nd_aph * 1.1)); radius: max(nb_w, nb_h) * 0.36; color: nd_glc; opacity: 0.28 } }
         }
-        group { show: nd_kind > 0 and nd_tex > 2 and nd_tex < 5
+        group { show: nd_kind > 0 and nd_tex > 2 and nd_tex < 5 and not nd_att
             clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
             repeat sl in 0..16 { box { from: nb_x, nb_y + (sl + 0.5) * nb_h / 16; size: nb_w, 1; color: nd_acc; opacity: 0.08; show: nd_tex == 3 } }
             repeat dr in 0..4 { repeat dc in 0..48 { ellipse { at: nb_x + (dc + 0.5) * nb_w / 48, nb_y + (dr + 0.5) * nb_h / 4; radius: 0.9; color: nd_acc; opacity: 0.18; show: nd_tex == 4 } } }
@@ -1252,14 +1252,14 @@ scene Node {
         box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: nd_acc; opacity: if(nd_tex == 1, 0.9, 0.55); show: nd_kind > 0 and nd_ol > 0.05 and not nd_att }
         // segmented: the outline breaks in three places; and a cyber node glitches on a change (a shifted ghost and a
         // scan line in the counter-signal)
-        box { from: nb_x + nb_w * 0.3, nb_y - 1; size: nb_w * 0.12, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 }
-        box { from: nb_x + nb_w * 0.7, nb_y + nb_h - nd_ol - 1; size: nb_w * 0.08, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 }
-        box { from: nb_x - 1, nb_y + nb_h * 0.35; size: nd_ol + 2, nb_h * 0.3; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 }
+        box { from: nb_x + nb_w * 0.3, nb_y - 1; size: nb_w * 0.12, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 and not nd_att }
+        box { from: nb_x + nb_w * 0.7, nb_y + nb_h - nd_ol - 1; size: nb_w * 0.08, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 and not nd_att }
+        box { from: nb_x - 1, nb_y + nb_h * 0.35; size: nd_ol + 2, nb_h * 0.3; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 and not nd_att }
         box { from: nb_x + 4 * sin(nd_ph * 13), nb_y + 2 * cos(nd_ph * 7); size: nb_w, nb_h; corner: nb_r; stroke: 1; color: fl.ember; opacity: 0.7 * nd_glf; show: nd_np == 3 and nd_glf > 0.01 }
         box { from: nb_x + nb_w * 0.15, nb_y + nb_h * 0.4 + 3 * sin(nd_ph * 17); size: nb_w * 0.5, 2; color: fl.ember; opacity: 0.8 * nd_glf; show: nd_np == 3 and nd_glf > 0.01 }
         // technical: ticks along the floor and brackets at the corners
-        repeat tk in 0..9 { box { from: nb_x + nb_w * (tk + 0.5) / 9, nb_y + nb_h - 3; size: 1, 3; color: nd_acc; opacity: 0.5; show: nd_np == 2 and nd_kind > 0 and nd_kind < 6 } }
-        group { show: nd_np == 2 and nd_kind > 0
+        repeat tk in 0..9 { box { from: nb_x + nb_w * (tk + 0.5) / 9, nb_y + nb_h - 3; size: 1, 3; color: nd_acc; opacity: 0.5; show: nd_np == 2 and nd_kind > 0 and nd_kind < 6 and not nd_att } }
+        group { show: nd_np == 2 and nd_kind > 0 and not nd_att
             box { from: nb_x - 4, nb_y - 4; size: 8, 1.5; color: nd_acc }
             box { from: nb_x - 4, nb_y - 4; size: 1.5, 8; color: nd_acc }
             box { from: nb_x + nb_w - 4, nb_y - 4; size: 8, 1.5; color: nd_acc }
@@ -1270,7 +1270,7 @@ scene Node {
             box { from: nb_x + nb_w + 2.5, nb_y + nb_h - 4; size: 1.5, 8; color: nd_acc }
         }
         // organic: a second, softer skin round the body, there as what is inside appears
-        box { from: nb_x - 3, nb_y - 3; size: nb_w + 6, nb_h + 6; corner: nb_r + 3; stroke: 1; color: nd_acc; opacity: 0.18 * nd_cf; show: nd_np == 0 and nd_kind > 0 }
+        box { from: nb_x - 3, nb_y - 3; size: nb_w + 6, nb_h + 6; corner: nb_r + 3; stroke: 1; color: nd_acc; opacity: 0.18 * nd_cf; show: nd_np == 0 and nd_kind > 0 and not nd_att }
         zone box nd_bz { from: nb_x - 16, nb_y - 8; size: nb_w + 32, nb_h + 16; corner: nb_r; cursor: pointer; role: button; label: "The Pill" }
         let nd_hv = nd_bz.hover
         on change nd_hv { emit nd_hover(if(nd_hv, 1 + round(pointer.x), 0)) }
@@ -2353,9 +2353,9 @@ scene Node {
             box { from: st_x + 20 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 0 }
             zone box stt0 { from: st_x + 20, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Presets"; selected: nd_tab == 0; show: nd_studio }
             on press stt0 { emit nd_tab(0) }
-            text "Pill" { at: st_x + 99 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
+            text "Layout" { at: st_x + 99 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 1, 700, 500); family: "Exo 2"; color: if(nd_tab == 1, fl.engrave, fl.muted) }
             box { from: st_x + 99 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 1 }
-            zone box stt1 { from: st_x + 99, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Pill"; selected: nd_tab == 1; show: nd_studio }
+            zone box stt1 { from: st_x + 99, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Layout"; selected: nd_tab == 1; show: nd_studio }
             on press stt1 { emit nd_tab(1) }
             text "Shape" { at: st_x + 178 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
             box { from: st_x + 178 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 2 }
@@ -2373,10 +2373,6 @@ scene Node {
             box { from: st_x + 415 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 5 }
             zone box stt5 { from: st_x + 415, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Music"; selected: nd_tab == 5; show: nd_studio }
             on press stt5 { emit nd_tab(5) }
-            text "Parts" { at: st_x + 494 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 6, 700, 500); family: "Exo 2"; color: if(nd_tab == 6, fl.engrave, fl.muted) }
-            box { from: st_x + 494 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 6 }
-            zone box stt6 { from: st_x + 494, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Parts"; selected: nd_tab == 6; show: nd_studio }
-            on press stt6 { emit nd_tab(6) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; color: nd_acc; opacity: if(false, 0.9, if(stc3.hover, 0.18, 0)) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; stroke: 1; color: if(false, nd_acc, fl.trace_lit) }
             text "RESET" { at: st_x + 940 - 24 - 336 + 100 / 2, st_dy + 22 + 30 / 2; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(false, fl.ground, fl.engrave) }

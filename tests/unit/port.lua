@@ -1017,3 +1017,47 @@ do
         assert(read("shell/mooi-node.plm"):find("model lr max 12 {", 1, true))
     end)
 end
+
+section("the audit's fixes: the attached body plain, every list kept fresh, the corners kept apart, less work, the studio in six pages (D313)")
+do
+    local LK = require("lib/node/look")
+    test("attached, no outline, ghost or texture is drawn round what grows out of the notch", function()
+        local p = read("shell/mooi-node.plm")
+        for _, cond in ipairs({ "show: nd_trl == 1 and not nd_att", "show: nd_np == 0 and nd_kind > 0 and not nd_att",
+                                "show: nd_kind > 0 and nd_tex == 5 and not nd_att", "show: nd_kind > 0 and nd_tex == 7 and not nd_att" }) do
+            assert(p:find(cond, 1, true), cond)
+        end
+        assert(read("shell/mooi-node.luau"):find('if attached then shape.top = (kind == "rest") and 0 or fb end', 1, true), "under the band")
+    end)
+    test("the window and the minute wherever they are placed; the window told, not polled", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('local function placed(name)', 1, true))
+        assert(l:find('if N.studio.open or not (placed("clock") or placed("date")) then return end', 1, true))
+        assert(l:find('"workspaces", "window", "apps"', 1, true) == nil and read("shell/mooi-node.plm"):find('"workspaces", "window", "apps"', 1, true))
+    end)
+    test("a corner stops where the pill begins", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find("if w > 0 and x + w + 14 > room then break end", 1, true))
+        assert(l:find("lay_modules(N.look.left, 1, cx - 24)", 1, true) and l:find("lay_modules(N.look.right, 2, W - (cx + cw) - 24)", 1, true))
+    end)
+    test("less work at rest: the camera every 6 s, the microphone every 3, the weather and launch counts read on change", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find("every(3000, function()\n    -- a process that never answers", 1, true))
+        assert(l:find("if pv_tick % 2 == 1 then pv_busy = false; return end", 1, true))
+        assert(l:find('pcall(sys.watch, "files:nexus-weather.json"', 1, true) and l:find('pcall(sys.watch, "files:widgets.json"', 1, true))
+    end)
+    test("the node's logic keeps under Luau's 200 locals in its main chunk", function()
+        local n = 0
+        for line in read("shell/mooi-node.luau"):gmatch("[^\n]+") do if line:match("^local ") then n = n + 1 end end
+        assert(n < 195, "top-level locals: " .. n .. " (Luau allows 200)")
+    end)
+    test("the studio in six pages; Side is the look's, and an old look takes Settings' side", function()
+        eq(table.concat(LK.TABS, ","), "Presets,Layout,Shape,Surface,Motion,Music")
+        for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab) end
+        eq(LK.normalise({}).side, "centre"); eq(LK.normalise({ side = "left" }).side, "left")
+        eq(LK.find("accent").names[1], "Accent")
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('if not (type(raw) == "table" and raw.side) and (cfg().anchor == "left" or cfg().anchor == "right") then t.side = cfg().anchor end', 1, true))
+        assert(not read("tools/gen-settings.py"):find('"node.anchor", "sv_node_anchor"', 1, true), "Where left Settings")
+    end)
+end

@@ -6347,8 +6347,8 @@ do
         local rows = LK.rows(t, "Surface")
         eq(#rows, #LK.SCHEMA.Surface); eq(rows[1].kind, 1); eq(rows[1].o0, "Solid"); eq(rows[2].kind, 0)
         eq(rows[3].value, "1.0 px", "the outline in pixels")
-        local w = LK.rows(LK.preset("organic"), "Parts")
-        for _, r in ipairs(w) do if r.label == "Orbit" then eq(r.value, "520 px"); assert(math.abs(r.frac - 0.55) < 1e-9) end end
+        local w = LK.rows(LK.preset("organic"), "Layout")
+        for _, r in ipairs(w) do if r.label == "Workspace orbit" then eq(r.value, "520 px"); assert(math.abs(r.frac - 0.55) < 1e-9) end end
     end)
     test("look: only what can matter under this look is offered (D261)", function()
         local function row(t, tab, key)
@@ -6359,23 +6359,25 @@ do
         eq(row(seed, "Shape", "seed").off, false, "a seed may be shaped")
         eq(row(seed, "Shape", "seed_w").off, false, "…and sized")
         eq(row(seed, "Motion", "breath").off, false, "…and breathe")
-        eq(row(seed, "Pill", "clock_style").off, true, "only the clock seed tells the time")
-        eq(row(seed, "Pill", "clock_style").why, "Only the clock seed tells the time this way (Shape → Seed → Clock).")
+        eq(row(seed, "Shape", "clock_style").off, true, "only the clock seed tells the time")
+        eq(row(seed, "Shape", "clock_style").why, "Only the clock seed tells the time this way (Shape → Seed → Clock).")
         eq(row(seed, "Music", "viz").off, false, "the capsule's visualiser")
         eq(row(seed, "Music", "cover").off, false, "its cover")
         local clock = LK.preset("organic"); clock.seed = "clock"
-        eq(row(clock, "Pill", "clock_style").off, false, "the clock seed may choose how it tells it")
+        eq(row(clock, "Shape", "clock_style").off, false, "the clock seed may choose how it tells it")
         local long = LK.preset("organic"); long.modules = { "clock" }
         for _, key in ipairs({ "seed", "seed_w", "seed_h" }) do
             eq(row(long, "Shape", key).off, true, "no seed under a pill: " .. key)
             eq(row(long, "Shape", key).why, "The pill holds modules: there is no seed to shape.")
         end
         eq(row(long, "Motion", "breath").off, true, "nothing rests to breathe")
-        eq(row(long, "Pill", "clock_style").off, true, "the pill is not a clock seed")
+        eq(row(long, "Shape", "clock_style").off, true, "the pill is not a clock seed")
         local attached = LK.preset("organic"); attached.place = "attached"
         eq(row(attached, "Shape", "top").off, true, "attached: the frame sets the top")
         eq(row(attached, "Shape", "round").off, true, "a notch takes the frame's corners")
         eq(row(attached, "Shape", "round").why, "A notch takes its corners from the frame.")
+        eq(row(attached, "Surface", "texture").off, true, "D313: attached, its body is the frame's")
+        eq(row(attached, "Surface", "glow").off, false, "its glow is still its own")
         local viz = LK.preset("organic"); viz.music_form = "visualiser"
         eq(row(viz, "Music", "viz").off, true, "the visualiser is the capsule's")
         eq(row(viz, "Music", "cover").off, true, "and it shows no cover")
@@ -6780,14 +6782,14 @@ do
         eq(LK.form(LK.normalise({ place = "attached" })), "notch")
         eq(LK.form(LK.normalise({ rest = "seed", modules = { "clock", "weather" } })), "long", "modules someone added are kept and shown")
         eq(LK.normalise({ rest = "notch" }).place, "attached", "a notch from before is attached")
-        eq(#LK.SCHEMA.Pill, 3, "place, the clock seed's style and the Music module's look (D310); the modules have an editor of their own")
+        eq(#LK.SCHEMA.Layout, 7, "D313: where it is and what it holds; the modules have an editor of their own beside them")
         for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab) end
     end)
-    test("the pill is as wide as what it holds; the window is asked for only while shown", function()
+    test("the pill is as wide as what it holds; the window is told by the service, not asked (D313)", function()
         local f = assert(io.open("shell/mooi-node.luau")); local l = f:read("a"); f:close()
         assert(l:find("shape.seed_w, shape.seed_h = w, 26", 1, true))
-        assert(l:find('if N.kind ~= "rest" or LK.form(N.look) == "seed" or N.studio.open then return end', 1, true))
-        assert(l:find('for _, k in ipairs(LK.modules(N.look.modules)) do if k == "window" then want = true end end', 1, true), "only while the window is one of its modules")
+        assert(l:find('pcall(sys.watch, "window", function(w)', 1, true) and not l:find('"-j", "activewindow" }, function(out)\n        local ok, w = pcall', 1, true))
+        assert(l:find('if placed("window") and not N.studio.open then render() end', 1, true), "redrawn only while a Window module is placed")
     end)
 end
 
