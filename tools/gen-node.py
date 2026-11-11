@@ -1590,6 +1590,7 @@ def surface():
           f'{c}        let rx = nb_x + nb_w / 2 + (r.x - nb_x - nb_w / 2) * nd_grow',
           f'{c}        ellipse {{ at: rx, nb_y + nb_h / 2; radius: if(r.used, 3.5, 2); color: if(r.used, {ink}, {dim}) }}',
           f'{c}        zone box rz {{ from: r.x - 20, nb_y; size: 40, nb_h; cursor: pointer; role: button; label: "Workspace {{r.n}}"; show: nd_kind == 4 and not nd_studio }}',
+          f'{c}        on scroll rz {{ emit nd_wheel(if(wheel > 0, 1, -1)) }}',
           f'{c}        on press rz {{ emit nd_ws(r.index) }}',
           f'{c}    }}',
           f'{c}    group {{ glow: 12, 0.8 * nd_glow, nd_glc',

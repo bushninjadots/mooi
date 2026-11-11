@@ -457,6 +457,14 @@ render = function()
     show_capsule(cap)
     -- leaning toward where the pointer came in from
     if N.near and not studio and kind ~= "rest" and kind ~= "universe" and not attached then b.x = math.max(0, math.min(N.scr.w - b.w, b.x + (N.lean or 0) * 24)) end
+    -- D312: attached, what opens is never smaller than the notch it grows out of (a gauge, 16 tall, sat inside it
+    -- and nothing seemed to grow); centred on it
+    if attached and form == "notch" and not N.from_corner and kind ~= "rest" and kind ~= "universe" and N.rest_notch then
+        local rn = N.rest_notch
+        if b.h < rn.h + 6 then b.h = rn.h + 6 end
+        if b.w < rn.w + 24 then b.x, b.w = b.x - (rn.w + 24 - b.w) / 2, rn.w + 24 end
+        b.r = math.min(b.r, b.h / 2)
+    end
     -- out of a corner: flush with that side, as the corner notch is
     if attached and N.from_corner and kind ~= "rest" then b.x = N.from_corner == "left" and 0 or (N.scr.w - b.w) end
     if kind == "universe" then
@@ -464,7 +472,8 @@ render = function()
         b = { x = N.scr.w / 2 - c.w / 2, y = N.scr.h / 2 - c.h / 2, w = c.w, h = c.h, r = c.r }
     end
     -- a reaction: the seed stretches toward what is coming before it unfolds
-    if reacting then
+    -- (attached, no stretch toward it: the notch would shrink to a seed and seem to let go of the frame — D312)
+    if reacting and not attached then
         local seed = G.body("rest", N.scr, anchor, shape, data)
         b = { x = seed.x - 20, y = seed.y, w = seed.w + 40, h = math.max(seed.h, 8), r = math.min(4, seed.r + 1) }
     end
@@ -505,6 +514,12 @@ render = function()
     -- is; the node draws only what they hold
     fact.nd_cfr = framed and not studio
     local g = notch and { x = math.floor(b.x + 0.5), w = math.floor(b.w + 0.5), h = math.floor(b.h + 0.5), r = math.floor(math.min(14, b.h / 2 + 4)) } or {}
+    -- D312: attached, the frame keeps the notch while something is open — what opens grows out of it, on top of it,
+    -- and the notch never lets go of the frame (it was dropped the moment the pill left its rest)
+    if notch then N.rest_notch = { x = g.x, w = g.w, h = math.min(g.h, 28), r = g.r }
+    elseif attached and form == "notch" and kind ~= "rest" and N.rest_notch then
+        g = { x = N.rest_notch.x, w = N.rest_notch.w, h = N.rest_notch.h, r = N.rest_notch.r }
+    end
     if framed and not studio then
         if (fact.nd_lw or 0) > 0 then g.left = { w = fact.nd_lw, h = fact.nd_lh or 28 } end
         if (fact.nd_rw or 0) > 0 then g.right = { w = fact.nd_rw, h = fact.nd_rh or 28 } end
@@ -949,6 +964,7 @@ local function module_at(rows, rx)
     return nil
 end
 local function ws_step(dir)
+    N.ws_wheel_till = now() + 1500
     local list = N.ws.list
     for i, w in ipairs(list) do
         if w.id == N.ws.active then
@@ -958,6 +974,7 @@ local function ws_step(dir)
         end
     end
 end
+N.ws_step = ws_step
 N.module_act = function(rows, rx, dir)
     local m = module_at(rows, rx)
     if not m then return false end
@@ -1492,7 +1509,13 @@ on("nd_wheel", function(v)
     if N.studio.open then return end
     v = tonumber(v) or 0
     local dir = v > 0 and 1 or -1
-    -- D311: the wheel over the workspaces switches them; anywhere else on the pill, the volume (as before)
+    -- D311: the wheel over the workspaces switches them; anywhere else on the pill, the volume (as before). D312:
+    -- and goes on switching them while the rail it opened is out, or a moment after the last turn, so a run of
+    -- notches never falls through to the volume
+    if N.kind == "workspaces" or now() < (N.ws_wheel_till or 0) then
+        if N.ws_step then N.ws_step(dir) end
+        return
+    end
     if N.kind == "rest" and math.abs(v) > 1 and N.module_act and N.module_act(model.lm, math.abs(v) - 1 - (N.bx or 0), dir) then return end
     local d = dir > 0 and 0.05 or -0.05
     local to = math.max(0, math.min(1, (N.vol or 0.5) + d))

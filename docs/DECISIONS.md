@@ -8026,3 +8026,20 @@ the right.
 memory, battery; centre: the clock, music, workspaces; right: notices, weather, volume) drawn in the new style,
 joined to the frame. Not seen live: the tray, the grid, the app's tile, the attached panel, presses and the wheel
 (each needs the owner's pointer or keyboard).
+
+## D312 · 2026-11-11 · The notch stays joined while it opens; the wheel stays on the workspaces
+
+The owner: "switching workspace, the middle pill detaches from the frame; and sometimes scrolling still changes the
+volume".
+
+- **Joined.** The frame drew the notch only while the Pill rested: the moment a workspace switch (or anything) opened
+  it, the frame let the notch go, and for its first 140 ms the Pill shrank to its seed before growing. Attached, the
+  frame now keeps the notch as it was at rest while something is open (`N.rest_notch`), what opens grows out of it on
+  top, there is no stretch toward a seed, and what opens is never smaller than the notch (a 16 px gauge had sat
+  inside it).
+- **The wheel.** The first notch switched the workspace and opened the rail; the Pill was then no longer at rest, so
+  the next notches fell through to the volume. While the rail is out, or for 1.5 s after a workspace was turned, the
+  wheel goes on turning workspaces; the rail's own stops take the wheel too.
+
+**Verified.** Unit 958 / 0; the scene compiles; live: the frame kept the notch while the node left its rest. Not
+seen: a real switch by the wheel (the owner's pointer).
