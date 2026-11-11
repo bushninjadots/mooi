@@ -46,7 +46,7 @@ local SETTINGS = require("lib/settingsfile")
 local SETTINGS_FILE = "settings.json"
 local DESK = require("lib/desktop")
 
-local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, panel = 13 }
+local KIND = { rest = 0, media = 1, notice = 2, volume = 3, workspaces = 4, launcher = 6, universe = 7, time = 8, done = 9, privacy = 10, battery = 10, player = 11, panel = 13, launch = 14 }
 -- what a press, Super or another opening lets go of (`done` is never among them: it waits to be answered)
 local HELD = { "launcher", "universe", "time", "player", "panel" }
 
@@ -242,13 +242,25 @@ local function show_system(b)
     model.sy = rows
 end
 
+-- D311: a window's row wears its app's icon (lib/apps: StartupWMClass, the desktop id, the program, the name)
+local APPS = require("lib/apps")
+local apps_ix, apps_ix_of = nil, nil
+local function app_icon(class)
+    if apps_ix_of ~= N.apps then apps_ix, apps_ix_of = APPS.index(N.apps or {}), N.apps end
+    return APPS.icon_for(apps_ix, class) or ""
+end
 local function show_launcher(b)
     local rows = {}
-    local places = G.results(b, #N.results)
+    local grid = #N.results > 0
+    for _, a in ipairs(N.results) do if a.kind ~= "app" then grid = false end end
+    N.lgrid = grid
+    fact.nd_lgrid = grid
+    local places = G.results(b, #N.results, grid)
     for i, a in ipairs(N.results) do
         local p = places[i]
         local name = tostring(a.name or a.id or "")
         local icon = (a.kind == "app" and type(a.icon) == "string") and a.icon or ""
+        if a.kind == "window" then icon = app_icon(a.app) end
         local letter = a.kind == "web" and "W" or a.kind == "calc" and "=" or a.kind == "command" and "M" or a.kind == "window" and string.sub(tostring(a.app or name), 1, 1) or string.sub(name ~= "" and name or "?", 1, 1)
         local tag = a.tag or CMD.TAG[a.kind] or ""
         if a.kind == "ssh" then letter = ">" elseif a.kind == "pkg" then letter = a.source == "aur" and "A" or "P" elseif a.kind == "info" then letter = "…" end
@@ -417,6 +429,7 @@ render = function()
     -- the long pill (D248): as wide as what it holds
     local form = LK.form(look, N.media.playing)
     fact.nd_long = ({ seed = 0, long = 1, notch = 2 })[form]   -- (D264: the form may follow the music)
+    fact.nd_tra = -1   -- D311: where the Tray module is (set by the layouts below), none until one is laid out
     if form ~= "seed" and kind == "rest" and N.long_layout then
         local w = N.long_layout()
         shape.seed_w, shape.seed_h = w, 26
@@ -425,7 +438,15 @@ render = function()
     end
     if studio then shape.top = 96 end
     if N.corner_layout then N.corner_layout() end
-    local anchor = studio and "centre" or (cfg().anchor or "centre")
+    -- D311: attached (a notch, or opened from a corner, with the frame on), what it opens grows down out of the
+    -- notch itself — from the screen's top edge, in the frame's own fill and line — never a new island under it
+    if kind == "rest" then N.from_corner = nil end
+    local framed_now = N.settings.frame == nil or N.settings.frame.on ~= false
+    local attached = framed_now and not studio and kind ~= "universe" and (form == "notch" or N.from_corner ~= nil)
+    if attached then shape.top = 0 end
+    fact.nd_att = attached and kind ~= "rest"
+    fact.nd_fb = (type(N.settings.frame) == "table" and tonumber(N.settings.frame.band)) or 4
+    local anchor = studio and "centre" or (N.from_corner or cfg().anchor or "centre")
     local data = { n = #N.ws.list, page = N.panel, notices = math.min(3, #N.notices) }
     -- at rest with something running, the seed is the time capsule
     local cap = (not studio and kind == "rest") and TK.capsule(N.time, wall()) or nil
@@ -435,7 +456,9 @@ render = function()
     local b = G.body(bkind, N.scr, anchor, shape, data)
     show_capsule(cap)
     -- leaning toward where the pointer came in from
-    if N.near and not studio and kind ~= "rest" and kind ~= "universe" then b.x = math.max(0, math.min(N.scr.w - b.w, b.x + (N.lean or 0) * 24)) end
+    if N.near and not studio and kind ~= "rest" and kind ~= "universe" and not attached then b.x = math.max(0, math.min(N.scr.w - b.w, b.x + (N.lean or 0) * 24)) end
+    -- out of a corner: flush with that side, as the corner notch is
+    if attached and N.from_corner and kind ~= "rest" then b.x = N.from_corner == "left" and 0 or (N.scr.w - b.w) end
     if kind == "universe" then
         local c = G.body("universe", N.scr, "centre", shape, data)
         b = { x = N.scr.w / 2 - c.w / 2, y = N.scr.h / 2 - c.h / 2, w = c.w, h = c.h, r = c.r }
@@ -472,6 +495,7 @@ render = function()
     -- take it, so a timer that ends while you type steals no keys
     fact.nd_kb = studio or kind == "launcher" or kind == "universe" or (kind == "panel" and HM.typing(N.panel, N.hedit, N.hpick))
     set_body(b, changed and LK.overshoot(look) or 0)
+    N.bx = b.x
     -- D257: a notch at rest is a piece of the frame's body (the frame draws it, joined to its band); the node
     -- only says where it is, and draws what is inside
     local framed = N.settings.frame == nil or N.settings.frame.on ~= false
@@ -619,6 +643,21 @@ pcall(sys.watch, "bluetooth", function(b)
     if N.panel == "bluetooth" then N.panel_shown = nil end
     render()
 end)
+-- D311: the tray (the Tray module), its items' own pictures; a press, its menu (right) and its middle button
+N.tray, N.tray_rows = {}, {}
+pcall(sys.watch, "tray", function(list)
+    N.tray = type(list) == "table" and list or {}
+    local rows = {}
+    for i, t in ipairs(N.tray) do
+        if i > 10 then break end
+        local name = tostring(t.title or t.id or "")
+        rows[i] = { icon = tostring(t.icon or ""), iconed = tostring(t.icon or "") ~= "", title = name,
+                    letter = string.upper(string.sub(string.match(name, "%w") or "?", 1, 1)) }
+    end
+    N.tray_rows = rows
+    model.ltr = rows
+    render()
+end)
 pcall(sys.watch, "apps", function(a)
     N.apps = type(a) == "table" and (type(a.list) == "table" and a.list or (a[1] ~= nil and a) or {}) or {}
 end)
@@ -693,9 +732,11 @@ local function toggle_hold(kind)
         ST.hold(N.st, kind)
     end
 end
-on("nd_press", function()
+on("nd_press", function(px)
     if N.studio.open then if N.studio_press then N.studio_press() end; return end
     local k = N.kind
+    -- D311: at rest a press lands on the module under it (the workspaces, the notices, the clock, ...)
+    if k == "rest" and not fact.nd_cap and tonumber(px) and N.module_act and N.module_act(model.lm, tonumber(px) - (N.bx or 0), 0) then return end
     if k == "launcher" or k == "universe" or k == "done" then return end
     -- a press on the panel's own body (not one of its controls) folds the time panel or the player away
     if k == "time" or k == "player" or k == "panel" then ST.release(N.st, k); render(); return end
@@ -757,7 +798,8 @@ local function search()
         return
     end
     local wd = read("widgets.json", "json")
-    local apps = WB.grid_apps(N.apps, type(wd) == "table" and wd.launch_counts or {}, N.q, 6)
+    -- D311: nothing typed, the apps as a grid of their icons (twelve); typed, a list of six of everything
+    local apps = WB.grid_apps(N.apps, type(wd) == "table" and wd.launch_counts or {}, N.q, N.q:match("%S") and 6 or 12)
     for _, a in ipairs(apps) do a.kind = a.kind or "app" end
     -- D234: mooi's own commands and the open windows, when something is typed
     if N.q:match("%S") then
@@ -833,6 +875,11 @@ local function choose(a)
         run("xdg-open", { "https://duckduckgo.com/?q=" .. enc }, function() end)
     else
         pcall(sys.call, "apps.launch", a.exec)
+        -- D311: the Pill becomes the app's tile for a moment — its icon, large, in a rounded square — then folds
+        model.lnch = { { icon = type(a.icon) == "string" and a.icon or "", iconed = type(a.icon) == "string" and a.icon ~= "",
+                         letter = string.upper(string.sub(tostring(a.name or "?"), 1, 1)) } }
+        text.nd_lname = tostring(a.name or "")
+        ST.push(N.st, "launch", now())
     end
 end
 local function open_launcher()
@@ -893,6 +940,97 @@ end
 local function go_workspace(id)
     run("hyprctl", { "dispatch", 'hl.dsp.focus({ workspace = "' .. tostring(id) .. '" })' })
 end
+-- D311: what a module does when pressed (dir 0) or wheeled (1 up, -1 down) at x along its list. True when it
+-- did something; false leaves the pill's own press (the panel) or wheel (the volume).
+local function module_at(rows, rx)
+    for _, m in ipairs(type(rows) == "table" and rows or {}) do
+        if rx >= m.x - 7 and rx <= m.x + m.w + 7 then return m end
+    end
+    return nil
+end
+local function ws_step(dir)
+    local list = N.ws.list
+    for i, w in ipairs(list) do
+        if w.id == N.ws.active then
+            local to = list[math.max(1, math.min(#list, i - dir))]
+            if to and to.id ~= w.id then go_workspace(to.id) end
+            return
+        end
+    end
+end
+N.module_act = function(rows, rx, dir)
+    local m = module_at(rows, rx)
+    if not m then return false end
+    local k = m.kind
+    if dir ~= 0 then
+        if k == 3 then ws_step(dir); return true end
+        return false   -- the volume, anywhere else
+    end
+    if k == 3 then
+        -- the dot pressed (Minflair's): each 6 wide every 11, the active one 18
+        local a, best, bd = fact.nd_lmwa or 0, nil, 1e9
+        for i = 0, math.min(10, #N.ws.list) - 1 do
+            local cx = m.x + 8 + i * 11 + (i > a and 12 or 0) + (i == a and 9 or 3)
+            if math.abs(rx - cx) < bd then best, bd = i, math.abs(rx - cx) end
+        end
+        local w = best and N.ws.list[best + 1]
+        if w then go_workspace(w.id) end
+        return true
+    elseif k == 11 then run("mooi", { "drawer", "notices" }, function() end); return true
+    elseif k == 14 then run("mooi", { "drawer", "notices" }, function() end); return true
+    elseif k == 12 then open_launcher(); render(); return true
+    elseif k == 15 or k == 4 then open_panel("power"); render(); return true
+    elseif k == 1 or k == 6 then if N.open_time then N.open_time() end; return true
+    elseif k == 5 then if N.open_player then N.open_player() end; return true
+    elseif k == 9 then pcall(sys.call, "audio.mute"); return true
+    elseif k == 13 then
+        -- the tray: the item under it, activated (its menu when it has nothing to activate)
+        local item = N.tray[math.floor((rx - m.x + 2) / 20) + 1]
+        if item and not pcall(sys.call, "tray.activate", item.key) then pcall(sys.call, "tray.context", item.key) end
+        return true
+    end
+    return false
+end
+-- a right press: a tray item's menu, wherever the Tray module stands
+on("nd_rpress", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if N.studio.open then return end
+    local area = v // 10000
+    local x = v % 10000
+    local rows = area == 2 and model.lmr or area == 1 and model.lml or model.lm
+    local rx = area == 2 and (x - ((N.scr and N.scr.w or 1920) - (fact.nd_rw or 0))) or area == 1 and x or (x - (N.bx or 0))
+    local m = module_at(rows, rx)
+    if m and m.kind == 13 then
+        local item = N.tray[math.floor((rx - m.x + 2) / 20) + 1]
+        if item then pcall(sys.call, "tray.context", item.key) end
+    end
+end)
+-- the corners (D311): a press or the wheel over one, at x along it: its module, else the panel / the volume
+on("nd_cpress", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if N.studio.open then return end
+    local right = v >= 20000
+    local x = v % 10000
+    local rows = right and model.lmr or model.lml
+    local rx = right and (x - ((N.scr and N.scr.w or 1920) - (fact.nd_rw or 0))) or x
+    -- what it opens grows out of this corner (D311)
+    N.from_corner = right and "right" or "left"
+    if not N.module_act(rows, rx, 0) then open_panel("home") end
+    render()
+end)
+on("nd_cwheel", function(v)
+    v = math.floor(tonumber(v) or 0)
+    if N.studio.open or v == 0 then return end
+    local dir = v > 0 and 1 or -1
+    v = math.abs(v)
+    local right = v >= 20000
+    local x = v % 10000
+    local rows = right and model.lmr or model.lml
+    local rx = right and (x - ((N.scr and N.scr.w or 1920) - (fact.nd_rw or 0))) or x
+    if not N.module_act(rows, rx, dir) then
+        pcall(sys.call, "audio.volume", math.max(0, math.min(1, (N.vol or 0.5) + dir * 0.05)))
+    end
+end)
 on("nd_un", function(v)
     go_workspace(math.floor(tonumber(v) or 1))
     ST.release(N.st, "universe")
@@ -932,9 +1070,12 @@ on("nd_key", function(v)
         return
     end
     if N.kind == "launcher" then
+        local step = N.lgrid and G.GRID_COLS or 1
         if v == 27 then ST.release(N.st, "launcher")
-        elseif v == 38 then N.sel = math.max(0, N.sel - 1)
-        elseif v == 40 or v == 9 then N.sel = math.max(0, math.min(#N.results - 1, N.sel + 1))
+        elseif v == 38 then N.sel = math.max(0, N.sel - step)
+        elseif v == 40 then N.sel = math.max(0, math.min(#N.results - 1, N.sel + step))
+        elseif v == 9 or (N.lgrid and v == 39) then N.sel = math.max(0, math.min(#N.results - 1, N.sel + 1))
+        elseif N.lgrid and v == 37 then N.sel = math.max(0, N.sel - 1)
         elseif v == 13 then
             local a = N.results[N.sel + 1]
             choose(a)
@@ -1225,9 +1366,9 @@ end)
 -- ── the long pill (D248): the modules the look chose, laid out left to right, the pill as wide as they are ──
 N.awin = ""
 local MOD_KIND = { clock = 1, window = 2, spaces = 3, battery = 4, music = 5, date = 6, cpu = 7, ram = 8,
-                   volume = 9, weather = 10, notices = 11 }
--- D310: each module wears an icon before its words, as the bar's do (the font's own glyphs)
-local MOD_ICON = { [1] = "󰥔", [2] = "󰖯", [6] = "󰃭", [7] = "󰻠", [8] = "󰍛", [9] = "󰕾", [10] = "󰖐", [11] = "󰂚" }
+                   volume = 9, weather = 10, notices = 11, logo = 12, tray = 13, status = 14, power = 15 }
+-- D310/D311: each reading wears a small icon before its words, in the ink, as Minflair's and Noctalia's do
+local MOD_ICON = { [2] = "󰖯", [6] = "󰃭", [7] = "󰻠", [8] = "󰍛", [9] = "󰕾", [10] = "󰖐", [11] = "󰂚", [12] = "󰣇", [15] = "⏻" }
 local function battery_icon(p)
     if N.charging then return "󰂄" end
     local steps = { "󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹" }
@@ -1240,45 +1381,54 @@ local function weather_word()
     local t = type(cur) == "table" and tonumber(cur.temperature_2m)
     return t and (math.floor(t + 0.5) .. "°") or ""
 end
--- the modules of one list laid out left to right from x = 14 (D295: the pill's own, or a corner notch's); `lv` is
--- a meter's level (D308), `icon` the glyph before the words (D310). The Music module follows the look's music_mod
--- (D310): a visualiser beside its title, the title alone, or its cover with the title
+-- the modules of one list laid out left to right from x = 14 (D295: the pill's own, or a corner notch's). D311,
+-- Minflair's and Noctalia's: small ink icons and plain words, no meters; the workspaces as Minflair's dots (the
+-- active one a pill, those with windows brighter); the logo (the launcher), the tray, the status icons (the
+-- Control Center) and power. `area` (0 the pill, 1 the left corner, 2 the right) says where the tray is drawn.
 local ICON_W = 16
-local function lay_modules(list)
+local function lay_modules(list, area)
     local x, rows = 14, {}
     local f = type(N.feed.resources) == "table" and N.feed.resources or {}
     local function pct(v) v = tonumber(v); if not v then return nil end; return v <= 1 and v * 100 or v end
     local function words(t, most) return math.min(most, #t * 6 + 6) end
     for _, name in ipairs(LK.modules(list)) do
         local kind = MOD_KIND[name]
-        local w, label, lv, icon = 0, "", -1, MOD_ICON[kind] or ""
-        if kind == 1 then label = os.date("%H:%M"); w = ICON_W + 38
+        local w, label, icon = 0, "", MOD_ICON[kind] or ""
+        if kind == 1 then label = os.date("%H:%M"); w = 38
         elseif kind == 2 then label = N.awin ~= "" and N.awin or "Desktop"; w = ICON_W + words(label, 170)
         elseif kind == 3 then
             local n = math.min(10, #N.ws.list)
             local a = 0
-            for i, ws in ipairs(N.ws.list) do if ws.id == N.ws.active then a = i - 1 end end
+            for i, ws in ipairs(N.ws.list) do
+                if ws.id == N.ws.active then a = i - 1 end
+                if i <= 10 then fact["nd_wu" .. (i - 1)] = (tonumber(ws.windows) or 1) > 0 end
+            end
             fact.nd_lmws, fact.nd_lmwa = n, a
-            -- numbered tiles, the active one wider and lit
-            if n > 0 then w = n * 16 + 8 end
+            if n > 0 then w = (n - 1) * 11 + 18 + 16 end
         elseif kind == 4 then
-            if N.bat then label = math.floor(N.bat + 0.5) .. "%"; icon = battery_icon(N.bat); w = ICON_W + 32; lv = N.bat / 100; fact.nd_lmbat = N.bat / 100 end
+            if N.bat then label = math.floor(N.bat + 0.5) .. "%"; icon = battery_icon(N.bat); w = ICON_W + 30; fact.nd_lmbat = N.bat / 100 end
         elseif kind == 5 then
             if N.media.playing and N.media.title ~= "" then
                 label = N.media.title
                 local mm = N.look.music_mod or "bars"
-                if mm == "bars" then w = 34 + words(label, 120)
+                if mm == "bars" then w = 24 + words(label, 130)
                 elseif mm == "cover" then w = 24 + words(label, 140)
                 else w = 12 + words(label, 160) end
             end
-        elseif kind == 6 then label = string.upper(os.date("%a %d")); w = ICON_W + 46
-        elseif kind == 7 then local c = pct(f.cpu); if c then label = math.floor(c + 0.5) .. "%"; w = ICON_W + 34; lv = c / 100 end
-        elseif kind == 8 then local m = pct(f.mem); if m then label = math.floor(m + 0.5) .. "%"; w = ICON_W + 34; lv = m / 100 end
-        elseif kind == 9 then if N.vol then label = math.floor(N.vol * 100 + 0.5) .. "%"; w = ICON_W + 34; lv = N.vol end
-        elseif kind == 10 then label = weather_word(); if label ~= "" then w = ICON_W + 30 end
-        elseif kind == 11 then if #N.notices > 0 then label = tostring(#N.notices); w = ICON_W + 14 end
+        elseif kind == 6 then label = os.date("%a %d"); w = ICON_W + 42
+        elseif kind == 7 then local c = pct(f.cpu); if c then label = math.floor(c + 0.5) .. "%"; w = ICON_W + 30 end
+        elseif kind == 8 then local m = pct(f.mem); if m then label = math.floor(m + 0.5) .. "%"; w = ICON_W + 30 end
+        elseif kind == 9 then
+            if N.vol then label = math.floor(N.vol * 100 + 0.5) .. "%"; w = ICON_W + 30; if N.muted then icon = "󰖁" end end
+        elseif kind == 10 then label = weather_word(); if label ~= "" then w = ICON_W + 28 end
+        elseif kind == 11 then if #N.notices > 0 then label = tostring(#N.notices); w = ICON_W + 12 end
+        elseif kind == 12 or kind == 15 then w = 16
+        elseif kind == 13 then
+            local n = #(N.tray_rows or {})
+            if n > 0 then w = n * 20 - 4; fact.nd_tra, fact.nd_trx = area, x end
+        elseif kind == 14 then w = 4 * 20 - 4
         end
-        if w > 0 then rows[#rows + 1] = { kind = kind, x = x, w = w, label = label, icon = icon, lv = math.max(-1, math.min(1, lv)) }; x = x + w + 14 end
+        if w > 0 then rows[#rows + 1] = { kind = kind, x = x, w = w, label = label, icon = icon, lv = -1 }; x = x + w + 14 end
     end
     return rows, x
 end
@@ -1291,7 +1441,7 @@ N.has_music_bars = function()
     return false
 end
 N.long_layout = function()
-    local rows, x = lay_modules(N.look.modules)
+    local rows, x = lay_modules(N.look.modules, 0)
     model.lm = rows
     return math.max(40, x - 2)
 end
@@ -1299,8 +1449,12 @@ end
 -- opens a little under the pointer, as the centre does (28 → 34)
 N.cnear = { left = false, right = false }
 N.corner_layout = function()
-    local lr, lx = lay_modules(N.look.left)
-    local rr, rx = lay_modules(N.look.right)
+    local lr, lx = lay_modules(N.look.left, 1)
+    local rr, rx = lay_modules(N.look.right, 2)
+    -- the status icons (Minflair's right corner): the Control Center, the notices, Wi-Fi, Bluetooth
+    text.nd_sgw = (N.wifi_on and N.online ~= false) and "󰤨" or (N.wifi_on and "󰤯" or "󰤭")
+    text.nd_sgb = N.bt_on and "󰂯" or "󰂲"
+    fact.nd_sgn = #N.notices > 0
     model.lml, model.lmr = lr, rr
     fact.nd_lw = #lr > 0 and lx or 0
     fact.nd_rw = #rr > 0 and rx or 0
@@ -1336,7 +1490,11 @@ end)
 -- the wheel over the node (D251): the volume, a twentieth a notch (the gauge shows it, as any change does)
 on("nd_wheel", function(v)
     if N.studio.open then return end
-    local d = (tonumber(v) or 0) > 0 and 0.05 or -0.05
+    v = tonumber(v) or 0
+    local dir = v > 0 and 1 or -1
+    -- D311: the wheel over the workspaces switches them; anywhere else on the pill, the volume (as before)
+    if N.kind == "rest" and math.abs(v) > 1 and N.module_act and N.module_act(model.lm, math.abs(v) - 1 - (N.bx or 0), dir) then return end
+    local d = dir > 0 and 0.05 or -0.05
     local to = math.max(0, math.min(1, (N.vol or 0.5) + d))
     pcall(sys.call, "audio.volume", to)
 end)
@@ -2221,6 +2379,12 @@ on("nd_cmd", function(v)
     elseif v == 6 then
         -- the shortcut sheet (D267): Super+K again lets it go
         if ST.held(N.st, "panel") and N.panel == "keys" then ST.release(N.st, "panel"); render() else open_panel("keys") end
+    elseif v == 7 then
+        -- D311: the Power module: the panel's power page
+        if ST.held(N.st, "panel") and N.panel == "power" then ST.release(N.st, "panel"); render() else open_panel("power") end
+    elseif v == 8 then
+        -- D311: the Status module: the Control Center out of the frame's right side (D299)
+        run("mooi", { "drawer", "notices" }, function() end)
     end
 end)
 

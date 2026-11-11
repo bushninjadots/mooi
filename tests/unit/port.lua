@@ -930,7 +930,7 @@ do
         eq(LK.MODULE_NAMES.face, nil)
         eq(table.concat(LK.normalise({ modules = { "spaces", "face", "clock" } }).modules, ","), "spaces,clock")
         local lu = read("shell/mooi-node.luau")
-        assert(lu:find("lv = c / 100", 1, true) and not lu:find("has_face", 1, true))
+        assert(not lu:find("has_face", 1, true))
     end)
 end
 
@@ -943,12 +943,12 @@ do
         eq((LK.applicable(LK.normalise({ modules = { "clock" } }), { key = "music_mod", desc = "x" })), false)
         eq((LK.applicable(LK.normalise({ right = { "music" } }), { key = "music_mod", desc = "x" })), true)
     end)
-    test("one module drawing for the pill and both corners: icons, numbered workspaces, meters", function()
+    test("one module drawing for the pill and both corners: icons, Minflair's workspace dots (D311)", function()
         local p = read("shell/mooi-node.plm")
         local n = 0
-        for _ in p:gmatch("text number%(wsd %+ 1, 0, \"\"%)") do n = n + 1 end
+        for _ in p:gmatch("repeat wsd in 0%.%.10 { box { from: mx %+ 8 %+ wsd %* 11") do n = n + 1 end
         eq(n, 3, "the pill, the left corner, the right corner")
-        assert(p:find("model lm max 6 { kind: number; x: number; w: number; label: text; icon: text; lv: number }", 1, true))
+        assert(p:find("model lm max 8 { kind: number; x: number; w: number; label: text; icon: text; lv: number }", 1, true))
         assert(p:find("on change nd_lchv { emit nd_corner(if(nd_lchv, 1, 0)) }", 1, true))
         assert(p:find("group { show: not nd_cfr", 1, true))
     end)
@@ -977,5 +977,43 @@ do
         local s = read("shell/mooi-surface.plm")
         assert(s:find("show: lt_fon and lt_b > 0.001", 1, true) and s:find("let lf_cx = lt_fx + lt_fw / 2", 1, true))
         assert(read("shell/lib/surface/light.luau"):find("fact.lt_sx, fact.lt_sy = target.x + target.w / 2, target.y", 1, true))
+    end)
+end
+
+section("Minflair's modules, the tray, presses and the wheel on modules, growing out of the notch, the icon grid and the app's tile (D311)")
+do
+    local LK = require("lib/node/look")
+    local G = require("lib/node/geometry")
+    local ST = require("lib/node/state")
+    test("the logo, the tray, the status icons and power are modules; eight to a list", function()
+        for _, k in ipairs({ "logo", "tray", "status", "power" }) do assert(LK.MODULE_NAMES[k], k) end
+        eq(LK.MODULES_MAX, 8)
+        local p = read("shell/mooi-node.plm")
+        assert(p:find("model ltr max 10 { icon: image 16, 16; iconed: bool; title: text; letter: text }", 1, true))
+        assert(p:find('"tray", "tray.*"', 1, true), "the node may read the tray")
+        assert(p:find("on press right nd_bz { emit nd_rpress(round(pointer.x)) }", 1, true))
+        assert(p:find("on scroll ndz_lc { emit nd_cwheel(if(wheel > 0, 1, -1) * (10000 + round(pointer.x))) }", 1, true))
+    end)
+    test("a press or the wheel lands on the module under it: workspaces, notices, the clock, the tray", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find("if k == 3 then ws_step(dir); return true end", 1, true))
+        assert(l:find('elseif k == 11 then run("mooi", { "drawer", "notices" }, function() end); return true', 1, true))
+        assert(l:find('if not N.module_act(rows, rx, dir) then', 1, true))
+    end)
+    test("attached, what opens grows out of the notch (or the corner it was opened from)", function()
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('local attached = framed_now and not studio and kind ~= "universe" and (form == "notch" or N.from_corner ~= nil)', 1, true))
+        assert(l:find('N.from_corner = right and "right" or "left"', 1, true))
+        assert(read("shell/mooi-node.plm"):find("group { show: nd_kind > 0 and nd_att", 1, true))
+    end)
+    test("the launcher: the apps as a grid of large icons; a window wears its app's icon; launching, the app's tile", function()
+        local g = G.results({ x = 100, y = 0, w = 600, h = 46 }, 12, true)
+        eq(#g, 12); eq(g[7].x, 100); eq(g[7].y, g[1].y + 104); eq(g[1].h, 96)
+        eq(G.results({ x = 0, y = 0, w = 600, h = 46 }, 2)[2].h, 42, "typed: rows")
+        eq(G.body("launch", { w = 1920 }, "centre", nil, {}).r, 20)
+        assert(ST.PRIORITY.launch > ST.PRIORITY.launcher and ST.LIFE.launch)
+        local l = read("shell/mooi-node.luau")
+        assert(l:find('if a.kind == "window" then icon = app_icon(a.app) end', 1, true) and l:find('ST.push(N.st, "launch", now())', 1, true))
+        assert(read("shell/mooi-node.plm"):find("model lr max 12 {", 1, true))
     end)
 end

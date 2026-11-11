@@ -7993,3 +7993,36 @@ should run round the frame's border, not the screen's.
 with the frame's line running round them into its corners (a 3 px step at the foot found and removed), icons and
 meters drawn; the vinyl seen in the studio's music preview (the owner's look put back after). Not seen: the Music
 module's three looks with music playing, and the light round the frame (it needs a notice on an empty workspace).
+
+## D311 · 2026-11-11 · Minflair's modules, the tray, modules that answer, growing out of the notch, app icons and the app's tile
+
+The owner: "same modules from other bars into the pill — these look like shit — or copy exactly from Minflair /
+Noctalia; also the tray; very great looking app icons, even searching apps; maybe the pill can morph into the shape
+of the app"; then "morph out of it, not a new island"; "scrolling over workspaces should change workspace, same for
+volume; if I click on notices that should open". Minflair (GPL) and Noctalia (MIT) were looked at, not copied:
+Minflair's Convex bar is spare — a logo and workspace dots on the left, the time in the middle, icon-only status on
+the right.
+
+- **The modules redrawn after Minflair and Noctalia**: small icons in the ink and plain words; no meters; the time
+  bare; the workspaces as Minflair's dots on a soft capsule (6 px, 5 apart; the active one an 18 px accent pill,
+  those with windows at 65 %, empty ones at 22 %); the Music module's visualiser is four bars (MiniCavaBars).
+- **New modules**: **Logo** (opens the search), **Tray** (each item's own picture; a press, its menu on the right
+  button), **Status icons** (the Control Center, the notices with a dot when some wait, Wi‑Fi, Bluetooth; a press
+  opens the Control Center) and **Power** (the panel's power page). Eight to a list. The node may now read the tray.
+- **Modules answer**: the press and the wheel on the pill and the corners carry where they landed, and the logic finds
+  the module under it (`N.module_act`) — the wheel over the workspaces steps through them, a dot pressed goes to its
+  workspace, Notices opens the notices (the Control Center), the clock and the date the time panel, the music the
+  player, the battery the power page, volume mutes; elsewhere the wheel is the volume and a press the panel, as
+  before.
+- **Growing out of the notch**: attached (a notch, or anything opened from a corner) with the frame on, what opens
+  starts at the screen's top edge in the frame's own fill and line, square where it meets the band and curved out
+  into it (`nd_att`); from a corner it is flush with that side.
+- **App icons**: nothing typed, the launcher shows twelve apps as a grid of 48 px icons on tiles (the arrows move by
+  tile and by row); typed, rows with 30 px icons, and a window's row now wears its app's icon (`lib/apps`).
+- **The app's tile**: launching an app, the Pill becomes a rounded square holding the app's icon large, its name
+  under it, for 1.4 s (`launch`, above the launcher), then folds.
+
+**Verified.** Unit 958 / 0; 18 scenes compile; live after `mooi refresh`: the owner's own look (left: window, CPU,
+memory, battery; centre: the clock, music, workspaces; right: notices, weather, volume) drawn in the new style,
+joined to the frame. Not seen live: the tray, the grid, the app's tile, the attached panel, presses and the wheel
+(each needs the owner's pointer or keyboard).

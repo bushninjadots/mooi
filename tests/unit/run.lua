@@ -6817,7 +6817,7 @@ do
         local l = read("shell/mooi-node.luau")
         assert(l:find('if form == "notch" and not studio then shape.top = 0; shape.seed_h = N.near and 34 or 28 end', 1, true))
         assert(l:find('pcall(sys.call, "audio.volume", to)', 1, true))
-        assert(read("shell/mooi-node.plm"):find("on scroll nd_bz { emit nd_wheel(if(wheel > 0, 1, -1)) }", 1, true))
+        assert(read("shell/mooi-node.plm"):find("on scroll nd_bz { emit nd_wheel(if(wheel > 0, 1, -1) * (1 + round(pointer.x))) }", 1, true), "D311: with where it landed")
     end)
     test("a seed that does not breathe costs no frames; at rest twelve a second", function()
         local p = read("shell/mooi-node.plm")
@@ -6926,8 +6926,8 @@ do
         assert(LK.module_move(t, 3, -1)); eq(table.concat(t.modules, ","), "spaces,cpu,clock")
         assert(not LK.module_move(t, 1, -1), "nothing left of the first")
         assert(LK.module_remove(t, 1)); eq(table.concat(t.modules, ","), "cpu,clock")
-        for _, k in ipairs({ "date", "ram", "volume", "weather" }) do LK.module_add(t, k) end
-        assert(not LK.module_add(t, "notices"), "six at most"); eq(#t.modules, 6)
+        for _, k in ipairs({ "date", "ram", "volume", "weather", "notices", "logo" }) do LK.module_add(t, k) end
+        assert(not LK.module_add(t, "tray"), "eight at most (D311)"); eq(#t.modules, 8)
         eq(table.concat(LK.normalise({ modules = { "clock", "bogus", "clock", "date" } }).modules, ","), "clock,date")
         local p = read("shell/mooi-node.plm")
         assert(p:find("on press mdx { emit nd_md(m.index * 10 + 9) }", 1, true) and p:find("on press maz { emit nd_md(100 + a.index) }", 1, true))

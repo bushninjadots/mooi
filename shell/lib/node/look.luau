@@ -264,11 +264,11 @@ function M.rows(t, tab)
 end
 
 -- the modules a long pill or a notch can hold (D257), and the word each wears in the studio
-M.MODULES = { "spaces", "window", "music", "clock", "date", "battery", "cpu", "ram", "volume", "weather", "notices" }
+M.MODULES = { "logo", "spaces", "window", "music", "clock", "date", "battery", "cpu", "ram", "volume", "weather", "notices", "tray", "status", "power" }
 M.MODULE_NAMES = { spaces = "Workspaces", window = "Window", music = "Music", clock = "Clock", date = "Date",
                    battery = "Battery", cpu = "CPU", ram = "Memory", volume = "Volume", weather = "Weather",
-                   notices = "Notices" }   -- (D310: the Clock face module, D308, is gone: the Clock module tells the time)
-M.MODULES_MAX = 6
+                   notices = "Notices", logo = "Logo", tray = "Tray", status = "Status icons", power = "Power" }   -- D311: Minflair's own   -- (D310: the Clock face module, D308, is gone: the Clock module tells the time)
+M.MODULES_MAX = 8
 M.MODULES_DEFAULT = { "spaces", "window", "music", "clock" }
 -- a list made sane: known names, each once, at most MODULES_MAX, in the order given (none is none: a seed)
 function M.modules(list)

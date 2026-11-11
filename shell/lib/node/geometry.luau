@@ -6,7 +6,7 @@ local M = { MARGIN = 16, TOP = 8 }
 
 local SIZE = {
     rest = { 22, 6 }, media = { 440, 64 }, notice = { 180, 10 }, volume = { 280, 16 },
-    launcher = { 600, 46 }, universe = { 64, 64 },
+    launcher = { 600, 46 }, universe = { 64, 64 }, launch = { 72, 72 },   -- D311: an app's tile
     time = { 560, 170 }, done = { 440, 76 }, capsule = { 124, 22 }, privacy = { 360, 44 }, battery = { 360, 44 }, player = { 660, 236 },
     media_visualiser = { 420, 46 }, media_vinyl = { 440, 64 },   -- D304: the record hangs half out under the capsule
 }
@@ -52,6 +52,7 @@ function M.body(kind, scr, anchor, shape, data)
     local r = math.min(w, h) / 2 * clamp(tonumber(shape.round) or 1, 0, 1)
     -- a panel (taller than a capsule) keeps rounded corners, never a stadium that clips its own corners (D258)
     if h > 60 then r = math.min(r, 22) end
+    if kind == "launch" then r = 20 end   -- D311: the rounded square an app's icon sits in
     return { x = x, y = tonumber(shape.top) or M.TOP, w = w, h = h, r = r }
 end
 
@@ -79,9 +80,19 @@ function M.cards(body, n, scr, heights)
     return out
 end
 
--- the launcher's rows, growing down from the search line
-function M.results(body, n)
+-- the launcher's rows, growing down from the search line; D311: or, all apps, a grid of tiles (GRID_COLS a row)
+M.GRID_COLS = 6
+function M.results(body, n, grid)
     local out = {}
+    if grid then
+        local gap = 8
+        local w = (body.w - gap * (M.GRID_COLS - 1)) / M.GRID_COLS
+        for i = 1, n do
+            local c, r = (i - 1) % M.GRID_COLS, (i - 1) // M.GRID_COLS
+            out[i] = { x = body.x + c * (w + gap), y = body.y + body.h + 10 + r * (96 + gap), w = w, h = 96 }
+        end
+        return out
+    end
     for i = 1, n do out[i] = { x = body.x, y = body.y + body.h + 8 + (i - 1) * 46, w = body.w, h = 42 } end
     return out
 end
