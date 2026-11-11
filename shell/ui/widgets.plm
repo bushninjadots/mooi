@@ -357,7 +357,7 @@ library Widgets {
         zone box phd { from: x, y; size: 284, 30; cursor: grab; role: button; label: "Move the options" }
         on press phd { wg_hold = 2; wg_pbx = x; wg_pby = y }
         on drag phd while wg_hold == 2 { emit wg_pmove(round(clamp(wg_pbx + drag.dx, 0, 4095)) * 4096 + round(clamp(wg_pby + drag.dy, 0, 4095))) }
-        text pick(wg_sk, "NOW PLAYING", "VISUALISER", "CLOCK", "NOTES", "GITHUB", "WEATHER", "SYSTEM", "CALENDAR", "FOCUS TIMER", "CLAUDE", "PHOTO", "LAUNCHER", "NOTICES", "WALLPAPERS", "SETTINGS", "CONTROLS") { at: x + 12, y + 16; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
+        text pick(wg_sk, "NOW PLAYING", "VISUALISER", "CLOCK", "NOTES", "GITHUB", "WEATHER", "SYSTEM", "CALENDAR", "FOCUS TIMER", "CLAUDE", "PHOTO", "LAUNCHER", "NOTICES", "WALLPAPERS", "SETTINGS", "CONTROLS", "STICKER", "LABEL", "BUTTON", "VOLUME", "BLOOM") { at: x + 12, y + 16; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.phos }
         text "{wg_nsel} CHOSEN · THESE ARE THE LAST ONE'S" { at: x + 120, y + 16; anchor: left center; size: 8; family: "Share Tech Mono"; color: fl.muted; show: wg_nsel > 1 }
         zone box pfo { from: x + 288, y + 4; size: 26, 22; cursor: pointer; role: button; label: "Fold the options" }
         text pick(wg_pcol, "⌄", "›") { at: x + 301, y + 15; anchor: center; align: center; size: 14; family: "Exo 2"; color: fl.engrave }
@@ -522,11 +522,13 @@ library Widgets {
                 show: wg_sk == 5
                 Chip(x + 12, y + 80, 146, "GLANCE", wg_sl > 1.5 and wg_sl < 2.5, base + 102)
                 Chip(x + 162, y + 80, 146, "WEEK", wg_sl > 2.5, base + 103)
+                Chip(x + 12, y + 108, 146, "MINIMAL", wg_sl > 3.5, base + 104)
             }
             group {
                 show: wg_sk == 6
                 Chip(x + 12, y + 80, 146, "BARS", wg_sl > 1.5 and wg_sl < 2.5, base + 102)
                 Chip(x + 162, y + 80, 146, "RINGS", wg_sl > 2.5, base + 103)
+                Chip(x + 12, y + 108, 146, "GRAPH", wg_sl > 3.5, base + 104)
             }
             group {
                 show: wg_sk == 8
@@ -547,6 +549,18 @@ library Widgets {
                 text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
                 Chip(x + 12, y + 52, 146, "MONTH", wg_sl < 0.5, base + 100)
                 Chip(x + 162, y + 52, 146, "AGENDA", wg_sl > 0.5, base + 101)
+            }
+            group {
+                show: wg_sk < 0.5
+                Chip(x + 12, y + 120, 146, "ARTCARD", wg_sl > 2.5 and wg_sl < 3.5, base + 103)
+                Chip(x + 162, y + 120, 146, "COMPACT", wg_sl > 3.5, base + 104)
+            }
+            group {
+                show: wg_sk > 15.5 and wg_sk < 20.5
+                let q = wg_sk - 16
+                text "LAYOUT" { at: x + 12, y + 42; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted }
+                Chip(x + 12, y + 52, 146, pick(q, "STICKER", "PLAIN", "WIDE", "RING", "RADIAL"), wg_sl < 0.5, base + 100)
+                Chip(x + 162, y + 52, 146, pick(q, "PEEL", "BANNER", "KEY", "SLIDER", "WAVE"), wg_sl > 0.5, base + 101)
             }
             // D215: the launcher's three layouts; the controls' two
             group {

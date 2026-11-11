@@ -945,3 +945,63 @@ do
         assert(lu:find("lv = c / 100", 1, true) and lu:find("N.has_face", 1, true))
     end)
 end
+
+section("the desktop widgets' new designs (D309)")
+do
+    local W = require("lib/widgets")
+    local widgets, extra, plm, luau, settings = read("shell/ui/widgets.plm"), read("shell/ui/wextra.plm"), read("shell/mooi-widgets.plm"), read("shell/mooi-widgets.luau"), read("shell/mooi-settings.luau")
+
+    test("the new kinds and layouts are appended, with the old numbers still in place", function()
+        eq(W.KIND_NUM.sticker, 16); eq(W.KIND_NUM.label, 17); eq(W.KIND_NUM.button, 18); eq(W.KIND_NUM.volume, 19); eq(W.KIND_NUM.bloom, 20)
+        eq(W.ADD_ORDER[#W.ADD_ORDER], "bloom")
+        eq(W.LAYOUT_INDEX.sleeve, 0); eq(W.LAYOUT_INDEX.record, 2); eq(W.LAYOUT_INDEX.artcard, 3); eq(W.LAYOUT_INDEX.compact, 4)
+        eq(W.LAYOUT_INDEX.week, 3); eq(W.LAYOUT_INDEX.weathermin, 4); eq(W.LAYOUT_INDEX.rings, 3); eq(W.LAYOUT_INDEX.graph, 4)
+        eq(W.LAYOUT_INDEX.sticker, 0); eq(W.LAYOUT_INDEX.peel, 1); eq(W.LAYOUT_INDEX.labelplain, 0); eq(W.LAYOUT_INDEX.labelban, 1)
+        eq(W.LAYOUT_INDEX.buttonwide, 0); eq(W.LAYOUT_INDEX.buttonkey, 1); eq(W.LAYOUT_INDEX.volring, 0); eq(W.LAYOUT_INDEX.volslider, 1)
+        eq(W.LAYOUT_INDEX.bloomrad, 0); eq(W.LAYOUT_INDEX.bloomwave, 1)
+        for _, name in ipairs({ "artcard", "compact", "weathermin", "graph", "sticker", "peel", "labelplain", "labelban",
+                                "buttonwide", "buttonkey", "volring", "volslider", "bloomrad", "bloomwave" }) do
+            local l = W.LAYOUTS[name]
+            assert(l, name .. " is missing")
+            assert(l.min[1] <= l.def[1] and l.def[1] <= l.max[1], name .. " width order")
+            assert(l.min[2] <= l.def[2] and l.def[2] <= l.max[2], name .. " height order")
+        end
+    end)
+
+    test("the new kinds have their own options and a fixed list of button actions", function()
+        for _, kind in ipairs({ "sticker", "label", "button", "volume", "bloom" }) do
+            assert(W.OPTIONS[kind], kind .. " options")
+            assert(#W.KIND_LAYOUTS[kind] >= 2, kind .. " has two layouts")
+        end
+        eq(#W.BUTTON_ACTIONS, 5)
+        eq(W.BUTTON_ACTIONS[1], "settings"); eq(W.BUTTON_ACTIONS[2], "wallpaper"); eq(W.BUTTON_ACTIONS[3], "launcher")
+        eq(W.BUTTON_ACTIONS[4], "lock"); eq(W.BUTTON_ACTIONS[5], "screenshot")
+        eq(W.option_string("act", "settings"), "settings")
+        eq(W.option_string("act", "rm -rf /"), nil, "never an arbitrary command")
+        eq(W.option_string("image", "/home/u/a.png"), "/home/u/a.png")
+        eq(W.option_string("label", "hello"), "hello")
+    end)
+
+    test("the scene draws each new kind and offers each new design", function()
+        for _, s in ipairs({ "component Sticker", "component Label", "component Button", "component Volume", "component Bloom" }) do
+            assert(extra:find(s, 1, true), s)
+        end
+        for _, s in ipairs({ "wx.Sticker(", "wx.Label(", "wx.Button(", "wx.Volume(", "wx.Bloom(" }) do
+            assert(plm:find(s, 1, true), s)
+        end
+        for _, s in ipairs({ "show: w.kind > 15.5 and w.kind < 16.5", "show: w.kind > 19.5 and w.kind < 20.5",
+                             "path: image", "haspath: bool", "event wg_bact", "event wg_volw", "event wg_vmute", "event wg_vdrag",
+                             "wg_bact", "wg_volw", "wg_vmute", "wg_vdrag" }) do
+            assert(plm:find(s, 1, true), s)
+        end
+        assert(luau:find('run("grim"', 1, true), "the screenshot button")
+        assert(luau:find("BUTTON_ARGV", 1, true), "the fixed actions")
+        for _, title in ipairs({ "STICKER", "LABEL", "BUTTON", "VOLUME", "BLOOM", "ARTCARD", "COMPACT", "MINIMAL", "GRAPH" }) do
+            assert(widgets:find('"' .. title .. '"', 1, true), "the editor offers " .. title)
+        end
+        for _, name in ipairs({ "artcard", "compact", "weathermin", "graph", "sticker", "peel", "labelplain", "labelban",
+                                "buttonwide", "buttonkey", "volring", "volslider", "bloomrad", "bloomwave" }) do
+            assert(settings:find(name, 1, true), "settings names " .. name)
+        end
+    end)
+end

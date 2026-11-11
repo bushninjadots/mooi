@@ -110,6 +110,13 @@ local pending, grab, slide, marq0, panel_at, last_saved = nil, nil, nil, nil, ni
 local show_selection     -- defined with the editor below; load() needs it
 local function is_sel(id) for _, s in ipairs(selected) do if s == id then return true end end; return false end
 
+local BUTTON_ACTIONS = W.BUTTON_ACTIONS
+local function act_index(name)
+    for i, a in ipairs(BUTTON_ACTIONS) do if a == name then return i end end
+    return 0
+end
+local volume, muted = nil, false
+
 local function publish()
     if standing_down then return end
     if BF then BF.refresh() end
@@ -136,6 +143,10 @@ local function publish()
             above = w.above == true,
             dx = 0, dy = 0, grp = 0,
             adapt = o.adapt ~= false, behind = false, tn = 0, hz = 0.32, ar = 0, ag = 0, ab = 0, over = false,
+            path = o.image or "", label = o.label or "", haspath = (o.image or "") ~= "", haslabel = (o.label or "") ~= "",
+            act = act_index(o.act), frame = (o.frame == "circle" and 1 or o.frame == "none" and 2 or 0),
+            weight = tonumber(o.weight) or 1, tone = (o.tone == "accent" and 1 or 0), tilt = tonumber(o.tilt) or 0,
+            vol = volume or 0, mute = muted,
         }
         local r = rows[#rows]
         -- the wallpaper under it (D139): readable tone and haze, a local accent, depth
@@ -246,7 +257,7 @@ local function publish()
         if f and not lit[f] then lit[f] = true; lane_facts(f, i, rows[i]) end
     end
     for _, f in pairs(LANE) do if not lit[f] then fact[f .. "on"] = false end end
-    for i = 5, 15 do fact["wg_has" .. i] = W.count_kind(doc, W.ADD_ORDER[i + 1]) > 0 end
+    for i = 5, 20 do fact["wg_has" .. i] = W.count_kind(doc, W.ADD_ORDER[i + 1]) > 0 end
     fact.wg_style = W.STYLE_INDEX[doc.style or "adaptive"] or 0
     fact.wg_shad, fact.wg_ambon = doc.shadows == true, doc.ambient ~= false
     local nn, ng = 0, 0
@@ -577,8 +588,7 @@ on("wg_seek", function(v)
     run("playerctl", { "position", string.format("%.1f", np.t) })
     show_progress(); show_lyric()
 end)
-local volume = nil
-pcall(sys.watch, "audio", function(a) if type(a) == "table" then volume = tonumber(a.volume) end; if BF then BF.audio(a) end end)
+pcall(sys.watch, "audio", function(a) if type(a) == "table" then volume = tonumber(a.volume); muted = a.mute == true or a.muted == true end; if BF then BF.audio(a) end end)
 on("wg_vol", function(v)
     if not volume then return end
     for _, w in ipairs(doc.widgets) do
@@ -588,6 +598,36 @@ on("wg_vol", function(v)
     end
     volume = math.max(0, math.min(1, volume + (math.floor(tonumber(v) or 0) % 10 == 1 and 0.05 or -0.05)))
     pcall(sys.call, "audio.volume", volume)
+    if W.count_kind(doc, "volume") > 0 then publish(); render() end
+end)
+-- D309: a button widget runs one fixed action; a volume widget turns the wheel, presses to mute,
+-- or drags its slider.
+local BUTTON_ARGV = { [1] = { "settings" }, [2] = { "wallpaper" }, [3] = { "node", "launch" }, [4] = { "lock" } }
+on("wg_bact", function(v)
+    local c = math.floor(tonumber(v) or 0) % 10
+    if c == 5 then
+        local home = tostring(sys.ask("env", "HOME") or "")
+        run("grim", { home .. "/Screenshot-" .. os.date("%Y%m%d-%H%M%S") .. ".png" }, function() end)
+        return
+    end
+    local argv = BUTTON_ARGV[c]
+    if argv then run("mooi", argv, function() end) end
+end)
+on("wg_volw", function(v)
+    local up = math.floor(tonumber(v) or 0) % 10 == 1
+    volume = math.max(0, math.min(1, (volume or 0) + (up and 0.05 or -0.05)))
+    pcall(sys.call, "audio.volume", volume)
+    publish(); render()
+end)
+on("wg_vmute", function()
+    pcall(sys.call, "audio.mute")
+    muted = not muted
+    publish(); render()
+end)
+on("wg_vdrag", function(v)
+    volume = math.max(0, math.min(1, (math.floor(tonumber(v) or 0) % 1000) / 999))
+    pcall(sys.call, "audio.volume", volume)
+    publish(); render()
 end)
 on("wg_open", function() run("mooi", { "player" }) end)
 

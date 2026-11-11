@@ -16,7 +16,7 @@ import "ui/wbelow.plm" as wb
 
 scene Widgets {
     permissions {
-        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink", "gh", "xdg-open", "date", "sensors", "ps", "find", "nmcli", "bluetoothctl", "systemctl", "hyprctl", "df"
+        run: "pleamar", "mv", "playerctl", "curl", "cat", "mkdir", "mooi", "readlink", "gh", "xdg-open", "date", "sensors", "ps", "find", "nmcli", "bluetoothctl", "systemctl", "hyprctl", "df", "grim"
         services: "files", "files.write", "media", "media.*", "audio", "audio.*", "env", "battery", "apps", "apps.launch", "window", "network", "network.*", "bluetooth", "bluetooth.*", "brightness", "brightness.*"
     }
 
@@ -252,7 +252,7 @@ scene Widgets {
 
     // the widgets as widgets.json has them, worked out by lib/widgets (kind 0 now playing,
     // 1 visualiser; lay 0 sleeve, 1 lyric stage, 2 record; st 0 shown, 1 resting, 2 hidden, 3 marker)
-    model wg max 16 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool; h24: bool; secs: bool; viz: bool; dx: number; dy: number; grp: number; pop: bool; above: bool }
+    model wg max 16 { kind: number; lay: number; mode: number; x: number; y: number; w: number; h: number; u: number; idle: number; st: number; op: number; glow: number; plate: bool; lyr: bool; prog: bool; gh: bool; adapt: bool; behind: bool; tn: number; hz: number; ar: number; ag: number; ab: number; over: bool; bars: number; gap: number; peaks: bool; refl: bool; vslot: number; opa: number; txt: number; locked: bool; sel: bool; h24: bool; secs: bool; viz: bool; dx: number; dy: number; grp: number; pop: bool; above: bool; path: image 1200, 900; label: text; haspath: bool; haslabel: bool; act: number; frame: number; weight: number; tone: number; tilt: number; vol: number; mute: bool }
 
     // what is playing (any player, through the media service)
     text np_title = ""
@@ -1200,6 +1200,10 @@ scene Widgets {
     event wg_ctl ->              // slot · 10 + 0 previous · 1 play/pause · 2 next
     event wg_seek ->             // slot · 1000 + where (0 … 999)
     event wg_vol ->              // slot · 10 + 0 down · 1 up
+    event wg_bact ->             // a button widget: slot · 10 + fixed action (1 … 5)
+    event wg_volw ->             // a volume widget's wheel: slot · 10 + 0 down · 1 up
+    event wg_vmute ->            // a volume widget pressed: slot
+    event wg_vdrag ->            // a volume slider dragged: slot · 1000 + level (0 … 999)
     event wg_open ->             // the player, from slot n
     event wg_room ->             // to the logic: the room under the bar, width · 4096 + height
 
@@ -1813,6 +1817,16 @@ scene Widgets {
                         wx.Claude(wx, wy, ww, wh, wu, w.lay, w.plate, ink, acc, w.hz, w.tn) }
                 group { show: w.kind > 9.5 and w.kind < 10.5
                         wx.Photo(wx, wy, ww, wh, wu, w.lay, w.pop, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 15.5 and w.kind < 16.5
+                        wx.Sticker(wx, wy, ww, wh, wu, w.lay, w.path, w.haspath, w.frame, w.tilt, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 16.5 and w.kind < 17.5
+                        wx.Label(wx, wy, ww, wh, wu, w.label, w.haslabel, w.weight, w.tone, w.glow, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 17.5 and w.kind < 18.5
+                        wx.Button(wx, wy, ww, wh, wu, w.label, w.act, k, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 18.5 and w.kind < 19.5
+                        wx.Volume(wx, wy, ww, wh, wu, w.lay, k, w.vol, w.mute, w.plate, ink, acc, w.hz, w.tn) }
+                group { show: w.kind > 19.5 and w.kind < 20.5
+                        wx.Bloom(wx, wy, ww, wh, wu, w.lay, w.glow, w.plate, ink, acc, w.hz, w.tn) }
                 box { from: wx, wy; size: ww, wh; corner: 6; stroke: 1; color: fl.trace_lit; opacity: 0.4 * wg_ambs * (1 - near); show: not editing }
                 group { show: w.kind < 0.5 and w.lay > 1.5
                         wg.Record(wx, wy, ww, wh, wu, w.plate, w.prog, k, hv, w.txt, ink, acc, w.hz, w.tn, w.viz) }

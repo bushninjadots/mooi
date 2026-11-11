@@ -7958,3 +7958,26 @@ wording were updated (the two renamed rows, the music card and the widget-layer 
 
 **Verified.** `python3 tools/gen-settings.py`; `pleamar --check shell/mooi-settings.plm` ok (4,659 properties,
 1,745 zones); unit 944 / 0; `luau-ops` pass; `gate: ok`.
+
+## D309 · 2026-11-11 · New desktop widgets from Noctalia (opencode's)
+
+The owner asked for "new different cool designs for all the widgets, maybe new widgets, and look of course on
+Noctalia for them as well." Five kinds are appended after Controls, each with two layouts: **Sticker**
+(`sticker`, `peel`), **Label** (`labelplain`, `labelban`), **Button** (`buttonwide`, `buttonkey`), **Volume**
+(`volring`, `volslider`) and **Bloom** (`bloomrad`, `bloomwave`). Existing kinds gained **Media Card** and
+**Compact** for the player, **Weather Minimal**, and **System Graph**. Every existing layout number is unchanged.
+
+Sticker takes a picture path, a rounded/circle/no frame and a tilt. Label takes its own text, size, weight,
+accent or ink tone and a glow. Button runs one of five of mooi's own actions — Settings, the wallpaper picker,
+the launcher, lock, or a screenshot — never an arbitrary command. Volume reads the `audio` service and changes
+on wheel, drag and press (the press mutes). Bloom draws the shared 32-band feed as a radial bloom or a mirrored
+wave.
+
+The scene draws the five new kinds in the per-widget loop; the editor offers every new layout, and Settings →
+Widgets names each one. Fixed button actions are checked in the unit suite.
+
+**Known limit.** The editor has no path, text or action inputs for Sticker, Label and Button yet; until
+`widgets.json` is edited they use their defaults (Sticker shows NO PICTURE). This is reported rather than hidden.
+
+**Verified.** `pleamar --check shell/mooi-widgets.plm` ok (10,800 properties, 1,117 zones); unit 953 / 0;
+`luau-ops` pass; `gate: ok`. No live widget instance was disturbed.

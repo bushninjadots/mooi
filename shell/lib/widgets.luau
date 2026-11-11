@@ -52,6 +52,21 @@ M.LAYOUTS = {
     frame    = { min = { 200, 160 }, def = { 360, 270 }, max = { 1200, 900 } },
     polaroid = { min = { 180, 210 }, def = { 260, 300 }, max = { 700, 810 }, aspect = true },
     circle   = { min = { 180, 180 }, def = { 240, 240 }, max = { 600, 600 }, aspect = true },
+    -- D309: Noctalia's way — media cards, a sparkline, a quiet weather, and five new kinds
+    artcard    = { min = { 300, 200 }, def = { 380, 260 }, max = { 900, 600 } },
+    compact    = { min = { 280, 72 }, def = { 420, 88 }, max = { 1200, 160 } },
+    weathermin = { min = { 200, 120 }, def = { 280, 160 }, max = { 600, 400 } },
+    graph      = { min = { 300, 150 }, def = { 420, 210 }, max = { 1200, 560 } },
+    sticker    = { min = { 160, 160 }, def = { 240, 240 }, max = { 800, 800 }, aspect = true },
+    peel       = { min = { 180, 180 }, def = { 260, 260 }, max = { 700, 700 }, aspect = true },
+    labelplain = { min = { 200, 64 }, def = { 360, 96 }, max = { 1200, 300 } },
+    labelban   = { min = { 240, 80 }, def = { 420, 120 }, max = { 1400, 360 } },
+    buttonwide = { min = { 160, 64 }, def = { 240, 80 }, max = { 600, 200 } },
+    buttonkey  = { min = { 96, 96 }, def = { 140, 140 }, max = { 400, 400 }, aspect = true },
+    volring    = { min = { 160, 160 }, def = { 220, 220 }, max = { 600, 600 }, aspect = true },
+    volslider  = { min = { 120, 200 }, def = { 160, 280 }, max = { 400, 700 }, aspect = true },
+    bloomrad   = { min = { 220, 220 }, def = { 300, 300 }, max = { 700, 700 }, aspect = true },
+    bloomwave  = { min = { 300, 120 }, def = { 420, 160 }, max = { 1200, 400 } },
     shelf    = { min = { 200, 64 }, def = { 480, 84 }, max = { 1600, 160 } },
     column   = { min = { 64, 200 }, def = { 84, 440 }, max = { 160, 1000 } },
     -- D215: what lives below the wallpaper — Launch's grid, the notices, the wallpapers, the settings, the controls
@@ -64,12 +79,12 @@ M.LAYOUTS = {
 }
 -- each kind's layouts, in order (the first is a new one's)
 M.KIND_LAYOUTS = {
-    nowplaying = { "sleeve", "lyricstage", "record" },
+    nowplaying = { "sleeve", "lyricstage", "record", "artcard", "compact" },
     clock = { "digital", "analogue", "words", "info", "flip", "minimal", "dots" },
     notes = { "list", "sticky" },
     github = { "card", "commits", "pulse", "heat" },
-    weather = { "horizon", "days", "glance", "week" },
-    system = { "scope", "gauges", "bars", "rings" },
+    weather = { "horizon", "days", "glance", "week", "weathermin" },
+    system = { "scope", "gauges", "bars", "rings", "graph" },
     calendar = { "month", "agenda" },
     timer = { "ring", "slab", "bar" },
     claude = { "ticker", "quote" },
@@ -79,18 +94,26 @@ M.KIND_LAYOUTS = {
     wallpapers = { "strip" },
     settings = { "pages" },
     controls = { "row", "ccolumn" },
+    sticker = { "sticker", "peel" },
+    label = { "labelplain", "labelban" },
+    button = { "buttonwide", "buttonkey" },
+    volume = { "volring", "volslider" },
+    bloom = { "bloomrad", "bloomwave" },
 }
 -- how many of a kind the scene can draw (the rest by M.MAX)
 M.KIND_MAX = { visualiser = 3, notes = 1, github = 2, weather = 1, system = 1, calendar = 1, timer = 1, claude = 1, photo = 1, launch = 1,
-               notices = 1, wallpapers = 1, settings = 1, controls = 1 }
+               notices = 1, wallpapers = 1, settings = 1, controls = 1,
+               sticker = 4, label = 4, button = 4, volume = 1, bloom = 2 }
 -- the kinds that follow the music (the idle rule is theirs; the rest are always shown, and rest with ambient)
-M.MUSIC = { nowplaying = true, visualiser = true }
+M.MUSIC = { nowplaying = true, visualiser = true, bloom = true }
 -- each kind's number in the scene (model wg.kind)
 M.KIND_NUM = { nowplaying = 0, visualiser = 1, clock = 2, notes = 3, github = 4, weather = 5, system = 6, calendar = 7,
                timer = 8, claude = 9, photo = 10, launch = 11,
-               notices = 12, wallpapers = 13, settings = 14, controls = 15 }
+               notices = 12, wallpapers = 13, settings = 14, controls = 15,
+               sticker = 16, label = 17, button = 18, volume = 19, bloom = 20 }
 M.ADD_ORDER = { "nowplaying", "visualiser", "clock", "notes", "github", "weather", "system", "calendar", "timer", "claude", "photo", "launch",
-               "notices", "wallpapers", "settings", "controls" }
+               "notices", "wallpapers", "settings", "controls",
+               "sticker", "label", "button", "volume", "bloom" }
 M.NP_LAYOUTS = { "sleeve", "lyricstage", "record" }
 M.KINDS = {}
 for k in pairs(M.KIND_NUM) do M.KINDS[k] = true end
@@ -103,7 +126,7 @@ M.LAYOUT_KIND = {}
 for kind, list in pairs(M.KIND_LAYOUTS) do for _, l in ipairs(list) do M.LAYOUT_KIND[l] = kind end end
 M.IDLE_INDEX = { hide = 0, rest = 1, marker = 2 }
 M.IDLES = { "hide", "rest", "marker" }
-M.DEFAULT_IDLE = { nowplaying = "rest", visualiser = "hide" }   -- every other kind: "rest" (the rule is only the music's)
+M.DEFAULT_IDLE = { nowplaying = "rest", visualiser = "hide", bloom = "hide" }   -- every other kind: "rest" (the rule is only the music's)
 M.DEFAULT_MODE = "spectrum"
 -- every option a widget of each kind may carry, with its default
 M.OPTIONS = {
@@ -124,6 +147,11 @@ M.OPTIONS = {
     settings = { plate = false, adapt = true, behind = false },
     controls = { wifi = true, bt = true, volume = true, bright = true, battery = true, power = true,
                  power_confirm = true, plate = false, adapt = true, behind = false },
+    sticker = { image = "", frame = "rounded", tilt = 0, plate = false, adapt = true, behind = false },
+    label = { label = "mooi", size = 1, weight = 1, tone = "accent", glow = true, plate = false, adapt = true, behind = false },
+    button = { act = "settings", label = "Settings", plate = true, adapt = true, behind = false },
+    volume = { plate = false, adapt = true, behind = false },
+    bloom = { glow = 0.6, plate = false, adapt = true, behind = false },
 }
 -- the look of them all (widgets.json, beside the list): a style, the ambient rest, shadows
 M.STYLES = { "adaptive", "phosphor", "ink", "chrome", "paper" }
@@ -135,9 +163,19 @@ M.OPTION_RANGES = {
     angle = { -180, 180 },
     lean = { -40, 40 },
     nrows = { 3, 6, true },
+    size = { 0.6, 2 }, weight = { 0, 2, true }, tilt = { -12, 12 },
 }
+M.BUTTON_ACTIONS = { "settings", "wallpaper", "launcher", "lock", "screenshot" }
 -- the text options: a GitHub repository is owner/name
 function M.option_string(key, v)
+    if key == "image" and type(v) == "string" and #v > 0 and #v < 400 and not v:find("[%c]") then return v end
+    if key == "label" and type(v) == "string" and #v > 0 and #v <= 80 and not v:find("[%c]") then return v end
+    if key == "act" then
+        for _, a in ipairs(M.BUTTON_ACTIONS) do if v == a then return v end end
+        return nil
+    end
+    if key == "frame" and (v == "rounded" or v == "circle" or v == "none") then return v end
+    if key == "tone" and (v == "ink" or v == "accent") then return v end
     if key == "repo" and type(v) == "string" and v:match("^[%w%-%._]+/[%w%-%._]+$") then return v end
     if key == "folder" and type(v) == "string" and #v > 0 and #v < 400 and not v:find("[%c]") then return v end
     -- the launcher's apps: desktop file ids or commands, comma-separated, twelve at most
@@ -156,7 +194,8 @@ local function option_number(key, v, d)
 end
 local PREFIX = { nowplaying = "np", visualiser = "viz", clock = "clk", notes = "nts", github = "gh", weather = "wx",
                  system = "sys", calendar = "cal", timer = "tmr", claude = "cl", photo = "ph", launch = "ln",
-                 notices = "nc", wallpapers = "wp", settings = "pg", controls = "ct" }
+                 notices = "nc", wallpapers = "wp", settings = "pg", controls = "ct",
+                 sticker = "sk", label = "lb", button = "bt", volume = "vo", bloom = "bl" }
 
 local function grid(v) return math.floor(v / M.GRID + 0.5) * M.GRID end
 local function clamp(v, lo, hi) if v < lo then return lo end; if hi and v > hi then return hi end; return v end

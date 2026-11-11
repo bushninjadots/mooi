@@ -658,9 +658,12 @@ local WNAMES = { sleeve = "SLEEVE", lyricstage = "LYRIC STAGE", record = "RECORD
                  card = "CARD", commits = "COMMITS", pulse = "PULSE", heat = "ACTIVITY",
                  horizon = "HORIZON", days = "DAYS", glance = "GLANCE", week = "WEEK", scope = "SCOPE", gauges = "GAUGES", bars = "BARS", rings = "RINGS",
                  month = "MONTH", agenda = "AGENDA", ring = "RING", slab = "SLAB", bar = "BAR",
-                 ticker = "TICKER", quote = "QUOTE", frame = "FRAME", polaroid = "POLAROID", circle = "CIRCLE", shelf = "SHELF", column = "COLUMN" }
+                 ticker = "TICKER", quote = "QUOTE", frame = "FRAME", polaroid = "POLAROID", circle = "CIRCLE", shelf = "SHELF", column = "COLUMN", artcard = "ART CARD", compact = "COMPACT", weathermin = "MINIMAL", graph = "GRAPH",
+                 sticker = "STICKER", peel = "PEEL", labelplain = "PLAIN", labelban = "BANNER", buttonwide = "WIDE", buttonkey = "KEY",
+                 volring = "RING", volslider = "SLIDER", bloomrad = "RADIAL", bloomwave = "WAVE" }
 local KTITLE = { nowplaying = "Now Playing", visualiser = "Visualiser", clock = "Clock", notes = "Notes", github = "GitHub", weather = "Weather",
-                 system = "System", calendar = "Calendar", timer = "Focus timer", claude = "Claude", photo = "Photo", launch = "Launcher" }
+                 system = "System", calendar = "Calendar", timer = "Focus timer", claude = "Claude", photo = "Photo", launch = "Launcher", sticker = "Sticker", label = "Label", button = "Button",
+                 volume = "Volume", bloom = "Bloom" }
 local function wdoc()
     local ok, raw = pcall(sys.ask, "files.read", W.FILE)
     return (W.parse(ok and raw or nil, json.decode, WROOM))
