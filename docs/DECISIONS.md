@@ -8041,5 +8041,5 @@ volume".
   the next notches fell through to the volume. While the rail is out, or for 1.5 s after a workspace was turned, the
   wheel goes on turning workspaces; the rail's own stops take the wheel too.
 
-**Verified.** Unit 958 / 0; the scene compiles; live: the frame kept the notch while the node left its rest. Not
-seen: a real switch by the wheel (the owner's pointer).
+**Verified.** Unit 958 / 0; the scene compiles. Not seen live: a test gauge sent to open the Pill never showed
+(the owner's screen changed under the test), so the notch held while open and a switch by the wheel are untested.
