@@ -189,10 +189,20 @@ function M.side(p, r)
     return best - 1
 end
 
--- D222: the screen's edge, where a notice's light travels when there is no window to reach (mooi's frame)
-function M.frame(scr)
+-- D222: where a notice's light travels when there is no window to reach. D310: along the frame's own border —
+-- its inner edge, inset by the bands, rounded as the frame is (`r`); `frame` marks it as the frame's, so the light
+-- pours out of the top's middle (the Pill) down both sides. Without the frame, 10 px in from the screen's edge.
+function M.frame(scr, settings, bar_h)
     local W, H = tonumber(scr and scr.w) or 1920, tonumber(scr and scr.h) or 1080
-    return { x = 10, y = 10, w = W - 20, h = H - 20 }
+    local s = type(settings) == "table" and settings or {}
+    local f = type(s.frame) == "table" and s.frame or {}
+    if f.on ~= true then return { x = 10, y = 10, w = W - 20, h = H - 20, r = 12, frame = true } end
+    local band = math.max(0, tonumber(f.band) or 6)
+    local b = type(s.bar) == "table" and s.bar or {}
+    -- the Pill hangs in the band; a bar sits on the frame's top, which then starts under it
+    local top = (b.mode == "pill") and band or math.max(band, tonumber(bar_h) or band)
+    local r = math.max(0, math.min(40, tonumber(f.radius) or 14))
+    return { x = band, y = top, w = W - 2 * band, h = H - top - band, r = r, frame = true }
 end
 
 -- the clock's sweep: when the hour turns ("HH:MM")

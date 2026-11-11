@@ -103,6 +103,16 @@ function M.pieces(geo, look, looks)
     if nd then
         local x, w, h = tonumber(nd.x) or 0, tonumber(nd.w) or 0, tonumber(nd.h) or 0
         if w > 0 and h > 0 then add(math.max(0, x), -40, math.min(look.screen_w, x + w) - math.max(0, x), h + 40, tonumber(nd.r) or 12, M.BLEND, true) end
+        -- D310: the corner notches too — each hung from above and run out past its side, so it joins the top band
+        -- and the side band at once and the frame's corner turns at its foot (`covers`), as Minflair's do
+        for _, side in ipairs({ "left", "right" }) do
+            local c = type(nd[side]) == "table" and nd[side] or nil
+            local cw, ch = c and tonumber(c.w) or 0, c and tonumber(c.h) or 0
+            if cw > 0 and ch > 0 then
+                local cx = side == "left" and -40 or (look.screen_w - cw)
+                add(cx, -40, cw + 40, ch + 40, 12, M.BLEND, true)
+            end
+        end
     end
     return out
 end

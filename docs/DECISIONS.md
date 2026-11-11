@@ -7958,3 +7958,38 @@ wording were updated (the two renamed rows, the music card and the widget-layer 
 
 **Verified.** `python3 tools/gen-settings.py`; `pleamar --check shell/mooi-settings.plm` ok (4,659 properties,
 1,745 zones); unit 944 / 0; `luau-ops` pass; `gate: ok`.
+
+## D310 · 2026-11-11 · The corners work as the centre; modules redrawn; the Music module's looks; the vinyl after Spun; the light round the frame
+
+The owner, after seeing D304–D308 live: the corner notches should be attached to the frame and "work exactly as
+centre", with modules "like from other bars"; the Music module "sucks" and should offer a visualiser like the bar's,
+or the title and album art; the Clock face module "is stupid" and its settings confusing; "stupid screen effects on
+the bar"; the vinyl "spins way too fast", is too big, and should look like Spun's (the owner's own vinyl player, in
+`~/Spun`; PolyForm Noncommercial, so only its look is redrawn here, none of its code); and a notice's orange light
+should run round the frame's border, not the screen's.
+
+- **Corners as pieces of the frame.** `node-geo.json` gains `left` and `right` ({w, h}); `lib/chassis` hangs each
+  from above and runs it out past its side, so it joins the top and side bands at once, and the frame turns its
+  corner at the notch's foot (`pfoot`). The node then draws only what they hold (`nd_cfr`). Each opens a little
+  under the pointer (28 → 34, `nd_corner`) and a press opens the panel, as the centre does. Without the frame they
+  draw their own body as before.
+- **One module drawing** (`module_row` in gen-node) for the pill and both corners: an icon before the words as the
+  bar's modules wear, numbered workspace tiles (the active one wider and lit), a meter under CPU, memory, volume
+  and the battery (the battery warns when low, not when full).
+- **The Music module** has a look of its own (Pill page → *Music module*): **Visualiser** (six bars of the bar's
+  spectrum beside the title, the default), **Title**, or **Cover** (the album art and the title). The bands are
+  asked for at rest only while a visualiser one is placed and music plays.
+- **No Clock face module** (D308's); a list that held one keeps the rest. *Clock seed* is offered only for the clock
+  seed again.
+- **No shimmer** (D296's band of light across the Pill): gone from the look, the presets and the scene.
+- **The vinyl after Spun**: 50 px, not 82; turning at 30°/s, not 200; near-black with fine grey grooves and four
+  deeper rings, the cover as a big label with its ridge and spindle hole, a still light over the turning record, a
+  small tonearm in the grooves, a soft shadow; no rays.
+- **The light round the frame**: with no window to reach, `skin.frame` is now the frame's inner border (its bands,
+  the bar's height when a bar sits on it, its rounding); the light pours from the top's middle down both sides —
+  straight runs and rounded corners — and meets at the foot.
+
+**Verified.** Unit 954 / 0; 18 scenes compile; live after `mooi refresh`: both corners stand joined to the frame
+with the frame's line running round them into its corners (a 3 px step at the foot found and removed), icons and
+meters drawn; the vinyl seen in the studio's music preview (the owner's look put back after). Not seen: the Music
+module's three looks with music playing, and the light round the frame (it needs a notice on an empty workspace).

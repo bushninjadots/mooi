@@ -143,6 +143,7 @@ return function(ctx)
     end
     local function light_off()
         fact.lt_on, fact.lt_st, fact.lt_tt, fact.lt_bt, fact.lt_kt = false, 0, 0, 0, 0
+        fact.lt_fon = false
     end
     start_light = function(item)
         -- the windows of the workspace shown, the monitor's origin and the focused window: read now (a notice is rare)
@@ -168,11 +169,17 @@ return function(ctx)
                     local sp = skin.spark(box, rects, ctx.scr())
                     local win = su().trace ~= false and skin.window_for(item.app, clients, ws, mon, focused) or nil
                     -- D222: no window to reach — the light runs once round the screen's edge instead
-                    local target = win or (su().trace ~= false and skin.frame(ctx.scr())) or nil
+                    local target = win or (su().trace ~= false and skin.frame(ctx.scr(), ctx.settings(), ctx.bar_h())) or nil
                     fact.lt_sx, fact.lt_sy = sp.x, sp.y
                     fact.lt_n = item.n or 1
-                    fact.lt_win = target ~= nil
-                    if target then
+                    fact.lt_win = target ~= nil and not target.frame
+                    fact.lt_fon = target ~= nil and target.frame == true
+                    if target and target.frame then
+                        -- D310: the frame's border, lit from the top's middle down both sides; the spark sits there
+                        fact.lt_fx, fact.lt_fy, fact.lt_fw, fact.lt_fh, fact.lt_fr = target.x, target.y, target.w, target.h, target.r
+                        fact.lt_sx, fact.lt_sy = target.x + target.w / 2, target.y
+                        fact.lt_tx, fact.lt_ty = fact.lt_sx, fact.lt_sy
+                    elseif target then
                         local tp = skin.edge_point(sp, target)
                         fact.lt_tx, fact.lt_ty = tp.x, tp.y
                         fact.lt_so = skin.side(tp, target)
@@ -210,7 +217,7 @@ return function(ctx)
                         if c.address == addr and type(c.at) == "table" and type(c.size) == "table" then
                             fact.lt_rx, fact.lt_ry = (tonumber(c.at[1]) or 0) - mon.x, (tonumber(c.at[2]) or 0) - mon.y
                             fact.lt_rw, fact.lt_rh = tonumber(c.size[1]) or 1, tonumber(c.size[2]) or 1
-                            fact.lt_so, fact.lt_win, fact.lt_tt, fact.lt_st = 0, true, 0, 0
+                            fact.lt_so, fact.lt_win, fact.lt_fon, fact.lt_tt, fact.lt_st = 0, true, false, 0, 0
                             fact.lt_on, fact.lt_kt, fact.lt_bt = true, 1, 0
                             after(60, function() fact.lt_bt = 1 end)
                             after(1800, function() fact.lt_kt = 0 end)

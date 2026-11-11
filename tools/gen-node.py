@@ -37,7 +37,7 @@ LOOK = [("nd_np", 0, "the character: 0 organic · 1 minimal · 2 technical · 3 
         ("nd_cov", 0, "the cover: 0 square · 1 round"),
         ("nd_ldm", 0.28, "the search's dim"), ("nd_ur", 520, "the orbit's width"),
         ("nd_mf", 0, "music as: 0 a capsule · 1 a visualiser · 2 a record"), ("nd_long", 0, "at rest: 0 the seed · 1 the long pill · 2 a notch"), ("nd_cks", 0, "the clock seed: 0 pixel · 1 digits · 2 hands · 3 words · 4 binary · 5 dots"), ("nd_wss", 0, "a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number"), ("nd_rxl", 1, "reactions: 0 off · 1 subtle · 2 lively"), ("nd_smu", 1, "the seed with music: 0 still · 1 a pulse · 2 bars"),
-        ("nd_shm", 0, "D296 shimmer: 0 off · 1 slow · 2 fast"), ("nd_trl", 0, "D296 trail: 0 off · 1 on")]
+        ("nd_trl", 0, "D296 trail: 0 off · 1 on")]
 # the studio's preview: what the node is shown as (the logic: PREVIEW)
 PREVIEW = ["Rest", "Music", "Notice", "Volume", "Rail", "Panel", "Search", "Tour"]
 TABS = ["Presets", "Pill", "Shape", "Surface", "Motion", "Music", "Parts"]   # lib/node/look M.TABS, in its order (a test holds them together)
@@ -100,11 +100,11 @@ def scene():
           '    text nd_title = ""', '    text nd_artist = ""', '    text nd_art = ""', '    image nd_cover = from nd_art, 96, 96',
           '    fact nd_playing = false', '    fact nd_paused = false', '    fact nd_prog = 0', '    fact nd_arted = false',
           '    prop nd_vph = 0', '    spin nd_vph by if(nd_kind == 1 and nd_playing, 240, 0)',
-          '    // D296: the aurora\'s drift and the shimmer\'s turn spin only while those are worn',
+          '    // D296: the aurora\'s drift spins only while it is worn (D310: the shimmer is gone)',
           '    prop nd_aph = 0', '    spin nd_aph by if(nd_tex == 7 and nd_kind > 0, 36, 0)',
-          '    prop nd_shp = 0', '    spin nd_shp by if(nd_shm > 0, if(nd_shm == 2, 300, 120), 0)',
-          '    // the record (D246): 33⅓ turns a minute while it plays',
-          '    prop nd_vrot = 0', '    spin nd_vrot by if(nd_kind == 1 and nd_mf == 2 and nd_playing, 200, 0)',
+          
+          '    // the record (D246): it turns while it plays — slowly (D310: 30°/s; a true 33⅓ read as frantic at this size)',
+          '    prop nd_vrot = 0', '    spin nd_vrot by if(nd_kind == 1 and nd_mf == 2 and nd_playing, 30, 0)',
           '    // notices',
           '    model nc max 5 { x: number; y: number; w: number; h: number; app: text; title: text; body: text; open: bool; act: text; hasact: bool }',
           '    fact nd_ncn = 0       // how many cards are shown', '    fact nd_more = 0      // how many more wait',
@@ -236,12 +236,15 @@ def scene():
           '    prop pb_open = 1', '    blink pb_open every 2.2s..7s for 170ms',
           '    prop pk_flow2 = 0', '    spin pk_flow2 by if(pb_asleep and nd_kind == 0 and nd_seed == 6, 8, 0)',
           '    // the long pill (D248): what it holds at rest, each a module laid out by the logic',
-          '    model lm max 6 { kind: number; x: number; w: number; label: text; lv: number }',
-          '    fact nd_fxc = -1   // D308: where the clock face starts in the pill\'s modules, or -1', '    fact nd_fxl = -1', '    fact nd_fxr = -1',
+          '    model lm max 6 { kind: number; x: number; w: number; label: text; icon: text; lv: number }',
           '    // the frame\'s corner notches (D295): the modules each holds, and how wide (0: none there)',
-          '    model lml max 6 { kind: number; x: number; w: number; label: text; lv: number }',
-          '    model lmr max 6 { kind: number; x: number; w: number; label: text; lv: number }',
+          '    model lml max 6 { kind: number; x: number; w: number; label: text; icon: text; lv: number }',
+          '    model lmr max 6 { kind: number; x: number; w: number; label: text; icon: text; lv: number }',
           '    fact nd_lw = 0', '    fact nd_rw = 0', '    fact nd_mside = 0',
+          '    fact nd_lh = 28', '    fact nd_rh = 28   // D310: each opens a little under the pointer, as the centre does',
+          '    prop nd_lhk = 28 ~nd.aux', '    follow nd_lhk = nd_lh', '    prop nd_rhk = 28 ~nd.aux', '    follow nd_rhk = nd_rh',
+          '    fact nd_cfr = false   // D310: the frame draws the corners (pieces of its body); the node only what they hold',
+          '    fact nd_mmod = 0      // D310: the Music module: 0 a visualiser and its title · 1 the title · 2 the cover and title',
           '    prop nd_lwk = 0 ~nd.aux', '    follow nd_lwk = nd_lw', '    prop nd_rwk = 0 ~nd.aux', '    follow nd_rwk = nd_rw',
           '    fact nd_lmws = 0', '    fact nd_lmwa = 0   // the workspaces: how many, which one is on (0-based)',
           '    fact nd_lmbat = 0',
@@ -250,6 +253,7 @@ def scene():
           '    text nd_pvt = ""', '    text nd_pvd = ""', '    fact nd_pvon = false',
           '',
           '    event nd_hover ->     // the pointer over the node: 1 + x · 0 gone',
+          '    event nd_corner ->    // D310: the pointer over a corner notch: 1 / 0 the left in / out · 3 / 2 the right',
           '    event nd_press ->     // the node pressed',
           '    event nd_media ->     // 1 back · 2 play / pause · 3 next',
           '    event nd_nc ->        // a notice: row * 10 + 0 open · 1 its action · 9 dismiss',
@@ -673,38 +677,59 @@ def music_forms(c, acc, ink, dim, hull):
         L += [f'{c}        box {{ from: nb_x + 6 + {k} * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp{k} * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp{k} * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: {acc}; opacity: 0.55 + 0.45 * nd_sp{k} }}']
     L += [f'{c}    }}',
           f'{c}}}',
-f'{c}// the music as a record (D304): the pill carries the song and its controls, and a record rises half out of a',
-          f'{c}// slot along its lower edge — turning at 33⅓ while it plays, the cover for its label, grooves and rim in the',
-          f'{c}// theme\'s accent, the spectrum standing out round the half that shows',
+f'{c}// the music as a record (D304; D310 after Spun): the pill carries the song and its controls, and a small record',
+          f'{c}// rises half out of a slot along its lower edge. Spun\'s look: near-black vinyl with fine grey grooves and a',
+          f'{c}// few deeper rings, the cover as a big label with its ridge and spindle hole, a light that stays still while',
+          f'{c}// the record turns under it (slowly: 30°/s), and a tonearm resting in the grooves',
           f'{c}group {{ show: nd_kind == 1 and nd_mf == 2; opacity: nd_cf',
-          f'{c}    let vr = 82',
+          f'{c}    let vr = 50',
           f'{c}    let vx = nb_x + nb_w / 2',
           f'{c}    let vy = nb_y + nb_h - vr * (1 - nd_cf)',
           f'{c}    group {{',
-          f'{c}        clip box {{ from: vx - vr - 48, nb_y + nb_h; size: vr * 2 + 96, vr + 56 }}']
-    for k in range(28):
-        a_ = f"({k} * 180 / 27)"
-        L += [f'{c}        line {{ from: vx + cos({a_}) * (vr + 4), vy + sin({a_}) * (vr + 4); to: vx + cos({a_}) * (vr + 6 + nd_sp{k} * 30), vy + sin({a_}) * (vr + 6 + nd_sp{k} * 30); width: 3; color: {acc}; opacity: 0.3 + 0.65 * nd_sp{k} }}']
-    L += [f'{c}        group {{ glow: 18, 0.3 + 0.3 * nd_gw, nd_glc',
-          f'{c}            ellipse {{ at: vx, vy; radius: vr; color: mix(#0a0a0c, {acc}, 0.07) }} }}']
-    for gr in range(9):
-        L += [f'{c}        ellipse {{ at: vx, vy; radius: vr * {0.95 - gr * 0.062:.3f}; stroke: {0.6 if gr % 3 else 1.1}; color: {acc}; opacity: {0.07 + 0.05 * (gr % 3 == 0):.2f} }}']
-    L += [f'{c}        ellipse {{ at: vx, vy; radius: vr - 0.5; stroke: 1; color: {acc}; opacity: 0.45 }}',
+          f'{c}        clip box {{ from: vx - vr - 40, nb_y + nb_h; size: vr * 2 + 80, vr + 40 }}',
+          f'{c}        // its shadow on what is under it, then the body: dark, a touch lighter in the middle of the grooves',
+          f'{c}        group {{ blur: 10',
+          f'{c}            ellipse {{ at: vx, vy + 4; radius: vr + 2; color: #000000; opacity: 0.45 }} }}',
+          f'{c}        ellipse {{ at: vx, vy; radius: vr; color: #121317 }}',
+          f'{c}        ellipse {{ at: vx, vy; radius: vr * 0.9; stroke: vr * 0.36; color: #17181c; opacity: 0.9 }}']
+    import random
+    rnd = random.Random(44)
+    r = 0.43
+    while r < 0.975:
+        L += [f'{c}        ellipse {{ at: vx, vy; radius: vr * {r:.3f}; stroke: 0.6; color: #b4b9c3; opacity: {0.05 + rnd.random() * 0.06:.3f} }}']
+        r += 0.026 + rnd.random() * 0.018
+    for rr in (0.49, 0.62, 0.76, 0.91):
+        L += [f'{c}        ellipse {{ at: vx, vy; radius: vr * {rr}; stroke: 1.4; color: #020305; opacity: 0.5 }}']
+    L += [f'{c}        ellipse {{ at: vx, vy; radius: vr - 1.2; stroke: 1.6; color: #010203; opacity: 0.75 }}',
+          f'{c}        ellipse {{ at: vx, vy; radius: vr - 0.3; stroke: 0.8; color: #96a3ae; opacity: 0.25 }}',
+          f'{c}        // the label turns: the cover (or the accent, with none), its ridge and the spindle',
           f'{c}        group {{ pivot: vx, vy; rotate: nd_vrot',
-          f'{c}            // two sheens across the grooves, which is what makes a record read as turning',
-          f'{c}            arc {{ at: vx, vy; radius: vr * 0.68; span: 38deg; rotate: -30deg; width: vr * 0.5; color: #ffffff; opacity: 0.06 }}',
-          f'{c}            arc {{ at: vx, vy; radius: vr * 0.68; span: 38deg; rotate: 150deg; width: vr * 0.5; color: #ffffff; opacity: 0.045 }}',
-          f'{c}            group {{ clip ellipse {{ at: vx, vy; radius: vr * 0.36 }}',
-          f'{c}                ellipse {{ at: vx, vy; radius: vr * 0.36; color: {acc} }}',
-          f'{c}                image nd_cover {{ at: vx - vr * 0.36, vy - vr * 0.36; size: vr * 0.72, vr * 0.72; fit: cover; show: nd_arted }} }}',
-          f'{c}            ellipse {{ at: vx, vy; radius: vr * 0.36; stroke: 1.5; color: {acc}; opacity: 0.8 }}',
-          f'{c}            ellipse {{ at: vx + vr * 0.27, vy; radius: 2; color: fl.ground; opacity: 0.7; show: not nd_arted }}',
+          f'{c}            group {{ clip ellipse {{ at: vx, vy; radius: vr * 0.4 }}',
+          f'{c}                ellipse {{ at: vx, vy; radius: vr * 0.4; color: mix(#15161a, {acc}, 0.55) }}',
+          f'{c}                image nd_cover {{ at: vx - vr * 0.4, vy - vr * 0.4; size: vr * 0.8, vr * 0.8; fit: cover; show: nd_arted }} }}',
+          f'{c}            ellipse {{ at: vx + vr * 0.25, vy - vr * 0.12; radius: 1.6; color: #ffffff; opacity: 0.35; show: not nd_arted }}',
           f'{c}        }}',
-          f'{c}        ellipse {{ at: vx, vy; radius: 3.5; color: fl.ground }}',
+          f'{c}        ellipse {{ at: vx, vy; radius: vr * 0.4 + 0.8; stroke: 1.5; color: #000000; opacity: 0.5 }}',
+          f'{c}        ellipse {{ at: vx, vy; radius: vr * 0.145; stroke: 0.9; color: #000000; opacity: 0.35 }}',
+          f'{c}        ellipse {{ at: vx, vy; radius: vr * 0.15; stroke: 0.6; color: #ffffff; opacity: 0.12 }}',
+          f'{c}        ellipse {{ at: vx, vy; radius: 2.4; color: #0b0c0f }}',
+          f'{c}        ellipse {{ at: vx, vy; radius: 3.2; stroke: 0.8; color: #ffffff; opacity: 0.18 }}',
+          f'{c}        // the still light: two soft sheens across the grooves that do not turn with them',
+          f'{c}        arc {{ at: vx, vy; radius: vr * 0.7; span: 26deg; rotate: 128deg; width: vr * 0.5; color: #cbd8e5; opacity: 0.045 }}',
+          f'{c}        arc {{ at: vx, vy; radius: vr * 0.7; span: 22deg; rotate: 232deg; width: vr * 0.5; color: #f4e9d6; opacity: 0.035 }}',
+          f'{c}        // the tonearm: a pivot past the rim, its arm down to the needle in the outer grooves',
+          f'{c}        let tpx = vx + vr * 1.12',
+          f'{c}        let tpy = vy + vr * 0.3',
+          f'{c}        let tnx = vx + vr * 0.62',
+          f'{c}        let tny = vy + vr * 0.56',
+          f'{c}        line {{ from: tpx, tpy; to: tnx, tny; width: 2.2; color: mix({acc}, #d8c9a0, 0.35) }}',
+          f'{c}        box {{ from: tnx - 3, tny - 2.5; size: 7, 5; corner: 1.5; color: mix({acc}, #d8c9a0, 0.35) }}',
+          f'{c}        ellipse {{ at: tpx, tpy; radius: 4.5; color: #1b1c21 }}',
+          f'{c}        ellipse {{ at: tpx, tpy; radius: 4.5; stroke: 1.2; color: mix({acc}, #d8c9a0, 0.35) }}',
           f'{c}    }}',
           f'{c}    // the slot it comes out of, lit in the accent',
-          f'{c}    group {{ glow: 8, 0.6 * nd_gw, {acc}',
-          f'{c}        line {{ from: vx - vr - 8, nb_y + nb_h; to: vx + vr + 8, nb_y + nb_h; width: 2; color: {acc}; opacity: 0.7 }} }}',
+          f'{c}    group {{ glow: 6, 0.4 * nd_gw, {acc}',
+          f'{c}        line {{ from: vx - vr - 6, nb_y + nb_h; to: vx + vr + 6, nb_y + nb_h; width: 1.5; color: {acc}; opacity: 0.6 }} }}',
           f'{c}}}']
     return L
 
@@ -1167,57 +1192,67 @@ def panel_parts(c, acc, ink, dim, hull):
     return L
 
 
-def clock_face(c, ox, oy, show, ink, acc):
-    """D308: the clock seed's face — in the look's style — drawn with its top left at (ox, oy), 22 tall, so it can
-    stand among the modules of the pill or of a corner notch. Its width per style: lib's FACE_W."""
-    ws = "pick(nd_cks, 74, 62, 30, 170, 56, 86)"
-    L = [f'{c}group {{ show: {show}',
-         f'{c}    for q in ck {{ box {{ from: {ox} + 8 + q.x * 2, {oy} + 4 + q.y * 2; size: 1.6, 1.6; color: {acc}; opacity: 0.75 + 0.25 * nd_br; show: nd_cks == 0 }} }}',
-         f'{c}    text nd_ckd {{ at: {ox} + {ws} / 2, {oy} + 11; anchor: center; align: center; size: 13; weight: 700; family: {MONO}; color: {acc}; show: nd_cks == 1 }}',
-         f'{c}    group {{ show: nd_cks == 2',
-         f'{c}        ellipse {{ at: {ox} + 15, {oy} + 11; radius: 10; stroke: 1; color: {acc}; opacity: 0.5 }}',
-         f'{c}        line {{ from: {ox} + 15, {oy} + 11; to: {ox} + 15 + sin(nd_ckh) * 5, {oy} + 11 - cos(nd_ckh) * 5; width: 2; color: {ink} }}',
-         f'{c}        line {{ from: {ox} + 15, {oy} + 11; to: {ox} + 15 + sin(nd_ckm) * 8, {oy} + 11 - cos(nd_ckm) * 8; width: 1.4; color: {acc} }} }}',
-         f'{c}    text nd_ckw {{ at: {ox} + 85, {oy} + 11; anchor: center; align: center; size: 10; family: {SANS}; color: {ink}; width: 160; lines: 1; show: nd_cks == 3 }}']
-    L += [f'{c}    ellipse {{ at: {ox} + 9 + {i % 6} * 7.6, {oy} + 7 + {i // 6} * 8; radius: 2.2; color: if(nd_cb{i}, {acc}, fl.trace_dim); show: nd_cks == 4 }}' for i in range(12)]
-    L += [f'{c}    repeat dh in 0..12 {{ ellipse {{ at: {ox} + 8 + dh * 6.4, {oy} + 7; radius: 1.8; color: if(dh < nd_ckdh, {acc}, fl.trace_dim); show: nd_cks == 5 }} }}',
-          f'{c}    repeat dm in 0..12 {{ ellipse {{ at: {ox} + 8 + dm * 6.4, {oy} + 15; radius: 1.8; color: if(dm < nd_ckdm, {ink}, fl.trace_dim); show: nd_cks == 5 }} }}',
-          f'{c}}}']
+def module_row(c, model, bx, cy, ink, dim, acc):
+    """D310: one way of drawing a list of modules — the pill's own (long or notch) and both corner notches. Each wears
+    its icon before its words, as the bar's modules do; the workspaces are numbered tiles, the active one wider and
+    lit; CPU, memory, volume and the battery carry a meter under their words; the Music module is a visualiser
+    beside its title, the title alone, or its cover and title (the look's music_mod)."""
+    I = '"CaskaydiaCove Nerd Font"'
+    L = [f'{c}for m in {model} {{',
+         f'{c}    let mx = {bx} + m.x',
+         f'{c}    let mi = if(m.kind == 3 or m.kind == 5, 0, 16)',
+         f'{c}    text m.icon {{ at: mx + 6, {cy}; anchor: center; align: center; size: 12; family: {I}; color: if(m.kind == 11 or (m.kind != 4 and m.lv > 0.85) or (m.kind == 4 and m.lv >= 0 and m.lv < 0.2), fl.ember, {acc}); show: m.kind != 3 and m.kind != 5 }}',
+         f'{c}    text m.label {{ at: mx + mi, {cy}; anchor: left center; size: 11; weight: 700; family: {MONO}; color: {ink}; width: m.w - mi; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }}',
+         f'{c}    text m.label {{ at: mx + mi, {cy}; anchor: left center; size: 10; family: {SANS}; color: {ink}; width: m.w - mi; lines: 1; show: m.kind == 2 }}',
+         f'{c}    // the workspaces: numbered tiles',
+         f'{c}    repeat wsd in 0..10 {{',
+         f'{c}        box {{ from: mx + wsd * 16 + if(wsd > nd_lmwa, 8, 0), {cy} - 7; size: if(wsd == nd_lmwa, 22, 14), 14; corner: 4; color: if(wsd == nd_lmwa, {acc}, fl.trace_dim); opacity: if(wsd == nd_lmwa, 0.95, 0.55); show: m.kind == 3 and wsd < nd_lmws }}',
+         f'{c}        text number(wsd + 1, 0, "") {{ at: mx + wsd * 16 + if(wsd > nd_lmwa, 8, 0) + if(wsd == nd_lmwa, 11, 7), {cy}; anchor: center; align: center; size: 9; weight: 700; family: {MONO}; color: if(wsd == nd_lmwa, fl.ground, {ink}); show: m.kind == 3 and wsd < nd_lmws }}',
+         f'{c}    }}',
+         f'{c}    // the music: a visualiser and its title, the title alone, or the cover and title',
+         f'{c}    repeat mb in 0..6 {{ box {{ from: mx + mb * 4.5, {cy} + 6 - 2 - pick(mb, nd_sp2, nd_sp5, nd_sp8, nd_sp11, nd_sp14, nd_sp17) * 10; size: 3, 2 + pick(mb, nd_sp2, nd_sp5, nd_sp8, nd_sp11, nd_sp14, nd_sp17) * 10; corner: 1.5; color: {acc}; opacity: 0.9; show: m.kind == 5 and nd_mmod == 0 }} }}',
+         f'{c}    ellipse {{ at: mx + 4, {cy}; radius: 2 + 1.5 * lv.level; color: {acc}; show: m.kind == 5 and nd_mmod == 1 }}',
+         f'{c}    group {{ show: m.kind == 5 and nd_mmod == 2',
+         f'{c}        clip box {{ from: mx, {cy} - 9; size: 18, 18; corner: 4 }}',
+         f'{c}        box {{ from: mx, {cy} - 9; size: 18, 18; color: {acc}; opacity: 0.5 }}',
+         f'{c}        image nd_cover {{ at: mx, {cy} - 9; size: 18, 18; fit: cover; show: nd_arted }} }}',
+         f'{c}    text m.label {{ at: mx + pick(nd_mmod, 34, 12, 24), {cy}; anchor: left center; size: 10; family: {SANS}; color: {ink}; width: m.w - pick(nd_mmod, 34, 12, 24); lines: 1; show: m.kind == 5 }}',
+         f'{c}    // a meter under the readings (CPU, memory, volume, the battery)',
+         f'{c}    box {{ from: mx + 16, {cy} + 8; size: m.w - 18, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }}',
+         f'{c}    box {{ from: mx + 16, {cy} + 8; size: (m.w - 18) * max(0, m.lv), 2; corner: 1; color: if((m.kind != 4 and m.lv > 0.85) or (m.kind == 4 and m.lv < 0.2), fl.ember, {acc}); show: m.lv >= 0 }}',
+         f'{c}}}']
     return L
 
 
 def corner_notch(c, side, ink, dim, acc):
-    """The frame's corner notch (D295; Minflair's Convex corners): flush in the screen's top-left or top-right
-    corner, concave where it leaves each band, holding the modules the look gave that corner."""
+    """The frame's corner notch (D295; Minflair's Convex corners): in the screen's top-left or top-right corner,
+    holding the modules the look gave that corner. D310: with the frame on, the frame draws it as a piece of its own
+    body (joined to the top and the side, as the centre's notch is) and the node only what it holds; it opens a
+    little under the pointer, and a press opens the panel — as the centre does. Without the frame it draws its own."""
     W = "nd_lwk" if side == "left" else "nd_rwk"
-    H, F, r = 28, 12, 12
+    H = "nd_lhk" if side == "left" else "nd_rhk"
+    F, r = 12, 12
     def X(v):
         return str(v) if side == "left" else f"node.width - ({v})"
     steps = [f"move {X(0)}, 0", f"line {X(f'{W} + {F}')}, 0", f"curve {X(W)}, {F} via {X(W)}, 0",
-             f"line {X(W)}, {H - r}", f"curve {X(f'{W} - {r}')}, {H} via {X(W)}, {H}", f"line {X(F)}, {H}",
-             f"curve {X(0)}, {H + F} via {X(0)}, {H}"]
+             f"line {X(W)}, {H} - {r}", f"curve {X(f'{W} - {r}')}, {H} via {X(W)}, {H}", f"line {X(F)}, {H}",
+             f"curve {X(0)}, {H} + {F} via {X(0)}, {H}"]
     model = "lml" if side == "left" else "lmr"
     base = "0" if side == "left" else f"node.width - {W}"
     z = "ndz_" + side[0] + "c"
-    L = [f"{c}// the {side} corner notch (D295)",
+    hv = "nd_" + side[0] + "chv"
+    code = "1" if side == "left" else "3"
+    L = [f"{c}// the {side} corner notch (D295; D310: a piece of the frame, as the centre is)",
          f"{c}group {{ show: {W} > 1 and not nd_studio; opacity: min(1, {W} / 40)",
-         f"{c}    body {{ color: fl.ground", f"{c}        path {{"]
-    L += [f"{c}            {st}" for st in steps] + [f"{c}            close }} }}"]
-    L += [f"{c}    path {{ stroke: 1; color: fl.trace; opacity: 0.85"] + [f"{c}        {st}" for st in steps] + [f"{c}    }}"]
-    L += [f"{c}    for m in {model} {{",
-          f"{c}        let mx = {base} + m.x",
-          f"{c}        text m.label {{ at: mx, 14; anchor: left center; size: 11; weight: 700; family: {MONO}; color: if(m.kind == 1, {acc}, {ink}); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }}",
-          f"{c}        text m.label {{ at: mx + if(m.kind == 5, 10, 0), 14; anchor: left center; size: 10; family: {SANS}; color: {ink}; width: m.w - if(m.kind == 5, 10, 0); lines: 1; show: m.kind == 2 or m.kind == 5 }}",
-          f"{c}        repeat wsd in 0..10 {{ ellipse {{ at: mx + 4 + wsd * 12, 14; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, {acc}, {dim}); show: m.kind == 3 and wsd < nd_lmws }} }}",
-          f"{c}        box {{ from: mx + m.w - 3, 9; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, {acc}); show: m.kind == 4 }}",
-          f"{c}        ellipse {{ at: mx + 3, 14; radius: 2 + 2 * lv.level; color: {acc}; show: m.kind == 5 }}",
-          f"{c}        // D308: CPU, memory and volume carry a meter under their words",
-          f"{c}        box {{ from: mx, 21; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }}",
-          f"{c}        box {{ from: mx, 21; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, {acc}); show: m.lv >= 0 }}",
-          f"{c}    }}",
-          ] + clock_face(c + "    ", f"({base} + nd_fx{side[0]})", "3", f"nd_fx{side[0]} >= 0", ink, acc) + [
-          f'{c}    zone box {z} {{ from: {base}, 0; size: {W}, {H}; cursor: pointer; role: button; label: "Open the panel"; show: nd_kind == 0 and {W} > 1 }}',
+         f"{c}    group {{ show: not nd_cfr",
+         f"{c}        body {{ color: fl.ground", f"{c}            path {{"]
+    L += [f"{c}                {st}" for st in steps] + [f"{c}                close }} }}"]
+    L += [f"{c}        path {{ stroke: 1; color: fl.trace; opacity: 0.85"] + [f"{c}            {st}" for st in steps] + [f"{c}        }}", f"{c}    }}"]
+    L += module_row(c + "    ", model, base, f"({H}) / 2", ink, dim, acc)
+    L += [f'{c}    zone box {z} {{ from: {base}, 0; size: {W}, {H}; cursor: pointer; role: button; label: "Open the panel"; show: {W} > 1 and not nd_studio }}',
           f"{c}    on press {z} {{ emit nd_cmd(1) }}",
+          f"{c}    let {hv} = {z}.hover",
+          f"{c}    on change {hv} {{ emit nd_corner(if({hv}, {code}, {int(code) - 1})) }}",
           f"{c}}}"]
     return L
 
@@ -1352,18 +1387,7 @@ def surface():
           f'{c}    box {{ from: nb_x + 14, nb_y + nb_h - 1.5; size: (nb_w - 28) * (0.3 + 0.7 * lv.level * nd_mu), 1.5; corner: 1; color: {acc}; opacity: 0.6; show: nd_long == 2 and nd_playing }}',
           f'{c}    group {{ opacity: nd_cf',
           f'{c}        clip box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }}',
-          f'{c}        for m in lm {{',
-          f'{c}            let mx = nb_x + m.x',
-          f'{c}            text m.label {{ at: mx, nb_y + nb_h / 2; anchor: left center; size: 11; weight: 700; family: {MONO}; color: if(m.kind == 1, {acc}, {ink}); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }}',
-          f'{c}            text m.label {{ at: mx + if(m.kind == 5, 10, 0), nb_y + nb_h / 2; anchor: left center; size: 10; family: {SANS}; color: {ink}; width: m.w - if(m.kind == 5, 10, 0); lines: 1; show: m.kind == 2 or m.kind == 5 }}',
-          f'{c}            repeat wsd in 0..10 {{ ellipse {{ at: mx + 4 + wsd * 12, nb_y + nb_h / 2; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, {acc}, {dim}); show: m.kind == 3 and wsd < nd_lmws }} }}',
-          f'{c}            box {{ from: mx + m.w - 3, nb_y + nb_h / 2 - 5; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, {acc}); show: m.kind == 4 }}',
-          f'{c}            ellipse {{ at: mx + 3, nb_y + nb_h / 2; radius: 2 + 2 * lv.level; color: {acc}; show: m.kind == 5 }}',
-          f'{c}            // D308: CPU, memory and volume carry a meter under their words',
-          f'{c}            box {{ from: mx, nb_y + nb_h / 2 + 8; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }}',
-          f'{c}            box {{ from: mx, nb_y + nb_h / 2 + 8; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, {acc}); show: m.lv >= 0 }}',
-          f'{c}        }}',
-          ] + clock_face(c + "        ", "(nb_x + nd_fxc)", "(nb_y + nb_h / 2 - 11)", "nd_fxc >= 0", ink, acc) + [
+          ] + module_row(c + "        ", "lm", "nb_x", "(nb_y + nb_h / 2)", ink, dim, acc) + [
           f'{c}    }}',
           f'{c}}}',
           f'{c}// BMO as the seed (D253): his face on a small screen, quiet — no lines, only his expression; he sings to music',
@@ -1411,12 +1435,6 @@ def surface():
           f'{c}    repeat dr in 0..4 {{ repeat dc in 0..48 {{ ellipse {{ at: nb_x + (dc + 0.5) * nb_w / 48, nb_y + (dr + 0.5) * nb_h / 4; radius: 0.9; color: {acc}; opacity: 0.18; show: nd_tex == 4 }} }} }}',
           f'{c}}}',
           f'{c}box {{ from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: {acc}; opacity: if(nd_tex == 1, 0.9, 0.55); show: nd_kind > 0 and nd_ol > 0.05 }}',
-          f'{c}// (D296) shimmer: a band of light crossing it, then a rest before the next (half of each turn is off it)',
-          f'{c}group {{ show: nd_shm > 0 and nd_cf > 0.05 and not nd_cap',
-          f'{c}    clip box {{ from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr }}',
-          f'{c}    group {{ blur: 4',
-          f'{c}        box {{ from: nd_sx - 24 + (nd_sw + 48) * (mod(nd_shp, 360) / 180), nd_sy - 2; size: 14, nd_sh + 4; color: #ffffff; opacity: 0.28 * nd_cf }} }}',
-          f'{c}}}',
           f'{c}// segmented: the outline breaks in three places; and a cyber node glitches on a change (a shifted ghost and a',
           f'{c}// scan line in the counter-signal)',
           f'{c}box {{ from: nb_x + nb_w * 0.3, nb_y - 1; size: nb_w * 0.12, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 }}',

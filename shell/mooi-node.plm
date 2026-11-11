@@ -267,7 +267,6 @@ scene Node {
     fact nd_wss = 0     // a workspace switch: 0 bead · 1 slide · 2 flip · 3 pulse · 4 number
     fact nd_rxl = 1     // reactions: 0 off · 1 subtle · 2 lively
     fact nd_smu = 1     // the seed with music: 0 still · 1 a pulse · 2 bars
-    fact nd_shm = 0     // D296 shimmer: 0 off · 1 slow · 2 fast
     fact nd_trl = 0     // D296 trail: 0 off · 1 on
     fact nd_tx = 949
     fact nd_ty = 8
@@ -409,14 +408,12 @@ scene Node {
     fact nd_arted = false
     prop nd_vph = 0
     spin nd_vph by if(nd_kind == 1 and nd_playing, 240, 0)
-    // D296: the aurora's drift and the shimmer's turn spin only while those are worn
+    // D296: the aurora's drift spins only while it is worn (D310: the shimmer is gone)
     prop nd_aph = 0
     spin nd_aph by if(nd_tex == 7 and nd_kind > 0, 36, 0)
-    prop nd_shp = 0
-    spin nd_shp by if(nd_shm > 0, if(nd_shm == 2, 300, 120), 0)
-    // the record (D246): 33⅓ turns a minute while it plays
+    // the record (D246): it turns while it plays — slowly (D310: 30°/s; a true 33⅓ read as frantic at this size)
     prop nd_vrot = 0
-    spin nd_vrot by if(nd_kind == 1 and nd_mf == 2 and nd_playing, 200, 0)
+    spin nd_vrot by if(nd_kind == 1 and nd_mf == 2 and nd_playing, 30, 0)
     // notices
     model nc max 5 { x: number; y: number; w: number; h: number; app: text; title: text; body: text; open: bool; act: text; hasact: bool }
     fact nd_ncn = 0       // how many cards are shown
@@ -723,16 +720,21 @@ scene Node {
     prop pk_flow2 = 0
     spin pk_flow2 by if(pb_asleep and nd_kind == 0 and nd_seed == 6, 8, 0)
     // the long pill (D248): what it holds at rest, each a module laid out by the logic
-    model lm max 6 { kind: number; x: number; w: number; label: text; lv: number }
-    fact nd_fxc = -1   // D308: where the clock face starts in the pill's modules, or -1
-    fact nd_fxl = -1
-    fact nd_fxr = -1
+    model lm max 6 { kind: number; x: number; w: number; label: text; icon: text; lv: number }
     // the frame's corner notches (D295): the modules each holds, and how wide (0: none there)
-    model lml max 6 { kind: number; x: number; w: number; label: text; lv: number }
-    model lmr max 6 { kind: number; x: number; w: number; label: text; lv: number }
+    model lml max 6 { kind: number; x: number; w: number; label: text; icon: text; lv: number }
+    model lmr max 6 { kind: number; x: number; w: number; label: text; icon: text; lv: number }
     fact nd_lw = 0
     fact nd_rw = 0
     fact nd_mside = 0
+    fact nd_lh = 28
+    fact nd_rh = 28   // D310: each opens a little under the pointer, as the centre does
+    prop nd_lhk = 28 ~nd.aux
+    follow nd_lhk = nd_lh
+    prop nd_rhk = 28 ~nd.aux
+    follow nd_rhk = nd_rh
+    fact nd_cfr = false   // D310: the frame draws the corners (pieces of its body); the node only what they hold
+    fact nd_mmod = 0      // D310: the Music module: 0 a visualiser and its title · 1 the title · 2 the cover and title
     prop nd_lwk = 0 ~nd.aux
     follow nd_lwk = nd_lw
     prop nd_rwk = 0 ~nd.aux
@@ -747,6 +749,7 @@ scene Node {
     fact nd_pvon = false
 
     event nd_hover ->     // the pointer over the node: 1 + x · 0 gone
+    event nd_corner ->    // D310: the pointer over a corner notch: 1 / 0 the left in / out · 3 / 2 the right
     event nd_press ->     // the node pressed
     event nd_media ->     // 1 back · 2 play / pause · 3 next
     event nd_nc ->        // a notice: row * 10 + 0 open · 1 its action · 9 dismiss
@@ -933,121 +936,107 @@ scene Node {
         }
         // the body: one shape that is the seed, a capsule, a rail, a search line — its glow by the look, swelling
         // a little with the music as far as the look lets it
-        // the left corner notch (D295)
+        // the left corner notch (D295; D310: a piece of the frame, as the centre is)
         group { show: nd_lwk > 1 and not nd_studio; opacity: min(1, nd_lwk / 40)
-            body { color: fl.ground
-                path {
+            group { show: not nd_cfr
+                body { color: fl.ground
+                    path {
+                        move 0, 0
+                        line nd_lwk + 12, 0
+                        curve nd_lwk, 12 via nd_lwk, 0
+                        line nd_lwk, nd_lhk - 12
+                        curve nd_lwk - 12, nd_lhk via nd_lwk, nd_lhk
+                        line 12, nd_lhk
+                        curve 0, nd_lhk + 12 via 0, nd_lhk
+                        close } }
+                path { stroke: 1; color: fl.trace; opacity: 0.85
                     move 0, 0
                     line nd_lwk + 12, 0
                     curve nd_lwk, 12 via nd_lwk, 0
-                    line nd_lwk, 16
-                    curve nd_lwk - 12, 28 via nd_lwk, 28
-                    line 12, 28
-                    curve 0, 40 via 0, 28
-                    close } }
-            path { stroke: 1; color: fl.trace; opacity: 0.85
-                move 0, 0
-                line nd_lwk + 12, 0
-                curve nd_lwk, 12 via nd_lwk, 0
-                line nd_lwk, 16
-                curve nd_lwk - 12, 28 via nd_lwk, 28
-                line 12, 28
-                curve 0, 40 via 0, 28
+                    line nd_lwk, nd_lhk - 12
+                    curve nd_lwk - 12, nd_lhk via nd_lwk, nd_lhk
+                    line 12, nd_lhk
+                    curve 0, nd_lhk + 12 via 0, nd_lhk
+                }
             }
             for m in lml {
                 let mx = 0 + m.x
-                text m.label { at: mx, 14; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(m.kind == 1, nd_acc, fl.engrave); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }
-                text m.label { at: mx + if(m.kind == 5, 10, 0), 14; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - if(m.kind == 5, 10, 0); lines: 1; show: m.kind == 2 or m.kind == 5 }
-                repeat wsd in 0..10 { ellipse { at: mx + 4 + wsd * 12, 14; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, nd_acc, fl.muted); show: m.kind == 3 and wsd < nd_lmws } }
-                box { from: mx + m.w - 3, 9; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, nd_acc); show: m.kind == 4 }
-                ellipse { at: mx + 3, 14; radius: 2 + 2 * lv.level; color: nd_acc; show: m.kind == 5 }
-                // D308: CPU, memory and volume carry a meter under their words
-                box { from: mx, 21; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }
-                box { from: mx, 21; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, nd_acc); show: m.lv >= 0 }
+                let mi = if(m.kind == 3 or m.kind == 5, 0, 16)
+                text m.icon { at: mx + 6, (nd_lhk) / 2; anchor: center; align: center; size: 12; family: "CaskaydiaCove Nerd Font"; color: if(m.kind == 11 or (m.kind != 4 and m.lv > 0.85) or (m.kind == 4 and m.lv >= 0 and m.lv < 0.2), fl.ember, nd_acc); show: m.kind != 3 and m.kind != 5 }
+                text m.label { at: mx + mi, (nd_lhk) / 2; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: m.w - mi; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }
+                text m.label { at: mx + mi, (nd_lhk) / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - mi; lines: 1; show: m.kind == 2 }
+                // the workspaces: numbered tiles
+                repeat wsd in 0..10 {
+                    box { from: mx + wsd * 16 + if(wsd > nd_lmwa, 8, 0), (nd_lhk) / 2 - 7; size: if(wsd == nd_lmwa, 22, 14), 14; corner: 4; color: if(wsd == nd_lmwa, nd_acc, fl.trace_dim); opacity: if(wsd == nd_lmwa, 0.95, 0.55); show: m.kind == 3 and wsd < nd_lmws }
+                    text number(wsd + 1, 0, "") { at: mx + wsd * 16 + if(wsd > nd_lmwa, 8, 0) + if(wsd == nd_lmwa, 11, 7), (nd_lhk) / 2; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(wsd == nd_lmwa, fl.ground, fl.engrave); show: m.kind == 3 and wsd < nd_lmws }
+                }
+                // the music: a visualiser and its title, the title alone, or the cover and title
+                repeat mb in 0..6 { box { from: mx + mb * 4.5, (nd_lhk) / 2 + 6 - 2 - pick(mb, nd_sp2, nd_sp5, nd_sp8, nd_sp11, nd_sp14, nd_sp17) * 10; size: 3, 2 + pick(mb, nd_sp2, nd_sp5, nd_sp8, nd_sp11, nd_sp14, nd_sp17) * 10; corner: 1.5; color: nd_acc; opacity: 0.9; show: m.kind == 5 and nd_mmod == 0 } }
+                ellipse { at: mx + 4, (nd_lhk) / 2; radius: 2 + 1.5 * lv.level; color: nd_acc; show: m.kind == 5 and nd_mmod == 1 }
+                group { show: m.kind == 5 and nd_mmod == 2
+                    clip box { from: mx, (nd_lhk) / 2 - 9; size: 18, 18; corner: 4 }
+                    box { from: mx, (nd_lhk) / 2 - 9; size: 18, 18; color: nd_acc; opacity: 0.5 }
+                    image nd_cover { at: mx, (nd_lhk) / 2 - 9; size: 18, 18; fit: cover; show: nd_arted } }
+                text m.label { at: mx + pick(nd_mmod, 34, 12, 24), (nd_lhk) / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - pick(nd_mmod, 34, 12, 24); lines: 1; show: m.kind == 5 }
+                // a meter under the readings (CPU, memory, volume, the battery)
+                box { from: mx + 16, (nd_lhk) / 2 + 8; size: m.w - 18, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }
+                box { from: mx + 16, (nd_lhk) / 2 + 8; size: (m.w - 18) * max(0, m.lv), 2; corner: 1; color: if((m.kind != 4 and m.lv > 0.85) or (m.kind == 4 and m.lv < 0.2), fl.ember, nd_acc); show: m.lv >= 0 }
             }
-            group { show: nd_fxl >= 0
-                for q in ck { box { from: (0 + nd_fxl) + 8 + q.x * 2, 3 + 4 + q.y * 2; size: 1.6, 1.6; color: nd_acc; opacity: 0.75 + 0.25 * nd_br; show: nd_cks == 0 } }
-                text nd_ckd { at: (0 + nd_fxl) + pick(nd_cks, 74, 62, 30, 170, 56, 86) / 2, 3 + 11; anchor: center; align: center; size: 13; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_cks == 1 }
-                group { show: nd_cks == 2
-                    ellipse { at: (0 + nd_fxl) + 15, 3 + 11; radius: 10; stroke: 1; color: nd_acc; opacity: 0.5 }
-                    line { from: (0 + nd_fxl) + 15, 3 + 11; to: (0 + nd_fxl) + 15 + sin(nd_ckh) * 5, 3 + 11 - cos(nd_ckh) * 5; width: 2; color: fl.engrave }
-                    line { from: (0 + nd_fxl) + 15, 3 + 11; to: (0 + nd_fxl) + 15 + sin(nd_ckm) * 8, 3 + 11 - cos(nd_ckm) * 8; width: 1.4; color: nd_acc } }
-                text nd_ckw { at: (0 + nd_fxl) + 85, 3 + 11; anchor: center; align: center; size: 10; family: "Exo 2"; color: fl.engrave; width: 160; lines: 1; show: nd_cks == 3 }
-                ellipse { at: (0 + nd_fxl) + 9 + 0 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb0, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 1 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb1, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 2 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb2, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 3 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb3, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 4 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb4, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 5 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb5, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 0 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb6, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 1 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb7, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 2 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb8, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 3 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb9, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 4 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb10, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (0 + nd_fxl) + 9 + 5 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb11, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                repeat dh in 0..12 { ellipse { at: (0 + nd_fxl) + 8 + dh * 6.4, 3 + 7; radius: 1.8; color: if(dh < nd_ckdh, nd_acc, fl.trace_dim); show: nd_cks == 5 } }
-                repeat dm in 0..12 { ellipse { at: (0 + nd_fxl) + 8 + dm * 6.4, 3 + 15; radius: 1.8; color: if(dm < nd_ckdm, fl.engrave, fl.trace_dim); show: nd_cks == 5 } }
-            }
-            zone box ndz_lc { from: 0, 0; size: nd_lwk, 28; cursor: pointer; role: button; label: "Open the panel"; show: nd_kind == 0 and nd_lwk > 1 }
+            zone box ndz_lc { from: 0, 0; size: nd_lwk, nd_lhk; cursor: pointer; role: button; label: "Open the panel"; show: nd_lwk > 1 and not nd_studio }
             on press ndz_lc { emit nd_cmd(1) }
+            let nd_lchv = ndz_lc.hover
+            on change nd_lchv { emit nd_corner(if(nd_lchv, 1, 0)) }
         }
-        // the right corner notch (D295)
+        // the right corner notch (D295; D310: a piece of the frame, as the centre is)
         group { show: nd_rwk > 1 and not nd_studio; opacity: min(1, nd_rwk / 40)
-            body { color: fl.ground
-                path {
+            group { show: not nd_cfr
+                body { color: fl.ground
+                    path {
+                        move node.width - (0), 0
+                        line node.width - (nd_rwk + 12), 0
+                        curve node.width - (nd_rwk), 12 via node.width - (nd_rwk), 0
+                        line node.width - (nd_rwk), nd_rhk - 12
+                        curve node.width - (nd_rwk - 12), nd_rhk via node.width - (nd_rwk), nd_rhk
+                        line node.width - (12), nd_rhk
+                        curve node.width - (0), nd_rhk + 12 via node.width - (0), nd_rhk
+                        close } }
+                path { stroke: 1; color: fl.trace; opacity: 0.85
                     move node.width - (0), 0
                     line node.width - (nd_rwk + 12), 0
                     curve node.width - (nd_rwk), 12 via node.width - (nd_rwk), 0
-                    line node.width - (nd_rwk), 16
-                    curve node.width - (nd_rwk - 12), 28 via node.width - (nd_rwk), 28
-                    line node.width - (12), 28
-                    curve node.width - (0), 40 via node.width - (0), 28
-                    close } }
-            path { stroke: 1; color: fl.trace; opacity: 0.85
-                move node.width - (0), 0
-                line node.width - (nd_rwk + 12), 0
-                curve node.width - (nd_rwk), 12 via node.width - (nd_rwk), 0
-                line node.width - (nd_rwk), 16
-                curve node.width - (nd_rwk - 12), 28 via node.width - (nd_rwk), 28
-                line node.width - (12), 28
-                curve node.width - (0), 40 via node.width - (0), 28
+                    line node.width - (nd_rwk), nd_rhk - 12
+                    curve node.width - (nd_rwk - 12), nd_rhk via node.width - (nd_rwk), nd_rhk
+                    line node.width - (12), nd_rhk
+                    curve node.width - (0), nd_rhk + 12 via node.width - (0), nd_rhk
+                }
             }
             for m in lmr {
                 let mx = node.width - nd_rwk + m.x
-                text m.label { at: mx, 14; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(m.kind == 1, nd_acc, fl.engrave); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }
-                text m.label { at: mx + if(m.kind == 5, 10, 0), 14; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - if(m.kind == 5, 10, 0); lines: 1; show: m.kind == 2 or m.kind == 5 }
-                repeat wsd in 0..10 { ellipse { at: mx + 4 + wsd * 12, 14; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, nd_acc, fl.muted); show: m.kind == 3 and wsd < nd_lmws } }
-                box { from: mx + m.w - 3, 9; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, nd_acc); show: m.kind == 4 }
-                ellipse { at: mx + 3, 14; radius: 2 + 2 * lv.level; color: nd_acc; show: m.kind == 5 }
-                // D308: CPU, memory and volume carry a meter under their words
-                box { from: mx, 21; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }
-                box { from: mx, 21; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, nd_acc); show: m.lv >= 0 }
+                let mi = if(m.kind == 3 or m.kind == 5, 0, 16)
+                text m.icon { at: mx + 6, (nd_rhk) / 2; anchor: center; align: center; size: 12; family: "CaskaydiaCove Nerd Font"; color: if(m.kind == 11 or (m.kind != 4 and m.lv > 0.85) or (m.kind == 4 and m.lv >= 0 and m.lv < 0.2), fl.ember, nd_acc); show: m.kind != 3 and m.kind != 5 }
+                text m.label { at: mx + mi, (nd_rhk) / 2; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: m.w - mi; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }
+                text m.label { at: mx + mi, (nd_rhk) / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - mi; lines: 1; show: m.kind == 2 }
+                // the workspaces: numbered tiles
+                repeat wsd in 0..10 {
+                    box { from: mx + wsd * 16 + if(wsd > nd_lmwa, 8, 0), (nd_rhk) / 2 - 7; size: if(wsd == nd_lmwa, 22, 14), 14; corner: 4; color: if(wsd == nd_lmwa, nd_acc, fl.trace_dim); opacity: if(wsd == nd_lmwa, 0.95, 0.55); show: m.kind == 3 and wsd < nd_lmws }
+                    text number(wsd + 1, 0, "") { at: mx + wsd * 16 + if(wsd > nd_lmwa, 8, 0) + if(wsd == nd_lmwa, 11, 7), (nd_rhk) / 2; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(wsd == nd_lmwa, fl.ground, fl.engrave); show: m.kind == 3 and wsd < nd_lmws }
+                }
+                // the music: a visualiser and its title, the title alone, or the cover and title
+                repeat mb in 0..6 { box { from: mx + mb * 4.5, (nd_rhk) / 2 + 6 - 2 - pick(mb, nd_sp2, nd_sp5, nd_sp8, nd_sp11, nd_sp14, nd_sp17) * 10; size: 3, 2 + pick(mb, nd_sp2, nd_sp5, nd_sp8, nd_sp11, nd_sp14, nd_sp17) * 10; corner: 1.5; color: nd_acc; opacity: 0.9; show: m.kind == 5 and nd_mmod == 0 } }
+                ellipse { at: mx + 4, (nd_rhk) / 2; radius: 2 + 1.5 * lv.level; color: nd_acc; show: m.kind == 5 and nd_mmod == 1 }
+                group { show: m.kind == 5 and nd_mmod == 2
+                    clip box { from: mx, (nd_rhk) / 2 - 9; size: 18, 18; corner: 4 }
+                    box { from: mx, (nd_rhk) / 2 - 9; size: 18, 18; color: nd_acc; opacity: 0.5 }
+                    image nd_cover { at: mx, (nd_rhk) / 2 - 9; size: 18, 18; fit: cover; show: nd_arted } }
+                text m.label { at: mx + pick(nd_mmod, 34, 12, 24), (nd_rhk) / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - pick(nd_mmod, 34, 12, 24); lines: 1; show: m.kind == 5 }
+                // a meter under the readings (CPU, memory, volume, the battery)
+                box { from: mx + 16, (nd_rhk) / 2 + 8; size: m.w - 18, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }
+                box { from: mx + 16, (nd_rhk) / 2 + 8; size: (m.w - 18) * max(0, m.lv), 2; corner: 1; color: if((m.kind != 4 and m.lv > 0.85) or (m.kind == 4 and m.lv < 0.2), fl.ember, nd_acc); show: m.lv >= 0 }
             }
-            group { show: nd_fxr >= 0
-                for q in ck { box { from: (node.width - nd_rwk + nd_fxr) + 8 + q.x * 2, 3 + 4 + q.y * 2; size: 1.6, 1.6; color: nd_acc; opacity: 0.75 + 0.25 * nd_br; show: nd_cks == 0 } }
-                text nd_ckd { at: (node.width - nd_rwk + nd_fxr) + pick(nd_cks, 74, 62, 30, 170, 56, 86) / 2, 3 + 11; anchor: center; align: center; size: 13; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_cks == 1 }
-                group { show: nd_cks == 2
-                    ellipse { at: (node.width - nd_rwk + nd_fxr) + 15, 3 + 11; radius: 10; stroke: 1; color: nd_acc; opacity: 0.5 }
-                    line { from: (node.width - nd_rwk + nd_fxr) + 15, 3 + 11; to: (node.width - nd_rwk + nd_fxr) + 15 + sin(nd_ckh) * 5, 3 + 11 - cos(nd_ckh) * 5; width: 2; color: fl.engrave }
-                    line { from: (node.width - nd_rwk + nd_fxr) + 15, 3 + 11; to: (node.width - nd_rwk + nd_fxr) + 15 + sin(nd_ckm) * 8, 3 + 11 - cos(nd_ckm) * 8; width: 1.4; color: nd_acc } }
-                text nd_ckw { at: (node.width - nd_rwk + nd_fxr) + 85, 3 + 11; anchor: center; align: center; size: 10; family: "Exo 2"; color: fl.engrave; width: 160; lines: 1; show: nd_cks == 3 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 0 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb0, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 1 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb1, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 2 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb2, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 3 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb3, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 4 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb4, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 5 * 7.6, 3 + 7 + 0 * 8; radius: 2.2; color: if(nd_cb5, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 0 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb6, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 1 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb7, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 2 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb8, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 3 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb9, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 4 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb10, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                ellipse { at: (node.width - nd_rwk + nd_fxr) + 9 + 5 * 7.6, 3 + 7 + 1 * 8; radius: 2.2; color: if(nd_cb11, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                repeat dh in 0..12 { ellipse { at: (node.width - nd_rwk + nd_fxr) + 8 + dh * 6.4, 3 + 7; radius: 1.8; color: if(dh < nd_ckdh, nd_acc, fl.trace_dim); show: nd_cks == 5 } }
-                repeat dm in 0..12 { ellipse { at: (node.width - nd_rwk + nd_fxr) + 8 + dm * 6.4, 3 + 15; radius: 1.8; color: if(dm < nd_ckdm, fl.engrave, fl.trace_dim); show: nd_cks == 5 } }
-            }
-            zone box ndz_rc { from: node.width - nd_rwk, 0; size: nd_rwk, 28; cursor: pointer; role: button; label: "Open the panel"; show: nd_kind == 0 and nd_rwk > 1 }
+            zone box ndz_rc { from: node.width - nd_rwk, 0; size: nd_rwk, nd_rhk; cursor: pointer; role: button; label: "Open the panel"; show: nd_rwk > 1 and not nd_studio }
             on press ndz_rc { emit nd_cmd(1) }
+            let nd_rchv = ndz_rc.hover
+            on change nd_rchv { emit nd_corner(if(nd_rchv, 3, 2)) }
         }
         let nd_glow = nd_gw * (1 + 0.4 * lv.level * nd_mu)
         let nd_sw = nb_w + if(nd_kind == 0 and nd_playing and nd_smu == 1, lv.level * 16 * nd_mu, 0)
@@ -1106,37 +1095,26 @@ scene Node {
                 clip box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r }
                 for m in lm {
                     let mx = nb_x + m.x
-                    text m.label { at: mx, nb_y + nb_h / 2; anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: if(m.kind == 1, nd_acc, fl.engrave); width: m.w; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }
-                    text m.label { at: mx + if(m.kind == 5, 10, 0), nb_y + nb_h / 2; anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - if(m.kind == 5, 10, 0); lines: 1; show: m.kind == 2 or m.kind == 5 }
-                    repeat wsd in 0..10 { ellipse { at: mx + 4 + wsd * 12, nb_y + nb_h / 2; radius: if(wsd == nd_lmwa, 3.5, 2); color: if(wsd == nd_lmwa, nd_acc, fl.muted); show: m.kind == 3 and wsd < nd_lmws } }
-                    box { from: mx + m.w - 3, nb_y + nb_h / 2 - 5; size: 2, 10 * nd_lmbat; color: if(nd_lmbat < 0.2, fl.ember, nd_acc); show: m.kind == 4 }
-                    ellipse { at: mx + 3, nb_y + nb_h / 2; radius: 2 + 2 * lv.level; color: nd_acc; show: m.kind == 5 }
-                    // D308: CPU, memory and volume carry a meter under their words
-                    box { from: mx, nb_y + nb_h / 2 + 8; size: m.w - 4, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }
-                    box { from: mx, nb_y + nb_h / 2 + 8; size: (m.w - 4) * max(0, m.lv), 2; corner: 1; color: if(m.lv > 0.85, fl.ember, nd_acc); show: m.lv >= 0 }
-                }
-                group { show: nd_fxc >= 0
-                    for q in ck { box { from: (nb_x + nd_fxc) + 8 + q.x * 2, (nb_y + nb_h / 2 - 11) + 4 + q.y * 2; size: 1.6, 1.6; color: nd_acc; opacity: 0.75 + 0.25 * nd_br; show: nd_cks == 0 } }
-                    text nd_ckd { at: (nb_x + nd_fxc) + pick(nd_cks, 74, 62, 30, 170, 56, 86) / 2, (nb_y + nb_h / 2 - 11) + 11; anchor: center; align: center; size: 13; weight: 700; family: "Share Tech Mono"; color: nd_acc; show: nd_cks == 1 }
-                    group { show: nd_cks == 2
-                        ellipse { at: (nb_x + nd_fxc) + 15, (nb_y + nb_h / 2 - 11) + 11; radius: 10; stroke: 1; color: nd_acc; opacity: 0.5 }
-                        line { from: (nb_x + nd_fxc) + 15, (nb_y + nb_h / 2 - 11) + 11; to: (nb_x + nd_fxc) + 15 + sin(nd_ckh) * 5, (nb_y + nb_h / 2 - 11) + 11 - cos(nd_ckh) * 5; width: 2; color: fl.engrave }
-                        line { from: (nb_x + nd_fxc) + 15, (nb_y + nb_h / 2 - 11) + 11; to: (nb_x + nd_fxc) + 15 + sin(nd_ckm) * 8, (nb_y + nb_h / 2 - 11) + 11 - cos(nd_ckm) * 8; width: 1.4; color: nd_acc } }
-                    text nd_ckw { at: (nb_x + nd_fxc) + 85, (nb_y + nb_h / 2 - 11) + 11; anchor: center; align: center; size: 10; family: "Exo 2"; color: fl.engrave; width: 160; lines: 1; show: nd_cks == 3 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 0 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb0, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 1 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb1, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 2 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb2, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 3 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb3, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 4 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb4, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 5 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 0 * 8; radius: 2.2; color: if(nd_cb5, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 0 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb6, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 1 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb7, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 2 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb8, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 3 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb9, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 4 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb10, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    ellipse { at: (nb_x + nd_fxc) + 9 + 5 * 7.6, (nb_y + nb_h / 2 - 11) + 7 + 1 * 8; radius: 2.2; color: if(nd_cb11, nd_acc, fl.trace_dim); show: nd_cks == 4 }
-                    repeat dh in 0..12 { ellipse { at: (nb_x + nd_fxc) + 8 + dh * 6.4, (nb_y + nb_h / 2 - 11) + 7; radius: 1.8; color: if(dh < nd_ckdh, nd_acc, fl.trace_dim); show: nd_cks == 5 } }
-                    repeat dm in 0..12 { ellipse { at: (nb_x + nd_fxc) + 8 + dm * 6.4, (nb_y + nb_h / 2 - 11) + 15; radius: 1.8; color: if(dm < nd_ckdm, fl.engrave, fl.trace_dim); show: nd_cks == 5 } }
+                    let mi = if(m.kind == 3 or m.kind == 5, 0, 16)
+                    text m.icon { at: mx + 6, (nb_y + nb_h / 2); anchor: center; align: center; size: 12; family: "CaskaydiaCove Nerd Font"; color: if(m.kind == 11 or (m.kind != 4 and m.lv > 0.85) or (m.kind == 4 and m.lv >= 0 and m.lv < 0.2), fl.ember, nd_acc); show: m.kind != 3 and m.kind != 5 }
+                    text m.label { at: mx + mi, (nb_y + nb_h / 2); anchor: left center; size: 11; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: m.w - mi; lines: 1; show: m.kind == 1 or m.kind == 4 or m.kind >= 6 }
+                    text m.label { at: mx + mi, (nb_y + nb_h / 2); anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - mi; lines: 1; show: m.kind == 2 }
+                    // the workspaces: numbered tiles
+                    repeat wsd in 0..10 {
+                        box { from: mx + wsd * 16 + if(wsd > nd_lmwa, 8, 0), (nb_y + nb_h / 2) - 7; size: if(wsd == nd_lmwa, 22, 14), 14; corner: 4; color: if(wsd == nd_lmwa, nd_acc, fl.trace_dim); opacity: if(wsd == nd_lmwa, 0.95, 0.55); show: m.kind == 3 and wsd < nd_lmws }
+                        text number(wsd + 1, 0, "") { at: mx + wsd * 16 + if(wsd > nd_lmwa, 8, 0) + if(wsd == nd_lmwa, 11, 7), (nb_y + nb_h / 2); anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(wsd == nd_lmwa, fl.ground, fl.engrave); show: m.kind == 3 and wsd < nd_lmws }
+                    }
+                    // the music: a visualiser and its title, the title alone, or the cover and title
+                    repeat mb in 0..6 { box { from: mx + mb * 4.5, (nb_y + nb_h / 2) + 6 - 2 - pick(mb, nd_sp2, nd_sp5, nd_sp8, nd_sp11, nd_sp14, nd_sp17) * 10; size: 3, 2 + pick(mb, nd_sp2, nd_sp5, nd_sp8, nd_sp11, nd_sp14, nd_sp17) * 10; corner: 1.5; color: nd_acc; opacity: 0.9; show: m.kind == 5 and nd_mmod == 0 } }
+                    ellipse { at: mx + 4, (nb_y + nb_h / 2); radius: 2 + 1.5 * lv.level; color: nd_acc; show: m.kind == 5 and nd_mmod == 1 }
+                    group { show: m.kind == 5 and nd_mmod == 2
+                        clip box { from: mx, (nb_y + nb_h / 2) - 9; size: 18, 18; corner: 4 }
+                        box { from: mx, (nb_y + nb_h / 2) - 9; size: 18, 18; color: nd_acc; opacity: 0.5 }
+                        image nd_cover { at: mx, (nb_y + nb_h / 2) - 9; size: 18, 18; fit: cover; show: nd_arted } }
+                    text m.label { at: mx + pick(nd_mmod, 34, 12, 24), (nb_y + nb_h / 2); anchor: left center; size: 10; family: "Exo 2"; color: fl.engrave; width: m.w - pick(nd_mmod, 34, 12, 24); lines: 1; show: m.kind == 5 }
+                    // a meter under the readings (CPU, memory, volume, the battery)
+                    box { from: mx + 16, (nb_y + nb_h / 2) + 8; size: m.w - 18, 2; corner: 1; color: fl.trace_dim; show: m.lv >= 0 }
+                    box { from: mx + 16, (nb_y + nb_h / 2) + 8; size: (m.w - 18) * max(0, m.lv), 2; corner: 1; color: if((m.kind != 4 and m.lv > 0.85) or (m.kind == 4 and m.lv < 0.2), fl.ember, nd_acc); show: m.lv >= 0 }
                 }
             }
         }
@@ -1196,12 +1174,6 @@ scene Node {
             repeat dr in 0..4 { repeat dc in 0..48 { ellipse { at: nb_x + (dc + 0.5) * nb_w / 48, nb_y + (dr + 0.5) * nb_h / 4; radius: 0.9; color: nd_acc; opacity: 0.18; show: nd_tex == 4 } } }
         }
         box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; stroke: nd_ol; color: nd_acc; opacity: if(nd_tex == 1, 0.9, 0.55); show: nd_kind > 0 and nd_ol > 0.05 }
-        // (D296) shimmer: a band of light crossing it, then a rest before the next (half of each turn is off it)
-        group { show: nd_shm > 0 and nd_cf > 0.05 and not nd_cap
-            clip box { from: nd_sx, nd_sy; size: nd_sw, nd_sh; corner: nd_sr }
-            group { blur: 4
-                box { from: nd_sx - 24 + (nd_sw + 48) * (mod(nd_shp, 360) / 180), nd_sy - 2; size: 14, nd_sh + 4; color: #ffffff; opacity: 0.28 * nd_cf } }
-        }
         // segmented: the outline breaks in three places; and a cyber node glitches on a change (a shifted ghost and a
         // scan line in the counter-signal)
         box { from: nb_x + nb_w * 0.3, nb_y - 1; size: nb_w * 0.12, nd_ol + 2; color: fl.ground; show: nd_tex == 2 and nd_kind > 0 }
@@ -1289,70 +1261,72 @@ scene Node {
                 box { from: nb_x + 6 + 31 * (nb_w - 12) / 32 + 1, nb_y + nb_h / 2 - (0.08 + nd_sp31 * 0.92) * (nb_h / 2 - 3); size: (nb_w - 12) / 32 - 2, (0.08 + nd_sp31 * 0.92) * (nb_h - 6); corner: max(0.5, ((nb_w - 12) / 32 - 2) / 2 * nd_rnd); color: nd_acc; opacity: 0.55 + 0.45 * nd_sp31 }
             }
         }
-        // the music as a record (D304): the pill carries the song and its controls, and a record rises half out of a
-        // slot along its lower edge — turning at 33⅓ while it plays, the cover for its label, grooves and rim in the
-        // theme's accent, the spectrum standing out round the half that shows
+        // the music as a record (D304; D310 after Spun): the pill carries the song and its controls, and a small record
+        // rises half out of a slot along its lower edge. Spun's look: near-black vinyl with fine grey grooves and a
+        // few deeper rings, the cover as a big label with its ridge and spindle hole, a light that stays still while
+        // the record turns under it (slowly: 30°/s), and a tonearm resting in the grooves
         group { show: nd_kind == 1 and nd_mf == 2; opacity: nd_cf
-            let vr = 82
+            let vr = 50
             let vx = nb_x + nb_w / 2
             let vy = nb_y + nb_h - vr * (1 - nd_cf)
             group {
-                clip box { from: vx - vr - 48, nb_y + nb_h; size: vr * 2 + 96, vr + 56 }
-                line { from: vx + cos((0 * 180 / 27)) * (vr + 4), vy + sin((0 * 180 / 27)) * (vr + 4); to: vx + cos((0 * 180 / 27)) * (vr + 6 + nd_sp0 * 30), vy + sin((0 * 180 / 27)) * (vr + 6 + nd_sp0 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp0 }
-                line { from: vx + cos((1 * 180 / 27)) * (vr + 4), vy + sin((1 * 180 / 27)) * (vr + 4); to: vx + cos((1 * 180 / 27)) * (vr + 6 + nd_sp1 * 30), vy + sin((1 * 180 / 27)) * (vr + 6 + nd_sp1 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp1 }
-                line { from: vx + cos((2 * 180 / 27)) * (vr + 4), vy + sin((2 * 180 / 27)) * (vr + 4); to: vx + cos((2 * 180 / 27)) * (vr + 6 + nd_sp2 * 30), vy + sin((2 * 180 / 27)) * (vr + 6 + nd_sp2 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp2 }
-                line { from: vx + cos((3 * 180 / 27)) * (vr + 4), vy + sin((3 * 180 / 27)) * (vr + 4); to: vx + cos((3 * 180 / 27)) * (vr + 6 + nd_sp3 * 30), vy + sin((3 * 180 / 27)) * (vr + 6 + nd_sp3 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp3 }
-                line { from: vx + cos((4 * 180 / 27)) * (vr + 4), vy + sin((4 * 180 / 27)) * (vr + 4); to: vx + cos((4 * 180 / 27)) * (vr + 6 + nd_sp4 * 30), vy + sin((4 * 180 / 27)) * (vr + 6 + nd_sp4 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp4 }
-                line { from: vx + cos((5 * 180 / 27)) * (vr + 4), vy + sin((5 * 180 / 27)) * (vr + 4); to: vx + cos((5 * 180 / 27)) * (vr + 6 + nd_sp5 * 30), vy + sin((5 * 180 / 27)) * (vr + 6 + nd_sp5 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp5 }
-                line { from: vx + cos((6 * 180 / 27)) * (vr + 4), vy + sin((6 * 180 / 27)) * (vr + 4); to: vx + cos((6 * 180 / 27)) * (vr + 6 + nd_sp6 * 30), vy + sin((6 * 180 / 27)) * (vr + 6 + nd_sp6 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp6 }
-                line { from: vx + cos((7 * 180 / 27)) * (vr + 4), vy + sin((7 * 180 / 27)) * (vr + 4); to: vx + cos((7 * 180 / 27)) * (vr + 6 + nd_sp7 * 30), vy + sin((7 * 180 / 27)) * (vr + 6 + nd_sp7 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp7 }
-                line { from: vx + cos((8 * 180 / 27)) * (vr + 4), vy + sin((8 * 180 / 27)) * (vr + 4); to: vx + cos((8 * 180 / 27)) * (vr + 6 + nd_sp8 * 30), vy + sin((8 * 180 / 27)) * (vr + 6 + nd_sp8 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp8 }
-                line { from: vx + cos((9 * 180 / 27)) * (vr + 4), vy + sin((9 * 180 / 27)) * (vr + 4); to: vx + cos((9 * 180 / 27)) * (vr + 6 + nd_sp9 * 30), vy + sin((9 * 180 / 27)) * (vr + 6 + nd_sp9 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp9 }
-                line { from: vx + cos((10 * 180 / 27)) * (vr + 4), vy + sin((10 * 180 / 27)) * (vr + 4); to: vx + cos((10 * 180 / 27)) * (vr + 6 + nd_sp10 * 30), vy + sin((10 * 180 / 27)) * (vr + 6 + nd_sp10 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp10 }
-                line { from: vx + cos((11 * 180 / 27)) * (vr + 4), vy + sin((11 * 180 / 27)) * (vr + 4); to: vx + cos((11 * 180 / 27)) * (vr + 6 + nd_sp11 * 30), vy + sin((11 * 180 / 27)) * (vr + 6 + nd_sp11 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp11 }
-                line { from: vx + cos((12 * 180 / 27)) * (vr + 4), vy + sin((12 * 180 / 27)) * (vr + 4); to: vx + cos((12 * 180 / 27)) * (vr + 6 + nd_sp12 * 30), vy + sin((12 * 180 / 27)) * (vr + 6 + nd_sp12 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp12 }
-                line { from: vx + cos((13 * 180 / 27)) * (vr + 4), vy + sin((13 * 180 / 27)) * (vr + 4); to: vx + cos((13 * 180 / 27)) * (vr + 6 + nd_sp13 * 30), vy + sin((13 * 180 / 27)) * (vr + 6 + nd_sp13 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp13 }
-                line { from: vx + cos((14 * 180 / 27)) * (vr + 4), vy + sin((14 * 180 / 27)) * (vr + 4); to: vx + cos((14 * 180 / 27)) * (vr + 6 + nd_sp14 * 30), vy + sin((14 * 180 / 27)) * (vr + 6 + nd_sp14 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp14 }
-                line { from: vx + cos((15 * 180 / 27)) * (vr + 4), vy + sin((15 * 180 / 27)) * (vr + 4); to: vx + cos((15 * 180 / 27)) * (vr + 6 + nd_sp15 * 30), vy + sin((15 * 180 / 27)) * (vr + 6 + nd_sp15 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp15 }
-                line { from: vx + cos((16 * 180 / 27)) * (vr + 4), vy + sin((16 * 180 / 27)) * (vr + 4); to: vx + cos((16 * 180 / 27)) * (vr + 6 + nd_sp16 * 30), vy + sin((16 * 180 / 27)) * (vr + 6 + nd_sp16 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp16 }
-                line { from: vx + cos((17 * 180 / 27)) * (vr + 4), vy + sin((17 * 180 / 27)) * (vr + 4); to: vx + cos((17 * 180 / 27)) * (vr + 6 + nd_sp17 * 30), vy + sin((17 * 180 / 27)) * (vr + 6 + nd_sp17 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp17 }
-                line { from: vx + cos((18 * 180 / 27)) * (vr + 4), vy + sin((18 * 180 / 27)) * (vr + 4); to: vx + cos((18 * 180 / 27)) * (vr + 6 + nd_sp18 * 30), vy + sin((18 * 180 / 27)) * (vr + 6 + nd_sp18 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp18 }
-                line { from: vx + cos((19 * 180 / 27)) * (vr + 4), vy + sin((19 * 180 / 27)) * (vr + 4); to: vx + cos((19 * 180 / 27)) * (vr + 6 + nd_sp19 * 30), vy + sin((19 * 180 / 27)) * (vr + 6 + nd_sp19 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp19 }
-                line { from: vx + cos((20 * 180 / 27)) * (vr + 4), vy + sin((20 * 180 / 27)) * (vr + 4); to: vx + cos((20 * 180 / 27)) * (vr + 6 + nd_sp20 * 30), vy + sin((20 * 180 / 27)) * (vr + 6 + nd_sp20 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp20 }
-                line { from: vx + cos((21 * 180 / 27)) * (vr + 4), vy + sin((21 * 180 / 27)) * (vr + 4); to: vx + cos((21 * 180 / 27)) * (vr + 6 + nd_sp21 * 30), vy + sin((21 * 180 / 27)) * (vr + 6 + nd_sp21 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp21 }
-                line { from: vx + cos((22 * 180 / 27)) * (vr + 4), vy + sin((22 * 180 / 27)) * (vr + 4); to: vx + cos((22 * 180 / 27)) * (vr + 6 + nd_sp22 * 30), vy + sin((22 * 180 / 27)) * (vr + 6 + nd_sp22 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp22 }
-                line { from: vx + cos((23 * 180 / 27)) * (vr + 4), vy + sin((23 * 180 / 27)) * (vr + 4); to: vx + cos((23 * 180 / 27)) * (vr + 6 + nd_sp23 * 30), vy + sin((23 * 180 / 27)) * (vr + 6 + nd_sp23 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp23 }
-                line { from: vx + cos((24 * 180 / 27)) * (vr + 4), vy + sin((24 * 180 / 27)) * (vr + 4); to: vx + cos((24 * 180 / 27)) * (vr + 6 + nd_sp24 * 30), vy + sin((24 * 180 / 27)) * (vr + 6 + nd_sp24 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp24 }
-                line { from: vx + cos((25 * 180 / 27)) * (vr + 4), vy + sin((25 * 180 / 27)) * (vr + 4); to: vx + cos((25 * 180 / 27)) * (vr + 6 + nd_sp25 * 30), vy + sin((25 * 180 / 27)) * (vr + 6 + nd_sp25 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp25 }
-                line { from: vx + cos((26 * 180 / 27)) * (vr + 4), vy + sin((26 * 180 / 27)) * (vr + 4); to: vx + cos((26 * 180 / 27)) * (vr + 6 + nd_sp26 * 30), vy + sin((26 * 180 / 27)) * (vr + 6 + nd_sp26 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp26 }
-                line { from: vx + cos((27 * 180 / 27)) * (vr + 4), vy + sin((27 * 180 / 27)) * (vr + 4); to: vx + cos((27 * 180 / 27)) * (vr + 6 + nd_sp27 * 30), vy + sin((27 * 180 / 27)) * (vr + 6 + nd_sp27 * 30); width: 3; color: nd_acc; opacity: 0.3 + 0.65 * nd_sp27 }
-                group { glow: 18, 0.3 + 0.3 * nd_gw, nd_glc
-                    ellipse { at: vx, vy; radius: vr; color: mix(#0a0a0c, nd_acc, 0.07) } }
-                ellipse { at: vx, vy; radius: vr * 0.950; stroke: 1.1; color: nd_acc; opacity: 0.12 }
-                ellipse { at: vx, vy; radius: vr * 0.888; stroke: 0.6; color: nd_acc; opacity: 0.07 }
-                ellipse { at: vx, vy; radius: vr * 0.826; stroke: 0.6; color: nd_acc; opacity: 0.07 }
-                ellipse { at: vx, vy; radius: vr * 0.764; stroke: 1.1; color: nd_acc; opacity: 0.12 }
-                ellipse { at: vx, vy; radius: vr * 0.702; stroke: 0.6; color: nd_acc; opacity: 0.07 }
-                ellipse { at: vx, vy; radius: vr * 0.640; stroke: 0.6; color: nd_acc; opacity: 0.07 }
-                ellipse { at: vx, vy; radius: vr * 0.578; stroke: 1.1; color: nd_acc; opacity: 0.12 }
-                ellipse { at: vx, vy; radius: vr * 0.516; stroke: 0.6; color: nd_acc; opacity: 0.07 }
-                ellipse { at: vx, vy; radius: vr * 0.454; stroke: 0.6; color: nd_acc; opacity: 0.07 }
-                ellipse { at: vx, vy; radius: vr - 0.5; stroke: 1; color: nd_acc; opacity: 0.45 }
+                clip box { from: vx - vr - 40, nb_y + nb_h; size: vr * 2 + 80, vr + 40 }
+                // its shadow on what is under it, then the body: dark, a touch lighter in the middle of the grooves
+                group { blur: 10
+                    ellipse { at: vx, vy + 4; radius: vr + 2; color: #000000; opacity: 0.45 } }
+                ellipse { at: vx, vy; radius: vr; color: #121317 }
+                ellipse { at: vx, vy; radius: vr * 0.9; stroke: vr * 0.36; color: #17181c; opacity: 0.9 }
+                ellipse { at: vx, vy; radius: vr * 0.430; stroke: 0.6; color: #b4b9c3; opacity: 0.075 }
+                ellipse { at: vx, vy; radius: vr * 0.466; stroke: 0.6; color: #b4b9c3; opacity: 0.102 }
+                ellipse { at: vx, vy; radius: vr * 0.495; stroke: 0.6; color: #b4b9c3; opacity: 0.064 }
+                ellipse { at: vx, vy; radius: vr * 0.521; stroke: 0.6; color: #b4b9c3; opacity: 0.057 }
+                ellipse { at: vx, vy; radius: vr * 0.548; stroke: 0.6; color: #b4b9c3; opacity: 0.059 }
+                ellipse { at: vx, vy; radius: vr * 0.583; stroke: 0.6; color: #b4b9c3; opacity: 0.109 }
+                ellipse { at: vx, vy; radius: vr * 0.621; stroke: 0.6; color: #b4b9c3; opacity: 0.073 }
+                ellipse { at: vx, vy; radius: vr * 0.655; stroke: 0.6; color: #b4b9c3; opacity: 0.091 }
+                ellipse { at: vx, vy; radius: vr * 0.687; stroke: 0.6; color: #b4b9c3; opacity: 0.054 }
+                ellipse { at: vx, vy; radius: vr * 0.728; stroke: 0.6; color: #b4b9c3; opacity: 0.087 }
+                ellipse { at: vx, vy; radius: vr * 0.756; stroke: 0.6; color: #b4b9c3; opacity: 0.054 }
+                ellipse { at: vx, vy; radius: vr * 0.783; stroke: 0.6; color: #b4b9c3; opacity: 0.108 }
+                ellipse { at: vx, vy; radius: vr * 0.811; stroke: 0.6; color: #b4b9c3; opacity: 0.088 }
+                ellipse { at: vx, vy; radius: vr * 0.855; stroke: 0.6; color: #b4b9c3; opacity: 0.052 }
+                ellipse { at: vx, vy; radius: vr * 0.888; stroke: 0.6; color: #b4b9c3; opacity: 0.079 }
+                ellipse { at: vx, vy; radius: vr * 0.930; stroke: 0.6; color: #b4b9c3; opacity: 0.061 }
+                ellipse { at: vx, vy; radius: vr * 0.961; stroke: 0.6; color: #b4b9c3; opacity: 0.065 }
+                ellipse { at: vx, vy; radius: vr * 0.49; stroke: 1.4; color: #020305; opacity: 0.5 }
+                ellipse { at: vx, vy; radius: vr * 0.62; stroke: 1.4; color: #020305; opacity: 0.5 }
+                ellipse { at: vx, vy; radius: vr * 0.76; stroke: 1.4; color: #020305; opacity: 0.5 }
+                ellipse { at: vx, vy; radius: vr * 0.91; stroke: 1.4; color: #020305; opacity: 0.5 }
+                ellipse { at: vx, vy; radius: vr - 1.2; stroke: 1.6; color: #010203; opacity: 0.75 }
+                ellipse { at: vx, vy; radius: vr - 0.3; stroke: 0.8; color: #96a3ae; opacity: 0.25 }
+                // the label turns: the cover (or the accent, with none), its ridge and the spindle
                 group { pivot: vx, vy; rotate: nd_vrot
-                    // two sheens across the grooves, which is what makes a record read as turning
-                    arc { at: vx, vy; radius: vr * 0.68; span: 38deg; rotate: -30deg; width: vr * 0.5; color: #ffffff; opacity: 0.06 }
-                    arc { at: vx, vy; radius: vr * 0.68; span: 38deg; rotate: 150deg; width: vr * 0.5; color: #ffffff; opacity: 0.045 }
-                    group { clip ellipse { at: vx, vy; radius: vr * 0.36 }
-                        ellipse { at: vx, vy; radius: vr * 0.36; color: nd_acc }
-                        image nd_cover { at: vx - vr * 0.36, vy - vr * 0.36; size: vr * 0.72, vr * 0.72; fit: cover; show: nd_arted } }
-                    ellipse { at: vx, vy; radius: vr * 0.36; stroke: 1.5; color: nd_acc; opacity: 0.8 }
-                    ellipse { at: vx + vr * 0.27, vy; radius: 2; color: fl.ground; opacity: 0.7; show: not nd_arted }
+                    group { clip ellipse { at: vx, vy; radius: vr * 0.4 }
+                        ellipse { at: vx, vy; radius: vr * 0.4; color: mix(#15161a, nd_acc, 0.55) }
+                        image nd_cover { at: vx - vr * 0.4, vy - vr * 0.4; size: vr * 0.8, vr * 0.8; fit: cover; show: nd_arted } }
+                    ellipse { at: vx + vr * 0.25, vy - vr * 0.12; radius: 1.6; color: #ffffff; opacity: 0.35; show: not nd_arted }
                 }
-                ellipse { at: vx, vy; radius: 3.5; color: fl.ground }
+                ellipse { at: vx, vy; radius: vr * 0.4 + 0.8; stroke: 1.5; color: #000000; opacity: 0.5 }
+                ellipse { at: vx, vy; radius: vr * 0.145; stroke: 0.9; color: #000000; opacity: 0.35 }
+                ellipse { at: vx, vy; radius: vr * 0.15; stroke: 0.6; color: #ffffff; opacity: 0.12 }
+                ellipse { at: vx, vy; radius: 2.4; color: #0b0c0f }
+                ellipse { at: vx, vy; radius: 3.2; stroke: 0.8; color: #ffffff; opacity: 0.18 }
+                // the still light: two soft sheens across the grooves that do not turn with them
+                arc { at: vx, vy; radius: vr * 0.7; span: 26deg; rotate: 128deg; width: vr * 0.5; color: #cbd8e5; opacity: 0.045 }
+                arc { at: vx, vy; radius: vr * 0.7; span: 22deg; rotate: 232deg; width: vr * 0.5; color: #f4e9d6; opacity: 0.035 }
+                // the tonearm: a pivot past the rim, its arm down to the needle in the outer grooves
+                let tpx = vx + vr * 1.12
+                let tpy = vy + vr * 0.3
+                let tnx = vx + vr * 0.62
+                let tny = vy + vr * 0.56
+                line { from: tpx, tpy; to: tnx, tny; width: 2.2; color: mix(nd_acc, #d8c9a0, 0.35) }
+                box { from: tnx - 3, tny - 2.5; size: 7, 5; corner: 1.5; color: mix(nd_acc, #d8c9a0, 0.35) }
+                ellipse { at: tpx, tpy; radius: 4.5; color: #1b1c21 }
+                ellipse { at: tpx, tpy; radius: 4.5; stroke: 1.2; color: mix(nd_acc, #d8c9a0, 0.35) }
             }
             // the slot it comes out of, lit in the accent
-            group { glow: 8, 0.6 * nd_gw, nd_acc
-                line { from: vx - vr - 8, nb_y + nb_h; to: vx + vr + 8, nb_y + nb_h; width: 2; color: nd_acc; opacity: 0.7 } }
+            group { glow: 6, 0.4 * nd_gw, nd_acc
+                line { from: vx - vr - 6, nb_y + nb_h; to: vx + vr + 6, nb_y + nb_h; width: 1.5; color: nd_acc; opacity: 0.6 } }
         }
         // the panel (D260): one rounded body, grown straight down out of the pill
         group { show: nd_kind == 13; opacity: nd_cf

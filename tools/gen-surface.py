@@ -390,6 +390,8 @@ def push_layers():
           "    fact lt_sx = 0", "    fact lt_sy = 0", "    fact lt_tx = 0", "    fact lt_ty = 0",
           "    fact lt_rx = 0", "    fact lt_ry = 0", "    fact lt_rw = 1", "    fact lt_rh = 1",
           "    fact lt_win = false   // a window to travel to",
+          "    fact lt_fon = false   // D310: no window — the frame's border instead, from the top's middle down both sides",
+          "    fact lt_fx = 0", "    fact lt_fy = 0", "    fact lt_fw = 1", "    fact lt_fh = 1", "    fact lt_fr = 0",
           "    fact lt_so = 0        // the side the line meets: 0 top · 1 right · 2 bottom · 3 left (the trace starts there)",
           "    fact lt_n = 1         // a burst: how many",
           "    fact lt_st = 0", "    fact lt_tt = 0", "    fact lt_bt = 0", "    fact lt_kt = 0",
@@ -444,14 +446,44 @@ def push_layers():
     for i, (x0, y0, x1, y1) in enumerate(sides):
         p = f"lt_p{i}"
         L += [f"            line {{ from: {x0}, {y0}; to: {x1.format(p=p)}, {y1.format(p=p)}; width: 2; color: {WARM}; show: {p} > 0.001 }}"]
-    L += ["        }",
-          "        // the spark, and how many came at once",
+    L += ["        }"]
+    L += frame_light()
+    L += ["        // the spark, and how many came at once",
           f"        group {{ glow: 14, 0.9 * lt_s, {WARM}",
           f"            ellipse {{ at: lt_sx, lt_sy; radius: 3 + 3 * lt_s; color: {WARM}; opacity: lt_s }} }}",
           "        text \"{lt_n}\" { at: lt_sx + 12, lt_sy - 10; anchor: left center; size: 10; weight: 700; family: \"Share Tech Mono\"; color: rgb(0.95, 0.62, 0.38); opacity: lt_s; show: lt_n > 1.5 }",
           "        zone box lt_z { from: lt_sx - 14, lt_sy - 14; size: 28, 28; cursor: pointer; role: button; label: \"Open the notices\"; show: lt_s > 0.2 }",
           "        on press lt_z { emit lt_go }",
           "    }"]
+    return L
+
+
+def frame_light():
+    """D310: with no window to reach, the light pours out of the frame's top middle (where the Pill hangs) and runs
+    down both sides of its inner border — straight bands and rounded corners — to meet at the bottom."""
+    W = WARM
+    L = ["        // D310: the frame's border, lit from the top's middle down both sides, meeting at the foot",
+         "        let lf_q = max(0.001, 1.5708 * lt_fr)",
+         "        let lf_a = max(0.001, lt_fw / 2 - lt_fr)",
+         "        let lf_b = max(0.001, lt_fh - 2 * lt_fr)",
+         "        let lf_d = lt_b * (2 * lf_a + 2 * lf_q + lf_b)",
+         "        let lf_1 = clamp(lf_d / lf_a, 0, 1)",
+         "        let lf_2 = clamp((lf_d - lf_a) / lf_q, 0, 1)",
+         "        let lf_3 = clamp((lf_d - lf_a - lf_q) / lf_b, 0, 1)",
+         "        let lf_4 = clamp((lf_d - lf_a - lf_q - lf_b) / lf_q, 0, 1)",
+         "        let lf_5 = clamp((lf_d - lf_a - 2 * lf_q - lf_b) / lf_a, 0, 1)",
+         "        let lf_cx = lt_fx + lt_fw / 2",
+         f"        group {{ glow: 12, 0.8, {W}; opacity: lt_k; show: lt_fon and lt_b > 0.001"]
+    for sgn in (1, -1):
+        X = (lambda e: f"lf_cx + ({e})") if sgn == 1 else (lambda e: f"lf_cx - ({e})")
+        rot = "" if sgn == 1 else "-"
+        L += [
+            f"            line {{ from: lf_cx, lt_fy; to: {X('lf_a * lf_1')}, lt_fy; width: 2; color: {W}; show: lf_1 > 0.001 }}",
+            f"            arc {{ at: {X('lt_fw / 2 - lt_fr')}, lt_fy + lt_fr; radius: lt_fr; span: lf_2 * 90deg; rotate: {rot}(lf_2 * 45deg); width: 2; color: {W}; show: lf_2 > 0.001 and lt_fr > 0.5 }}",
+            f"            line {{ from: {X('lt_fw / 2')}, lt_fy + lt_fr; to: {X('lt_fw / 2')}, lt_fy + lt_fr + lf_b * lf_3; width: 2; color: {W}; show: lf_3 > 0.001 }}",
+            f"            arc {{ at: {X('lt_fw / 2 - lt_fr')}, lt_fy + lt_fh - lt_fr; radius: lt_fr; span: lf_4 * 90deg; rotate: {rot}(90deg + lf_4 * 45deg); width: 2; color: {W}; show: lf_4 > 0.001 and lt_fr > 0.5 }}",
+            f"            line {{ from: {X('lt_fw / 2 - lt_fr')}, lt_fy + lt_fh; to: {X('lt_fw / 2 - lt_fr - lf_a * lf_5')}, lt_fy + lt_fh; width: 2; color: {W}; show: lf_5 > 0.001 }}"]
+    L += ["        }"]
     return L
 
 

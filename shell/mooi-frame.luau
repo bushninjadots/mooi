@@ -175,6 +175,13 @@ local function place()
     fact.covL = chassis.covers(pieces, look, "left")
     fact.covR = chassis.covers(pieces, look, "right")
     fact.pfoot = chassis.foot(look)
+    -- D310: a corner notch of the Pill's covers its corner — the frame turns at that notch's foot
+    local cf = 0
+    for _, side in ipairs({ "left", "right" }) do
+        local c = type(node_geo) == "table" and type(node_geo[side]) == "table" and node_geo[side] or nil
+        if c then cf = math.max(cf, tonumber(c.h) or 0) end
+    end
+    if cf > 0 then fact.pfoot = cf - 3 end
     fact.troom = look.top_room
     fact.btop = look.top_band
     fact.battach = look.attach == true

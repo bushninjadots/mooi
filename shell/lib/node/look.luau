@@ -22,6 +22,8 @@ M.SCHEMA = {
     Pill = {
         choice("place", "Place", "Floating at the top; attached to the frame's border as one body with it (a notch); or attached only while music plays", { "floating", "attached", "music" }, { "Floating", "Attached", "While music plays" }),
         choice("clock_style", "Clock seed", "How the clock seed tells the time (Shape → Seed → Clock)", { "pixel", "digital", "analog", "words", "binary", "dots" }, { "Pixel", "Digits", "Hands", "Words", "Binary", "Dots" }),
+        -- D310: the Music module's look, wherever it is placed (the pill or a corner)
+        choice("music_mod", "Music module", "The Music module: a visualiser beside the title, the title alone, or the album cover with the title", { "bars", "title", "cover" }, { "Visualiser", "Title", "Cover" }),
     },
     Shape = {
         choice("seed", "Seed", "What rests at the top while nothing happens", { "line", "dot", "ring", "twin", "bar", "clock", "bmo", "orb", "comet" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock", "BMO", "Orb", "Comet" }),
@@ -38,8 +40,6 @@ M.SCHEMA = {
         range("glow", "Glow", "How much light it gives off", 0, 100, "%"),
         choice("accent", "Colour", "Its own colour, from the palette", { "phos", "ember", "ink", "steel" }, { "Signal", "Ember", "Ink", "Steel" }),
         choice("glow_colour", "Glow colour", "The light's colour", { "phos", "ember", "ink", "steel" }, { "Signal", "Ember", "Ink", "Steel" }),
-        -- D296: a band of light that sweeps across it now and then
-        choice("shimmer", "Shimmer", "A band of light crossing it now and then", { "off", "slow", "fast" }, { "Off", "Slow", "Fast" }),
     },
     Motion = {
         choice("speed", "Speed", "How quickly it changes shape", { "soft", "quick", "snap" }, { "Soft", "Quick", "Snap" }),
@@ -70,9 +70,9 @@ local BASE = {
     seed = "line", seed_w = 22, seed_h = 6, round = 100, style = "organic", top = 8,
     texture = "solid", fill = 95, outline = 10, glow = 70, accent = "phos", glow_colour = "phos",
     speed = "soft", bounce = "lots", growth = "normal", stagger = 50, breath = 35, music = 60,
-    viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse",
+    viz = "bars", cover = "square", music_form = "capsule", seed_music = "pulse", music_mod = "bars",
     place = "floating", clock_style = "pixel", ws_style = "bead", reactions = "subtle", cards = 3, dim = 28, orbit = 520,
-    shimmer = "off", trail = "off",
+    trail = "off",
 }
 local PRESET = {
     organic = {},
@@ -84,11 +84,11 @@ local PRESET = {
               glow_colour = "ember", speed = "snap", bounce = "some", stagger = 80, breath = 20, music = 80, viz = "wave" },
     -- D296: two more characters to start from
     liquid = { seed = "orb", seed_w = 14, seed_h = 14, round = 100, texture = "glass", fill = 80, glow = 55, outline = 8,
-               speed = "soft", bounce = "lots", growth = "normal", stagger = 40, breath = 50, music = 70, shimmer = "slow",
+               speed = "soft", bounce = "lots", growth = "normal", stagger = 40, breath = 50, music = 70,
                trail = "on", reactions = "lively", viz = "wave", cover = "round" },
     neon = { seed = "comet", seed_w = 34, seed_h = 6, round = 100, style = "cyber", texture = "neon", fill = 90, outline = 20,
              glow = 100, accent = "phos", glow_colour = "phos", speed = "quick", bounce = "some", stagger = 60, breath = 25,
-             music = 90, shimmer = "fast", reactions = "sparks", viz = "bars" },
+             music = 90, reactions = "sparks", viz = "bars" },
 }
 
 local function find(key)
@@ -232,15 +232,14 @@ local function applicable(t, row)
         if form ~= "seed" then return false, seedless end
     end
     if row.key == "clock_style" then
-        -- D308: a clock face placed in any list (the pill's or a corner's) wears this style too
-        local faced = false
+        if form ~= "seed" or t.seed ~= "clock" then return false, "Only the clock seed tells the time this way (Shape → Seed → Clock)." end
+    end
+    if row.key == "music_mod" then
+        local placed = false
         for _, side in ipairs({ "modules", "left", "right" }) do
-            for _, k in ipairs(type(t[side]) == "table" and t[side] or {}) do if k == "face" then faced = true end end
+            for _, k in ipairs(type(t[side]) == "table" and t[side] or {}) do if k == "music" then placed = true end end
         end
-        if not faced then
-            if form ~= "seed" then return false, "Add the Clock face module, or use the clock seed." end
-            if t.seed ~= "clock" then return false, "Only the clock seed or a Clock face module tells the time." end
-        end
+        if not placed then return false, "Add the Music module to the pill or a corner first." end
     end
     if row.key == "top" and t.place == "attached" then return false, "Attached, its top is the frame's." end
     if row.key == "round" and form == "notch" then return false, "A notch takes its corners from the frame." end
@@ -265,10 +264,10 @@ function M.rows(t, tab)
 end
 
 -- the modules a long pill or a notch can hold (D257), and the word each wears in the studio
-M.MODULES = { "spaces", "window", "music", "clock", "date", "battery", "cpu", "ram", "volume", "weather", "notices", "face" }
+M.MODULES = { "spaces", "window", "music", "clock", "date", "battery", "cpu", "ram", "volume", "weather", "notices" }
 M.MODULE_NAMES = { spaces = "Workspaces", window = "Window", music = "Music", clock = "Clock", date = "Date",
                    battery = "Battery", cpu = "CPU", ram = "Memory", volume = "Volume", weather = "Weather",
-                   notices = "Notices", face = "Clock face" }   -- D308: the clock seed as a module, in any list
+                   notices = "Notices" }   -- (D310: the Clock face module, D308, is gone: the Clock module tells the time)
 M.MODULES_MAX = 6
 M.MODULES_DEFAULT = { "spaces", "window", "music", "clock" }
 -- a list made sane: known names, each once, at most MODULES_MAX, in the order given (none is none: a seed)
@@ -350,7 +349,7 @@ function M.facts(t)
         nd_np = ix(M.PRESETS, t.style), nd_sp = M.spring_index(t), nd_gs = ix(M.GROWTHS, t.growth),
         nd_seed = ix({ "line", "dot", "ring", "twin", "bar", "clock", "bmo", "orb", "comet" }, t.seed), nd_rnd = t.round / 100,
         nd_tex = ix({ "solid", "hollow", "segmented", "scan", "dotted", "glass", "neon", "aurora" }, t.texture), nd_fill = t.fill / 100,
-        nd_shm = ix({ "off", "slow", "fast" }, t.shimmer), nd_trl = ix({ "off", "on" }, t.trail),
+        nd_trl = ix({ "off", "on" }, t.trail), nd_mmod = ix({ "bars", "title", "cover" }, t.music_mod),
         nd_ol = t.outline / 10, nd_gw = t.glow / 100, nd_ac = ix(COLOURS, t.accent), nd_gc = ix(COLOURS, t.glow_colour),
         nd_stg = t.stagger / 100, nd_bd = t.breath / 100, nd_mu = t.music / 100,
         nd_viz = ix({ "bars", "wave", "dots", "off" }, t.viz), nd_cov = ix({ "square", "round" }, t.cover),
