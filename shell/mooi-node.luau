@@ -455,7 +455,9 @@ render = function()
     fact.nd_att = attached and kind ~= "rest"
     fact.nd_fb = fb
     local anchor = studio and "centre" or (N.from_corner or look.side or "centre")
-    local data = { n = #N.ws.list, page = N.panel, notices = math.min(3, #N.notices) }
+    local grid = #N.results > 0
+    for _, a in ipairs(N.results) do if a.kind ~= "app" then grid = false end end
+    local data = { n = #N.ws.list, page = N.panel, notices = math.min(3, #N.notices), results = (kind == "launcher") and #N.results or 0, grid = grid }
     -- at rest with something running, the seed is the time capsule
     local cap = (not studio and kind == "rest") and TK.capsule(N.time, wall()) or nil
     -- the music in the form the look chose (D246): a capsule, a visualiser strip, or a record (always round)
@@ -467,7 +469,11 @@ render = function()
     if N.near and not studio and kind ~= "rest" and kind ~= "universe" and not attached then b.x = math.max(0, math.min(N.scr.w - b.w, b.x + (N.lean or 0) * 24)) end
     -- D312: attached, what opens is never smaller than the notch it grows out of (a gauge, 16 tall, sat inside it
     -- and nothing seemed to grow); centred on it
-    if attached and form == "notch" and not N.from_corner and kind ~= "rest" and kind ~= "universe" and N.rest_notch then
+    if attached and form == "notch" and not N.from_corner and kind == "notice" and N.rest_notch then
+        -- a notice's stem comes straight out of the notch: its body is the notch itself
+        local rn = N.rest_notch
+        b.x, b.w, b.h, b.r = rn.x, rn.w, math.max(10, rn.h - fb), rn.r
+    elseif attached and form == "notch" and not N.from_corner and kind ~= "rest" and kind ~= "universe" and N.rest_notch then
         local rn = N.rest_notch
         if b.h < rn.h + 6 then b.h = rn.h + 6 end
         if b.w < rn.w + 24 then b.x, b.w = b.x - (rn.w + 24 - b.w) / 2, rn.w + 24 end
@@ -2245,7 +2251,7 @@ local function studio_rows()
         model.sk = LK.rows(N.look, tab)
     end
     -- D257: the module editor, on the Rest page
-    if tab == "Layout" then
+    if tab == "Modules" then
         local inl, has, rest = {}, {}, {}
         fact.nd_mside = ({ modules = 0, left = 1, right = 2 })[N.mod_side or "modules"] or 0
         for i, k in ipairs(LK.modules(N.look[N.mod_side or "modules"])) do inl[i] = { label = string.upper(LK.MODULE_NAMES[k]) }; has[k] = true end

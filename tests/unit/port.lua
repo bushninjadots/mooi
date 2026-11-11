@@ -1008,7 +1008,8 @@ do
     end)
     test("the launcher: the apps as a grid of large icons; a window wears its app's icon; launching, the app's tile", function()
         local g = G.results({ x = 100, y = 0, w = 600, h = 46 }, 12, true)
-        eq(#g, 12); eq(g[7].x, 100); eq(g[7].y, g[1].y + 104); eq(g[1].h, 96)
+        eq(#g, 12); eq(g[7].x, 110); eq(g[7].y, g[1].y + 104); eq(g[1].h, 96)
+        eq(G.body("launcher", { w = 1920 }, "centre", nil, { results = 12, grid = true }).h, 46 + 2 * 104 + 10, "D313: one body holds the grid")
         eq(G.results({ x = 0, y = 0, w = 600, h = 46 }, 2)[2].h, 42, "typed: rows")
         eq(G.body("launch", { w = 1920 }, "centre", nil, {}).r, 20)
         assert(ST.PRIORITY.launch > ST.PRIORITY.launcher and ST.LIFE.launch)
@@ -1051,8 +1052,8 @@ do
         for line in read("shell/mooi-node.luau"):gmatch("[^\n]+") do if line:match("^local ") then n = n + 1 end end
         assert(n < 195, "top-level locals: " .. n .. " (Luau allows 200)")
     end)
-    test("the studio in six pages; Side is the look's, and an old look takes Settings' side", function()
-        eq(table.concat(LK.TABS, ","), "Presets,Layout,Shape,Surface,Motion,Music")
+    test("the studio in seven pages, the modules on their own; Side is the look's, and an old look takes Settings' side", function()
+        eq(table.concat(LK.TABS, ","), "Presets,Layout,Modules,Shape,Surface,Motion,Music")
         for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab) end
         eq(LK.normalise({}).side, "centre"); eq(LK.normalise({ side = "left" }).side, "left")
         eq(LK.find("accent").names[1], "Accent")

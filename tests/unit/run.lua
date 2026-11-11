@@ -6315,7 +6315,8 @@ do
         eq(power.w, home.w, "every page the same width"); assert(power.h < home.h, "a shorter page")
         eq(G.body("panel", scr, "centre", shp("organic"), { page = "nonsense" }).h, G.PANEL_H.home, "an unknown page: home")
         local rows = G.results(G.body("launcher", scr, "centre", shp("organic"), {}), 6)
-        eq(#rows, 6); eq(rows[1].x, G.body("launcher", scr, "centre", shp("organic"), {}).x)
+        eq(#rows, 6); eq(rows[1].x, G.body("launcher", scr, "centre", shp("organic"), {}).x + 8, "D313: inside the one body")
+        eq(G.body("launcher", scr, "centre", shp("organic"), { results = 6 }).h, 46 + 6 * 46 + 6, "it grows to hold them")
     end)
     test("look: presets are complete and sane; any file is made sane; the old Settings personality seeds it", function()
         for _, p in ipairs(LK.PRESETS) do
@@ -6782,7 +6783,7 @@ do
         eq(LK.form(LK.normalise({ place = "attached" })), "notch")
         eq(LK.form(LK.normalise({ rest = "seed", modules = { "clock", "weather" } })), "long", "modules someone added are kept and shown")
         eq(LK.normalise({ rest = "notch" }).place, "attached", "a notch from before is attached")
-        eq(#LK.SCHEMA.Layout, 7, "D313: where it is and what it holds; the modules have an editor of their own beside them")
+        eq(#LK.SCHEMA.Modules, 1, "D313: the Music module's look, the editor below it")
         for _, tab in ipairs(LK.TABS) do assert(#(LK.SCHEMA[tab] or {}) <= 7, tab) end
     end)
     test("the pill is as wide as what it holds; the window is told by the service, not asked (D313)", function()

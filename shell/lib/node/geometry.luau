@@ -2,7 +2,7 @@
 -- that grow from it (the rail's stops, the notices' cards, the system's spokes, the launcher's rows). A personality
 -- (its look) changes corners, the seed and the top, never the layout's logic. Everything is kept on the screen.
 
-local M = { MARGIN = 16, TOP = 8 }
+local M = { MARGIN = 16, TOP = 8, GRID_COLS = 6 }
 
 local SIZE = {
     rest = { 22, 6 }, media = { 440, 64 }, notice = { 180, 10 }, volume = { 280, 16 },
@@ -31,6 +31,13 @@ function M.body(kind, scr, anchor, shape, data)
         w, h = n * 56 + 28, 30
     elseif kind == "rest" then
         w, h = tonumber(shape.seed_w) or 22, tonumber(shape.seed_h) or 6
+    elseif kind == "launcher" then
+        -- D313: one body that holds its results: the search line (46), then a grid of tiles (104 a row) or rows (46)
+        w, h = 600, 46
+        local n = math.max(0, math.floor(tonumber(data.results) or 0))
+        if n > 0 then
+            if data.grid then h = 46 + math.ceil(n / M.GRID_COLS) * 104 + 10 else h = 46 + n * 46 + 6 end
+        end
     elseif kind == "panel" then
         w, h = M.PANEL_W, M.PANEL_H[data.page] or M.PANEL_H.home
         -- D288: Home is as tall as its notices: the rows start at 493, 58 each, and the icon row takes 66 under
@@ -81,19 +88,18 @@ function M.cards(body, n, scr, heights)
 end
 
 -- the launcher's rows, growing down from the search line; D311: or, all apps, a grid of tiles (GRID_COLS a row)
-M.GRID_COLS = 6
 function M.results(body, n, grid)
     local out = {}
     if grid then
         local gap = 8
-        local w = (body.w - gap * (M.GRID_COLS - 1)) / M.GRID_COLS
+        local w = (body.w - 20 - gap * (M.GRID_COLS - 1)) / M.GRID_COLS
         for i = 1, n do
             local c, r = (i - 1) % M.GRID_COLS, (i - 1) // M.GRID_COLS
-            out[i] = { x = body.x + c * (w + gap), y = body.y + body.h + 10 + r * (96 + gap), w = w, h = 96 }
+            out[i] = { x = body.x + 10 + c * (w + gap), y = body.y + 46 + 4 + r * (96 + gap), w = w, h = 96 }
         end
         return out
     end
-    for i = 1, n do out[i] = { x = body.x, y = body.y + body.h + 8 + (i - 1) * 46, w = body.w, h = 42 } end
+    for i = 1, n do out[i] = { x = body.x + 8, y = body.y + 46 + (i - 1) * 46, w = body.w - 16, h = 42 } end
     return out
 end
 

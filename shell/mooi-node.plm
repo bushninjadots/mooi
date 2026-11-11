@@ -447,7 +447,7 @@ scene Node {
     fact nd_studio = false
     prop nd_stf = 0 ~nd.aux
     follow nd_stf = if(nd_studio, 1, 0)
-    fact nd_tab = 0       // 0 Presets · 1 Layout · 2 Shape · 3 Surface · 4 Motion · 5 Music
+    fact nd_tab = 0       // 0 Presets · 1 Layout · 2 Modules · 3 Shape · 4 Surface · 5 Motion · 6 Music
     fact nd_kr = 0        // the row the keyboard is on
     fact nd_pv = 0        // the preview: 0 Rest · 1 Music · 2 Notice · 3 Volume · 4 Rail · 5 Panel · 6 Search · 7 Tour
     text nd_lookname = "Organic"
@@ -1218,17 +1218,19 @@ scene Node {
             group { glow: 12, 0.35 * nd_gw, nd_glc
                 box { from: nb_x, nb_y; size: nb_w, nb_h; corner: nb_r; color: fl.ground } }
             box { from: nb_x, 0; size: nb_w, min(nb_h, nb_r + nd_fb + 2); color: fl.ground }
-            path { at: nb_x, nd_fb; move -12, 0; curve 0, 12 via 0, 0; line 0, 0; close; color: fl.ground }
-            path { at: nb_x + nb_w, nd_fb; move 12, 0; curve 0, 12 via 0, 0; line 0, 0; close; color: fl.ground }
+            // (D313: the edge of the band swells a few px below it; filled over between the ears, met at band + 3.5)
+            box { from: nb_x - 12, 0; size: nb_w + 24, nd_fb + 3.5; color: fl.ground }
+            path { at: nb_x, nd_fb + 3.5; move -12, 0; curve 0, 12 via 0, 0; line 0, 0; close; color: fl.ground }
+            path { at: nb_x + nb_w, nd_fb + 3.5; move 12, 0; curve 0, 12 via 0, 0; line 0, 0; close; color: fl.ground }
             path { stroke: 1; color: fl.trace; opacity: 0.85
-                move nb_x - 12, nd_fb
-                curve nb_x, nd_fb + 12 via nb_x, nd_fb
+                move nb_x - 12, nd_fb + 3.5
+                curve nb_x, nd_fb + 15.5 via nb_x, nd_fb + 3.5
                 line nb_x, nb_y + nb_h - nb_r
                 curve nb_x + nb_r, nb_y + nb_h via nb_x, nb_y + nb_h
                 line nb_x + nb_w - nb_r, nb_y + nb_h
                 curve nb_x + nb_w, nb_y + nb_h - nb_r via nb_x + nb_w, nb_y + nb_h
-                line nb_x + nb_w, nd_fb + 12
-                curve nb_x + nb_w + 12, nd_fb via nb_x + nb_w, nd_fb
+                line nb_x + nb_w, nd_fb + 15.5
+                curve nb_x + nb_w + 12, nd_fb + 3.5 via nb_x + nb_w, nd_fb + 3.5
             }
         }
         // (D296) glass: what is behind seen through it, frosted, and a line of light along its top
@@ -2015,9 +2017,10 @@ scene Node {
         }
         // the gauge (D265): the volume, the light, a mute, a lock key, the cable — the node becomes its bar
         group { show: nd_kind == 3; opacity: nd_cf
-            box { from: nb_x + 3, nb_y + 3; size: max(0, (nb_w - 6) * nd_gv), nb_h - 6; corner: max(0, nb_r - 3); color: if(nd_gwarm, fl.ember, nd_acc); opacity: 0.85 }
-            text nd_gicon { at: nb_x + nb_w / 2 - 6 - gmw.width / 2, nb_y + nb_h + 12; anchor: center; align: center; size: 12; family: "CaskaydiaCove Nerd Font"; color: if(nd_gwarm, fl.ember, nd_acc); opacity: nd_grow }
-            text nd_vlabel { at: nb_x + nb_w / 2 + 8, nb_y + nb_h + 12; anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.engrave; opacity: nd_grow; measure: gmw } }
+            // (D313: attached, the level is a strip along its foot and the words sit inside it)
+            box { from: nb_x + if(nd_att, 14, 3), if(nd_att, nb_y + nb_h - 6, nb_y + 3); size: max(0, (nb_w - if(nd_att, 28, 6)) * nd_gv), if(nd_att, 3, nb_h - 6); corner: if(nd_att, 1.5, max(0, nb_r - 3)); color: if(nd_gwarm, fl.ember, nd_acc); opacity: 0.85 }
+            text nd_gicon { at: nb_x + nb_w / 2 - 6 - gmw.width / 2, if(nd_att, nb_y + nb_h / 2 - 2, nb_y + nb_h + 12); anchor: center; align: center; size: 12; family: "CaskaydiaCove Nerd Font"; color: if(nd_gwarm, fl.ember, nd_acc); opacity: nd_grow }
+            text nd_vlabel { at: nb_x + nb_w / 2 + 8, if(nd_att, nb_y + nb_h / 2 - 2, nb_y + nb_h + 12); anchor: center; align: center; size: 9; family: "Share Tech Mono"; color: fl.engrave; opacity: nd_grow; measure: gmw } }
         // workspaces: a rail drawn out from the middle, the active one a bead that slides along it — or (D255) the rail
         // sliding in from the side it came from, flipping over, the bead pulsing, or only the number
         group { show: nd_kind == 4 and nd_wss == 4; opacity: nd_cf
@@ -2039,16 +2042,17 @@ scene Node {
         }
         // the launcher: the node widens into a search line, the results drop out of it one after another
         group { show: nd_kind == 6; opacity: nd_cf
-            text "›" { at: nb_x + 18, nb_y + nb_h / 2; anchor: center; size: 18; family: "Exo 2"; color: nd_acc }
-            input nd_q { at: nb_x + 34, nb_y + nb_h / 2 - 9; width: nb_w - 50; size: 14; family: "Exo 2"; color: fl.engrave; selection: fl.well; placeholder: "search apps" }
+            text "›" { at: nb_x + 18, nb_y + 23; anchor: center; size: 18; family: "Exo 2"; color: nd_acc }
+            input nd_q { at: nb_x + 34, nb_y + 14; width: nb_w - 50; size: 14; family: "Exo 2"; color: fl.engrave; selection: fl.well; placeholder: "search apps" }
+            box { from: nb_x + 12, nb_y + 45; size: nb_w - 24, 1; color: fl.trace_dim; opacity: 0.6; show: nb_h > 60 }
         }
         for r in lr {
             let i = r.index
             let g = clamp(nd_grow * nd_gk - i * 0.18 * nd_stg, 0, 1)
-            group { show: nd_kind == 6; opacity: g * nd_cf; move: 0, 0 - (r.y - nb_y - nb_h) * (1 - g)
+            group { show: nd_kind == 6; opacity: g * nd_cf; move: 0, 0 - (r.y - nb_y - 46) * (1 - g)
                 // a row (anything typed): its icon, its name, what it is
                 group { show: not nd_lgrid
-                    box { from: r.x, r.y; size: r.w, r.h; corner: max(2, 12 * nd_rnd); color: if(nd_sel == i, fl.hull_raised, fl.hull); opacity: 0.95 }
+                    box { from: r.x, r.y; size: r.w, r.h; corner: max(2, 12 * nd_rnd); color: fl.hull_raised; opacity: if(nd_sel == i, 0.95, 0) }
                     box { from: r.x + 2, r.y + 10; size: 3, r.h - 20; corner: 1.5; color: nd_acc; show: nd_sel == i }
                     group { glow: 6, 0.45, #000000
                         image r.icon { at: r.x + 12, r.y + 6; size: 30, 30; show: r.iconed } }
@@ -2058,7 +2062,7 @@ scene Node {
                     text r.tag { at: r.x + r.w - 16, r.y + 21; anchor: right center; align: right; size: 8; weight: 700; family: "Share Tech Mono"; color: fl.muted; width: 80; lines: 1 } }
                 // a tile (the apps, nothing typed): the icon large, lifted a little when chosen, its name under it
                 group { show: nd_lgrid
-                    box { from: r.x, r.y; size: r.w, r.h; corner: 18; color: if(nd_sel == i, fl.hull_raised, fl.hull); opacity: 0.95 }
+                    box { from: r.x, r.y; size: r.w, r.h; corner: 18; color: fl.hull_raised; opacity: if(nd_sel == i, 0.95, 0) }
                     box { from: r.x, r.y; size: r.w, r.h; corner: 18; stroke: 1.5; color: nd_acc; opacity: 0.8; show: nd_sel == i }
                     group { glow: 10, 0.5, #000000; move: 0, if(nd_sel == i, -2, 0)
                         image r.icon { at: r.x + r.w / 2 - 24, r.y + 12; size: 48, 48; show: r.iconed } }
@@ -2357,22 +2361,26 @@ scene Node {
             box { from: st_x + 99 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 1 }
             zone box stt1 { from: st_x + 99, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Layout"; selected: nd_tab == 1; show: nd_studio }
             on press stt1 { emit nd_tab(1) }
-            text "Shape" { at: st_x + 178 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
+            text "Modules" { at: st_x + 178 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 2, 700, 500); family: "Exo 2"; color: if(nd_tab == 2, fl.engrave, fl.muted) }
             box { from: st_x + 178 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 2 }
-            zone box stt2 { from: st_x + 178, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Shape"; selected: nd_tab == 2; show: nd_studio }
+            zone box stt2 { from: st_x + 178, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Modules"; selected: nd_tab == 2; show: nd_studio }
             on press stt2 { emit nd_tab(2) }
-            text "Surface" { at: st_x + 257 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 3, 700, 500); family: "Exo 2"; color: if(nd_tab == 3, fl.engrave, fl.muted) }
+            text "Shape" { at: st_x + 257 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 3, 700, 500); family: "Exo 2"; color: if(nd_tab == 3, fl.engrave, fl.muted) }
             box { from: st_x + 257 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 3 }
-            zone box stt3 { from: st_x + 257, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Surface"; selected: nd_tab == 3; show: nd_studio }
+            zone box stt3 { from: st_x + 257, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Shape"; selected: nd_tab == 3; show: nd_studio }
             on press stt3 { emit nd_tab(3) }
-            text "Motion" { at: st_x + 336 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 4, 700, 500); family: "Exo 2"; color: if(nd_tab == 4, fl.engrave, fl.muted) }
+            text "Surface" { at: st_x + 336 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 4, 700, 500); family: "Exo 2"; color: if(nd_tab == 4, fl.engrave, fl.muted) }
             box { from: st_x + 336 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 4 }
-            zone box stt4 { from: st_x + 336, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Motion"; selected: nd_tab == 4; show: nd_studio }
+            zone box stt4 { from: st_x + 336, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Surface"; selected: nd_tab == 4; show: nd_studio }
             on press stt4 { emit nd_tab(4) }
-            text "Music" { at: st_x + 415 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 5, 700, 500); family: "Exo 2"; color: if(nd_tab == 5, fl.engrave, fl.muted) }
+            text "Motion" { at: st_x + 415 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 5, 700, 500); family: "Exo 2"; color: if(nd_tab == 5, fl.engrave, fl.muted) }
             box { from: st_x + 415 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 5 }
-            zone box stt5 { from: st_x + 415, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Music"; selected: nd_tab == 5; show: nd_studio }
+            zone box stt5 { from: st_x + 415, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Motion"; selected: nd_tab == 5; show: nd_studio }
             on press stt5 { emit nd_tab(5) }
+            text "Music" { at: st_x + 494 + 38, st_dy + 36; anchor: center; align: center; size: 13; weight: if(nd_tab == 6, 700, 500); family: "Exo 2"; color: if(nd_tab == 6, fl.engrave, fl.muted) }
+            box { from: st_x + 494 + 12, st_dy + 52; size: 52, 2; corner: 1; color: nd_acc; show: nd_tab == 6 }
+            zone box stt6 { from: st_x + 494, st_dy + 18; size: 76, 38; cursor: pointer; role: tab; label: "Music"; selected: nd_tab == 6; show: nd_studio }
+            on press stt6 { emit nd_tab(6) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; color: nd_acc; opacity: if(false, 0.9, if(stc3.hover, 0.18, 0)) }
             box { from: st_x + 940 - 24 - 336, st_dy + 22; size: 100, 30; corner: 30 / 2; stroke: 1; color: if(false, nd_acc, fl.trace_lit) }
             text "RESET" { at: st_x + 940 - 24 - 336 + 100 / 2, st_dy + 22 + 30 / 2; anchor: center; align: center; size: 10; weight: 700; family: "Share Tech Mono"; color: if(false, fl.ground, fl.engrave) }
@@ -2441,23 +2449,23 @@ scene Node {
             }
             // the modules (D257): what the long pill or the notch holds, in its order — ‹ › to move one, × to take it
             // out; a press on one of the rest adds it at the end
-            group { show: nd_tab == 1
+            group { show: nd_tab == 2
                 text pick(nd_mside, "IN THE PILL", "IN THE LEFT CORNER", "IN THE RIGHT CORNER") { at: st_x + 24, st_dy + 196; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
                 text pick(nd_mside, "NONE: THE PILL RESTS AS A SEED (SHAPE → SEED)", "NONE: NO NOTCH IN THE LEFT CORNER", "NONE: NO NOTCH IN THE RIGHT CORNER") { at: st_x + 170, st_dy + 196; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: md.count == 0 }
                 box { from: st_x + 520 + 0 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); color: nd_acc; opacity: if(nd_mside == 0, 0.22, if(mside0.hover, 0.1, 0)) }
                 box { from: st_x + 520 + 0 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); stroke: 1; color: if(nd_mside == 0, nd_acc, fl.trace_lit) }
                 text "CENTRE" { at: st_x + 520 + 0 * 118 + 55, st_dy + 196; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_mside == 0, nd_acc, fl.engrave) }
-                zone box mside0 { from: st_x + 520 + 0 * 118, st_dy + 184; size: 110, 24; cursor: pointer; role: tab; label: "The pill"; selected: nd_mside == 0; show: nd_studio and nd_tab == 1 }
+                zone box mside0 { from: st_x + 520 + 0 * 118, st_dy + 184; size: 110, 24; cursor: pointer; role: tab; label: "The pill"; selected: nd_mside == 0; show: nd_studio and nd_tab == 2 }
                 on press mside0 { emit nd_mside(0) }
                 box { from: st_x + 520 + 1 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); color: nd_acc; opacity: if(nd_mside == 1, 0.22, if(mside1.hover, 0.1, 0)) }
                 box { from: st_x + 520 + 1 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); stroke: 1; color: if(nd_mside == 1, nd_acc, fl.trace_lit) }
                 text "LEFT CORNER" { at: st_x + 520 + 1 * 118 + 55, st_dy + 196; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_mside == 1, nd_acc, fl.engrave) }
-                zone box mside1 { from: st_x + 520 + 1 * 118, st_dy + 184; size: 110, 24; cursor: pointer; role: tab; label: "The left corner notch"; selected: nd_mside == 1; show: nd_studio and nd_tab == 1 }
+                zone box mside1 { from: st_x + 520 + 1 * 118, st_dy + 184; size: 110, 24; cursor: pointer; role: tab; label: "The left corner notch"; selected: nd_mside == 1; show: nd_studio and nd_tab == 2 }
                 on press mside1 { emit nd_mside(1) }
                 box { from: st_x + 520 + 2 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); color: nd_acc; opacity: if(nd_mside == 2, 0.22, if(mside2.hover, 0.1, 0)) }
                 box { from: st_x + 520 + 2 * 118, st_dy + 184; size: 110, 24; corner: 12 * max(0.3, nd_rnd); stroke: 1; color: if(nd_mside == 2, nd_acc, fl.trace_lit) }
                 text "RIGHT CORNER" { at: st_x + 520 + 2 * 118 + 55, st_dy + 196; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: if(nd_mside == 2, nd_acc, fl.engrave) }
-                zone box mside2 { from: st_x + 520 + 2 * 118, st_dy + 184; size: 110, 24; cursor: pointer; role: tab; label: "The right corner notch"; selected: nd_mside == 2; show: nd_studio and nd_tab == 1 }
+                zone box mside2 { from: st_x + 520 + 2 * 118, st_dy + 184; size: 110, 24; cursor: pointer; role: tab; label: "The right corner notch"; selected: nd_mside == 2; show: nd_studio and nd_tab == 2 }
                 on press mside2 { emit nd_mside(2) }
                 for m in md {
                     let mx = st_x + 24 + m.index * 148
@@ -2468,22 +2476,22 @@ scene Node {
                     text "›" { at: mx + 126, st_dy + 228; anchor: center; size: 15; family: "Exo 2"; color: if(mdr.hover, nd_acc, fl.muted); show: m.index < md.count - 1 }
                     ellipse { at: mx + 136, st_dy + 212; radius: 8; color: if(mdx.hover, fl.ember, fl.hull) }
                     text "×" { at: mx + 136, st_dy + 212; anchor: center; size: 11; family: "Exo 2"; color: if(mdx.hover, fl.ground, fl.engrave) }
-                    zone box mdl { from: mx, st_dy + 210; size: 28, 36; cursor: pointer; role: button; label: "Move {m.label} left"; show: nd_studio and nd_tab == 1 and m.index > 0 }
+                    zone box mdl { from: mx, st_dy + 210; size: 28, 36; cursor: pointer; role: button; label: "Move {m.label} left"; show: nd_studio and nd_tab == 2 and m.index > 0 }
                     on press mdl { emit nd_md(m.index * 10 + 1) }
-                    zone box mdr { from: mx + 112, st_dy + 210; size: 28, 36; cursor: pointer; role: button; label: "Move {m.label} right"; show: nd_studio and nd_tab == 1 and m.index < md.count - 1 }
+                    zone box mdr { from: mx + 112, st_dy + 210; size: 28, 36; cursor: pointer; role: button; label: "Move {m.label} right"; show: nd_studio and nd_tab == 2 and m.index < md.count - 1 }
                     on press mdr { emit nd_md(m.index * 10 + 2) }
-                    zone box mdx { from: mx + 127, st_dy + 203; size: 18, 18; corner: 9; cursor: pointer; role: button; label: "Take {m.label} out"; show: nd_studio and nd_tab == 1 }
+                    zone box mdx { from: mx + 127, st_dy + 203; size: 18, 18; corner: 9; cursor: pointer; role: button; label: "Take {m.label} out"; show: nd_studio and nd_tab == 2 }
                     on press mdx { emit nd_md(m.index * 10 + 9) }
                 }
                 text "ADD" { at: st_x + 24, st_dy + 268; anchor: left center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.muted }
-                text "FULL: SIX AT MOST" { at: st_x + 70, st_dy + 268; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: md.count >= 6 }
+                text "FULL: EIGHT AT MOST" { at: st_x + 70, st_dy + 268; anchor: left center; size: 9; family: "Share Tech Mono"; color: fl.muted; show: md.count >= 8 }
                 for a in ma {
                     let ax = st_x + 24 + (a.index - floor(a.index / 8) * 8) * 112
                     let ay = st_dy + 282 + floor(a.index / 8) * 40
                     box { from: ax, ay; size: 104, 32; corner: 16 * max(0.3, nd_rnd); color: nd_acc; opacity: if(maz.hover, 0.18, 0) }
                     box { from: ax, ay; size: 104, 32; corner: 16 * max(0.3, nd_rnd); stroke: 1; color: if(maz.hover, nd_acc, fl.trace_lit) }
                     text "+ {a.label}" { at: ax + 52, ay + 16; anchor: center; align: center; size: 9; weight: 700; family: "Share Tech Mono"; color: fl.engrave; width: 98; lines: 1 }
-                    zone box maz { from: ax, ay; size: 104, 32; corner: 16; cursor: pointer; role: button; label: "Add {a.label}"; show: nd_studio and nd_tab == 1 and md.count < 6 }
+                    zone box maz { from: ax, ay; size: 104, 32; corner: 16; cursor: pointer; role: button; label: "Add {a.label}"; show: nd_studio and nd_tab == 2 and md.count < 8 }
                     on press maz { emit nd_md(100 + a.index) }
                 }
             }

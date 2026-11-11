@@ -12,7 +12,7 @@ M.PRESETS = { "organic", "minimal", "technical", "cyber", "liquid", "neon" }
 M.SLOTS = 3
 
 -- the studio's tabs; the first is the presets' own page (no rows)
-M.TABS = { "Presets", "Layout", "Shape", "Surface", "Motion", "Music" }
+M.TABS = { "Presets", "Layout", "Modules", "Shape", "Surface", "Motion", "Music" }
 
 -- each row: key, label, description, and either a range (lo, hi, unit) or a choice (values, names)
 local function range(key, label, desc, lo, hi, unit) return { key = key, label = label, desc = desc, lo = lo, hi = hi, unit = unit or "" } end
@@ -25,11 +25,14 @@ M.SCHEMA = {
     Layout = {
         choice("place", "Place", "Floating under the top edge; attached to the frame as a notch; or attached only while music plays", { "floating", "attached", "music" }, { "Floating", "Attached", "With music" }),
         choice("side", "Side", "Where along the top it sits", { "centre", "left", "right" }, { "Centre", "Left", "Right" }),
-        choice("music_mod", "Music module", "The Music module: four bars beside the title, the title alone, or the album cover and title", { "bars", "title", "cover" }, { "Visualiser", "Title", "Cover" }),
         choice("ws_style", "Workspace switch", "What shows when you change workspace: a bead along a rail, a slide, a flip, a pulse, or its number", { "bead", "slide", "flip", "pulse", "count" }, { "Bead", "Slide", "Flip", "Pulse", "Number" }),
         range("cards", "Notice cards", "How many notices show at once", 1, 5, ""),
         choice("reactions", "Reactions", "A ring from it when something happens: music, a notice, the charger, the microphone", { "off", "subtle", "lively", "sparks" }, { "Off", "Subtle", "Lively", "Sparks" }),
         range("orbit", "Workspace orbit", "How wide the workspaces' orbit is (Super+Tab)", 300, 700, " px"),
+    },
+    -- what the pill and its corner notches hold: the editor below the one row (D313: a page of its own)
+    Modules = {
+        choice("music_mod", "Music module", "The Music module: four bars beside the title, the title alone, or the album cover and title", { "bars", "title", "cover" }, { "Visualiser", "Title", "Cover" }),
     },
     Shape = {
         choice("seed", "Seed", "What rests at the top while it holds no modules", { "line", "dot", "ring", "twin", "bar", "clock", "bmo", "orb", "comet" }, { "Line", "Dot", "Ring", "Twin", "Bar", "Clock", "BMO", "Orb", "Comet" }),

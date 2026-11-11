@@ -8072,3 +8072,30 @@ layouts", then "yes do it" to the fixes in order.
   and Outline are greyed with the reason.
 
 **Verified.** Unit 964 / 0; scenes compile. Live after `mooi refresh`: the Window module in the left corner shows the focused window ("bender: mooi", it read "Desktop" before); the logic runs without errors; the Status module's first icon (the controls) was an empty string and is restored. Not seen live: what grows out of the notch, the studio's new pages, the corner limit (the owner's lists fit).
+
+## D314 · 2026-11-11 · The Pill seen live, state by state, and what that found
+
+Step 5 of the audit, with the owner away: every state opened for real (attached, outside the studio) and in the
+studio's preview, and looked at.
+
+**Seen working.** The panel's Home and Power pages, the time tools and the launcher grow out of the notch; a
+workspace switch keeps the notch joined to the frame with the dot moved; the Window module follows the focus; the
+launcher's grid of app icons; typed results with icons (a window's with its app's); in the studio, the capsule, the
+spectrum strip, the half record with its tonearm, a notice card, the volume gauge and the workspace number.
+
+**Found and fixed.**
+- The ears met the frame 3.5 px above its edge (the band's edge swells below the band): they now meet it there, and
+  the band is filled over between them.
+- A gauge, attached, drew its words under the body: they now sit inside it, its level a strip along its foot.
+- A notice, attached, showed a large empty block (D312's "never smaller than the notch"): its body is now the notch
+  itself, and only its stem and card come out of it.
+- The launcher's results floated over the windows, unreadable: the launcher is now one body that holds them — the
+  search line, then the grid (104 a row) or the rows (46) — with only the chosen one lit.
+- The module editor was drawn over the Layout page's seven rows: it has a page of its own, **Modules** (the Music
+  module's look, the editor below it); its add chips and "full" note said six, it is eight.
+
+**Not fixed, noted.** The workspaces' orbit (Super+Tab) barely dims the desktop and showed no window pictures within
+the first second. Not seen: the app's tile on launch (it would open an app), the player, the lock.
+
+**Verified.** Unit 964 / 0; scenes compile; each fix looked at again live after `mooi refresh`; the owner's look put
+back exactly as it was (compared byte for byte).
