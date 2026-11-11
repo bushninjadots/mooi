@@ -8097,5 +8097,5 @@ spectrum strip, the half record with its tonearm, a notice card, the volume gaug
 **Not fixed, noted.** The workspaces' orbit (Super+Tab) barely dims the desktop and showed no window pictures within
 the first second. Not seen: the app's tile on launch (it would open an app), the player, the lock.
 
-**Verified.** Unit 964 / 0; scenes compile; each fix looked at again live after `mooi refresh`; the owner's look put
+**Verified.** Unit 964 / 0; scenes compile; each fix looked at again live after `mooi refresh` (all but the "eight" note, changed after the last look); the owner's look put
 back exactly as it was (compared byte for byte).
